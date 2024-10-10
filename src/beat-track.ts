@@ -156,7 +156,7 @@ export class BeatTrack extends Sampler {
    * @param noteType {number} The (rhythmic) length of each beat/rest that should
    * be used to calculate the length of a beat/rest in seconds.
    */
-  private callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType: number = 1 / 4): void {
+  protected callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType: number = 1 / 4): void {
     // http://bradthemad.org/guitar/tempo_explanation.php
     const duration = (240 * noteType) / bpm
     this.beats.forEach((beat, idx) => beat[method](idx * duration))

@@ -56,7 +56,7 @@ export class Sampler {
    * that uses {{#crossLink "Playable"}}{{/crossLink}}. If not set on
    * instantiation, automatically set to `new Set()` via `_initSounds`.
    */
-  private sounds: Set<Playable & Connectable>
+  protected sounds: Set<Playable & Connectable>
 
   /**
    * @method play
