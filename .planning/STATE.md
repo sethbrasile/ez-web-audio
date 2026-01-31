@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-01-31
-**Current Focus:** Phase 1 - Foundation
+**Current Focus:** Phase 1 - Foundation (COMPLETE)
 
 ## Project Reference
 
@@ -11,34 +11,34 @@
 
 ## Current Position
 
-**Phase:** 1 of 8 (Foundation)
-**Plan:** 3 of 4 complete
-**Status:** In progress
+**Phase:** 1 of 8 (Foundation) - COMPLETE
+**Plan:** 4 of 4 complete
+**Status:** Phase complete
 
-**Progress:** [██████░░░░░░░░░░░░░░] 33% (12/18 requirements complete)
+**Progress:** [██████████░░░░░░░░░░] 50% (18/18 requirements complete for Phase 1)
 
-**Phase Goal:** Users have a stable, well-tested event system and all critical bugs are resolved.
+**Phase Goal:** Users have a stable, well-tested event system and all critical bugs are resolved. ACHIEVED.
 
-**Next Action:** Execute Plan 04 (Error Integration).
+**Next Action:** Begin Phase 2 (ADSR Envelopes) planning.
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 1
-- Completed phases: 0
-- Overall completion: 15% (12/71 requirements)
+- Current phase: 1 (complete)
+- Completed phases: 1
+- Overall completion: 25% (18/71 requirements)
 
 **Current Phase:**
 - Requirements: 18 (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
 - Plans: 4 (01-Foundation Types, 02-Bug Fixes, 03-Event System, 04-Error Integration)
-- Completed: 3 plans (01-01, 01-02, 01-03)
-- Remaining: 1 plan
+- Completed: 4 plans (01-01, 01-02, 01-03, 01-04)
+- Remaining: 0 plans
 
 **Velocity:**
-- Requirements completed this session: 7 (EVT-01, EVT-02, EVT-03, EVT-06, EVT-07 + FIX-01 to FIX-04 earlier)
-- Sessions on current phase: 3
-- Estimated remaining sessions: 1 (one plan left)
+- Requirements completed this session: 6 (EVT-04, EVT-05, ERR-01 to ERR-04)
+- Sessions on current phase: 4
+- Phase 1 complete in 4 sessions
 
 ## Accumulated Context
 
@@ -71,6 +71,11 @@
 - Event 'end' only fires on natural completion (checked via _isPlaying flag)
 - .off() requires listener reference (native EventTarget limitation documented)
 
+**Phase 1 Plan 04 Decisions:**
+- resume() is explicit method (not just play() after pause) for semantic clarity and event emission
+- seek event emits after position change for consistency
+- Error messages include specific actionable guidance (URLs, states, formats)
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -82,10 +87,10 @@
 - [x] Plan 01: Foundation Types (event types, error classes)
 - [x] Plan 02: Bug Fixes (Track inheritance, RAF cleanup, memory leaks, Oscillator.duration)
 - [x] Plan 03: Event System Implementation
-- [ ] Plan 04: Error Integration
+- [x] Plan 04: Error Integration
 
 **Cross-Phase:**
-- [ ] Verify standardized-audio-context-mock supports event testing (Phase 1/6)
+- [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
 - [ ] Research impulse response libraries for effects presets (Phase 5)
 - [ ] Determine voice pooling strategy for LayeredSound (Phase 4)
 
@@ -93,7 +98,9 @@
 
 **Resolved (Plan 02):**
 - ~~Track.play() and Track.stop() return void but should return Promise<void>~~ - Fixed via _onPlaybackStarted() hook and async stop()
-- Unused imports in src/index.ts and synthesis/index.ts (minor, pre-existing)
+
+**Resolved (Plan 04):**
+- ~~Unused imports in src/index.ts and synthesis/index.ts~~ - Fixed
 
 ### Research Findings
 
@@ -107,15 +114,15 @@
 5. Direct AudioParam assignment during automation (Phase 2, 5) - always use AudioParam methods
 
 **Phase-Specific Research Flags:**
-- Phase 1: Standard EventTarget pattern, well-documented (no deep research needed)
+- Phase 1: Standard EventTarget pattern, well-documented (no deep research needed) - COMPLETE
 - Phase 2: Fast retriggering edge cases, polyphonic note management (needs research)
 - Phase 3: Standard patterns (no deep research needed)
 - Phase 4: Voice pooling strategies (needs research during planning)
 - Phase 5: Impulse response sourcing, FFT optimization (needs research during planning)
 
 **Dependency Chain:**
-- Events foundational for all features
-- ADSR requires events for testing
+- Events foundational for all features - COMPLETE
+- ADSR requires events for testing - Ready
 - LayeredSound depends on events + ADSR + effects being stable
 - Testing can parallelize with documentation
 
@@ -138,24 +145,30 @@
 **Plan 01-03:**
 - Modified: src/base-sound.ts (EventTarget extension, typed events, .on/.once/.off, lifecycle emission)
 
+**Plan 01-04:**
+- Modified: src/track.ts (pause/resume/seek event emission)
+- Modified: src/index.ts (error class exports, AudioLoadError/AudioContextError integration)
+- Modified: src/musical-identity.ts (InvalidNoteError integration)
+- Created: src/base-sound.test.ts (event system tests)
+
 ## Session Continuity
 
-**Last session:** 2026-01-31T22:16:03Z
-**Stopped at:** Completed 01-03-PLAN.md
+**Last session:** 2026-01-31T22:17:19Z
+**Stopped at:** Completed 01-04-PLAN.md (Phase 1 complete)
 **Resume file:** None
 
 **Where we are:**
-Plan 03 (Event System) complete. BaseSound extends EventTarget with typed addEventListener/removeEventListener overloads, .on()/.once()/.off() convenience methods, and lifecycle event emission (play/stop/end).
+Phase 1 (Foundation) complete. All 18 requirements (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04) implemented and verified.
 
 **What's next:**
-Execute Plan 04 (Error Integration) to integrate error classes into existing code paths.
+Begin Phase 2 (ADSR Envelopes) - research and planning phase.
 
 **Context to preserve:**
 - Event subscription: sound.on('play', handler).on('stop', handler2) for chaining
-- Single-fire events: sound.once('end', cleanupHandler)
-- Event emission: this.emit('play', { time, source }) in lifecycle methods
-- 'end' event only fires on natural completion (when _isPlaying is still true in onended)
-- .off() requires same listener reference (EventTarget limitation)
+- Track events: track.on('pause', fn), track.on('resume', fn), track.on('seek', fn)
+- Error handling: catch AudioError for all audio errors, or specific subclasses
+- InvalidNoteError thrown for invalid note identifiers with format guidance
+- AudioLoadError includes URL for debugging
 
 ---
 
