@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-01-31
-**Current Focus:** Phase 2 - ADSR Envelopes (IN PROGRESS)
+**Current Focus:** Phase 2 - ADSR Envelopes (COMPLETE)
 
 ## Project Reference
 
@@ -11,32 +11,33 @@
 
 ## Current Position
 
-**Phase:** 2 of 8 (ADSR Envelopes) - IN PROGRESS
-**Plan:** 3 of 4 complete
-**Status:** In progress
+**Phase:** 2 of 8 (ADSR Envelopes) - COMPLETE
+**Plan:** 4 of 4 complete
+**Status:** Phase complete
 
-**Progress:** [████████████████░░░░] 75% (Phase 1 complete, Phase 2 Plans 1-3 complete)
+**Progress:** [████████████████████] 100% Phase 2 (Phase 1 complete, Phase 2 complete)
 
-**Phase Goal:** Oscillator has configurable ADSR envelope with smooth attack/decay/sustain/release.
+**Phase Goal:** Oscillator has configurable ADSR envelope with smooth attack/decay/sustain/release. ACHIEVED.
 
-**Next Action:** Execute Phase 2 Plan 4 (if exists) or complete Phase 2.
+**Next Action:** Plan Phase 3 (Track Improvements) or Phase 4 (LayeredSound).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 2 (in progress)
-- Completed phases: 1
-- Overall completion: ~35% (Phase 1 + Phase 2 Plans 1-3)
+- Current phase: 2 (complete)
+- Completed phases: 2
+- Overall completion: ~40% (Phases 1-2 complete)
 
-**Current Phase:**
-- Plans: 4 (01-Envelope Class, 02-Oscillator Integration, 03-Retriggering, 04-TBD)
-- Completed: 3 plans (02-01, 02-02, 02-03)
-- Remaining: 1 plan (02-04)
+**Current Phase (Complete):**
+- Plans: 4 (01-Envelope Class, 02-Oscillator Integration, 03-Retriggering, 04-Integration Tests & Exports)
+- Completed: 4 plans (02-01, 02-02, 02-03, 02-04)
+- Remaining: 0 plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
 - Plan 02-03 completed in 13 minutes
+- Plan 02-04 completed in 6 minutes
 - TDD approach: 2 commits (test, feat)
 
 ## Accumulated Context
@@ -87,6 +88,10 @@
 - cancelAndHoldAtTime used when available (Chrome/Edge), cancelScheduledValues fallback for others
 - AudioParamWithCancelAndHold intersection type avoids interface extension conflicts
 
+**Phase 2 Plan 04 Decisions:**
+- Export both Envelope class (for advanced use) and EnvelopeOptions type (for TypeScript)
+- Test coexistence of envelope with onPlaySet/onPlayRamp APIs
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -94,11 +99,11 @@
 
 ### Active TODOs
 
-**Phase 2 Execution:**
+**Phase 2 Execution (COMPLETE):**
 - [x] Plan 01: Envelope Class (TDD implementation)
 - [x] Plan 02: Oscillator Integration
 - [x] Plan 03: Envelope Retriggering
-- [ ] Plan 04: TBD
+- [x] Plan 04: Integration Tests & Public Exports
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -144,21 +149,21 @@
 
 ### Files Modified This Session
 
-**Plan 02-03:**
-- Modified: src/envelope.ts (Added retriggering: isActive, estimateCurrentValue, cancelAndHoldAtTime)
-- Modified: src/envelope.test.ts (49 tests, 476 lines - 18 new retriggering tests)
+**Plan 02-04:**
+- Created: src/oscillator.test.ts (19 ADSR integration tests)
+- Modified: src/index.ts (Added Envelope and EnvelopeOptions exports)
 
 ## Session Continuity
 
-**Last session:** 2026-01-31T23:04:24Z
-**Stopped at:** Completed 02-03-PLAN.md
+**Last session:** 2026-01-31T23:19:29Z
+**Stopped at:** Completed 02-04-PLAN.md (Phase 2 complete)
 **Resume file:** None
 
 **Where we are:**
-Phase 2 (ADSR Envelopes) Plan 3 complete. Envelope class now supports clickless retriggering.
+Phase 2 (ADSR Envelopes) complete. All 4 plans executed successfully.
 
 **What's next:**
-Execute Phase 2 Plan 4 (if exists) or complete Phase 2.
+Plan and execute Phase 3 (Track Improvements) or Phase 4 (LayeredSound).
 
 **Context to preserve:**
 - Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
@@ -167,6 +172,8 @@ Execute Phase 2 Plan 4 (if exists) or complete Phase 2.
 - Retriggering: `isActive` property, `estimateCurrentValue(time)` for phase interpolation
 - Feature detection: cancelAndHoldAtTime (Chrome/Edge) with cancelScheduledValues fallback
 - Time constant for release: releaseTime/5 gives ~99% completion
+- Public exports: Envelope class and EnvelopeOptions type from src/index.ts
+- Integration tests: 19 tests in src/oscillator.test.ts
 
 ---
 
