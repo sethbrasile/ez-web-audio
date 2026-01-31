@@ -369,8 +369,32 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     await audioContext.resume()
 
     this.setup()
+
+    // Emit play event
+    this.emit('play', {
+      time: currentTime,
+      source: this
+    })
+
     this.audioSourceNode.start(time, this.startOffset)
     this.startedPlayingAt = time
+
+    // Set up end event via onended (fires when playback completes naturally)
+    // Note: onended fires for both natural completion AND stop() calls,
+    // so we check _isPlaying to only emit 'end' for natural completion
+    this.audioSourceNode.onended = () => {
+      // Only emit 'end' if still playing (natural completion)
+      // If _isPlaying is false, it means stop() was called which already emitted 'stop'
+      if (this._isPlaying) {
+        this._isPlaying = false
+        this.emit('end', {
+          time: this.audioContext.currentTime,
+          source: this,
+          duration: this.duration.raw
+        })
+      }
+    }
+
     // if duration exists and is finite, schedule _isPlaying to false after duration has elapsed
     if (duration && Number.isFinite(duration)) {
       this.setTimeout(() => {
@@ -436,6 +460,13 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     const stop = (): void => {
       if (this._isPlaying) {
         this._isPlaying = false
+
+        // Emit stop event before actually stopping the node
+        this.emit('stop', {
+          time: this.audioContext.currentTime,
+          source: this
+        })
+
         node.stop(time)
       }
     }
