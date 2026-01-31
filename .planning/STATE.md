@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-01-31
-**Current Focus:** Phase 1 - Foundation (COMPLETE)
+**Current Focus:** Phase 2 - ADSR Envelopes (IN PROGRESS)
 
 ## Project Reference
 
@@ -11,34 +11,32 @@
 
 ## Current Position
 
-**Phase:** 1 of 8 (Foundation) - COMPLETE
-**Plan:** 4 of 4 complete
-**Status:** Phase complete
+**Phase:** 2 of 8 (ADSR Envelopes) - IN PROGRESS
+**Plan:** 1 of 2 complete
+**Status:** In progress
 
-**Progress:** [██████████░░░░░░░░░░] 50% (18/18 requirements complete for Phase 1)
+**Progress:** [██████████░░░░░░░░░░] 50% (Phase 1 complete, Phase 2 Plan 1 complete)
 
-**Phase Goal:** Users have a stable, well-tested event system and all critical bugs are resolved. ACHIEVED.
+**Phase Goal:** Oscillator has configurable ADSR envelope with smooth attack/decay/sustain/release.
 
-**Next Action:** Begin Phase 2 (ADSR Envelopes) planning.
+**Next Action:** Execute Phase 2 Plan 2 (Oscillator Integration).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 1 (complete)
+- Current phase: 2 (in progress)
 - Completed phases: 1
-- Overall completion: 25% (18/71 requirements)
+- Overall completion: ~30% (Phase 1 + Phase 2 Plan 1)
 
 **Current Phase:**
-- Requirements: 18 (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
-- Plans: 4 (01-Foundation Types, 02-Bug Fixes, 03-Event System, 04-Error Integration)
-- Completed: 4 plans (01-01, 01-02, 01-03, 01-04)
-- Remaining: 0 plans
+- Plans: 2 (01-Envelope Class, 02-Oscillator Integration)
+- Completed: 1 plan (02-01)
+- Remaining: 1 plan (02-02)
 
 **Velocity:**
-- Requirements completed this session: 6 (EVT-04, EVT-05, ERR-01 to ERR-04)
-- Sessions on current phase: 4
-- Phase 1 complete in 4 sessions
+- Plan 02-01 completed in 6 minutes
+- TDD approach: 3 commits (test, feat, refactor)
 
 ## Accumulated Context
 
@@ -76,6 +74,12 @@
 - seek event emits after position change for consistency
 - Error messages include specific actionable guidance (URLs, states, formats)
 
+**Phase 2 Plan 01 Decisions:**
+- sustainLevel clamped to 0-1 range (no exception thrown, silently clamps)
+- Object.freeze for runtime readonly property enforcement
+- Time constant = releaseTime/5 for ~99% completion during release phase
+- release() parameter named `startTime` to avoid confusion with `this.releaseTime`
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -83,11 +87,9 @@
 
 ### Active TODOs
 
-**Phase 1 Execution:**
-- [x] Plan 01: Foundation Types (event types, error classes)
-- [x] Plan 02: Bug Fixes (Track inheritance, RAF cleanup, memory leaks, Oscillator.duration)
-- [x] Plan 03: Event System Implementation
-- [x] Plan 04: Error Integration
+**Phase 2 Execution:**
+- [x] Plan 01: Envelope Class (TDD implementation)
+- [ ] Plan 02: Oscillator Integration
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -115,60 +117,41 @@
 
 **Phase-Specific Research Flags:**
 - Phase 1: Standard EventTarget pattern, well-documented (no deep research needed) - COMPLETE
-- Phase 2: Fast retriggering edge cases, polyphonic note management (needs research)
+- Phase 2: Fast retriggering edge cases, polyphonic note management - Plan 01 COMPLETE, Plan 02 pending
 - Phase 3: Standard patterns (no deep research needed)
 - Phase 4: Voice pooling strategies (needs research during planning)
 - Phase 5: Impulse response sourcing, FFT optimization (needs research during planning)
 
 **Dependency Chain:**
 - Events foundational for all features - COMPLETE
-- ADSR requires events for testing - Ready
+- ADSR requires events for testing - Plan 01 COMPLETE
 - LayeredSound depends on events + ADSR + effects being stable
 - Testing can parallelize with documentation
 
 ### Files Modified This Session
 
-**Plan 01-01:**
-- Created: src/events/event-types.ts
-- Created: src/errors/audio-error.ts
-- Created: src/errors/context-error.ts
-- Created: src/errors/load-error.ts
-- Created: src/errors/invalid-note-error.ts
-- Created: src/errors/index.ts
-
-**Plan 01-02:**
-- Modified: src/base-sound.ts (_onPlaybackStarted hook, finite duration check)
-- Modified: src/track.ts (override hook, rafId tracking, RAF cleanup)
-- Modified: src/sound.ts (disconnect in setup, onended cleanup)
-- Modified: src/oscillator.ts (Infinity duration)
-
-**Plan 01-03:**
-- Modified: src/base-sound.ts (EventTarget extension, typed events, .on/.once/.off, lifecycle emission)
-
-**Plan 01-04:**
-- Modified: src/track.ts (pause/resume/seek event emission)
-- Modified: src/index.ts (error class exports, AudioLoadError/AudioContextError integration)
-- Modified: src/musical-identity.ts (InvalidNoteError integration)
-- Created: src/base-sound.test.ts (event system tests)
+**Plan 02-01:**
+- Created: src/envelope.ts (Envelope class with ADSR logic)
+- Created: src/envelope.test.ts (29 tests, 280 lines)
 
 ## Session Continuity
 
-**Last session:** 2026-01-31T22:17:19Z
-**Stopped at:** Completed 01-04-PLAN.md (Phase 1 complete)
+**Last session:** 2026-01-31T22:48:18Z
+**Stopped at:** Completed 02-01-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 1 (Foundation) complete. All 18 requirements (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04) implemented and verified.
+Phase 2 (ADSR Envelopes) Plan 1 complete. Envelope class with ADSR logic implemented and tested.
 
 **What's next:**
-Begin Phase 2 (ADSR Envelopes) - research and planning phase.
+Execute Phase 2 Plan 2 (Oscillator Integration) - integrate Envelope with OscillatorController.
 
 **Context to preserve:**
-- Event subscription: sound.on('play', handler).on('stop', handler2) for chaining
-- Track events: track.on('pause', fn), track.on('resume', fn), track.on('seek', fn)
-- Error handling: catch AudioError for all audio errors, or specific subclasses
-- InvalidNoteError thrown for invalid note identifiers with format guidance
-- AudioLoadError includes URL for debugging
+- Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
+- Apply envelope: `envelope.applyTo(gainNode.gain, startTime)`
+- Release envelope: `envelope.release(gainNode.gain, stopTime)`
+- Time constant for release: releaseTime/5 gives ~99% completion
+- AudioParam scheduling: setValueAtTime, linearRampToValueAtTime, setTargetAtTime
 
 ---
 
