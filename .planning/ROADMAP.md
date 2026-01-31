@@ -21,6 +21,14 @@ Research findings drive the phase order: Events system is foundational for all a
 
 **Requirements:** EVT-01, EVT-02, EVT-03, EVT-04, EVT-05, EVT-06, EVT-07, FIX-01, FIX-02, FIX-03, FIX-04, ERR-01, ERR-02, ERR-03, ERR-04
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Event types and custom error classes
+- [ ] 01-02-PLAN.md — Bug fixes (inheritance, RAF, memory leaks, duration)
+- [ ] 01-03-PLAN.md — Core event system (EventTarget, .on/.once/.off, emit)
+- [ ] 01-04-PLAN.md — Track events and error integration
+
 **Success Criteria:**
 1. User can subscribe to play/stop/end events on any Playable and receive typed event payloads
 2. User can subscribe to pause/resume/seek events on Track instances
@@ -176,7 +184,7 @@ Research findings drive the phase order: Events system is foundational for all a
 
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
-| 1 - Foundation | Pending | 18 | 0% |
+| 1 - Foundation | Planned | 15 | 0% |
 | 2 - ADSR Envelopes | Pending | 7 | 0% |
 | 3 - Utility Features | Pending | 15 | 0% |
 | 4 - Composition Features | Pending | 13 | 0% |
@@ -193,7 +201,7 @@ Research findings drive the phase order: Events system is foundational for all a
 
 All 71 v1 requirements mapped to phases:
 
-- Phase 1: 18 requirements (EVT + FIX + ERR)
+- Phase 1: 15 requirements (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
 - Phase 2: 7 requirements (ADSR)
 - Phase 3: 15 requirements (SPRITE + COLL + PRE)
 - Phase 4: 13 requirements (LAYER + BEAT + FADE)
@@ -202,8 +210,8 @@ All 71 v1 requirements mapped to phases:
 - Phase 7: 9 requirements (DOC + SITE)
 - Phase 8: 4 requirements (BUILD)
 
-**Total mapped:** 71/71 ✓
-**Orphaned requirements:** 0 ✓
+**Total mapped:** 71/71
+**Orphaned requirements:** 0
 
 ---
 
@@ -222,4 +230,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-01-31 after roadmap creation*
+*Last updated: 2026-01-31 after Phase 1 planning*
