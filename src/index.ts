@@ -1,9 +1,9 @@
-import { a } from 'vitest/dist/chunks/suite.CcK46U-P.js'
 import type { OscillatorOptsFilterValues } from './oscillator'
 import { SampledNote } from './sampled-note'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import { Font } from './font'
+import { AudioError, AudioContextError, AudioLoadError, InvalidNoteError } from './errors'
 import { mungeSoundFont } from './utils/decode-base64'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import frequencyMap from './utils/frequency-map'
@@ -52,7 +52,18 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
   }
 
   if (!audioContext) {
-    throw new Error('The audio context does not exist yet! You must call `initAudio()` in response to a user interaction before performing this action.')
+    throw new AudioContextError(
+      'AudioContext could not be created. Call initAudio() after a user interaction (click, tap, keypress).',
+      'closed',
+    )
+  }
+
+  // Handle interrupted state (iOS backgrounded)
+  if (audioContext.state === 'interrupted' as AudioContextState) {
+    throw new AudioContextError(
+      'AudioContext interrupted (iOS backgrounded). Resume playback after returning to foreground.',
+      audioContext.state,
+    )
   }
 
   // only run this workaround code once
@@ -177,12 +188,38 @@ async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<S
     return createSoundFor(type, buffer)
   }
 
-  const response = await fetch(src)
+  let response: Response
+  try {
+    response = await fetch(src)
+  }
+  catch {
+    throw new AudioLoadError(
+      `Network error loading audio. Check URL and connection. URL: ${src}`,
+      src,
+    )
+  }
+
+  if (!response.ok) {
+    throw new AudioLoadError(
+      `HTTP ${response.status} loading audio. Check URL and CORS headers. URL: ${src}`,
+      src,
+    )
+  }
+
   responses.set(src, response)
 
   await initAudio()
 
-  const buffer = await audioContext.decodeAudioData(await response.clone().arrayBuffer())
+  let buffer: AudioBuffer
+  try {
+    buffer = await audioContext.decodeAudioData(await response.clone().arrayBuffer())
+  }
+  catch {
+    throw new AudioLoadError(
+      `Failed to decode audio. File may be corrupted or unsupported format. URL: ${src}`,
+      src,
+    )
+  }
 
   return createSoundFor(type, buffer)
 }
@@ -249,6 +286,11 @@ export {
   frequencyMap,
   Beat,
   BeatTrack,
+  // Errors
+  AudioError,
+  AudioContextError,
+  AudioLoadError,
+  InvalidNoteError,
 }
 
 export type {

@@ -1,5 +1,6 @@
 import frequencyMap from '@utils/frequency-map'
 import { get } from '@utils/prop-access'
+import { InvalidNoteError } from './errors'
 
 export type NoteLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 export type Accidental = '' | 'b' | '#'
@@ -42,7 +43,7 @@ export interface IMusicallyAware {
 const { warn } = console
 // eslint-disable-next-line ts/explicit-function-return-type
 export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
-  return class MusicalIdentity extends Base {
+  return class MusicalIdentity extends Base implements IMusicallyAware {
     constructor(...args: any[]) {
       super(...args)
 
@@ -142,7 +143,10 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
         return output
       }
       else {
-        throw new Error(`Invalid musical identifier: ${output}`)
+        throw new InvalidNoteError(
+          `Invalid note: "${output}". Expected format: Letter + optional accidental + octave (e.g., A4, Bb3, C#5).`,
+          output,
+        )
       }
     }
 
