@@ -49,6 +49,14 @@ Plans:
 
 **Requirements:** ADSR-01, ADSR-02, ADSR-03, ADSR-04, ADSR-05, ADSR-06, ADSR-07
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Envelope class with ADSR logic (TDD)
+- [ ] 02-02-PLAN.md — Controller and Oscillator integration
+- [ ] 02-03-PLAN.md — Retriggering without clicks (TDD)
+- [ ] 02-04-PLAN.md — Integration tests and exports
+
 **Success Criteria:**
 1. User can create Oscillator with ADSR envelope options using simple configuration
 2. Attack phase smoothly ramps gain from 0 to peak without clicks
@@ -185,7 +193,7 @@ Plans:
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
 | 1 - Foundation | Complete | 15 | 100% |
-| 2 - ADSR Envelopes | Pending | 7 | 0% |
+| 2 - ADSR Envelopes | Planning Complete | 7 | 0% |
 | 3 - Utility Features | Pending | 15 | 0% |
 | 4 - Composition Features | Pending | 13 | 0% |
 | 5 - Effects & Advanced | Pending | 16 | 0% |
@@ -230,4 +238,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-01-31 after Phase 1 complete*
+*Last updated: 2026-01-31 after Phase 2 planning complete*
