@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 1 of 8 (Foundation)
-**Plan:** 1 of 4 complete
+**Plan:** 2 of 4 complete
 **Status:** In progress
 
-**Progress:** [██░░░░░░░░░░░░░░░░░░] 5% (1/18 requirements complete)
+**Progress:** [████░░░░░░░░░░░░░░░░] 22% (5/18 requirements complete)
 
 **Phase Goal:** Users have a stable, well-tested event system and all critical bugs are resolved.
 
-**Next Action:** Execute Plan 02 (Bug Fixes) or Plan 03 (Event System).
+**Next Action:** Execute Plan 03 (Event System) or Plan 04 (Error Integration).
 
 ## Performance Metrics
 
@@ -27,18 +27,18 @@
 - Total phases: 8
 - Current phase: 1
 - Completed phases: 0
-- Overall completion: 1% (1/71 requirements)
+- Overall completion: 7% (5/71 requirements)
 
 **Current Phase:**
 - Requirements: 18 (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
 - Plans: 4 (01-Foundation Types, 02-Bug Fixes, 03-Event System, 04-Error Integration)
-- Completed: 1 plan (01-01)
-- Remaining: 3 plans
+- Completed: 2 plans (01-01, 01-02)
+- Remaining: 2 plans
 
 **Velocity:**
-- Requirements completed this session: 1 (plan 01 types/errors foundation)
-- Sessions on current phase: 1
-- Estimated remaining sessions: 3-4 (one per plan)
+- Requirements completed this session: 4 (FIX-01 to FIX-04)
+- Sessions on current phase: 2
+- Estimated remaining sessions: 2 (one per plan)
 
 ## Accumulated Context
 
@@ -61,6 +61,11 @@
 - Error classes use readonly properties for immutable metadata
 - Each error has unique code (CONTEXT_ERROR, LOAD_ERROR, INVALID_NOTE) for programmatic handling
 
+**Phase 1 Plan 02 Decisions:**
+- Used _onPlaybackStarted() hook at end of playAt() instead of _play() override - cleaner template method pattern
+- Oscillator.duration returns Infinity (semantically correct for indefinite playback)
+- Track.stop() made async to match base class signature
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -70,7 +75,7 @@
 
 **Phase 1 Execution:**
 - [x] Plan 01: Foundation Types (event types, error classes)
-- [ ] Plan 02: Bug Fixes (Track async, MusicalIdentity)
+- [x] Plan 02: Bug Fixes (Track inheritance, RAF cleanup, memory leaks, Oscillator.duration)
 - [ ] Plan 03: Event System Implementation
 - [ ] Plan 04: Error Integration
 
@@ -81,9 +86,9 @@
 
 ### Known Blockers
 
-**Pre-existing TypeScript Errors (discovered in Plan 01):**
-- Track.play() and Track.stop() return void but should return Promise<void> (to be fixed in Plan 02)
-- Unused imports in src/index.ts and synthesis/index.ts (minor, can be fixed in Plan 02)
+**Resolved (Plan 02):**
+- ~~Track.play() and Track.stop() return void but should return Promise<void>~~ - Fixed via _onPlaybackStarted() hook and async stop()
+- Unused imports in src/index.ts and synthesis/index.ts (minor, pre-existing)
 
 ### Research Findings
 
@@ -119,23 +124,30 @@
 - Created: src/errors/invalid-note-error.ts
 - Created: src/errors/index.ts
 
+**Plan 01-02:**
+- Modified: src/base-sound.ts (_onPlaybackStarted hook, finite duration check)
+- Modified: src/track.ts (override hook, rafId tracking, RAF cleanup)
+- Modified: src/sound.ts (disconnect in setup, onended cleanup)
+- Modified: src/oscillator.ts (Infinity duration)
+
 ## Session Continuity
 
-**Last session:** 2026-01-31T22:02:37Z
-**Stopped at:** Completed 01-01-PLAN.md
+**Last session:** 2026-01-31T22:07:56Z
+**Stopped at:** Completed 01-02-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Plan 01 (Foundation Types) complete. Event type definitions and custom error classes created. Ready for Plan 02 (Bug Fixes) or Plan 03 (Event System) - these can run in parallel.
+Plan 02 (Bug Fixes) complete. All four FIX requirements (FIX-01 to FIX-04) resolved. Template method pattern established for Track inheritance. Memory management patterns documented.
 
 **What's next:**
-Execute Plan 02 to fix Track async/Promise issues, or Plan 03 to implement event system on BaseSound. Plan 02 fixes pre-existing TypeScript errors discovered during Plan 01 verification.
+Execute Plan 03 (Event System) to implement event emission on BaseSound lifecycle methods, or Plan 04 (Error Integration) to integrate error classes into existing code.
 
 **Context to preserve:**
+- _onPlaybackStarted() hook pattern established - subclasses can inject behavior at playAt() end
+- RAF cleanup pattern: store rafId, cancel in stop/pause, null after cancel
+- AudioNode disconnect pattern: try/catch for idempotent cleanup
 - Event types use 'unknown' for source - Plan 03 integration can refine
 - Error classes have unique codes (CONTEXT_ERROR, LOAD_ERROR, INVALID_NOTE)
-- Pre-existing Track async issues should be fixed in Plan 02
-- Research strongly recommends Events → ADSR → Sprites → Effects → LayeredSound order
 
 ---
 
