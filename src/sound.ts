@@ -33,11 +33,35 @@ export class Sound extends BaseSound {
   }
 
   protected setup(): void {
+    // Disconnect old source if exists (prevents memory leak from accumulated nodes)
+    if (this.audioSourceNode) {
+      try {
+        this.audioSourceNode.disconnect()
+        this.audioSourceNode.onended = null
+      }
+      catch {
+        // Already disconnected, ignore
+      }
+    }
+
+    // Create new source node (AudioBufferSourceNode is single-use)
     const audioSourceNode = this.audioContext.createBufferSource()
     audioSourceNode.buffer = this.audioBuffer
     this.audioSourceNode = audioSourceNode
+
     this.wireConnections()
     this.controller.setValuesAtTimes()
+
+    // Cleanup after playback ends to free memory
+    audioSourceNode.onended = () => {
+      try {
+        audioSourceNode.disconnect()
+        audioSourceNode.onended = null
+      }
+      catch {
+        // Already disconnected
+      }
+    }
   }
 
   protected wireConnections(): void {

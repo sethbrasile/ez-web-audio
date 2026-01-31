@@ -14,6 +14,12 @@ import withinRange from './utils/within-range'
  */
 export class Track extends Sound {
   /**
+   * Stores the requestAnimationFrame ID for position tracking cleanup.
+   * @private
+   */
+  private rafId: number | null = null
+
+  /**
    * @property position Value is an object containing the current play position
    * of the audioBuffer in three formats. The three
    * formats are `raw`, `string`, and `pojo`.
@@ -64,6 +70,12 @@ export class Track extends Sound {
    * setting startOffset back to 0.
    */
   public pause(): void {
+    // Cancel RAF first to prevent runaway loop
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
+
     if (this._isPlaying) {
       const node = this.audioSourceNode
       node.onended = function () {}
@@ -77,12 +89,18 @@ export class Track extends Sound {
    * Stops the audio source and sets
    * startOffset to 0.
    */
-  public stop(): void {
+  public override async stop(): Promise<void> {
+    // Cancel RAF first to prevent runaway loop
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
+
     this.startOffset = 0
 
     if (this._isPlaying) {
       this.audioSourceNode.onended = function () {}
-      super.stop()
+      await super.stop()
     }
   }
 
@@ -90,19 +108,22 @@ export class Track extends Sound {
    * @method trackPlayPosition
    * Sets up a `requestAnimationFrame` based loop that updates the
    * startOffset as `audioContext.currentTime` grows.
-   * Loop ends when `_isPlaying` is false.
+   * Loop ends when `_isPlaying` is false or when cancelled via stop/pause.
    */
   private trackPlayPosition(): void {
     const { audioContext, startedPlayingAt, startOffset } = this
 
     const animate = (): void => {
-      if (this._isPlaying) {
-        this.startOffset = startOffset + audioContext.currentTime - startedPlayingAt
-        requestAnimationFrame(animate)
+      // Exit early if stopped (defensive check)
+      if (!this._isPlaying) {
+        this.rafId = null
+        return
       }
+      this.startOffset = startOffset + audioContext.currentTime - startedPlayingAt
+      this.rafId = requestAnimationFrame(animate)
     }
 
-    requestAnimationFrame(animate)
+    this.rafId = requestAnimationFrame(animate)
   }
 
   /**
