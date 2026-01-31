@@ -149,4 +149,24 @@ export class Oscillator extends BaseSound {
   public get duration(): TimeObject {
     return createTimeObject(Infinity, Infinity, Infinity)
   }
+
+  /**
+   * Stops the oscillator. If an envelope is configured, triggers the release phase
+   * and schedules the actual stop after the release completes. This prevents
+   * cutting off the release tail.
+   *
+   * Note: stopAt() and stopIn() bypass the envelope release phase. For advanced
+   * use cases requiring scheduled release, call controller.triggerRelease() directly.
+   */
+  public async stop(): Promise<void> {
+    if (this.envelope && this._isPlaying) {
+      const releaseTime = this.audioContext.currentTime
+      this.controller.triggerRelease(releaseTime)
+      // Schedule actual stop after release completes
+      const releaseEndTime = releaseTime + this.envelope.releaseTime
+      await this.stopAt(releaseEndTime)
+    } else {
+      await super.stop()
+    }
+  }
 }
