@@ -1,9 +1,30 @@
 import type { ControlType, ParamController, ParamValue, ValueAtTime } from './base-param-controller'
 import { BaseParamController } from './base-param-controller'
+import type { Envelope } from '../envelope'
 
 export class OscillatorController extends BaseParamController implements ParamController {
+  private envelope?: Envelope
+
   constructor(private oscillator: OscillatorNode, protected gainNode: GainNode, protected pannerNode: StereoPannerNode) {
     super(oscillator, gainNode, pannerNode)
+  }
+
+  /**
+   * Sets the envelope to be applied during playback.
+   * @param envelope - The Envelope instance to use for ADSR control
+   */
+  public setEnvelope(envelope: Envelope): void {
+    this.envelope = envelope
+  }
+
+  /**
+   * Triggers the release phase of the envelope.
+   * @param releaseTime - The audio context time to start the release phase
+   */
+  public triggerRelease(releaseTime: number): void {
+    if (this.envelope) {
+      this.envelope.release(this.gainNode.gain, releaseTime)
+    }
   }
 
   public updateAudioSource(oscillator: OscillatorNode): void {
@@ -22,6 +43,13 @@ export class OscillatorController extends BaseParamController implements ParamCo
 
   public setValuesAtTimes(): void {
     const { oscillator: { context: { currentTime } } } = this
+
+    // Apply envelope first (sets initial gain to 0, schedules attack-decay-sustain ramps)
+    if (this.envelope) {
+      this.envelope.applyTo(this.gainNode.gain, currentTime)
+    }
+
+    // Then apply other parameter automation
     this.applyValues(this.startingValues, currentTime)
     this.applyValues(this.valuesAtTime, currentTime)
     this.applyRampValues(this.exponentialValues, currentTime, 'exponential')
