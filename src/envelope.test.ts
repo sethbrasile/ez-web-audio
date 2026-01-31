@@ -277,4 +277,275 @@ describe('Envelope', () => {
       }).toThrow()
     })
   })
+
+  describe('retriggering', () => {
+    describe('isActive state management', () => {
+      it('isActive is false before first applyTo', () => {
+        const envelope = new Envelope()
+        expect(envelope.isActive).toBe(false)
+      })
+
+      it('isActive becomes true after applyTo', () => {
+        const envelope = new Envelope()
+        envelope.applyTo(gainNode.gain, 0)
+        expect(envelope.isActive).toBe(true)
+      })
+
+      it('isActive becomes false after release', () => {
+        const envelope = new Envelope()
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.release(gainNode.gain, 1)
+        expect(envelope.isActive).toBe(false)
+      })
+
+      it('isActive remains true on retrigger (no release between)', () => {
+        const envelope = new Envelope()
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.applyTo(gainNode.gain, 0.5)
+        expect(envelope.isActive).toBe(true)
+      })
+    })
+
+    describe('first trigger behavior', () => {
+      it('first trigger starts attack from zero', () => {
+        const envelope = new Envelope({ attackTime: 0.1 })
+        const setValueAtTimeSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+
+        envelope.applyTo(gainNode.gain, 0)
+
+        // First applyTo should start from 0
+        expect(setValueAtTimeSpy).toHaveBeenCalledWith(0, 0)
+      })
+    })
+
+    describe('retrigger during attack phase', () => {
+      it('retrigger during attack cancels scheduled values', () => {
+        const envelope = new Envelope({ attackTime: 0.1, decayTime: 0.1 })
+        const cancelScheduledValuesSpy = vi.spyOn(
+          gainNode.gain,
+          'cancelScheduledValues'
+        )
+
+        // First trigger at t=0
+        envelope.applyTo(gainNode.gain, 0)
+        // Retrigger at t=0.05 (during attack phase)
+        envelope.applyTo(gainNode.gain, 0.05)
+
+        expect(cancelScheduledValuesSpy).toHaveBeenCalled()
+      })
+
+      it('retrigger during attack starts from estimated current value (not zero)', () => {
+        const envelope = new Envelope({ attackTime: 0.1, decayTime: 0.1 })
+        const setValueAtTimeSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+
+        // First trigger at t=0
+        envelope.applyTo(gainNode.gain, 0)
+        vi.clearAllMocks()
+
+        // Retrigger at t=0.05 (halfway through attack)
+        envelope.applyTo(gainNode.gain, 0.05)
+
+        // Should NOT start from 0 on retrigger
+        // Instead should start from estimated value (~0.5)
+        const calls = setValueAtTimeSpy.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const startValue = calls[0][0]
+        expect(startValue).toBeGreaterThan(0)
+        expect(startValue).toBeLessThan(1)
+      })
+    })
+
+    describe('retrigger during decay phase', () => {
+      it('retrigger during decay picks up current value', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0.2,
+          sustainLevel: 0.5,
+        })
+        const setValueAtTimeSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+
+        // First trigger at t=0
+        envelope.applyTo(gainNode.gain, 0)
+        vi.clearAllMocks()
+
+        // Retrigger at t=0.2 (during decay: attack ended at 0.1, decay ends at 0.3)
+        envelope.applyTo(gainNode.gain, 0.2)
+
+        // Should start from estimated value between 1 and sustainLevel
+        const calls = setValueAtTimeSpy.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const startValue = calls[0][0]
+        expect(startValue).toBeGreaterThan(0.5) // > sustainLevel
+        expect(startValue).toBeLessThanOrEqual(1) // <= peak
+      })
+    })
+
+    describe('retrigger during sustain phase', () => {
+      it('retrigger during sustain picks up sustain level', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0.1,
+          sustainLevel: 0.7,
+        })
+        const setValueAtTimeSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+
+        // First trigger at t=0
+        envelope.applyTo(gainNode.gain, 0)
+        vi.clearAllMocks()
+
+        // Retrigger at t=0.5 (well into sustain phase: attack+decay ends at 0.2)
+        envelope.applyTo(gainNode.gain, 0.5)
+
+        // Should start from sustain level
+        const calls = setValueAtTimeSpy.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const startValue = calls[0][0]
+        expect(startValue).toBeCloseTo(0.7, 5)
+      })
+    })
+
+    describe('estimateCurrentValue', () => {
+      it('returns 0 before attack start', () => {
+        const envelope = new Envelope({ attackTime: 0.1 })
+        envelope.applyTo(gainNode.gain, 1.0)
+
+        // Query at t=0.5, before attack started at t=1.0
+        const value = envelope.estimateCurrentValue(0.5)
+        expect(value).toBe(0)
+      })
+
+      it('returns correct value during attack phase (linear interpolation)', () => {
+        const envelope = new Envelope({ attackTime: 0.1 })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // At t=0.05, halfway through 0.1s attack: should be ~0.5
+        const value = envelope.estimateCurrentValue(0.05)
+        expect(value).toBeCloseTo(0.5, 5)
+      })
+
+      it('returns correct value at attack peak', () => {
+        const envelope = new Envelope({ attackTime: 0.1 })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // At t=0.1, exactly at attack end: should be 1
+        const value = envelope.estimateCurrentValue(0.1)
+        expect(value).toBeCloseTo(1, 5)
+      })
+
+      it('returns correct value during decay phase (linear interpolation)', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0.2,
+          sustainLevel: 0.5,
+        })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // At t=0.2, halfway through decay (0.1 to 0.3): should be ~0.75
+        // Linear interp from 1 to 0.5 over 0.2s, at 0.1s into decay
+        const value = envelope.estimateCurrentValue(0.2)
+        expect(value).toBeCloseTo(0.75, 5)
+      })
+
+      it('returns sustainLevel during sustain phase', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0.1,
+          sustainLevel: 0.6,
+        })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // At t=0.5, well into sustain phase (attack+decay ends at 0.2)
+        const value = envelope.estimateCurrentValue(0.5)
+        expect(value).toBe(0.6)
+      })
+
+      it('handles zero attack time', () => {
+        const envelope = new Envelope({
+          attackTime: 0,
+          decayTime: 0.2,
+          sustainLevel: 0.5,
+        })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // Immediately in decay phase
+        const value = envelope.estimateCurrentValue(0.1)
+        // 0.1s into 0.2s decay from 1 to 0.5 = 0.75
+        expect(value).toBeCloseTo(0.75, 5)
+      })
+
+      it('handles zero decay time', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0,
+          sustainLevel: 0.5,
+        })
+        envelope.applyTo(gainNode.gain, 0)
+
+        // At t=0.1 (end of attack, decay is instant), should be at sustain
+        const value = envelope.estimateCurrentValue(0.1)
+        expect(value).toBeCloseTo(0.5, 5)
+      })
+
+      it('returns 0 when envelope not active', () => {
+        const envelope = new Envelope()
+        // Don't call applyTo
+        const value = envelope.estimateCurrentValue(0.5)
+        expect(value).toBe(0)
+      })
+    })
+
+    describe('cancelAndHoldAtTime feature detection', () => {
+      it('uses cancelAndHoldAtTime when available', () => {
+        const envelope = new Envelope()
+        // Add cancelAndHoldAtTime to the mock
+        const cancelAndHoldSpy = vi.fn()
+        ;(
+          gainNode.gain as unknown as Record<string, unknown>
+        ).cancelAndHoldAtTime = cancelAndHoldSpy
+
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.applyTo(gainNode.gain, 0.05)
+
+        expect(cancelAndHoldSpy).toHaveBeenCalled()
+      })
+
+      it('falls back to cancelScheduledValues when cancelAndHoldAtTime unavailable', () => {
+        const envelope = new Envelope()
+        const cancelScheduledValuesSpy = vi.spyOn(
+          gainNode.gain,
+          'cancelScheduledValues'
+        )
+        // Ensure cancelAndHoldAtTime is not available (default mock behavior)
+        expect(
+          (gainNode.gain as unknown as Record<string, unknown>).cancelAndHoldAtTime
+        ).toBeUndefined()
+
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.applyTo(gainNode.gain, 0.05)
+
+        expect(cancelScheduledValuesSpy).toHaveBeenCalled()
+      })
+    })
+
+    describe('attack from current value', () => {
+      it('attack ramps from current value to peak on retrigger', () => {
+        const envelope = new Envelope({
+          attackTime: 0.1,
+          decayTime: 0.1,
+          sustainLevel: 0.5,
+        })
+        const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+        // First trigger at t=0
+        envelope.applyTo(gainNode.gain, 0)
+        vi.clearAllMocks()
+
+        // Retrigger at t=0.3 (during sustain, value is 0.5)
+        envelope.applyTo(gainNode.gain, 0.3)
+
+        // Attack should still ramp to peak (1.0)
+        expect(linearRampSpy).toHaveBeenCalledWith(1, 0.3 + 0.1)
+      })
+    })
+  })
 })
