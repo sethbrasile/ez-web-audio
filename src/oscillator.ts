@@ -5,6 +5,7 @@ import type { ControlType, RampType } from '@controllers/base-param-controller'
 import { OscillatorController } from './controllers/oscillator-controller'
 import type { BaseSoundOptions } from './base-sound'
 import { BaseSound } from './base-sound'
+import { Envelope, type EnvelopeOptions } from './envelope'
 
 export interface OscillatorOptsFilterValues {
   frequency?: number
@@ -25,6 +26,7 @@ export interface OscillatorOpts extends BaseSoundOptions {
   peaking?: OscillatorOptsFilterValues
   notch?: OscillatorOptsFilterValues
   allpass?: OscillatorOptsFilterValues
+  envelope?: EnvelopeOptions
 }
 
 const FILTERS = [
@@ -44,6 +46,7 @@ export class Oscillator extends BaseSound {
   private type: OscillatorType
   protected freq: number
   protected controller: OscillatorController
+  private envelope?: Envelope
 
   constructor(protected audioContext: AudioContext, options?: OscillatorOpts) {
     super(audioContext, options)
@@ -57,6 +60,11 @@ export class Oscillator extends BaseSound {
 
     if (options && options.gain !== undefined)
       this.changeGainTo(options.gain)
+
+    // Create envelope if options provided
+    if (options?.envelope) {
+      this.envelope = new Envelope(options.envelope)
+    }
 
     FILTERS.forEach((filter) => {
       const vals = get<OscillatorOptsFilterValues | undefined>(options, filter)
@@ -92,6 +100,11 @@ export class Oscillator extends BaseSound {
     // give the controller the new nodes
     this.controller.updateAudioSource(oscillator)
     this.controller.updateGainNode(gainNode)
+
+    // Pass envelope to controller if configured
+    if (this.envelope) {
+      this.controller.setEnvelope(this.envelope)
+    }
 
     // wire everything up
     this.wireConnections()
