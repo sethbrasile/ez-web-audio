@@ -179,6 +179,81 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     this.dispatchEvent(event)
   }
 
+  // ===== Convenience Methods (.on/.once/.off) =====
+
+  /**
+   * Subscribe to one or more events. Supports chaining.
+   *
+   * @example
+   * ```typescript
+   * sound.on('play', handlePlay).on('stop', handleStop);
+   * sound.on(['play', 'stop'], handleBoth);
+   * ```
+   *
+   * @param type - The event type(s) to subscribe to
+   * @param listener - The event handler function
+   * @returns this for chaining
+   */
+  on<K extends keyof SoundEventMap>(
+    type: K | K[],
+    listener: (event: SoundEventMap[K]) => void
+  ): this {
+    if (Array.isArray(type)) {
+      type.forEach(t => this.addEventListener(t, listener as (event: SoundEventMap[typeof t]) => void))
+    }
+    else {
+      this.addEventListener(type, listener)
+    }
+    return this
+  }
+
+  /**
+   * Subscribe to an event once. Handler is removed after first invocation.
+   *
+   * @example
+   * ```typescript
+   * sound.once('end', () => console.log('Playback finished'));
+   * ```
+   *
+   * @param type - The event type to subscribe to
+   * @param listener - The event handler function
+   * @returns this for chaining
+   */
+  once<K extends keyof SoundEventMap>(
+    type: K,
+    listener: (event: SoundEventMap[K]) => void
+  ): this {
+    this.addEventListener(type, listener, { once: true })
+    return this
+  }
+
+  /**
+   * Unsubscribe from an event.
+   *
+   * Note: Due to native EventTarget limitations, you must provide the same
+   * listener function reference that was used when subscribing. To remove
+   * listeners, store the function reference when adding it.
+   *
+   * @example
+   * ```typescript
+   * const handler = (e) => console.log(e.detail);
+   * sound.on('play', handler);
+   * // later...
+   * sound.off('play', handler);
+   * ```
+   *
+   * @param type - The event type to unsubscribe from
+   * @param listener - The event handler function to remove
+   * @returns this for chaining
+   */
+  off<K extends keyof SoundEventMap>(
+    type: K,
+    listener: (event: SoundEventMap[K]) => void
+  ): this {
+    this.removeEventListener(type, listener)
+    return this
+  }
+
   public addConnection(connection: Connection): this {
     this.connections.push(connection)
     this.wireConnections()
