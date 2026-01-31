@@ -2,6 +2,7 @@ import type { TimeObject } from '@utils/create-time-object'
 import type { Playable } from '@interfaces/playable'
 import type { Connectable, Connection } from '@interfaces/connectable'
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
+import type { SoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
 
 export interface BaseSoundOptions {
@@ -23,7 +24,7 @@ export interface BaseSoundOptions {
   setTimeout?: (fn: () => void, delayMillis: number) => number
 }
 
-export abstract class BaseSound implements Connectable, Playable {
+export abstract class BaseSound extends EventTarget implements Connectable, Playable {
   protected _isPlaying = false
   protected gainNode: GainNode
   protected pannerNode: StereoPannerNode
@@ -91,6 +92,7 @@ export abstract class BaseSound implements Connectable, Playable {
   public name: string
 
   constructor(protected audioContext: AudioContext, opts?: BaseSoundOptions) {
+    super()
     const gainNode = audioContext.createGain()
     const pannerNode = audioContext.createStereoPanner()
 
@@ -105,6 +107,76 @@ export abstract class BaseSound implements Connectable, Playable {
     else {
       this.setTimeout = audioContextAwareTimeout(audioContext).setTimeout
     }
+  }
+
+  // ===== Event System (EventTarget extension with typed events) =====
+
+  /**
+   * Add a typed event listener for sound lifecycle events.
+   * Overloaded to provide type safety for known event types while remaining
+   * compatible with EventTarget.
+   *
+   * @param type - The event type ('play', 'stop', 'end', etc.)
+   * @param listener - The event handler function
+   * @param options - Standard addEventListener options
+   */
+  override addEventListener<K extends keyof SoundEventMap>(
+    type: K,
+    listener: (event: SoundEventMap[K]) => void,
+    options?: boolean | AddEventListenerOptions
+  ): void
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions
+  ): void
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
+    options?: boolean | AddEventListenerOptions
+  ): void {
+    super.addEventListener(type, listener as EventListener, options)
+  }
+
+  /**
+   * Remove a typed event listener for sound lifecycle events.
+   * Overloaded to provide type safety for known event types while remaining
+   * compatible with EventTarget.
+   *
+   * @param type - The event type ('play', 'stop', 'end', etc.)
+   * @param listener - The event handler function to remove
+   * @param options - Standard removeEventListener options
+   */
+  override removeEventListener<K extends keyof SoundEventMap>(
+    type: K,
+    listener: (event: SoundEventMap[K]) => void,
+    options?: boolean | EventListenerOptions
+  ): void
+  override removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions
+  ): void
+  override removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
+    options?: boolean | EventListenerOptions
+  ): void {
+    super.removeEventListener(type, listener as EventListener, options)
+  }
+
+  /**
+   * Emit a typed event with the given detail.
+   * @protected
+   * @param type - The event type to emit
+   * @param detail - The event detail object
+   */
+  protected emit<K extends keyof SoundEventMap>(
+    type: K,
+    detail: SoundEventMap[K]['detail']
+  ): void {
+    const event = new CustomEvent(type, { detail })
+    this.dispatchEvent(event)
   }
 
   public addConnection(connection: Connection): this {
