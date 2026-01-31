@@ -78,6 +78,13 @@ Plans:
 
 **Requirements:** SPRITE-01, SPRITE-02, SPRITE-03, SPRITE-04, SPRITE-05, COLL-01, COLL-02, COLL-03, COLL-04, COLL-05, PRE-01, PRE-02, PRE-03, PRE-04, PRE-05
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Collection utilities (stopAll, pauseAll, playAll)
+- [ ] 03-02-PLAN.md — Preload API (cache management)
+- [ ] 03-03-PLAN.md — Audio sprites (segment playback)
+
 **Success Criteria:**
 1. User can create audio sprite from file + JSON metadata (audiosprite-compatible format)
 2. User can play individual sounds from sprite by name with independent gain/pan control
