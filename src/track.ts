@@ -11,7 +11,6 @@ import withinRange from './utils/within-range'
  *
  * @class Track
  * @extends Sound
- * @todo move play override to _play so that all super.play methods work
  */
 export class Track extends Sound {
   /**
@@ -48,11 +47,13 @@ export class Track extends Sound {
   }
 
   /**
-   * @method play
-   * Plays the audio source immediately.
+   * Hook called after playback starts (from any play method).
+   * Sets up the onended handler and starts position tracking.
+   *
+   * @protected
+   * @override
    */
-  public play(): void {
-    super.play()
+  protected override _onPlaybackStarted(): void {
     this.audioSourceNode.onended = () => this.stop()
     this.later(this.trackPlayPosition.bind(this))
   }

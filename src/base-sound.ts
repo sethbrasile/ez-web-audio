@@ -224,8 +224,8 @@ export abstract class BaseSound implements Connectable, Playable {
     this.setup()
     this.audioSourceNode.start(time, this.startOffset)
     this.startedPlayingAt = time
-    // if duration exists, schedule _isPlaying to false after duration has elapsed
-    if (duration) {
+    // if duration exists and is finite, schedule _isPlaying to false after duration has elapsed
+    if (duration && Number.isFinite(duration)) {
       this.setTimeout(() => {
         this._isPlaying = false
       }, this.duration.pojo.seconds * 1000)
@@ -239,6 +239,20 @@ export abstract class BaseSound implements Connectable, Playable {
         this._isPlaying = true
       }, (time - currentTime) * 1000)
     }
+
+    // Hook for subclasses to add behavior when playback starts
+    this._onPlaybackStarted()
+  }
+
+  /**
+   * Hook method called after playback starts. Override in subclasses to add
+   * behavior that should run for all play variants (play, playIn, playFor, etc.).
+   *
+   * @protected
+   * @method _onPlaybackStarted
+   */
+  protected _onPlaybackStarted(): void {
+    // Override in subclasses (e.g., Track for position tracking)
   }
 
   /**
