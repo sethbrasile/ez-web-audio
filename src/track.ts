@@ -68,6 +68,8 @@ export class Track extends Sound {
    * @method pause
    * Pauses the audio source by stopping without
    * setting startOffset back to 0.
+   *
+   * Emits 'pause' event with the current playback position.
    */
   public pause(): void {
     // Cancel RAF first to prevent runaway loop
@@ -77,10 +79,40 @@ export class Track extends Sound {
     }
 
     if (this._isPlaying) {
+      // Capture position before stopping
+      const position = this.startOffset
+
       const node = this.audioSourceNode
       node.onended = function () {}
       node.stop()
       this._isPlaying = false
+
+      // Emit pause event
+      this.emit('pause', {
+        time: this.audioContext.currentTime,
+        source: this,
+        position,
+      })
+    }
+  }
+
+  /**
+   * @method resume
+   * Resume playback from paused position.
+   *
+   * Emits 'resume' event with the current playback position.
+   */
+  public resume(): void {
+    if (!this._isPlaying && this.startOffset > 0) {
+      // Emit resume event before starting
+      this.emit('resume', {
+        time: this.audioContext.currentTime,
+        source: this,
+        position: this.startOffset,
+      })
+
+      // Use inherited play which will use startOffset
+      this.play()
     }
   }
 
@@ -130,6 +162,8 @@ export class Track extends Sound {
    * Gets the bufferSource and stops the initAudio,
    * changes it's play position, and restarts the audio.
    *
+   * Emits 'seek' event with the new and previous playback positions.
+   *
    * returns a pojo with the `from` method that `value` is curried to, allowing
    * one to specify which type of value is being provided.
    *
@@ -145,6 +179,8 @@ export class Track extends Sound {
    */
   public seek(amount: number): { from: (type: SeekType) => void } {
     const duration = this.duration.raw
+    const previousPosition = this.startOffset
+
     const moveToOffset = (offset: number): void => {
       const _isPlaying = this._isPlaying
       const adjustedOffset = withinRange(offset, 0, duration)
@@ -157,10 +193,18 @@ export class Track extends Sound {
       else {
         this.startOffset = adjustedOffset
       }
+
+      // Emit seek event
+      this.emit('seek', {
+        time: this.audioContext.currentTime,
+        source: this,
+        position: adjustedOffset,
+        previousPosition,
+      })
     }
 
     return {
-      from(type: SeekType) {
+      from: (type: SeekType) => {
         switch (type) {
           case 'ratio':
             moveToOffset(amount * duration)
