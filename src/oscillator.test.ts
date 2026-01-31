@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { Oscillator } from '@/oscillator'
 
@@ -6,7 +6,7 @@ function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('Oscillator with ADSR Envelope', () => {
+describe('oscillator with ADSR envelope', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -121,7 +121,7 @@ describe('Oscillator with ADSR Envelope', () => {
     })
   })
 
-  describe('ADSR with onPlaySet/onPlayRamp', () => {
+  describe('adsr with onPlaySet/onPlayRamp', () => {
     it('envelope and onPlaySet coexist', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
