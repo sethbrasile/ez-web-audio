@@ -9,13 +9,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Events
 
-- [ ] **EVT-01**: User can subscribe to play event on any Playable
-- [ ] **EVT-02**: User can subscribe to stop event on any Playable
-- [ ] **EVT-03**: User can subscribe to end event (playback finished naturally)
-- [ ] **EVT-04**: User can subscribe to seek event on Track
-- [ ] **EVT-05**: User can subscribe to pause/resume events on Track
-- [ ] **EVT-06**: Events are typed (TypeScript knows event payload shape)
-- [ ] **EVT-07**: User can unsubscribe from events
+- [x] **EVT-01**: User can subscribe to play event on any Playable
+- [x] **EVT-02**: User can subscribe to stop event on any Playable
+- [x] **EVT-03**: User can subscribe to end event (playback finished naturally)
+- [x] **EVT-04**: User can subscribe to seek event on Track
+- [x] **EVT-05**: User can subscribe to pause/resume events on Track
+- [x] **EVT-06**: Events are typed (TypeScript knows event payload shape)
+- [x] **EVT-07**: User can unsubscribe from events
 
 ### ADSR Envelopes
 
@@ -100,17 +100,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **FIX-01**: Track.play refactored to _play pattern (fixes inheritance fragility)
-- [ ] **FIX-02**: Oscillator.duration returns meaningful value or documents "not applicable"
-- [ ] **FIX-03**: BeatTrack RAF loop properly cleaned up on stop
-- [ ] **FIX-04**: AudioBufferSourceNodes properly disconnected after playback (memory leak fix)
+- [x] **FIX-01**: Track.play refactored to _play pattern (fixes inheritance fragility)
+- [x] **FIX-02**: Oscillator.duration returns meaningful value or documents "not applicable"
+- [x] **FIX-03**: BeatTrack RAF loop properly cleaned up on stop
+- [x] **FIX-04**: AudioBufferSourceNodes properly disconnected after playback (memory leak fix)
 
 ### Error Handling
 
-- [ ] **ERR-01**: All errors include actionable guidance (what went wrong, how to fix)
-- [ ] **ERR-02**: AudioContext initialization errors are clear
-- [ ] **ERR-03**: Invalid note identifiers throw descriptive errors
-- [ ] **ERR-04**: Missing audio files throw errors with URL
+- [x] **ERR-01**: All errors include actionable guidance (what went wrong, how to fix)
+- [x] **ERR-02**: AudioContext initialization errors are clear
+- [x] **ERR-03**: Invalid note identifiers throw descriptive errors
+- [x] **ERR-04**: Missing audio files throw errors with URL
 
 ### Testing
 
@@ -185,9 +185,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EVT-01 to EVT-07 | Phase 1 | Pending |
-| FIX-01 to FIX-04 | Phase 1 | Pending |
-| ERR-01 to ERR-04 | Phase 1 | Pending |
+| EVT-01 to EVT-07 | Phase 1 | Complete |
+| FIX-01 to FIX-04 | Phase 1 | Complete |
+| ERR-01 to ERR-04 | Phase 1 | Complete |
 | ADSR-01 to ADSR-07 | Phase 2 | Pending |
 | SPRITE-01 to SPRITE-05 | Phase 3 | Pending |
 | COLL-01 to COLL-05 | Phase 3 | Pending |
