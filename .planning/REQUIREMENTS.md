@@ -19,13 +19,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### ADSR Envelopes
 
-- [ ] **ADSR-01**: User can create Oscillator with ADSR envelope options
-- [ ] **ADSR-02**: Attack phase ramps gain from 0 to peak over specified time
-- [ ] **ADSR-03**: Decay phase ramps gain from peak to sustain level
-- [ ] **ADSR-04**: Sustain holds gain at specified level while note is held
-- [ ] **ADSR-05**: Release phase ramps gain to 0 when stop() called
-- [ ] **ADSR-06**: Rapid retriggering doesn't cause clicks (picks up from current value)
-- [ ] **ADSR-07**: ADSR works with existing onPlaySet/onPlayRamp API
+- [x] **ADSR-01**: User can create Oscillator with ADSR envelope options
+- [x] **ADSR-02**: Attack phase ramps gain from 0 to peak over specified time
+- [x] **ADSR-03**: Decay phase ramps gain from peak to sustain level
+- [x] **ADSR-04**: Sustain holds gain at specified level while note is held
+- [x] **ADSR-05**: Release phase ramps gain to 0 when stop() called
+- [x] **ADSR-06**: Rapid retriggering doesn't cause clicks (picks up from current value)
+- [x] **ADSR-07**: ADSR works with existing onPlaySet/onPlayRamp API
 
 ### LayeredSound
 
@@ -188,7 +188,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVT-01 to EVT-07 | Phase 1 | Complete |
 | FIX-01 to FIX-04 | Phase 1 | Complete |
 | ERR-01 to ERR-04 | Phase 1 | Complete |
-| ADSR-01 to ADSR-07 | Phase 2 | Pending |
+| ADSR-01 to ADSR-07 | Phase 2 | Complete |
 | SPRITE-01 to SPRITE-05 | Phase 3 | Pending |
 | COLL-01 to COLL-05 | Phase 3 | Pending |
 | PRE-01 to PRE-05 | Phase 3 | Pending |
@@ -210,4 +210,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after initial definition*
+*Last updated: 2026-01-31 after Phase 2 complete*
