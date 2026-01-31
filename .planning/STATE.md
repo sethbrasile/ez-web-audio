@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 1 of 8 (Foundation)
-**Plan:** 2 of 4 complete
+**Plan:** 3 of 4 complete
 **Status:** In progress
 
-**Progress:** [████░░░░░░░░░░░░░░░░] 22% (5/18 requirements complete)
+**Progress:** [██████░░░░░░░░░░░░░░] 33% (12/18 requirements complete)
 
 **Phase Goal:** Users have a stable, well-tested event system and all critical bugs are resolved.
 
-**Next Action:** Execute Plan 03 (Event System) or Plan 04 (Error Integration).
+**Next Action:** Execute Plan 04 (Error Integration).
 
 ## Performance Metrics
 
@@ -27,18 +27,18 @@
 - Total phases: 8
 - Current phase: 1
 - Completed phases: 0
-- Overall completion: 7% (5/71 requirements)
+- Overall completion: 15% (12/71 requirements)
 
 **Current Phase:**
 - Requirements: 18 (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
 - Plans: 4 (01-Foundation Types, 02-Bug Fixes, 03-Event System, 04-Error Integration)
-- Completed: 2 plans (01-01, 01-02)
-- Remaining: 2 plans
+- Completed: 3 plans (01-01, 01-02, 01-03)
+- Remaining: 1 plan
 
 **Velocity:**
-- Requirements completed this session: 4 (FIX-01 to FIX-04)
-- Sessions on current phase: 2
-- Estimated remaining sessions: 2 (one per plan)
+- Requirements completed this session: 7 (EVT-01, EVT-02, EVT-03, EVT-06, EVT-07 + FIX-01 to FIX-04 earlier)
+- Sessions on current phase: 3
+- Estimated remaining sessions: 1 (one plan left)
 
 ## Accumulated Context
 
@@ -66,6 +66,11 @@
 - Oscillator.duration returns Infinity (semantically correct for indefinite playback)
 - Track.stop() made async to match base class signature
 
+**Phase 1 Plan 03 Decisions:**
+- Used function overloads for addEventListener/removeEventListener to maintain EventTarget compatibility while adding type safety
+- Event 'end' only fires on natural completion (checked via _isPlaying flag)
+- .off() requires listener reference (native EventTarget limitation documented)
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -76,7 +81,7 @@
 **Phase 1 Execution:**
 - [x] Plan 01: Foundation Types (event types, error classes)
 - [x] Plan 02: Bug Fixes (Track inheritance, RAF cleanup, memory leaks, Oscillator.duration)
-- [ ] Plan 03: Event System Implementation
+- [x] Plan 03: Event System Implementation
 - [ ] Plan 04: Error Integration
 
 **Cross-Phase:**
@@ -130,24 +135,27 @@
 - Modified: src/sound.ts (disconnect in setup, onended cleanup)
 - Modified: src/oscillator.ts (Infinity duration)
 
+**Plan 01-03:**
+- Modified: src/base-sound.ts (EventTarget extension, typed events, .on/.once/.off, lifecycle emission)
+
 ## Session Continuity
 
-**Last session:** 2026-01-31T22:07:56Z
-**Stopped at:** Completed 01-02-PLAN.md
+**Last session:** 2026-01-31T22:16:03Z
+**Stopped at:** Completed 01-03-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Plan 02 (Bug Fixes) complete. All four FIX requirements (FIX-01 to FIX-04) resolved. Template method pattern established for Track inheritance. Memory management patterns documented.
+Plan 03 (Event System) complete. BaseSound extends EventTarget with typed addEventListener/removeEventListener overloads, .on()/.once()/.off() convenience methods, and lifecycle event emission (play/stop/end).
 
 **What's next:**
-Execute Plan 03 (Event System) to implement event emission on BaseSound lifecycle methods, or Plan 04 (Error Integration) to integrate error classes into existing code.
+Execute Plan 04 (Error Integration) to integrate error classes into existing code paths.
 
 **Context to preserve:**
-- _onPlaybackStarted() hook pattern established - subclasses can inject behavior at playAt() end
-- RAF cleanup pattern: store rafId, cancel in stop/pause, null after cancel
-- AudioNode disconnect pattern: try/catch for idempotent cleanup
-- Event types use 'unknown' for source - Plan 03 integration can refine
-- Error classes have unique codes (CONTEXT_ERROR, LOAD_ERROR, INVALID_NOTE)
+- Event subscription: sound.on('play', handler).on('stop', handler2) for chaining
+- Single-fire events: sound.once('end', cleanupHandler)
+- Event emission: this.emit('play', { time, source }) in lifecycle methods
+- 'end' event only fires on natural completion (when _isPlaying is still true in onended)
+- .off() requires same listener reference (EventTarget limitation)
 
 ---
 
