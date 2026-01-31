@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 2 of 8 (ADSR Envelopes) - IN PROGRESS
-**Plan:** 1 of 2 complete
+**Plan:** 3 of 4 complete
 **Status:** In progress
 
-**Progress:** [██████████░░░░░░░░░░] 50% (Phase 1 complete, Phase 2 Plan 1 complete)
+**Progress:** [████████████████░░░░] 75% (Phase 1 complete, Phase 2 Plans 1-3 complete)
 
 **Phase Goal:** Oscillator has configurable ADSR envelope with smooth attack/decay/sustain/release.
 
-**Next Action:** Execute Phase 2 Plan 2 (Oscillator Integration).
+**Next Action:** Execute Phase 2 Plan 4 (if exists) or complete Phase 2.
 
 ## Performance Metrics
 
@@ -27,16 +27,17 @@
 - Total phases: 8
 - Current phase: 2 (in progress)
 - Completed phases: 1
-- Overall completion: ~30% (Phase 1 + Phase 2 Plan 1)
+- Overall completion: ~35% (Phase 1 + Phase 2 Plans 1-3)
 
 **Current Phase:**
-- Plans: 2 (01-Envelope Class, 02-Oscillator Integration)
-- Completed: 1 plan (02-01)
-- Remaining: 1 plan (02-02)
+- Plans: 4 (01-Envelope Class, 02-Oscillator Integration, 03-Retriggering, 04-TBD)
+- Completed: 3 plans (02-01, 02-02, 02-03)
+- Remaining: 1 plan (02-04)
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
-- TDD approach: 3 commits (test, feat, refactor)
+- Plan 02-03 completed in 13 minutes
+- TDD approach: 2 commits (test, feat)
 
 ## Accumulated Context
 
@@ -80,6 +81,12 @@
 - Time constant = releaseTime/5 for ~99% completion during release phase
 - release() parameter named `startTime` to avoid confusion with `this.releaseTime`
 
+**Phase 2 Plan 03 Decisions:**
+- Removed Object.freeze() to allow mutable state for retriggering (TypeScript readonly still enforces compile-time)
+- Linear interpolation for estimateCurrentValue matches Web Audio linearRampToValueAtTime behavior
+- cancelAndHoldAtTime used when available (Chrome/Edge), cancelScheduledValues fallback for others
+- AudioParamWithCancelAndHold intersection type avoids interface extension conflicts
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -89,10 +96,13 @@
 
 **Phase 2 Execution:**
 - [x] Plan 01: Envelope Class (TDD implementation)
-- [ ] Plan 02: Oscillator Integration
+- [x] Plan 02: Oscillator Integration
+- [x] Plan 03: Envelope Retriggering
+- [ ] Plan 04: TBD
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
+- [x] ADSR envelope retriggering - IMPLEMENTED (Plan 03)
 - [ ] Research impulse response libraries for effects presets (Phase 5)
 - [ ] Determine voice pooling strategy for LayeredSound (Phase 4)
 
@@ -104,12 +114,15 @@
 **Resolved (Plan 04):**
 - ~~Unused imports in src/index.ts and synthesis/index.ts~~ - Fixed
 
+**Resolved (Plan 02-03):**
+- ~~ADSR envelope retriggering discontinuities~~ - Fixed with cancelAndHoldAtTime + estimateCurrentValue fallback
+
 ### Research Findings
 
 **From research/SUMMARY.md:**
 
 **Critical Pitfalls to Prevent:**
-1. ADSR envelope retriggering discontinuities (Phase 2) - pick up from current value, use setTargetAtTime
+1. ~~ADSR envelope retriggering discontinuities (Phase 2)~~ - SOLVED: pick up from current value, use cancelAndHoldAtTime
 2. JavaScript timer / AudioContext clock desynchronization (Phase 1) - use audioContext.currentTime for scheduling
 3. AudioParam event accumulation performance (Phase 2, 5) - swap nodes periodically, use cancelScheduledValues
 4. AudioBufferSourceNode single-use violation (Phase 3, 4) - create new source per playback
@@ -117,41 +130,43 @@
 
 **Phase-Specific Research Flags:**
 - Phase 1: Standard EventTarget pattern, well-documented (no deep research needed) - COMPLETE
-- Phase 2: Fast retriggering edge cases, polyphonic note management - Plan 01 COMPLETE, Plan 02 pending
+- Phase 2: Fast retriggering edge cases - COMPLETE (Plan 03), polyphonic note management - future
 - Phase 3: Standard patterns (no deep research needed)
 - Phase 4: Voice pooling strategies (needs research during planning)
 - Phase 5: Impulse response sourcing, FFT optimization (needs research during planning)
 
 **Dependency Chain:**
 - Events foundational for all features - COMPLETE
-- ADSR requires events for testing - Plan 01 COMPLETE
+- ADSR requires events for testing - COMPLETE
+- Retriggering support for clickless playback - COMPLETE
 - LayeredSound depends on events + ADSR + effects being stable
 - Testing can parallelize with documentation
 
 ### Files Modified This Session
 
-**Plan 02-01:**
-- Created: src/envelope.ts (Envelope class with ADSR logic)
-- Created: src/envelope.test.ts (29 tests, 280 lines)
+**Plan 02-03:**
+- Modified: src/envelope.ts (Added retriggering: isActive, estimateCurrentValue, cancelAndHoldAtTime)
+- Modified: src/envelope.test.ts (49 tests, 476 lines - 18 new retriggering tests)
 
 ## Session Continuity
 
-**Last session:** 2026-01-31T22:48:18Z
-**Stopped at:** Completed 02-01-PLAN.md
+**Last session:** 2026-01-31T23:04:24Z
+**Stopped at:** Completed 02-03-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 2 (ADSR Envelopes) Plan 1 complete. Envelope class with ADSR logic implemented and tested.
+Phase 2 (ADSR Envelopes) Plan 3 complete. Envelope class now supports clickless retriggering.
 
 **What's next:**
-Execute Phase 2 Plan 2 (Oscillator Integration) - integrate Envelope with OscillatorController.
+Execute Phase 2 Plan 4 (if exists) or complete Phase 2.
 
 **Context to preserve:**
 - Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
 - Apply envelope: `envelope.applyTo(gainNode.gain, startTime)`
 - Release envelope: `envelope.release(gainNode.gain, stopTime)`
+- Retriggering: `isActive` property, `estimateCurrentValue(time)` for phase interpolation
+- Feature detection: cancelAndHoldAtTime (Chrome/Edge) with cancelScheduledValues fallback
 - Time constant for release: releaseTime/5 gives ~99% completion
-- AudioParam scheduling: setValueAtTime, linearRampToValueAtTime, setTargetAtTime
 
 ---
 
