@@ -1,4 +1,6 @@
 import type { OscillatorOptsFilterValues } from './oscillator'
+import { Envelope } from './envelope'
+import type { EnvelopeOptions } from './envelope'
 import { SampledNote } from './sampled-note'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
@@ -286,6 +288,8 @@ export {
   frequencyMap,
   Beat,
   BeatTrack,
+  // Envelope
+  Envelope,
   // Errors
   AudioError,
   AudioContextError,
@@ -298,4 +302,5 @@ export type {
   Playable,
   OscillatorOpts,
   OscillatorOptsFilterValues,
+  EnvelopeOptions,
 }
