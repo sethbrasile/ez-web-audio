@@ -125,8 +125,15 @@ export class Oscillator extends BaseSound {
     pannerNode.connect(this.audioContext.destination)
   }
 
-  // TODO: implement duration... can I? I think duration is too dynamic? any way to infer from asdr? or if there is a sheduled stop?
+  /**
+   * @property duration
+   * Oscillators have no inherent duration - they play indefinitely until stopped.
+   * Returns Infinity to indicate this, distinguishing from finite Sound/Track durations.
+   *
+   * Note: Once ADSR envelopes are implemented (Phase 2), duration may become
+   * calculable from envelope settings, but for now Infinity is the correct value.
+   */
   public get duration(): TimeObject {
-    return createTimeObject(0, 0, 0)
+    return createTimeObject(Infinity, Infinity, Infinity)
   }
 }
