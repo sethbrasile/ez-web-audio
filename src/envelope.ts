@@ -109,12 +109,12 @@ export class Envelope {
    * approximately 99% completion within releaseTime seconds.
    *
    * @param gainParam - The AudioParam to schedule the release on
-   * @param releaseTime - The audio context time to start the release
+   * @param startTime - The audio context time to start the release phase
    */
-  release(gainParam: AudioParam, releaseTime: number): void {
+  release(gainParam: AudioParam, startTime: number): void {
     // Use setTargetAtTime for smooth exponential decay to zero
     // Time constant = releaseTime/5 gives ~99% completion in releaseTime seconds
     const timeConstant = this.releaseTime / 5
-    gainParam.setTargetAtTime(0, releaseTime, timeConstant)
+    gainParam.setTargetAtTime(0, startTime, timeConstant)
   }
 }
