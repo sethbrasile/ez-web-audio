@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 4 of 8 (Composition Features)
-**Plan:** 1 of 3 complete
+**Plan:** 2 of 3 complete
 **Status:** In progress
 
-**Progress:** [█████████████████████░░░] ~60% (Phase 4 Plan 1 complete)
+**Progress:** [██████████████████████░░] ~65% (Phase 4 Plan 2 complete)
 
 **Phase Goal:** Create complex musical compositions with layered sounds, synchronized drum patterns, and smooth track transitions.
 
-**Next Action:** Continue Phase 4 (BeatTrack timing, Crossfade utilities).
+**Next Action:** Continue Phase 4 (Crossfade utilities - Plan 3).
 
 ## Performance Metrics
 
@@ -30,8 +30,8 @@
 - Overall completion: ~60% (Phases 1-3 complete, Phase 4 Plan 1 complete)
 
 **Current Phase:**
-- Plans: 1 completed (04-01 LayeredSound)
-- Remaining: 2 (BeatTrack timing, Crossfade utilities)
+- Plans: 2 completed (04-01 LayeredSound, 04-02 BeatTrack timing)
+- Remaining: 1 (Crossfade utilities)
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -41,6 +41,7 @@
 - Plan 03-02 completed in 7 minutes
 - Plan 03-03 completed in 5 minutes
 - Plan 04-01 completed in 9 minutes
+- Plan 04-02 completed in 11 minutes
 
 ## Accumulated Context
 
@@ -115,6 +116,12 @@
 - Soft limit at 8 layers (configurable warnLayerCount), console.warn but allow any count
 - Fresh Set per play() call for reusability (supports multiple playbacks)
 
+**Phase 4 Plan 02 Decisions:**
+- Beat events emitted at schedule time (lookahead) not play time - gives UI ~100ms advance notice
+- EventTarget composition pattern used (Sampler doesn't extend EventTarget)
+- Tempo changes take effect on next beat (already-scheduled beats can't be canceled)
+- Pause/resume use beatIndex instead of time position (consistent with BeatTrack abstraction)
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -129,7 +136,7 @@
 
 **Phase 4 Execution (In Progress):**
 - [x] Plan 01: LayeredSound (synchronized multi-voice playback)
-- [ ] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
+- [x] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
 - [ ] Plan 03: Crossfade utilities (smooth track transitions)
 
 **Cross-Phase:**
@@ -182,28 +189,35 @@
 - Modified: src/events/event-types.ts (Added LayeredSoundEventMap, WarningEventDetail)
 - Modified: src/index.ts (Added createLayeredSound factory and exports)
 
+**Plan 04-02:**
+- Modified: src/beat-track.ts (Added lookahead scheduler, stop/pause/resume, tempo control)
+- Modified: src/beat-track.test.ts (Added 10 tests for timing control)
+- Modified: src/events/event-types.ts (Added BeatEventDetail, BeatTrackEventMap)
+
 ## Session Continuity
 
-**Last session:** 2026-02-01T21:52:00Z
-**Stopped at:** Completed 04-01-PLAN.md
+**Last session:** 2026-01-31T21:48:14Z
+**Stopped at:** Completed 04-02-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 4 (Composition Features) in progress. Plan 1 (LayeredSound) complete.
+Phase 4 (Composition Features) in progress. Plans 1-2 complete (LayeredSound, BeatTrack timing).
 
 **What's next:**
-Continue Phase 4 with Plan 2 (BeatTrack timing improvements) or Plan 3 (Crossfade utilities).
+Continue Phase 4 with Plan 3 (Crossfade utilities).
 
 **Context to preserve:**
+- BeatTrack timing control: `stop()`, `pause()`, `resume()`, `setTempo(bpm)`
+- Lookahead scheduler: 100ms ahead, 25ms interval for resilient timing
+- Beat events: emitted at schedule time (gives UI ~100ms lookahead for animations)
+- Event details: 'beat' has { time, beatIndex, active, source }
+- Pause/resume: use beatIndex (not time position) consistent with BeatTrack abstraction
+- EventTarget composition: private EventTarget instance when parent doesn't extend EventTarget
 - LayeredSound: `createLayeredSound([sound1, sound2, osc])` for synchronized multi-voice playback
 - Exact sync via `audioContext.currentTime` capture FIRST, same value to all layers
-- Independent layer end tracking: Set tracks ended layers, emits 'end' when last finishes
 - Master controls: `setGain(value)`, `setPan(value)` affect all layers
 - Individual layer access: `getLayer(index)` returns Sound|Oscillator|undefined
 - Graceful degradation: null/undefined layers filtered, 'warning' event emitted
-- Soft limit: warns at 8+ layers (configurable), allows any count
-- Reusable: fresh Set per play() call, supports multiple playbacks
-- Events: play, stop, end, warning with full TypeScript support
 - Audio Sprites: `createSprite(url, manifest)` returns AudioSprite
 - Preload API: `preload(urls)`, `isPreloaded(url)`, `clearPreloadCache(url?)`
 - Collection utilities: `stopAll(sounds)`, `pauseAll(tracks)`, `playAll(sounds)`
