@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-01T21:19:00Z
-**Current Focus:** Phase 5 - Effects and Visualization (Complete)
+**Last Updated:** 2026-02-01T22:27:13Z
+**Current Focus:** Phase 6 - Testing (In Progress)
 
 ## Project Reference
 
@@ -11,27 +11,27 @@
 
 ## Current Position
 
-**Phase:** 5 of 8 (Effects and Visualization)
-**Plan:** 4 of 4 complete (05-01, 05-02, 05-03, 05-04)
-**Status:** Phase complete
+**Phase:** 6 of 8 (Testing)
+**Plan:** 2 of 3 complete (06-01, 06-02)
+**Status:** In progress
 
-**Progress:** [████████████████████] 100% (Phases 1-5 complete)
+**Progress:** [████████████████████░░] 93% (Phases 1-5 complete, Phase 6 in progress)
 
-**Phase Goal:** Add professional audio effects (reverb, filters, compression) and visualization capabilities.
+**Phase Goal:** Comprehensive test coverage for all features.
 
-**Next Action:** Proceed to Phase 6 (Testing) - comprehensive test coverage for all features.
+**Next Action:** Execute 06-03-PLAN.md (remaining test coverage).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 5 (complete)
+- Current phase: 6 (in progress)
 - Completed phases: 5
-- Overall completion: 92%
+- Overall completion: 93%
 
 **Current Phase:**
-- Plans: 4 completed (05-01 Effect Foundation, 05-02 Effect Integration, 05-03 Analyzer, 05-04 Debug Mode)
-- Remaining: 0
+- Plans: 2 completed (06-01 BaseSound Tests, 06-02 Sampler/BeatTrack Tests)
+- Remaining: 1 (06-03)
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -47,6 +47,7 @@
 - Plan 05-02 completed in 6 minutes
 - Plan 05-03 completed in 6 minutes
 - Plan 05-04 completed in 7 minutes
+- Plan 06-02 completed in 5 minutes
 
 ## Accumulated Context
 
@@ -182,6 +183,11 @@
 - [x] Plan 03: Analyzer (frequency/waveform visualization data)
 - [x] Plan 04: Debug Mode (setDebugMode, setDebugHandler, per-sound override)
 
+**Phase 6 Execution (In Progress):**
+- [x] Plan 01: BaseSound test enhancements
+- [x] Plan 02: Sampler tests (31 new), BeatTrack enhancements (26 tests with meaningful assertions)
+- [ ] Plan 03: Remaining test coverage
+
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
 - [x] ADSR envelope retriggering - IMPLEMENTED (Plan 03)
@@ -226,95 +232,28 @@
 
 ### Files Modified This Session
 
-**Plan 05-01:**
-- Created: src/effects/index.ts (Effect interface and exports)
-- Created: src/effects/gain-effect.ts (GainEffect class)
-- Created: src/effects/filter-effect.ts (FilterEffect with 8 filter types)
-- Created: src/effects/effect-wrapper.ts (EffectWrapper for external effects)
-- Created: src/effects/gain-effect.test.ts (24 tests)
-- Created: src/effects/filter-effect.test.ts (38 tests)
-- Created: src/effects/effect-wrapper.test.ts (24 tests)
-
-**Plan 05-02:**
-- Modified: src/base-sound.ts (Effect import, effects array, effectChainInput, wireEffectChain, addEffect, removeEffect, getEffects, setDestination, rewireEffects)
-- Modified: src/sound.ts (wireConnections routes through effectChainInput)
-- Modified: src/oscillator.ts (wireConnections routes through effectChainInput, setup calls rewireEffects)
-- Modified: src/index.ts (export effect factories, classes, types)
-- Modified: src/base-sound.test.ts (added 21 effect system integration tests)
-
-**Plan 05-03:**
-- Created: src/analyzer.ts (Analyzer class, AnalyzerOptions interface, createAnalyzer factory)
-- Created: src/analyzer.test.ts (36 tests)
-- Modified: src/base-sound.ts (added _analyzer, setAnalyzer, getAnalyzer, updated wireEffectChain)
-- Modified: src/base-sound.test.ts (added 10 analyzer integration tests)
-- Modified: src/index.ts (export Analyzer, createAnalyzer, AnalyzerOptions)
-
-**Plan 05-04:**
-- Created: src/debug/messages.ts (DebugMessage interface, formatDebugMessage)
-- Created: src/debug/logger.ts (internal logger state and handler)
-- Created: src/debug/index.ts (public API: setDebugMode, setDebugHandler)
-- Created: src/debug/debug.test.ts (19 unit tests)
-- Modified: src/base-sound.ts (added debug property, integrated debug logging)
-- Modified: src/base-sound.test.ts (added 10 integration tests)
-- Modified: src/index.ts (export setDebugMode, setDebugHandler, DebugMessage)
+**Plan 06-02:**
+- Created: src/sampler.test.ts (31 tests for Sampler class)
+- Modified: src/beat-track.test.ts (26 tests with meaningful assertions)
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T21:19:00Z
-**Stopped at:** Completed 05-03-PLAN.md (Phase 5 complete)
+**Last session:** 2026-02-01T22:27:13Z
+**Stopped at:** Completed 06-02-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 5 (Effects and Visualization) complete. All 4 plans executed successfully.
+Phase 6 (Testing) in progress. Plans 06-01 and 06-02 complete.
 
 **What's next:**
-Proceed to Phase 6 (Testing) - comprehensive test coverage for all features.
+Execute 06-03-PLAN.md for remaining test coverage.
 
 **Context to preserve:**
-- Analyzer: `createAnalyzer(ctx, opts)` returns Analyzer instance
-- Attach to sound: `sound.setAnalyzer(analyzer)`, `sound.getAnalyzer()`
-- Analyzer chain position: after effects, before destination (shows processed signal)
-- Polling methods: `analyzer.getFrequencyData()` (Uint8Array), `analyzer.getTimeDomainData()` (Uint8Array), `analyzer.getFloatFrequencyData()` (Float32Array)
-- FFT configuration: `{ fftSize, minDecibels, maxDecibels, smoothingTimeConstant }`
-- Pre-allocated arrays: zero-allocation polling for requestAnimationFrame
-- Effect integration: `sound.addEffect(effect)`, `sound.removeEffect(effect)`, `sound.getEffects()`
-- Custom routing: `sound.setDestination(node)` for sub-mixes and analyzers
-- Effect chain: source -> effectChainInput -> [effects] -> gain -> panner -> [analyzer] -> destination
-- Persistent effects: chain wired once, only source reconnects on play()
-- Bypass support: `effect.bypass = true` then `sound.rewireEffects()` to update chain
-- Debug mode: `setDebugMode(true)` enables global logging
-- Per-sound override: `sound.debug = false` silences, `sound.debug = true` enables
-- Custom handler: `setDebugHandler(fn)` for testing/external logging
-- Debug logs play/stop/end events with timestamps and details
-- Debug logs connection changes on addConnection/removeConnection
-- Debug warns about suspended AudioContext
-- Zero overhead when disabled (boolean short-circuit first)
-- Effect interface: { input: AudioNode, output: AudioNode, bypass: boolean, mix: number }
-- GainEffect: thin wrapper around GainNode with bypass/mix support
-- FilterEffect: 8 BiquadFilter types (lowpass, highpass, bandpass, lowshelf, highshelf, peaking, notch, allpass)
-- EffectWrapper: wraps external effects with connect() method for bypass/mix control
-- Equal-power crossfade: cos(angle) for dry, sin(angle) for wet
-- Factory functions: createGainEffect(ctx, value?), createFilterEffect(ctx, type, opts?), wrapEffect(ctx, effect)
-- Crossfade: `crossfade(fromTrack, toTrack, duration)` for smooth transitions
-- Equal-power curves: cos(x) for fade-out, sin(x) for fade-in (maintains constant power)
-- Fire-and-forget: auto-stops source track and resets gain to 1.0 after fade
-- Preserves current gain values: uses gainNode.gain.value, not hardcoded 1.0
-- BeatTrack timing control: `stop()`, `pause()`, `resume()`, `setTempo(bpm)`
-- Lookahead scheduler: 100ms ahead, 25ms interval for resilient timing
-- Beat events: emitted at schedule time (gives UI ~100ms lookahead for animations)
-- Event details: 'beat' has { time, beatIndex, active, source }
-- Pause/resume: use beatIndex (not time position) consistent with BeatTrack abstraction
-- EventTarget composition: private EventTarget instance when parent doesn't extend EventTarget
-- LayeredSound: `createLayeredSound([sound1, sound2, osc])` for synchronized multi-voice playback
-- Exact sync via `audioContext.currentTime` capture FIRST, same value to all layers
-- Master controls: `setGain(value)`, `setPan(value)` affect all layers
-- Individual layer access: `getLayer(index)` returns Sound|Oscillator|undefined
-- Graceful degradation: null/undefined layers filtered, 'warning' event emitted
-- Audio Sprites: `createSprite(url, manifest)` returns AudioSprite
-- Preload API: `preload(urls)`, `isPreloaded(url)`, `clearPreloadCache(url?)`
-- Collection utilities: `stopAll(sounds)`, `pauseAll(tracks)`, `playAll(sounds)`
-- Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
+- Sampler tests: 31 tests covering round-robin, play methods, gain/pan control
+- BeatTrack tests: 26 tests with meaningful assertions (replaced placeholders)
+- Mock pattern: Create minimal mock implementing Playable & Connectable interfaces
+- Test helper class pattern: Extend class with public accessors for private state
 
 ---
 
-*STATE.md updated: 2026-02-01T21:19:00Z*
+*STATE.md updated: 2026-02-01T22:27:13Z*
