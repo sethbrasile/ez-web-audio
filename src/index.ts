@@ -124,6 +124,33 @@ export async function createOscillator(options?: OscillatorOpts): Promise<Oscill
   return new Oscillator(audioContext, options)
 }
 
+/**
+ * Create a LayeredSound that plays multiple Sound/Oscillator instances simultaneously.
+ * All layers start at exactly the same audioContext.currentTime for perfect sync.
+ *
+ * @param layers - Array of Sound or Oscillator instances to layer
+ * @param opts - Optional configuration (name, warnLayerCount)
+ * @returns LayeredSound instance
+ *
+ * @example
+ * const bass = await createSound('bass.mp3')
+ * const melody = await createSound('melody.mp3')
+ * const synth = await createOscillator({ frequency: 440 })
+ *
+ * const layered = await createLayeredSound([bass, melody, synth])
+ * layered.play() // All layers start at exact same time
+ * layered.setGain(0.5) // Affects all layers
+ * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
+ */
+export async function createLayeredSound(
+  layers: (Sound | Oscillator)[],
+  opts?: import('./layered-sound').LayeredSoundOptions
+): Promise<import('./layered-sound').LayeredSound> {
+  await initAudio()
+  const { LayeredSound } = await import('./layered-sound')
+  return new LayeredSound(audioContext, layers, opts)
+}
+
 export async function createFont(url: string): Promise<Font> {
   const response = await fetch(url)
   const text = await response.text()
@@ -348,6 +375,11 @@ export {
   AudioLoadError,
   InvalidNoteError,
 }
+
+// Re-export LayeredSound types
+export { LayeredSound } from './layered-sound'
+export type { LayeredSoundOptions } from './layered-sound'
+export type { LayeredSoundEventMap, WarningEventDetail } from './events/event-types'
 
 export type {
   Connectable,

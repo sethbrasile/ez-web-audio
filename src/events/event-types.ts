@@ -116,3 +116,51 @@ export type SoundEventType = keyof SoundEventMap
  * ```
  */
 export type EventDetailFor<T extends SoundEventType> = SoundEventMap[T] extends CustomEvent<infer D> ? D : never
+
+/**
+ * Detail for 'beat' events, fired when a beat is scheduled in BeatTrack.
+ * Emitted at SCHEDULE time (during lookahead), not at play time.
+ * This gives UI components ~100ms advance notice for smooth animations.
+ */
+export interface BeatEventDetail {
+  /** The audioContext.currentTime when this beat is scheduled to play */
+  time: number
+  /** The index of this beat in the beats array */
+  beatIndex: number
+  /** Whether this beat is active (plays sound) or a rest */
+  active: boolean
+  /** The BeatTrack instance that emitted this event */
+  source: unknown
+}
+
+/**
+ * Maps BeatTrack event names to their corresponding CustomEvent types.
+ */
+export type BeatTrackEventMap = {
+  beat: CustomEvent<BeatEventDetail>
+  pause: CustomEvent<PauseEventDetail>
+  resume: CustomEvent<ResumeEventDetail>
+  stop: CustomEvent<StopEventDetail>
+}
+
+/**
+ * Detail for 'warning' events, fired when LayeredSound encounters issues.
+ */
+export interface WarningEventDetail {
+  /** Human-readable warning message */
+  message: string
+  /** Array of layers that failed to load */
+  failedLayers: { index: number; error: Error }[]
+  /** The LayeredSound instance that emitted this event */
+  source: unknown
+}
+
+/**
+ * Maps LayeredSound event names to their corresponding CustomEvent types.
+ */
+export type LayeredSoundEventMap = {
+  play: CustomEvent<PlayEventDetail>
+  stop: CustomEvent<StopEventDetail>
+  end: CustomEvent<EndEventDetail>
+  warning: CustomEvent<WarningEventDetail>
+}
