@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-02-01
-**Current Focus:** Phase 3 - Utility Features (Complete)
+**Current Focus:** Phase 4 - Composition Features (In Progress)
 
 ## Project Reference
 
@@ -11,27 +11,27 @@
 
 ## Current Position
 
-**Phase:** 3 of 8 (Utility Features)
-**Plan:** 3 of 3 complete
-**Status:** Phase complete
+**Phase:** 4 of 8 (Composition Features)
+**Plan:** 1 of 3 complete
+**Status:** In progress
 
-**Progress:** [████████████████████] ~55% (Phases 1-3 complete)
+**Progress:** [█████████████████████░░░] ~60% (Phase 4 Plan 1 complete)
 
-**Phase Goal:** Utility features for better developer experience.
+**Phase Goal:** Create complex musical compositions with layered sounds, synchronized drum patterns, and smooth track transitions.
 
-**Next Action:** Proceed to Phase 4 (LayeredSound).
+**Next Action:** Continue Phase 4 (BeatTrack timing, Crossfade utilities).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 3 (complete)
+- Current phase: 4 (in progress)
 - Completed phases: 3
-- Overall completion: ~55% (Phases 1-3 complete)
+- Overall completion: ~60% (Phases 1-3 complete, Phase 4 Plan 1 complete)
 
 **Current Phase:**
-- Plans: 3 completed (03-01 Collection Utilities, 03-02 Preload API, 03-03 Audio Sprites)
-- Remaining: 0
+- Plans: 1 completed (04-01 LayeredSound)
+- Remaining: 2 (BeatTrack timing, Crossfade utilities)
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -40,6 +40,7 @@
 - Plan 03-01 completed in 4 minutes
 - Plan 03-02 completed in 7 minutes
 - Plan 03-03 completed in 5 minutes
+- Plan 04-01 completed in 9 minutes
 
 ## Accumulated Context
 
@@ -107,6 +108,13 @@
 - GainNode and StereoPannerNode always created for consistent routing
 - Node cleanup via onended callback for memory management
 
+**Phase 4 Plan 01 Decisions:**
+- Exact sync via audioContext.currentTime capture FIRST, then pass to all playAt() calls
+- Independent layer end tracking via Set, emit when last layer finishes
+- Graceful degradation: filter null/undefined layers, emit warning event
+- Soft limit at 8 layers (configurable warnLayerCount), console.warn but allow any count
+- Fresh Set per play() call for reusability (supports multiple playbacks)
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -119,11 +127,16 @@
 - [x] Plan 02: Preload API (preload, isPreloaded, clearPreloadCache)
 - [x] Plan 03: Audio Sprites (createSprite, AudioSprite)
 
+**Phase 4 Execution (In Progress):**
+- [x] Plan 01: LayeredSound (synchronized multi-voice playback)
+- [ ] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
+- [ ] Plan 03: Crossfade utilities (smooth track transitions)
+
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
 - [x] ADSR envelope retriggering - IMPLEMENTED (Plan 03)
+- [x] Voice pooling strategy for LayeredSound - RESOLVED (no pooling, fresh Set per play)
 - [ ] Research impulse response libraries for effects presets (Phase 5)
-- [ ] Determine voice pooling strategy for LayeredSound (Phase 4)
 
 ### Known Blockers
 
@@ -163,34 +176,37 @@
 
 ### Files Modified This Session
 
-**Plan 03-03:**
-- Created: src/sprite.ts (AudioSprite class and types)
-- Created: src/sprite.test.ts (23 tests, 293 lines)
-- Modified: src/index.ts (Added createSprite factory and exports)
+**Plan 04-01:**
+- Created: src/layered-sound.ts (LayeredSound class, 320 lines)
+- Created: src/layered-sound.test.ts (20 tests, 353 lines)
+- Modified: src/events/event-types.ts (Added LayeredSoundEventMap, WarningEventDetail)
+- Modified: src/index.ts (Added createLayeredSound factory and exports)
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T00:14:45Z
-**Stopped at:** Completed 03-03-PLAN.md
+**Last session:** 2026-02-01T21:52:00Z
+**Stopped at:** Completed 04-01-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 3 (Utility Features) complete. All 3 plans finished.
+Phase 4 (Composition Features) in progress. Plan 1 (LayeredSound) complete.
 
 **What's next:**
-Proceed to Phase 4 (LayeredSound).
+Continue Phase 4 with Plan 2 (BeatTrack timing improvements) or Plan 3 (Crossfade utilities).
 
 **Context to preserve:**
+- LayeredSound: `createLayeredSound([sound1, sound2, osc])` for synchronized multi-voice playback
+- Exact sync via `audioContext.currentTime` capture FIRST, same value to all layers
+- Independent layer end tracking: Set tracks ended layers, emits 'end' when last finishes
+- Master controls: `setGain(value)`, `setPan(value)` affect all layers
+- Individual layer access: `getLayer(index)` returns Sound|Oscillator|undefined
+- Graceful degradation: null/undefined layers filtered, 'warning' event emitted
+- Soft limit: warns at 8+ layers (configurable), allows any count
+- Reusable: fresh Set per play() call, supports multiple playbacks
+- Events: play, stop, end, warning with full TypeScript support
 - Audio Sprites: `createSprite(url, manifest)` returns AudioSprite
-- AudioSprite.play(name, {gain, pan}) for per-play options
-- Audiosprite-compatible JSON format (spritemap with start/end/loop)
 - Preload API: `preload(urls)`, `isPreloaded(url)`, `clearPreloadCache(url?)`
-- Shared responseCache between preload.ts and index.ts
-- Automatic integration with createSound/createTrack/createSprite via load()
 - Collection utilities: `stopAll(sounds)`, `pauseAll(tracks)`, `playAll(sounds)`
-- Nested array support via `Array.flat(Infinity)`
-- Best-effort error handling with `Promise.allSettled`
-- `CollectionError` aggregates failures: `errors` array, `total` count
 - Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
 
 ---
