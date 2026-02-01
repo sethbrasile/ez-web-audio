@@ -26,6 +26,7 @@ import type { OscillatorOpts } from '@/oscillator'
 import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
 import { AudioSprite } from './sprite'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import { crossfade } from './utils/crossfade'
 
 let audioContext: AudioContext
 
@@ -369,6 +370,8 @@ export {
   stopAll,
   pauseAll,
   playAll,
+  // Crossfade utility
+  crossfade,
   // Errors
   AudioError,
   AudioContextError,

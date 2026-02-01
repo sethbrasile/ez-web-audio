@@ -26,7 +26,7 @@ export interface BaseSoundOptions {
 
 export abstract class BaseSound extends EventTarget implements Connectable, Playable {
   protected _isPlaying = false
-  protected gainNode: GainNode
+  public gainNode: GainNode
   protected pannerNode: StereoPannerNode
   protected setTimeout: (fn: () => void, delayMillis: number) => number
   protected startedPlayingAt: number = 0
@@ -91,7 +91,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public name: string
 
-  constructor(protected audioContext: AudioContext, opts?: BaseSoundOptions) {
+  constructor(public audioContext: AudioContext, opts?: BaseSoundOptions) {
     super()
     const gainNode = audioContext.createGain()
     const pannerNode = audioContext.createStereoPanner()
