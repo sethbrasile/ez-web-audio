@@ -134,10 +134,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Effect interface and built-in effects (GainEffect, FilterEffect)
-- [ ] 05-02-PLAN.md — Effects integration into BaseSound (addEffect, removeEffect, persistent chain)
-- [ ] 05-03-PLAN.md — Analyzer for visualization (frequency/waveform data)
-- [ ] 05-04-PLAN.md — Debug mode (global/per-sound logging, custom handlers)
+- [x] 05-01-PLAN.md — Effect interface and built-in effects (GainEffect, FilterEffect)
+- [x] 05-02-PLAN.md — Effects integration into BaseSound (addEffect, removeEffect, persistent chain)
+- [x] 05-03-PLAN.md — Analyzer for visualization (frequency/waveform data)
+- [x] 05-04-PLAN.md — Debug mode (global/per-sound logging, custom handlers)
 
 **Success Criteria:**
 1. User can add effects via adapter pattern (external libraries like Tuna.js work via wrapEffect)
@@ -218,12 +218,12 @@ Plans:
 | 2 - ADSR Envelopes | Complete | 7 | 100% |
 | 3 - Utility Features | Complete | 15 | 100% |
 | 4 - Composition Features | Complete | 13 | 100% |
-| 5 - Effects & Advanced | Planned | 16 | 0% |
+| 5 - Effects & Advanced | Complete | 16 | 100% |
 | 6 - Testing | Pending | 8 | 0% |
 | 7 - Documentation & Demo | Pending | 9 | 0% |
 | 8 - Build & Distribution | Pending | 4 | 0% |
 
-**Overall:** 50/71 requirements complete (70%)
+**Overall:** 65/71 requirements complete (92%)
 
 ---
 
@@ -260,4 +260,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-02-01 after Phase 5 planning*
+*Last updated: 2026-02-01 after Phase 5 complete*

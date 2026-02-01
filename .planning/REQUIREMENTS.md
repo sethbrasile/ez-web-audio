@@ -75,28 +75,30 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Effects
 
-- [ ] **FX-01**: User can add reverb effect with simple options (decay time)
-- [ ] **FX-02**: User can add delay effect with options (time, feedback)
-- [ ] **FX-03**: User can add distortion effect with options (amount)
-- [ ] **FX-04**: Effects integrate with existing connections array
-- [ ] **FX-05**: User can remove effects
-- [ ] **FX-06**: Effect presets available (e.g., "small room", "large hall")
+- [x] **FX-01**: User can add any effect via adapter pattern (external libraries like Tuna.js via wrapEffect)
+- [x] **FX-02**: User can add built-in GainEffect for volume control
+- [x] **FX-03**: User can add built-in FilterEffect with all BiquadFilter types
+- [x] **FX-04**: Effects integrate with existing sound chain (addEffect/removeEffect)
+- [x] **FX-05**: User can remove effects
+- [ ] **FX-06**: Effect presets shown in demo site (external libraries, not bundled)
+
+*Note: Per discuss-phase decision, ez-audio uses adapter pattern. Complex effects (reverb, delay, distortion) come from external libraries like Tuna.js. Only GainEffect and FilterEffect are built-in. FX-06 deferred to Phase 7 (Demo Site).*
 
 ### Visualization
 
-- [ ] **VIZ-01**: User can get frequency data from any playing Playable
-- [ ] **VIZ-02**: User can get waveform data from any playing Playable
-- [ ] **VIZ-03**: Data is provided as typed arrays (Uint8Array)
-- [ ] **VIZ-04**: User can configure FFT size
-- [ ] **VIZ-05**: Visualization doesn't significantly impact performance
+- [x] **VIZ-01**: User can get frequency data from any playing Playable
+- [x] **VIZ-02**: User can get waveform data from any playing Playable
+- [x] **VIZ-03**: Data is provided as typed arrays (Uint8Array)
+- [x] **VIZ-04**: User can configure FFT size
+- [x] **VIZ-05**: Visualization doesn't significantly impact performance
 
 ### Debug Mode
 
-- [ ] **DBG-01**: User can enable debug mode globally
-- [ ] **DBG-02**: Debug mode logs play/stop/seek events with timestamps
-- [ ] **DBG-03**: Debug mode logs connection chain for each sound
-- [ ] **DBG-04**: Debug mode warns about common issues (e.g., AudioContext suspended)
-- [ ] **DBG-05**: Debug mode can be disabled in production builds (tree-shaking)
+- [x] **DBG-01**: User can enable debug mode globally
+- [x] **DBG-02**: Debug mode logs play/stop/seek events with timestamps
+- [x] **DBG-03**: Debug mode logs connection chain for each sound
+- [x] **DBG-04**: Debug mode warns about common issues (e.g., AudioContext suspended)
+- [x] **DBG-05**: Debug mode can be disabled in production builds (tree-shaking)
 
 ### Bug Fixes
 
@@ -195,9 +197,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LAYER-01 to LAYER-06 | Phase 4 | Pending |
 | FADE-01 to FADE-04 | Phase 4 | Pending |
 | BEAT-01 to BEAT-03 | Phase 4 | Pending |
-| FX-01 to FX-06 | Phase 5 | Pending |
-| VIZ-01 to VIZ-05 | Phase 5 | Pending |
-| DBG-01 to DBG-05 | Phase 5 | Pending |
+| FX-01 to FX-05 | Phase 5 | Complete |
+| FX-06 | Phase 7 | Pending |
+| VIZ-01 to VIZ-05 | Phase 5 | Complete |
+| DBG-01 to DBG-05 | Phase 5 | Complete |
 | TEST-01 to TEST-08 | Phase 6 | Pending |
 | DOC-01 to DOC-05 | Phase 7 | Pending |
 | SITE-01 to SITE-04 | Phase 7 | Pending |
@@ -210,4 +213,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after Phase 2 complete*
+*Last updated: 2026-02-01 after Phase 5 complete*
