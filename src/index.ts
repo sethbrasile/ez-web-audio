@@ -1,6 +1,7 @@
 import type { OscillatorOptsFilterValues } from './oscillator'
 import { Envelope } from './envelope'
 import type { EnvelopeOptions } from './envelope'
+import { stopAll, pauseAll, playAll } from './utils/collections'
 import { SampledNote } from './sampled-note'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
@@ -22,8 +23,7 @@ import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Note } from '@/note'
 import type { OscillatorOpts } from '@/oscillator'
-
-const responses = new Map<string, Response>()
+import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
 
 let audioContext: AudioContext
 
@@ -184,8 +184,8 @@ function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound 
  * 'track', or 'beatTrack'.
  */
 async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<Sound | Sampler | Track> {
-  if (responses.has(src)) {
-    const res = await responses.get(src)!.clone()
+  if (responseCache.has(src)) {
+    const res = await responseCache.get(src)!.clone()
     const buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
     return createSoundFor(type, buffer)
   }
@@ -208,7 +208,7 @@ async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<S
     )
   }
 
-  responses.set(src, response)
+  responseCache.set(src, response)
 
   await initAudio()
 
@@ -290,6 +290,14 @@ export {
   BeatTrack,
   // Envelope
   Envelope,
+  // Preload utilities
+  preload,
+  isPreloaded,
+  clearPreloadCache,
+  // Collection utilities
+  stopAll,
+  pauseAll,
+  playAll,
   // Errors
   AudioError,
   AudioContextError,
