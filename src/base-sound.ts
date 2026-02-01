@@ -4,6 +4,7 @@ import type { Connectable, Connection } from '@interfaces/connectable'
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
 import type { SoundEventMap } from './events/event-types'
 import type { Effect } from './effects'
+import type { Analyzer } from './analyzer'
 import audioContextAwareTimeout from '@utils/timeout'
 import { debugEvent, debugConnection, debugWarning } from './debug'
 
@@ -56,6 +57,13 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * Can be changed with setDestination() to route audio elsewhere (e.g., for sub-mixing).
    */
   protected _destination: AudioNode
+
+  /**
+   * @property _analyzer
+   * Optional Analyzer attached to the end of the signal chain for visualization.
+   * Audio flows through the analyzer (passthrough) before reaching destination.
+   */
+  protected _analyzer: Analyzer | null = null
 
   /**
    * @property connections
@@ -162,15 +170,18 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
   /**
    * Wires the effect chain from effectChainInput through all non-bypassed effects
-   * to gainNode -> pannerNode -> destination.
+   * to gainNode -> pannerNode -> [analyzer] -> destination.
    *
-   * Called when effects are added/removed/reordered or destination changes.
+   * If an analyzer is attached, audio flows through it before reaching destination.
+   * The analyzer is a passthrough node that also provides visualization data.
+   *
+   * Called when effects are added/removed/reordered, destination changes, or analyzer changes.
    * NOT called on every play() - the chain persists.
    *
    * @private
    */
   private wireEffectChain(): void {
-    const { effectChainInput, effects, gainNode, pannerNode, _destination } = this
+    const { effectChainInput, effects, gainNode, pannerNode, _destination, _analyzer } = this
 
     // Disconnect existing chain safely
     // Use try/catch because nodes may not be connected
@@ -191,7 +202,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       }
     }
 
-    // Disconnect gain -> panner -> destination chain
+    // Disconnect gain -> panner chain
     try {
       gainNode.disconnect()
     }
@@ -203,6 +214,16 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     }
     catch {
       // Already disconnected, ignore
+    }
+
+    // Disconnect analyzer if it exists
+    if (_analyzer) {
+      try {
+        _analyzer.input.disconnect()
+      }
+      catch {
+        // Already disconnected, ignore
+      }
     }
 
     // Build the new chain
@@ -217,10 +238,20 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       }
     }
 
-    // Connect to gain -> panner -> destination
+    // Connect to gain -> panner
     currentNode.connect(gainNode)
     gainNode.connect(pannerNode)
-    pannerNode.connect(_destination)
+
+    // Connect through analyzer if present, then to destination
+    // Chain: panner -> analyzer.input -> destination
+    // AnalyserNode passes audio through, so this works as expected
+    if (_analyzer) {
+      pannerNode.connect(_analyzer.input)
+      _analyzer.input.connect(_destination)
+    }
+    else {
+      pannerNode.connect(_destination)
+    }
   }
 
   /**
@@ -317,6 +348,44 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public rewireEffects(): void {
     this.wireEffectChain()
+  }
+
+  // ===== Analyzer System =====
+
+  /**
+   * Attach an analyzer to this sound for visualization.
+   * The analyzer is inserted at the end of the signal chain (after effects and panner,
+   * before destination), showing the fully processed signal.
+   *
+   * The analyzer is a passthrough node - audio flows through it unchanged while
+   * providing frequency and waveform data for visualization.
+   *
+   * @param analyzer - The Analyzer instance to attach, or null to detach
+   * @returns this for chaining
+   *
+   * @example
+   * const analyzer = createAnalyzer(audioContext, { fftSize: 2048 })
+   * sound.setAnalyzer(analyzer)
+   *
+   * function draw() {
+   *   const freqData = analyzer.getFrequencyData()
+   *   // Draw frequency bars
+   *   requestAnimationFrame(draw)
+   * }
+   */
+  public setAnalyzer(analyzer: Analyzer | null): this {
+    this._analyzer = analyzer
+    this.wireEffectChain()
+    return this
+  }
+
+  /**
+   * Get the currently attached analyzer, if any.
+   *
+   * @returns The attached Analyzer instance, or null if none attached
+   */
+  public getAnalyzer(): Analyzer | null {
+    return this._analyzer
   }
 
   // ===== Event System (EventTarget extension with typed events) =====

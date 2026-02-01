@@ -29,6 +29,8 @@ import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './spri
 import { crossfade } from './utils/crossfade'
 import { setDebugMode, setDebugHandler } from './debug'
 import type { DebugMessage } from './debug'
+import { Analyzer, createAnalyzer } from './analyzer'
+import type { AnalyzerOptions } from './analyzer'
 import {
   createGainEffect,
   createFilterEffect,
@@ -393,6 +395,9 @@ export {
   GainEffect,
   FilterEffect,
   EffectWrapper,
+  // Analyzer
+  Analyzer,
+  createAnalyzer,
   // Errors
   AudioError,
   AudioContextError,
@@ -420,4 +425,6 @@ export type {
   FilterType,
   FilterEffectOptions,
   ExternalEffect,
+  // Analyzer types
+  AnalyzerOptions,
 }

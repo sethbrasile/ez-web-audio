@@ -578,3 +578,119 @@ describe('Effect System Integration', () => {
     })
   })
 })
+
+describe('Analyzer Integration', () => {
+  let audioContext: AudioContext
+  let sound: Sound
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+    sound = createSound(audioContext)
+  })
+
+  // Helper to create a mock Analyzer-like object
+  function createMockAnalyzer(context: AudioContext) {
+    const analyserNode = context.createGain() // Use gain as mock since mock doesn't have createAnalyser
+    return {
+      input: analyserNode,
+      fftSize: 2048,
+      frequencyBinCount: 1024,
+      minDecibels: -100,
+      maxDecibels: -30,
+      smoothingTimeConstant: 0.8,
+      getFrequencyData: () => new Uint8Array(1024),
+      getTimeDomainData: () => new Uint8Array(1024),
+      getFloatFrequencyData: () => new Float32Array(1024),
+    }
+  }
+
+  describe('setAnalyzer()', () => {
+    it('attaches analyzer to sound', () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      sound.setAnalyzer(analyzer as any)
+
+      expect(sound.getAnalyzer()).toBe(analyzer)
+    })
+
+    it('returns this for chaining', () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      const result = sound.setAnalyzer(analyzer as any)
+
+      expect(result).toBe(sound)
+    })
+
+    it('detaches analyzer when set to null', () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      sound.setAnalyzer(analyzer as any)
+      sound.setAnalyzer(null)
+
+      expect(sound.getAnalyzer()).toBeNull()
+    })
+  })
+
+  describe('getAnalyzer()', () => {
+    it('returns null when no analyzer attached', () => {
+      expect(sound.getAnalyzer()).toBeNull()
+    })
+
+    it('returns the attached analyzer', () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      sound.setAnalyzer(analyzer as any)
+
+      expect(sound.getAnalyzer()).toBe(analyzer)
+    })
+  })
+
+  describe('analyzer with playback', () => {
+    it('sound plays with analyzer attached', async () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      sound.setAnalyzer(analyzer as any)
+
+      sound.play()
+      await settle(() => sound.isPlaying)
+
+      expect(sound.isPlaying).toBe(true)
+    })
+
+    it('analyzer persists across play/stop cycles', async () => {
+      const analyzer = createMockAnalyzer(audioContext)
+      sound.setAnalyzer(analyzer as any)
+
+      // First play
+      sound.play()
+      await settle(() => sound.isPlaying)
+      sound.stop()
+      await settle(() => !sound.isPlaying)
+
+      // Analyzer should still be attached
+      expect(sound.getAnalyzer()).toBe(analyzer)
+
+      // Second play should still work
+      sound.play()
+      await settle(() => sound.isPlaying)
+      expect(sound.isPlaying).toBe(true)
+    })
+  })
+
+  describe('analyzer on Oscillator', () => {
+    it('can attach analyzer to Oscillator', () => {
+      const oscillator = new Oscillator(audioContext, { frequency: 440 })
+      const analyzer = createMockAnalyzer(audioContext)
+
+      oscillator.setAnalyzer(analyzer as any)
+
+      expect(oscillator.getAnalyzer()).toBe(analyzer)
+    })
+
+    it('Oscillator plays with analyzer attached', async () => {
+      const oscillator = new Oscillator(audioContext, { frequency: 440 })
+      const analyzer = createMockAnalyzer(audioContext)
+
+      oscillator.setAnalyzer(analyzer as any)
+      oscillator.play()
+      await settle(() => oscillator.isPlaying)
+
+      expect(oscillator.isPlaying).toBe(true)
+    })
+  })
+})
