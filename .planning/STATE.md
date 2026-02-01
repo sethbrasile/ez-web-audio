@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-01T21:10:31Z
 **Current Focus:** Phase 5 - Effects and Visualization (In Progress)
 
 ## Project Reference
@@ -44,6 +44,7 @@
 - Plan 04-02 completed in 11 minutes
 - Plan 04-03 completed in 14 minutes
 - Plan 05-01 completed in 8 minutes
+- Plan 05-02 completed in 6 minutes
 - Plan 05-04 completed in 7 minutes
 
 ## Accumulated Context
@@ -138,6 +139,12 @@
 - Duck typing for AudioNode detection (check for connect+disconnect methods)
 - ExternalEffect interface requires only connect() method for wrapping
 
+**Phase 5 Plan 02 Decisions:**
+- Persistent effect chain: wired once in constructor, only source reconnects on each play()
+- effectChainInput GainNode serves as entry point for effect chain routing
+- Legacy connections array preserved for backward compatibility
+- rewireEffects() public method allows bypass toggle updates
+
 **Phase 5 Plan 04 Decisions:**
 - Debug module uses boolean short-circuit for zero overhead when disabled
 - Per-sound debug override with explicit false to silence individual sounds
@@ -220,6 +227,13 @@
 - Created: src/effects/filter-effect.test.ts (38 tests)
 - Created: src/effects/effect-wrapper.test.ts (24 tests)
 
+**Plan 05-02:**
+- Modified: src/base-sound.ts (Effect import, effects array, effectChainInput, wireEffectChain, addEffect, removeEffect, getEffects, setDestination, rewireEffects)
+- Modified: src/sound.ts (wireConnections routes through effectChainInput)
+- Modified: src/oscillator.ts (wireConnections routes through effectChainInput, setup calls rewireEffects)
+- Modified: src/index.ts (export effect factories, classes, types)
+- Modified: src/base-sound.test.ts (added 21 effect system integration tests)
+
 **Plan 05-04:**
 - Created: src/debug/messages.ts (DebugMessage interface, formatDebugMessage)
 - Created: src/debug/logger.ts (internal logger state and handler)
@@ -231,17 +245,22 @@
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T21:00:48Z
-**Stopped at:** Completed 05-04-PLAN.md
+**Last session:** 2026-02-01T21:10:31Z
+**Stopped at:** Completed 05-02-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 5 (Effects and Visualization) in progress. Plan 04 (Debug Mode) complete.
+Phase 5 (Effects and Visualization) in progress. Plan 02 (Effect Integration) complete.
 
 **What's next:**
-Continue with remaining Phase 5 plans or proceed to Phase 6.
+Continue with remaining Phase 5 plans (05-03) or proceed to Phase 6.
 
 **Context to preserve:**
+- Effect integration: `sound.addEffect(effect)`, `sound.removeEffect(effect)`, `sound.getEffects()`
+- Custom routing: `sound.setDestination(node)` for sub-mixes and analyzers
+- Effect chain: source -> effectChainInput -> [effects] -> gain -> panner -> destination
+- Persistent effects: chain wired once, only source reconnects on play()
+- Bypass support: `effect.bypass = true` then `sound.rewireEffects()` to update chain
 - Debug mode: `setDebugMode(true)` enables global logging
 - Per-sound override: `sound.debug = false` silences, `sound.debug = true` enables
 - Custom handler: `setDebugHandler(fn)` for testing/external logging
@@ -277,4 +296,4 @@ Continue with remaining Phase 5 plans or proceed to Phase 6.
 
 ---
 
-*STATE.md updated: 2026-02-01*
+*STATE.md updated: 2026-02-01T21:10:31Z*
