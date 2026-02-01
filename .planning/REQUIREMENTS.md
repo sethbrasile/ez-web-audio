@@ -29,49 +29,49 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### LayeredSound
 
-- [ ] **LAYER-01**: User can create LayeredSound from multiple Sound/Oscillator instances
-- [ ] **LAYER-02**: LayeredSound.play() plays all sounds simultaneously
-- [ ] **LAYER-03**: LayeredSound.stop() stops all sounds
-- [ ] **LAYER-04**: LayeredSound supports gain/pan control affecting all layers
-- [ ] **LAYER-05**: LayeredSound emits events (play, stop, end)
-- [ ] **LAYER-06**: Individual layers can be accessed and controlled
+- [x] **LAYER-01**: User can create LayeredSound from multiple Sound/Oscillator instances
+- [x] **LAYER-02**: LayeredSound.play() plays all sounds simultaneously
+- [x] **LAYER-03**: LayeredSound.stop() stops all sounds
+- [x] **LAYER-04**: LayeredSound supports gain/pan control affecting all layers
+- [x] **LAYER-05**: LayeredSound emits events (play, stop, end)
+- [x] **LAYER-06**: Individual layers can be accessed and controlled
 
 ### BeatTrack
 
-- [ ] **BEAT-01**: User can stop BeatTrack mid-playback
-- [ ] **BEAT-02**: User can pause/resume BeatTrack playback
-- [ ] **BEAT-03**: BeatTrack emits events for beat triggers
+- [x] **BEAT-01**: User can stop BeatTrack mid-playback
+- [x] **BEAT-02**: User can pause/resume BeatTrack playback
+- [x] **BEAT-03**: BeatTrack emits events for beat triggers
 
 ### Collection Utilities
 
-- [ ] **COLL-01**: stopAll() stops all Playables in an array
-- [ ] **COLL-02**: pauseAll() pauses all Tracks in an array
-- [ ] **COLL-03**: playAll() plays all Playables in an array
-- [ ] **COLL-04**: Utilities work on nested arrays (recursive)
-- [ ] **COLL-05**: Utilities are tree-shakeable (only imported if used)
+- [x] **COLL-01**: stopAll() stops all Playables in an array
+- [x] **COLL-02**: pauseAll() pauses all Tracks in an array
+- [x] **COLL-03**: playAll() plays all Playables in an array
+- [x] **COLL-04**: Utilities work on nested arrays (recursive)
+- [x] **COLL-05**: Utilities are tree-shakeable (only imported if used)
 
 ### Preloading
 
-- [ ] **PRE-01**: User can preload a sound URL without creating a Sound instance
-- [ ] **PRE-02**: User can preload multiple URLs in parallel
-- [ ] **PRE-03**: Preloaded audio is cached and reused by createSound/createTrack
-- [ ] **PRE-04**: User can check if a URL is preloaded
-- [ ] **PRE-05**: User can clear preload cache
+- [x] **PRE-01**: User can preload a sound URL without creating a Sound instance
+- [x] **PRE-02**: User can preload multiple URLs in parallel
+- [x] **PRE-03**: Preloaded audio is cached and reused by createSound/createTrack
+- [x] **PRE-04**: User can check if a URL is preloaded
+- [x] **PRE-05**: User can clear preload cache
 
 ### Audio Sprites
 
-- [ ] **SPRITE-01**: User can create sprite from audio file + timing metadata
-- [ ] **SPRITE-02**: Sprite metadata specifies name, start time, duration for each sound
-- [ ] **SPRITE-03**: User can play individual sounds from sprite by name
-- [ ] **SPRITE-04**: Sprite sounds support gain/pan control
-- [ ] **SPRITE-05**: Sprite supports standard JSON format (audiosprite compatible)
+- [x] **SPRITE-01**: User can create sprite from audio file + timing metadata
+- [x] **SPRITE-02**: Sprite metadata specifies name, start time, duration for each sound
+- [x] **SPRITE-03**: User can play individual sounds from sprite by name
+- [x] **SPRITE-04**: Sprite sounds support gain/pan control
+- [x] **SPRITE-05**: Sprite supports standard JSON format (audiosprite compatible)
 
 ### Crossfading
 
-- [ ] **FADE-01**: User can crossfade from one Track to another
-- [ ] **FADE-02**: Crossfade uses equal-power curve (no volume dip)
-- [ ] **FADE-03**: User can specify crossfade duration
-- [ ] **FADE-04**: Crossfade works with Track seek positions
+- [x] **FADE-01**: User can crossfade from one Track to another
+- [x] **FADE-02**: Crossfade uses equal-power curve (no volume dip)
+- [x] **FADE-03**: User can specify crossfade duration
+- [x] **FADE-04**: Crossfade works with Track seek positions
 
 ### Effects
 
