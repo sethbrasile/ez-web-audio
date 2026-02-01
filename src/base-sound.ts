@@ -4,6 +4,7 @@ import type { Connectable, Connection } from '@interfaces/connectable'
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
 import type { SoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
+import { debugEvent, debugConnection, debugWarning } from './debug'
 
 export interface BaseSoundOptions {
   /**
@@ -90,6 +91,20 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * A name for this sound. Optional. Useful for identification of a given sound and debugging.
    */
   public name: string
+
+  /**
+   * @property debug
+   *
+   * Per-sound debug override. Set to true to enable debug logging for this sound only,
+   * or false to disable logging even when global debug is enabled.
+   *
+   * @default undefined (follows global debug mode)
+   *
+   * @example
+   * sound.debug = true  // enable debug for this sound
+   * sound.debug = false // silence this sound even when global debug is on
+   */
+  public debug?: boolean
 
   constructor(public audioContext: AudioContext, opts?: BaseSoundOptions) {
     super()
@@ -257,6 +272,16 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   public addConnection(connection: Connection): this {
     this.connections.push(connection)
     this.wireConnections()
+    // Debug log for connection chain change
+    debugConnection(
+      this,
+      `Connection added: ${connection.name ?? 'unnamed'}`,
+      this.audioContext.currentTime,
+      {
+        connectionCount: this.connections.length,
+        connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`)
+      }
+    )
     return this
   }
 
@@ -267,6 +292,16 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       if (index > -1) {
         this.connections.splice(index, 1)
         this.wireConnections()
+        // Debug log for connection chain change
+        debugConnection(
+          this,
+          `Connection removed: ${name}`,
+          this.audioContext.currentTime,
+          {
+            connectionCount: this.connections.length,
+            connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`)
+          }
+        )
       }
     }
     return this
@@ -366,6 +401,11 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     const { currentTime } = audioContext
     const duration = this.duration.raw
 
+    // Debug warning for suspended AudioContext
+    if (audioContext.state === 'suspended') {
+      debugWarning(this, 'AudioContext suspended - call initAudio() first', currentTime)
+    }
+
     await audioContext.resume()
 
     this.setup()
@@ -375,6 +415,9 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       time: currentTime,
       source: this
     })
+
+    // Debug log for play event
+    debugEvent(this, 'play', currentTime, { startOffset: this.startOffset })
 
     this.audioSourceNode.start(time, this.startOffset)
     this.startedPlayingAt = time
@@ -392,6 +435,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
           source: this,
           duration: this.duration.raw
         })
+        // Debug log for end event
+        debugEvent(this, 'end', this.audioContext.currentTime, { duration: this.duration.raw })
       }
     }
 
@@ -466,6 +511,9 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
           time: this.audioContext.currentTime,
           source: this
         })
+
+        // Debug log for stop event
+        debugEvent(this, 'stop', this.audioContext.currentTime)
 
         node.stop(time)
       }

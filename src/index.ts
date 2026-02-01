@@ -27,6 +27,8 @@ import { clearPreloadCache, isPreloaded, preload, responseCache } from './preloa
 import { AudioSprite } from './sprite'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import { crossfade } from './utils/crossfade'
+import { setDebugMode, setDebugHandler } from './debug'
+import type { DebugMessage } from './debug'
 
 let audioContext: AudioContext
 
@@ -372,6 +374,9 @@ export {
   playAll,
   // Crossfade utility
   crossfade,
+  // Debug utilities
+  setDebugMode,
+  setDebugHandler,
   // Errors
   AudioError,
   AudioContextError,
@@ -393,4 +398,5 @@ export type {
   SpriteDefinition,
   SpriteManifest,
   SpritePlayOptions,
+  DebugMessage,
 }
