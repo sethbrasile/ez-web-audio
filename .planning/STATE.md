@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-02-01
-**Current Focus:** Phase 4 - Composition Features (In Progress)
+**Current Focus:** Phase 4 - Composition Features (Complete)
 
 ## Project Reference
 
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 4 of 8 (Composition Features)
-**Plan:** 2 of 3 complete
-**Status:** In progress
+**Plan:** 3 of 3 complete
+**Status:** Phase complete
 
-**Progress:** [██████████████████████░░] ~65% (Phase 4 Plan 2 complete)
+**Progress:** [█████████████████████████] ~70% (Phase 4 complete)
 
 **Phase Goal:** Create complex musical compositions with layered sounds, synchronized drum patterns, and smooth track transitions.
 
-**Next Action:** Continue Phase 4 (Crossfade utilities - Plan 3).
+**Next Action:** Proceed to Phase 5 (Effects and Visualization).
 
 ## Performance Metrics
 
@@ -30,8 +30,8 @@
 - Overall completion: ~60% (Phases 1-3 complete, Phase 4 Plan 1 complete)
 
 **Current Phase:**
-- Plans: 2 completed (04-01 LayeredSound, 04-02 BeatTrack timing)
-- Remaining: 1 (Crossfade utilities)
+- Plans: 3 completed (04-01 LayeredSound, 04-02 BeatTrack timing, 04-03 Crossfade)
+- Remaining: 0
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -42,6 +42,7 @@
 - Plan 03-03 completed in 5 minutes
 - Plan 04-01 completed in 9 minutes
 - Plan 04-02 completed in 11 minutes
+- Plan 04-03 completed in 14 minutes
 
 ## Accumulated Context
 
@@ -122,6 +123,12 @@
 - Tempo changes take effect on next beat (already-scheduled beats can't be canceled)
 - Pause/resume use beatIndex instead of time position (consistent with BeatTrack abstraction)
 
+**Phase 4 Plan 03 Decisions:**
+- Made BaseSound.gainNode and audioContext public for crossfade access
+- Equal-power curves exclusively (no linear option) per CONTEXT.md guidance
+- Used native globalThis.setTimeout for test compatibility with vi.useFakeTimers
+- Preserve current gain values (no hardcoded start points) for mid-playback crossfades
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -134,10 +141,10 @@
 - [x] Plan 02: Preload API (preload, isPreloaded, clearPreloadCache)
 - [x] Plan 03: Audio Sprites (createSprite, AudioSprite)
 
-**Phase 4 Execution (In Progress):**
+**Phase 4 Execution (Complete):**
 - [x] Plan 01: LayeredSound (synchronized multi-voice playback)
 - [x] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
-- [ ] Plan 03: Crossfade utilities (smooth track transitions)
+- [x] Plan 03: Crossfade utilities (smooth track transitions)
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -194,19 +201,29 @@
 - Modified: src/beat-track.test.ts (Added 10 tests for timing control)
 - Modified: src/events/event-types.ts (Added BeatEventDetail, BeatTrackEventMap)
 
+**Plan 04-03:**
+- Created: src/utils/crossfade.ts (crossfade and generateEqualPowerCurve functions)
+- Created: src/utils/crossfade.test.ts (14 tests for crossfade behavior)
+- Modified: src/base-sound.ts (Made gainNode and audioContext public)
+- Modified: src/index.ts (Added crossfade export)
+
 ## Session Continuity
 
-**Last session:** 2026-01-31T21:48:14Z
-**Stopped at:** Completed 04-02-PLAN.md
+**Last session:** 2026-02-01T03:52:12Z
+**Stopped at:** Completed 04-03-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 4 (Composition Features) in progress. Plans 1-2 complete (LayeredSound, BeatTrack timing).
+Phase 4 (Composition Features) complete. All 3 plans finished.
 
 **What's next:**
-Continue Phase 4 with Plan 3 (Crossfade utilities).
+Proceed to Phase 5 (Effects and Visualization).
 
 **Context to preserve:**
+- Crossfade: `crossfade(fromTrack, toTrack, duration)` for smooth transitions
+- Equal-power curves: cos(x) for fade-out, sin(x) for fade-in (maintains constant power)
+- Fire-and-forget: auto-stops source track and resets gain to 1.0 after fade
+- Preserves current gain values: uses gainNode.gain.value, not hardcoded 1.0
 - BeatTrack timing control: `stop()`, `pause()`, `resume()`, `setTempo(bpm)`
 - Lookahead scheduler: 100ms ahead, 25ms interval for resilient timing
 - Beat events: emitted at schedule time (gives UI ~100ms lookahead for animations)
