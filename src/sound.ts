@@ -49,6 +49,7 @@ export class Sound extends BaseSound {
     audioSourceNode.buffer = this.audioBuffer
     this.audioSourceNode = audioSourceNode
 
+    // Connect source to effect chain (legacy connections still supported)
     this.wireConnections()
     this.controller.setValuesAtTimes()
 
@@ -65,25 +66,28 @@ export class Sound extends BaseSound {
   }
 
   protected wireConnections(): void {
-    // always start with the audio source
-    const nodes: AudioNode[] = [this.audioSourceNode]
-    const { connections, pannerNode } = this
+    // Connect source through legacy connections (if any) to the effect chain input
+    // Chain: audioSourceNode -> [legacy connections] -> effectChainInput -> [effects] -> gain -> panner -> destination
+    const { connections, effectChainInput, audioSourceNode } = this
 
-    // add the nodes from nodes property
-    for (let i = 0; i < connections.length; i++) {
-      nodes.push(connections[i].audioNode)
+    if (connections.length === 0) {
+      // No legacy connections: source connects directly to effect chain
+      audioSourceNode.connect(effectChainInput)
     }
+    else {
+      // Legacy connections: source -> connections -> effectChainInput
+      const nodes: AudioNode[] = [audioSourceNode]
+      for (let i = 0; i < connections.length; i++) {
+        nodes.push(connections[i].audioNode)
+      }
+      nodes.push(effectChainInput)
 
-    // add the gain node and panner node
-    nodes.push(this.gainNode)
-    nodes.push(pannerNode)
-
-    // connect them all together
-    for (let i = 0; i < nodes.length - 1; i++) {
-      nodes[i].connect(nodes[i + 1])
+      // Connect them all together
+      for (let i = 0; i < nodes.length - 1; i++) {
+        nodes[i].connect(nodes[i + 1])
+      }
     }
-
-    pannerNode.connect(this.audioContext.destination)
+    // Effect chain is already wired (gain -> panner -> destination) in BaseSound
   }
 
   public get duration(): TimeObject {

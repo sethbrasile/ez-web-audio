@@ -93,7 +93,7 @@ export class Oscillator extends BaseSound {
     oscillator.frequency.setValueAtTime(this.freq || 440, this.audioContext.currentTime)
     this.audioSourceNode = oscillator
 
-    // Create a new gain node on every play
+    // Create a new gain node on every play and update the effect chain
     const gainNode = this.audioContext.createGain()
     this.gainNode = gainNode
 
@@ -106,36 +106,38 @@ export class Oscillator extends BaseSound {
       this.controller.setEnvelope(this.envelope)
     }
 
-    // wire everything up
+    // wire everything up (connects source to effect chain)
     this.wireConnections()
+    // Re-wire effect chain with new gain node
+    this.rewireEffects()
     this.controller.setValuesAtTimes()
   }
 
   protected wireConnections(): void {
-    // always start with the audio source
-    const nodes: AudioNode[] = [this.audioSourceNode]
-    const { connections, filters, pannerNode } = this
+    // Connect source through Oscillator-specific filters and legacy connections to effect chain
+    // Chain: audioSourceNode -> [filters] -> [legacy connections] -> effectChainInput -> [effects] -> gain -> panner -> destination
+    const { connections, filters, effectChainInput, audioSourceNode } = this
 
-    // Add all the filters
+    const nodes: AudioNode[] = [audioSourceNode]
+
+    // Add all the Oscillator-specific filters
     for (let i = 0; i < filters.length; i++) {
       nodes.push(filters[i])
     }
 
-    // add the nodes from connections array
+    // Add legacy connections (if any)
     for (let i = 0; i < connections.length; i++) {
       nodes.push(connections[i].audioNode)
     }
 
-    // add the gain and panner node
-    nodes.push(this.gainNode)
-    nodes.push(pannerNode)
+    // Connect to effect chain input
+    nodes.push(effectChainInput)
 
-    // connect them all together
+    // Connect them all together
     for (let i = 0; i < nodes.length - 1; i++) {
       nodes[i].connect(nodes[i + 1])
     }
-
-    pannerNode.connect(this.audioContext.destination)
+    // Effect chain is already wired (gain -> panner -> destination) in BaseSound
   }
 
   /**

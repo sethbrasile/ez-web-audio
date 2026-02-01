@@ -29,6 +29,15 @@ import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './spri
 import { crossfade } from './utils/crossfade'
 import { setDebugMode, setDebugHandler } from './debug'
 import type { DebugMessage } from './debug'
+import {
+  createGainEffect,
+  createFilterEffect,
+  wrapEffect,
+  GainEffect,
+  FilterEffect,
+  EffectWrapper,
+} from './effects'
+import type { Effect, FilterType, FilterEffectOptions, ExternalEffect } from './effects'
 
 let audioContext: AudioContext
 
@@ -377,6 +386,13 @@ export {
   // Debug utilities
   setDebugMode,
   setDebugHandler,
+  // Effects
+  createGainEffect,
+  createFilterEffect,
+  wrapEffect,
+  GainEffect,
+  FilterEffect,
+  EffectWrapper,
   // Errors
   AudioError,
   AudioContextError,
@@ -399,4 +415,9 @@ export type {
   SpriteManifest,
   SpritePlayOptions,
   DebugMessage,
+  // Effect types
+  Effect,
+  FilterType,
+  FilterEffectOptions,
+  ExternalEffect,
 }
