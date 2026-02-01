@@ -104,6 +104,13 @@ Plans:
 
 **Requirements:** LAYER-01, LAYER-02, LAYER-03, LAYER-04, LAYER-05, LAYER-06, BEAT-01, BEAT-02, BEAT-03, FADE-01, FADE-02, FADE-03, FADE-04
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — LayeredSound class (synchronized multi-voice playback)
+- [ ] 04-02-PLAN.md — BeatTrack timing control (stop/pause/resume/tempo/events)
+- [ ] 04-03-PLAN.md — Crossfade utility (equal-power track transitions)
+
 **Success Criteria:**
 1. User can create LayeredSound from multiple Sound/Oscillator instances and play all layers simultaneously
 2. LayeredSound supports master gain/pan control affecting all layers, plus individual layer access
@@ -202,7 +209,7 @@ Plans:
 | 1 - Foundation | Complete | 15 | 100% |
 | 2 - ADSR Envelopes | Complete | 7 | 100% |
 | 3 - Utility Features | Complete | 15 | 100% |
-| 4 - Composition Features | Pending | 13 | 0% |
+| 4 - Composition Features | Planned | 13 | 0% |
 | 5 - Effects & Advanced | Pending | 16 | 0% |
 | 6 - Testing | Pending | 8 | 0% |
 | 7 - Documentation & Demo | Pending | 9 | 0% |
@@ -245,4 +252,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-01-31 after Phase 3 execution complete*
+*Last updated: 2026-01-31 after Phase 4 planning complete*
