@@ -1,4 +1,3 @@
-import type { Playable } from '@interfaces/playable'
 import type { Sound } from './sound'
 import type { Oscillator } from './oscillator'
 import type { LayeredSoundEventMap } from './events/event-types'
@@ -32,7 +31,7 @@ export interface LayeredSoundOptions {
  * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
  * ```
  */
-export class LayeredSound extends EventTarget implements Playable {
+export class LayeredSound extends EventTarget {
   private layers: (Sound | Oscillator)[]
   private failedLayers: { index: number; error: Error }[] = []
   public name: string

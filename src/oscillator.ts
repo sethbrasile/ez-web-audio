@@ -48,7 +48,7 @@ export class Oscillator extends BaseSound {
   protected controller: OscillatorController
   private envelope?: Envelope
 
-  constructor(protected audioContext: AudioContext, options?: OscillatorOpts) {
+  constructor(audioContext: AudioContext, options?: OscillatorOpts) {
     super(audioContext, options)
     this.type = options?.type || 'sine'
     this.freq = options?.frequency || 440

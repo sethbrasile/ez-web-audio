@@ -1,4 +1,4 @@
-import { createOscillator } from '@/index'
+import { createOscillator, getAudioContext } from '@/index'
 import { LayeredSound } from '@/layered-sound'
 import type { Oscillator } from '@/oscillator'
 
@@ -33,10 +33,10 @@ async function createHihat(): Promise<LayeredSound> {
   )
 
   // Layer them all together
-  return new LayeredSound(oscillators)
+  return new LayeredSound(await getAudioContext(), oscillators)
 }
 
 export async function setupHihatButton(element: HTMLButtonElement): Promise<void> {
   const hihat = await createHihat()
-  element.addEventListener('click', () => hihat.playFor(0.3))
+  element.addEventListener('click', () => hihat.play())
 }

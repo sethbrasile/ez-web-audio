@@ -21,7 +21,7 @@ export class Sound extends BaseSound {
   public audioSourceNode: AudioBufferSourceNode
   protected controller: SoundController
 
-  constructor(protected audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: any) {
+  constructor(audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: any) {
     super(audioContext, opts)
 
     const audioSourceNode = audioContext.createBufferSource()

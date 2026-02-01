@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AudioContext } from 'standardized-audio-context-mock'
+import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { Track } from '../track'
 import { crossfade, generateEqualPowerCurve } from './crossfade'
 
@@ -76,7 +76,7 @@ describe('crossfade', () => {
   let buffer: AudioBuffer
 
   beforeEach(() => {
-    audioContext = new AudioContext()
+    audioContext = new MockAudioContext() as unknown as AudioContext
 
     // Create a 2-second buffer
     buffer = audioContext.createBuffer(2, audioContext.sampleRate * 2, audioContext.sampleRate)

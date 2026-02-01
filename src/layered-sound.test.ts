@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AudioContext } from 'standardized-audio-context-mock'
+import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { LayeredSound } from './layered-sound'
 import { Sound } from './sound'
 import { Oscillator } from './oscillator'
@@ -8,7 +8,7 @@ describe('LayeredSound', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
-    audioContext = new AudioContext()
+    audioContext = new MockAudioContext() as unknown as AudioContext
   })
 
   afterEach(() => {
@@ -31,7 +31,6 @@ describe('LayeredSound', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)
 
-      // @ts-expect-error - testing runtime null handling
       const layered = new LayeredSound(audioContext, [sound, null, undefined])
 
       expect(layered.layerCount).toBe(1)
@@ -43,7 +42,6 @@ describe('LayeredSound', () => {
       const sound = new Sound(audioContext, buffer)
       const warningListener = vi.fn()
 
-      // @ts-expect-error - testing runtime null handling
       const layered = new LayeredSound(audioContext, [sound, null, undefined])
       layered.addEventListener('warning', warningListener)
 
@@ -51,13 +49,11 @@ describe('LayeredSound', () => {
       expect(warningListener).not.toHaveBeenCalled() // Construction already happened
 
       // Create another instance to test emission
-      // @ts-expect-error - testing runtime null handling
       const layered2 = new LayeredSound(audioContext, [sound, null])
       layered2.addEventListener('warning', warningListener)
 
       // The warning is emitted during construction, so we need to listen before constructing
       const warningListener2 = vi.fn()
-      // @ts-expect-error - testing runtime null handling
       const layered3 = new LayeredSound(audioContext, [null])
       layered3.once('warning', warningListener2)
 
@@ -72,7 +68,7 @@ describe('LayeredSound', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const layers = Array.from({ length: 8 }, () => new Sound(audioContext, buffer))
 
-      const layered = new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
+      new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('8 layers')
@@ -86,7 +82,7 @@ describe('LayeredSound', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const layers = Array.from({ length: 7 }, () => new Sound(audioContext, buffer))
 
-      const layered = new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
+      new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
 
       expect(consoleWarnSpy).not.toHaveBeenCalled()
 

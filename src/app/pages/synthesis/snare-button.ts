@@ -1,4 +1,4 @@
-import { createOscillator, createWhiteNoise } from '@/index'
+import { createOscillator, createWhiteNoise, getAudioContext } from '@/index'
 import { LayeredSound } from '@/layered-sound'
 import type { Oscillator } from '@/oscillator'
 import type { Sound } from '@/sound'
@@ -18,10 +18,10 @@ async function createSnareNoise(): Promise<Sound> {
 
 export async function setupSnareButton(element: HTMLButtonElement): Promise<void> {
   const sounds = await Promise.all([await createSnareOscillator(), await createSnareNoise()])
-  const snare = new LayeredSound(sounds)
+  const snare = new LayeredSound(await getAudioContext(), sounds)
 
   // add a listener to play the note again when the button is clicked for the rest of the document's life
-  element.addEventListener('click', () => snare.playFor(0.1))
+  element.addEventListener('click', () => snare.play())
 }
 
 export async function setupSnareCrackButton(element: HTMLButtonElement): Promise<void> {
