@@ -1,10 +1,13 @@
-import { assert, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import type { Playable } from './interfaces/playable'
 import type { Connectable } from './interfaces/connectable'
 import { Sound } from './sound'
 import { BeatTrack as RealBeatTrack } from '@/beat-track'
 
+/**
+ * Extended BeatTrack class that exposes internal state for testing
+ */
 class BeatTrack extends RealBeatTrack {
   public getSounds(): Set<Playable & Connectable> {
     return this.sounds
@@ -16,6 +19,34 @@ class BeatTrack extends RealBeatTrack {
 
   public callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType?: number): void {
     super.callPlayMethodOnBeats(method, bpm, noteType)
+  }
+
+  /**
+   * Expose currentBeatIndex for testing stop/pause/resume behavior
+   */
+  public getCurrentBeatIndex(): number {
+    return (this as any).currentBeatIndex
+  }
+
+  /**
+   * Expose pausedBeatIndex for testing pause behavior
+   */
+  public getPausedBeatIndex(): number | null {
+    return (this as any).pausedBeatIndex
+  }
+
+  /**
+   * Expose timerID for testing scheduler state
+   */
+  public getTimerID(): number | null {
+    return (this as any).timerID
+  }
+
+  /**
+   * Expose currentTempo for testing setTempo
+   */
+  public getCurrentTempo(): number {
+    return (this as any).currentTempo
   }
 }
 
@@ -97,94 +128,279 @@ it('callPlayMethodOnBeats method calls "method" arg on all beats in beats array'
 })
 
 // Timing control tests
-it('stop() stops scheduler and resets beat index to 0', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
+describe('stop() behavior', () => {
+  it('resets beat index to 0 after stop', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
 
-  // Start playing
-  track.playActiveBeats(120, 1/4)
+    // Start playing - scheduler will advance beat index
+    track.playActiveBeats(120, 1/4)
 
-  // Stop should reset position
-  track.stop()
+    // Stop should reset position
+    track.stop()
 
-  // Should be able to restart from beginning
-  track.playActiveBeats(120, 1/4)
-  expect(track).toBeTruthy() // Will implement proper assertions
-})
-
-it('pause() preserves beat position', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
-
-  track.playActiveBeats(120, 1/4)
-  track.pause()
-
-  expect(track).toBeTruthy() // Will check internal state
-})
-
-it('resume() continues from paused beat index', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
-
-  track.playActiveBeats(120, 1/4)
-  track.pause()
-  track.resume()
-
-  expect(track).toBeTruthy()
-})
-
-it('setTempo() changes tempo for subsequent beats', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
-
-  track.playActiveBeats(120, 1/4)
-  track.setTempo(140)
-
-  expect(track).toBeTruthy()
-})
-
-it('emits "beat" event for each scheduled beat', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
-
-  const beatEvents: any[] = []
-  track.addEventListener('beat', (e: any) => {
-    beatEvents.push(e.detail)
+    // Verify beat index is reset
+    expect(track.getCurrentBeatIndex()).toBe(0)
   })
 
-  track.playActiveBeats(120, 1/4)
+  it('clears the scheduler timer after stop', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
 
-  expect(beatEvents.length).toBeGreaterThan(0)
-})
+    track.playActiveBeats(120, 1/4)
+    // Timer should be set after starting
+    expect(track.getTimerID()).not.toBeNull()
 
-it('beat event includes correct beatIndex and active flag', () => {
-  const track = createBeatTrack()
-  const sound = createSound()
-  track.addSound(sound)
-
-  // Set some beats active
-  track.beats[0].active = true
-  track.beats[1].active = false
-  track.beats[2].active = true
-
-  const beatEvents: any[] = []
-  track.addEventListener('beat', (e: any) => {
-    beatEvents.push(e.detail)
+    track.stop()
+    // Timer should be cleared after stop
+    expect(track.getTimerID()).toBeNull()
   })
 
-  track.playActiveBeats(120, 1/4)
+  it('clears paused state after stop', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
 
-  // Should have beat events with correct indices
-  expect(beatEvents.length).toBeGreaterThan(0)
-  if (beatEvents.length > 0) {
+    track.playActiveBeats(120, 1/4)
+    track.pause()
+    expect(track.getPausedBeatIndex()).not.toBeNull()
+
+    track.stop()
+    expect(track.getPausedBeatIndex()).toBeNull()
+  })
+})
+
+describe('pause() behavior', () => {
+  it('preserves beat index after pause', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    // Capture beat index before pause
+    const beatIndexBeforePause = track.getCurrentBeatIndex()
+
+    track.pause()
+
+    // pausedBeatIndex should capture the current position
+    expect(track.getPausedBeatIndex()).toBe(beatIndexBeforePause)
+  })
+
+  it('stops scheduler after pause', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    expect(track.getTimerID()).not.toBeNull()
+
+    track.pause()
+    expect(track.getTimerID()).toBeNull()
+  })
+})
+
+describe('resume() behavior', () => {
+  it('restores beat index from paused position', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    const beatIndexBeforePause = track.getCurrentBeatIndex()
+
+    track.pause()
+    track.resume()
+
+    // After resume, current beat index should match what was captured during pause
+    expect(track.getCurrentBeatIndex()).toBe(beatIndexBeforePause)
+  })
+
+  it('restarts scheduler after resume', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    track.pause()
+    expect(track.getTimerID()).toBeNull()
+
+    track.resume()
+    // Scheduler should be running again
+    expect(track.getTimerID()).not.toBeNull()
+
+    // Clean up
+    track.stop()
+  })
+
+  it('clears paused state after resume', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    track.pause()
+    expect(track.getPausedBeatIndex()).not.toBeNull()
+
+    track.resume()
+    expect(track.getPausedBeatIndex()).toBeNull()
+
+    track.stop()
+  })
+})
+
+describe('setTempo() behavior', () => {
+  it('changes internal tempo value', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(120, 1/4)
+    expect(track.getCurrentTempo()).toBe(120)
+
+    track.setTempo(140)
+    expect(track.getCurrentTempo()).toBe(140)
+
+    track.stop()
+  })
+
+  it('can be called multiple times', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.playActiveBeats(60, 1/4)
+    expect(track.getCurrentTempo()).toBe(60)
+
+    track.setTempo(120)
+    expect(track.getCurrentTempo()).toBe(120)
+
+    track.setTempo(180)
+    expect(track.getCurrentTempo()).toBe(180)
+
+    track.stop()
+  })
+})
+
+describe('Beat event structure', () => {
+  it('emits "beat" event for scheduled beats within lookahead', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
+    // Should emit at least one beat immediately (within 100ms lookahead)
+    expect(beatEvents.length).toBeGreaterThan(0)
+
+    track.stop()
+  })
+
+  it('beat event has beatIndex property', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
     expect(beatEvents[0]).toHaveProperty('beatIndex')
+    expect(typeof beatEvents[0].beatIndex).toBe('number')
+    expect(beatEvents[0].beatIndex).toBeGreaterThanOrEqual(0)
+
+    track.stop()
+  })
+
+  it('beat event has active property', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
     expect(beatEvents[0]).toHaveProperty('active')
-  }
+    expect(typeof beatEvents[0].active).toBe('boolean')
+
+    track.stop()
+  })
+
+  it('beat event has time property based on audioContext.currentTime', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
+    expect(beatEvents[0]).toHaveProperty('time')
+    expect(typeof beatEvents[0].time).toBe('number')
+    // Time should be a non-negative value (audioContext.currentTime based)
+    expect(beatEvents[0].time).toBeGreaterThanOrEqual(0)
+
+    track.stop()
+  })
+
+  it('beat event has source property referencing the BeatTrack', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
+    expect(beatEvents[0]).toHaveProperty('source')
+    expect(beatEvents[0].source).toBe(track)
+
+    track.stop()
+  })
+
+  it('beat event active flag reflects beat state', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    // Set specific beat states
+    track.beats[0].active = true
+    track.beats[1].active = false
+    track.beats[2].active = true
+    track.beats[3].active = false
+
+    const beatEvents: any[] = []
+    track.addEventListener('beat', (e: any) => {
+      beatEvents.push(e.detail)
+    })
+
+    track.playActiveBeats(120, 1/4)
+
+    // First beat event should match first beat's active state
+    expect(beatEvents[0].beatIndex).toBe(0)
+    expect(beatEvents[0].active).toBe(true)
+
+    track.stop()
+  })
 })
 
 it('emits pause event with beatIndex', () => {
