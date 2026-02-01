@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-01-31
-**Current Focus:** Phase 2 - ADSR Envelopes (COMPLETE)
+**Last Updated:** 2026-02-01
+**Current Focus:** Phase 3 - Utility Features (In Progress)
 
 ## Project Reference
 
@@ -11,34 +11,33 @@
 
 ## Current Position
 
-**Phase:** 2 of 8 (ADSR Envelopes) - COMPLETE
-**Plan:** 4 of 4 complete
-**Status:** Phase complete
+**Phase:** 3 of 8 (Utility Features)
+**Plan:** 1 of N complete
+**Status:** In progress
 
-**Progress:** [████████████████████] 100% Phase 2 (Phase 1 complete, Phase 2 complete)
+**Progress:** [█████████████████░░░] ~45% (Phases 1-2 complete, Phase 3 started)
 
-**Phase Goal:** Oscillator has configurable ADSR envelope with smooth attack/decay/sustain/release. ACHIEVED.
+**Phase Goal:** Collection utilities for batch audio control.
 
-**Next Action:** Plan Phase 3 (Track Improvements) or Phase 4 (LayeredSound).
+**Next Action:** Continue Phase 3 plans or proceed to Phase 4 (LayeredSound).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 2 (complete)
+- Current phase: 3 (in progress)
 - Completed phases: 2
-- Overall completion: ~40% (Phases 1-2 complete)
+- Overall completion: ~45% (Phases 1-2 complete, Phase 3 started)
 
-**Current Phase (Complete):**
-- Plans: 4 (01-Envelope Class, 02-Oscillator Integration, 03-Retriggering, 04-Integration Tests & Exports)
-- Completed: 4 plans (02-01, 02-02, 02-03, 02-04)
-- Remaining: 0 plans
+**Current Phase:**
+- Plans: 1 completed (03-01 Collection Utilities)
+- Remaining: TBD
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
 - Plan 02-03 completed in 13 minutes
 - Plan 02-04 completed in 6 minutes
-- TDD approach: 2 commits (test, feat)
+- Plan 03-01 completed in 4 minutes
 
 ## Accumulated Context
 
@@ -92,6 +91,11 @@
 - Export both Envelope class (for advanced use) and EnvelopeOptions type (for TypeScript)
 - Test coexistence of envelope with onPlaySet/onPlayRamp APIs
 
+**Phase 3 Plan 01 Decisions:**
+- Promise.allSettled for best-effort batch operations - all items attempted even if some fail
+- CollectionError aggregates failures with count and error array
+- Type guard for pauseAll() - runtime check skips non-Track items
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -99,11 +103,9 @@
 
 ### Active TODOs
 
-**Phase 2 Execution (COMPLETE):**
-- [x] Plan 01: Envelope Class (TDD implementation)
-- [x] Plan 02: Oscillator Integration
-- [x] Plan 03: Envelope Retriggering
-- [x] Plan 04: Integration Tests & Public Exports
+**Phase 3 Execution (In Progress):**
+- [x] Plan 01: Collection Utilities (stopAll, pauseAll, playAll)
+- [ ] Plan 02+: TBD (if applicable)
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -136,7 +138,7 @@
 **Phase-Specific Research Flags:**
 - Phase 1: Standard EventTarget pattern, well-documented (no deep research needed) - COMPLETE
 - Phase 2: Fast retriggering edge cases - COMPLETE (Plan 03), polyphonic note management - future
-- Phase 3: Standard patterns (no deep research needed)
+- Phase 3: Standard patterns (no deep research needed) - IN PROGRESS
 - Phase 4: Voice pooling strategies (needs research during planning)
 - Phase 5: Impulse response sourcing, FFT optimization (needs research during planning)
 
@@ -149,32 +151,33 @@
 
 ### Files Modified This Session
 
-**Plan 02-04:**
-- Created: src/oscillator.test.ts (19 ADSR integration tests)
-- Modified: src/index.ts (Added Envelope and EnvelopeOptions exports)
+**Plan 03-01:**
+- Created: src/utils/collections.ts (stopAll, pauseAll, playAll)
+- Created: src/utils/collections.test.ts (18 tests)
+- Modified: src/index.ts (Added collection utility exports)
 
 ## Session Continuity
 
-**Last session:** 2026-01-31T23:19:29Z
-**Stopped at:** Completed 02-04-PLAN.md (Phase 2 complete)
+**Last session:** 2026-02-01T00:03:41Z
+**Stopped at:** Completed 03-01-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 2 (ADSR Envelopes) complete. All 4 plans executed successfully.
+Phase 3 (Utility Features) started. Plan 01 (Collection Utilities) complete.
 
 **What's next:**
-Plan and execute Phase 3 (Track Improvements) or Phase 4 (LayeredSound).
+Continue Phase 3 plans or proceed to Phase 4 (LayeredSound).
 
 **Context to preserve:**
+- Collection utilities: `stopAll(sounds)`, `pauseAll(tracks)`, `playAll(sounds)`
+- Nested array support via `Array.flat(Infinity)`
+- Best-effort error handling with `Promise.allSettled`
+- `CollectionError` aggregates failures: `errors` array, `total` count
+- Type guard: `'pause' in item && typeof item.pause === 'function'`
 - Envelope class: `new Envelope({ attackTime, decayTime, sustainLevel, releaseTime })`
 - Apply envelope: `envelope.applyTo(gainNode.gain, startTime)`
 - Release envelope: `envelope.release(gainNode.gain, stopTime)`
-- Retriggering: `isActive` property, `estimateCurrentValue(time)` for phase interpolation
-- Feature detection: cancelAndHoldAtTime (Chrome/Edge) with cancelScheduledValues fallback
-- Time constant for release: releaseTime/5 gives ~99% completion
-- Public exports: Envelope class and EnvelopeOptions type from src/index.ts
-- Integration tests: 19 tests in src/oscillator.test.ts
 
 ---
 
-*STATE.md updated: 2026-01-31*
+*STATE.md updated: 2026-02-01*
