@@ -131,15 +131,23 @@ Plans:
 
 **Requirements:** FX-01, FX-02, FX-03, FX-04, FX-05, FX-06, VIZ-01, VIZ-02, VIZ-03, VIZ-04, VIZ-05, DBG-01, DBG-02, DBG-03, DBG-04, DBG-05
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Effect interface and built-in effects (GainEffect, FilterEffect)
+- [ ] 05-02-PLAN.md — Effects integration into BaseSound (addEffect, removeEffect, persistent chain)
+- [ ] 05-03-PLAN.md — Analyzer for visualization (frequency/waveform data)
+- [ ] 05-04-PLAN.md — Debug mode (global/per-sound logging, custom handlers)
+
 **Success Criteria:**
-1. User can add reverb/delay/distortion effects with simple options (no manual node wiring)
-2. Effect presets are available (e.g., "cathedral reverb", "telephone filter")
+1. User can add effects via adapter pattern (external libraries like Tuna.js work via wrapEffect)
+2. Built-in GainEffect and FilterEffect provide common functionality
 3. User can get frequency/waveform data from any playing Playable for visualization
 4. User can enable debug mode and see play/stop/seek events with timestamps
 5. Debug mode logs connection chains and warns about common issues (e.g., suspended AudioContext)
 6. Visualization does not significantly impact playback performance
 
-**Research Notes:** Effects use native nodes (ConvolverNode, BiquadFilterNode, DelayNode, WaveShaperNode). Impulse response sourcing needs verification during implementation. Critical pitfall #6 (FFT performance) addressed with minimum FFT size and throttled updates.
+**Research Notes:** Adapter pattern per CONTEXT.md - ez-audio does NOT bundle effect libraries. Users bring their own (Tuna, Tone.js). Built-in effects are thin Web Audio wrappers only. Effects are "always connected" - persist across play() calls.
 
 ---
 
@@ -210,7 +218,7 @@ Plans:
 | 2 - ADSR Envelopes | Complete | 7 | 100% |
 | 3 - Utility Features | Complete | 15 | 100% |
 | 4 - Composition Features | Complete | 13 | 100% |
-| 5 - Effects & Advanced | Pending | 16 | 0% |
+| 5 - Effects & Advanced | Planned | 16 | 0% |
 | 6 - Testing | Pending | 8 | 0% |
 | 7 - Documentation & Demo | Pending | 9 | 0% |
 | 8 - Build & Distribution | Pending | 4 | 0% |
@@ -252,4 +260,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-01-31 after Phase 4 execution complete*
+*Last updated: 2026-02-01 after Phase 5 planning*
