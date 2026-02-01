@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-01T22:30:00Z
+**Last Updated:** 2026-02-01T22:35:00Z
 **Current Focus:** Phase 6 - Testing (Complete)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 6 of 8 (Testing)
-**Plan:** 3 of 3 complete (06-01, 06-02, 06-03)
-**Status:** Phase complete
+**Plan:** 1 of 3 complete (06-01)
+**Status:** In progress
 
-**Progress:** [████████████████████] 100% (Phases 1-6 complete)
+**Progress:** [████████████████████] 95% (Phases 1-5 complete, Phase 6 started)
 
 **Phase Goal:** Comprehensive test coverage for all features.
 
-**Next Action:** Proceed to Phase 7 (Documentation).
+**Next Action:** Continue with 06-02-PLAN.md (Oscillator and Sampler tests).
 
 ## Performance Metrics
 
@@ -30,8 +30,8 @@
 - Overall completion: 93%
 
 **Current Phase:**
-- Plans: 3 completed (06-01 BaseSound Tests, 06-02 Sampler/BeatTrack Tests, 06-03 Controller Tests)
-- Remaining: 0
+- Plans: 1 completed (06-01 Sound/Track Tests)
+- Remaining: 2
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -47,8 +47,7 @@
 - Plan 05-02 completed in 6 minutes
 - Plan 05-03 completed in 6 minutes
 - Plan 05-04 completed in 7 minutes
-- Plan 06-02 completed in 5 minutes
-- Plan 06-03 completed in 4 minutes
+- Plan 06-01 completed in 8 minutes
 
 ## Accumulated Context
 
@@ -68,98 +67,11 @@
 - AudioParam automation always uses scheduling methods (never direct assignment)
 - Tree-shakeable exports (Phase 8)
 
-**Phase 1 Plan 01 Decisions:**
-- Used 'unknown' for event source type to avoid circular imports (Plan 03 can refine)
-- Error classes use readonly properties for immutable metadata
-- Each error has unique code (CONTEXT_ERROR, LOAD_ERROR, INVALID_NOTE) for programmatic handling
-
-**Phase 1 Plan 02 Decisions:**
-- Used _onPlaybackStarted() hook at end of playAt() instead of _play() override - cleaner template method pattern
-- Oscillator.duration returns Infinity (semantically correct for indefinite playback)
-- Track.stop() made async to match base class signature
-
-**Phase 1 Plan 03 Decisions:**
-- Used function overloads for addEventListener/removeEventListener to maintain EventTarget compatibility while adding type safety
-- Event 'end' only fires on natural completion (checked via _isPlaying flag)
-- .off() requires listener reference (native EventTarget limitation documented)
-
-**Phase 1 Plan 04 Decisions:**
-- resume() is explicit method (not just play() after pause) for semantic clarity and event emission
-- seek event emits after position change for consistency
-- Error messages include specific actionable guidance (URLs, states, formats)
-
-**Phase 2 Plan 01 Decisions:**
-- sustainLevel clamped to 0-1 range (no exception thrown, silently clamps)
-- Object.freeze for runtime readonly property enforcement
-- Time constant = releaseTime/5 for ~99% completion during release phase
-- release() parameter named `startTime` to avoid confusion with `this.releaseTime`
-
-**Phase 2 Plan 03 Decisions:**
-- Removed Object.freeze() to allow mutable state for retriggering (TypeScript readonly still enforces compile-time)
-- Linear interpolation for estimateCurrentValue matches Web Audio linearRampToValueAtTime behavior
-- cancelAndHoldAtTime used when available (Chrome/Edge), cancelScheduledValues fallback for others
-- AudioParamWithCancelAndHold intersection type avoids interface extension conflicts
-
-**Phase 2 Plan 04 Decisions:**
-- Export both Envelope class (for advanced use) and EnvelopeOptions type (for TypeScript)
-- Test coexistence of envelope with onPlaySet/onPlayRamp APIs
-
-**Phase 3 Plan 01 Decisions:**
-- Promise.allSettled for best-effort batch operations - all items attempted even if some fail
-- CollectionError aggregates failures with count and error array
-- Type guard for pauseAll() - runtime check skips non-Track items
-
-**Phase 3 Plan 02 Decisions:**
-- Shared responseCache between preload.ts and index.ts - single source of truth
-- Promise.allSettled for parallel fetching with partial success
-- Aggregate error reporting - user sees all failures at once
-
-**Phase 3 Plan 03 Decisions:**
-- GainNode and StereoPannerNode always created for consistent routing
-- Node cleanup via onended callback for memory management
-
-**Phase 4 Plan 01 Decisions:**
-- Exact sync via audioContext.currentTime capture FIRST, then pass to all playAt() calls
-- Independent layer end tracking via Set, emit when last layer finishes
-- Graceful degradation: filter null/undefined layers, emit warning event
-- Soft limit at 8 layers (configurable warnLayerCount), console.warn but allow any count
-- Fresh Set per play() call for reusability (supports multiple playbacks)
-
-**Phase 4 Plan 02 Decisions:**
-- Beat events emitted at schedule time (lookahead) not play time - gives UI ~100ms advance notice
-- EventTarget composition pattern used (Sampler doesn't extend EventTarget)
-- Tempo changes take effect on next beat (already-scheduled beats can't be canceled)
-- Pause/resume use beatIndex instead of time position (consistent with BeatTrack abstraction)
-
-**Phase 4 Plan 03 Decisions:**
-- Made BaseSound.gainNode and audioContext public for crossfade access
-- Equal-power curves exclusively (no linear option) per CONTEXT.md guidance
-- Used native globalThis.setTimeout for test compatibility with vi.useFakeTimers
-- Preserve current gain values (no hardcoded start points) for mid-playback crossfades
-
-**Phase 5 Plan 01 Decisions:**
-- Single-node effects (GainEffect) share input/output reference
-- Multi-node effects use wet/dry parallel paths with equal-power crossfade
-- Duck typing for AudioNode detection (check for connect+disconnect methods)
-- ExternalEffect interface requires only connect() method for wrapping
-
-**Phase 5 Plan 02 Decisions:**
-- Persistent effect chain: wired once in constructor, only source reconnects on each play()
-- effectChainInput GainNode serves as entry point for effect chain routing
-- Legacy connections array preserved for backward compatibility
-- rewireEffects() public method allows bypass toggle updates
-
-**Phase 5 Plan 03 Decisions:**
-- Analyzer inserted AFTER effects (shows processed signal)
-- Pre-allocate typed arrays for zero-allocation polling
-- FFT size validation (power of 2, 32-32768)
-- Compute binCount ourselves (fftSize/2) for mock compatibility
-
-**Phase 5 Plan 04 Decisions:**
-- Debug module uses boolean short-circuit for zero overhead when disabled
-- Per-sound debug override with explicit false to silence individual sounds
-- Custom handler via setDebugHandler(fn) for flexibility (testing, external logging)
-- Connection logging on addConnection/removeConnection (not wireConnections)
+**Phase 6 Plan 01 Decisions:**
+- Avoided fake timers for complex async - Mock AudioContext and settle() helper work better
+- Used spies for method verification - vi.spyOn() to verify methods called without timing dependencies
+- Focused on API correctness - Tests verify fluent API patterns return correct objects
+- Event payload validation - Tests verify event detail structure matches interface
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -168,26 +80,10 @@
 
 ### Active TODOs
 
-**Phase 3 Execution (Complete):**
-- [x] Plan 01: Collection Utilities (stopAll, pauseAll, playAll)
-- [x] Plan 02: Preload API (preload, isPreloaded, clearPreloadCache)
-- [x] Plan 03: Audio Sprites (createSprite, AudioSprite)
-
-**Phase 4 Execution (Complete):**
-- [x] Plan 01: LayeredSound (synchronized multi-voice playback)
-- [x] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
-- [x] Plan 03: Crossfade utilities (smooth track transitions)
-
-**Phase 5 Execution (Complete):**
-- [x] Plan 01: Effect Foundation (Effect interface, GainEffect, FilterEffect, EffectWrapper)
-- [x] Plan 02: Effect Integration (addEffect, wireEffectChain, setDestination)
-- [x] Plan 03: Analyzer (frequency/waveform visualization data)
-- [x] Plan 04: Debug Mode (setDebugMode, setDebugHandler, per-sound override)
-
-**Phase 6 Execution (Complete):**
-- [x] Plan 01: BaseSound test enhancements
-- [x] Plan 02: Sampler tests (31 new), BeatTrack enhancements (26 tests with meaningful assertions)
-- [x] Plan 03: Controller tests (98 tests: BaseParamController, SoundController, OscillatorController)
+**Phase 6 Execution (In Progress):**
+- [x] Plan 01: Sound/Track Tests (70 Sound tests, 64 Track tests)
+- [ ] Plan 02: Oscillator and Sampler Tests
+- [ ] Plan 03: BeatTrack and Envelope Tests
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -197,14 +93,7 @@
 
 ### Known Blockers
 
-**Resolved (Plan 02):**
-- ~~Track.play() and Track.stop() return void but should return Promise<void>~~ - Fixed via _onPlaybackStarted() hook and async stop()
-
-**Resolved (Plan 04):**
-- ~~Unused imports in src/index.ts and synthesis/index.ts~~ - Fixed
-
-**Resolved (Plan 02-03):**
-- ~~ADSR envelope retriggering discontinuities~~ - Fixed with cancelAndHoldAtTime + estimateCurrentValue fallback
+None active.
 
 ### Research Findings
 
@@ -217,51 +106,30 @@
 4. AudioBufferSourceNode single-use violation (Phase 3, 4) - create new source per playback
 5. Direct AudioParam assignment during automation (Phase 2, 5) - always use AudioParam methods
 
-**Phase-Specific Research Flags:**
-- Phase 1: Standard EventTarget pattern, well-documented (no deep research needed) - COMPLETE
-- Phase 2: Fast retriggering edge cases - COMPLETE (Plan 03), polyphonic note management - future
-- Phase 3: Standard patterns (no deep research needed) - COMPLETE
-- Phase 4: Voice pooling strategies (needs research during planning)
-- Phase 5: Impulse response sourcing, FFT optimization (needs research during planning) - COMPLETE
-
-**Dependency Chain:**
-- Events foundational for all features - COMPLETE
-- ADSR requires events for testing - COMPLETE
-- Retriggering support for clickless playback - COMPLETE
-- LayeredSound depends on events + ADSR + effects being stable
-- Testing can parallelize with documentation
-
 ### Files Modified This Session
 
-**Plan 06-02:**
-- Created: src/sampler.test.ts (31 tests for Sampler class)
-- Modified: src/beat-track.test.ts (26 tests with meaningful assertions)
-
-**Plan 06-03:**
-- Created: src/controllers/base-param-controller.test.ts (36 tests for fluent API)
-- Created: src/controllers/sound-controller.test.ts (25 tests for AudioBufferSourceNode)
-- Created: src/controllers/oscillator-controller.test.ts (37 tests for envelope integration)
+**Plan 06-01:**
+- Modified: src/sound.test.ts (70 tests, was 4)
+- Created: src/track.test.ts (64 tests, was 0)
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T22:30:00Z
-**Stopped at:** Completed 06-03-PLAN.md (Phase 6 complete)
+**Last session:** 2026-02-01T22:35:00Z
+**Stopped at:** Completed 06-01-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 6 (Testing) complete. All 3 plans executed successfully. 624 total tests passing.
+Phase 6 (Testing) started. Plan 06-01 complete with 134 new tests for Sound and Track classes.
 
 **What's next:**
-Proceed to Phase 7 (Documentation).
+Continue with 06-02-PLAN.md (Oscillator and Sampler tests).
 
 **Context to preserve:**
-- Controller tests: 98 total tests across 3 files
-- BaseParamController: fluent API (update, onPlaySet, onPlayRamp), node transfer methods
-- SoundController: AudioBufferSourceNode scheduling, setValuesAtTimes
-- OscillatorController: frequency control, envelope integration, triggerRelease
-- Test patterns: TestableParamController for exposing protected properties, spy-based verification
-- Full test suite: 624 tests all passing
+- Sound tests: 70 tests covering creation, play/stop, parameter control, events
+- Track tests: 64 tests covering position tracking, pause/resume, seek, events
+- Test patterns: settle() helper for async assertions, vi.spyOn() for method verification
+- Full test suite: 688 tests all passing
 
 ---
 
-*STATE.md updated: 2026-02-01T22:30:00Z*
+*STATE.md updated: 2026-02-01T22:35:00Z*
