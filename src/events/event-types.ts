@@ -47,7 +47,9 @@ export interface PauseEventDetail {
   /** The Track instance that emitted this event */
   source: unknown
   /** The playback position (in seconds) where the track was paused */
-  position: number
+  position?: number
+  /** For BeatTrack: the beat index where paused */
+  beatIndex?: number
 }
 
 /**
@@ -59,7 +61,9 @@ export interface ResumeEventDetail {
   /** The Track instance that emitted this event */
   source: unknown
   /** The playback position (in seconds) where the track resumed */
-  position: number
+  position?: number
+  /** For BeatTrack: the beat index where resumed */
+  beatIndex?: number
 }
 
 /**
