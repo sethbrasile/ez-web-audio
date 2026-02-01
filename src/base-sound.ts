@@ -3,6 +3,7 @@ import type { Playable } from '@interfaces/playable'
 import type { Connectable, Connection } from '@interfaces/connectable'
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
 import type { SoundEventMap } from './events/event-types'
+import type { Effect } from './effects'
 import audioContextAwareTimeout from '@utils/timeout'
 import { debugEvent, debugConnection, debugWarning } from './debug'
 
@@ -33,6 +34,30 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   protected startedPlayingAt: number = 0
 
   /**
+   * @property effects
+   * An array of Effect instances that form the persistent effect chain.
+   * Effects are wired once and persist across multiple play() calls - only the source reconnects.
+   *
+   * Use addEffect() and removeEffect() to manage the effect chain.
+   * Chain order: source -> effectChainInput -> [effects] -> gainNode -> pannerNode -> destination
+   */
+  protected effects: Effect[] = []
+
+  /**
+   * @property effectChainInput
+   * The entry point for the effect chain. The audio source connects to this node,
+   * which then routes through any effects before reaching gain/panner/destination.
+   */
+  protected effectChainInput: GainNode
+
+  /**
+   * @property _destination
+   * The final destination node for audio output. Defaults to audioContext.destination.
+   * Can be changed with setDestination() to route audio elsewhere (e.g., for sub-mixing).
+   */
+  protected _destination: AudioNode
+
+  /**
    * @property connections
    * An array of connections that will be placed in between the `audioSourceNode` (where the audio comes from) and the gain/panner nodes.
    *
@@ -43,6 +68,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * You can use the `addConnection` and `removeConnection` methods to add and remove connections from this array, or you can set/mutate the array directly.
    *
    * The `wireConnections` method is called automatically when the sound is played, and it will connect all the nodes in this array in the correct order.
+   *
+   * @deprecated Use addEffect() instead for the new persistent effect chain system.
    *
    * @example
    * const sound = new Oscillator(audioContext, { type: 'sine', frequency: 440 })
@@ -114,6 +141,13 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     this.gainNode = gainNode
     this.pannerNode = pannerNode
 
+    // Initialize effect chain infrastructure
+    this.effectChainInput = audioContext.createGain()
+    this._destination = audioContext.destination
+
+    // Wire up the initial effect chain (no effects yet)
+    this.wireEffectChain()
+
     this.name = opts?.name || ''
 
     if (opts?.setTimeout) {
@@ -122,6 +156,167 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     else {
       this.setTimeout = audioContextAwareTimeout(audioContext).setTimeout
     }
+  }
+
+  // ===== Effect Chain System =====
+
+  /**
+   * Wires the effect chain from effectChainInput through all non-bypassed effects
+   * to gainNode -> pannerNode -> destination.
+   *
+   * Called when effects are added/removed/reordered or destination changes.
+   * NOT called on every play() - the chain persists.
+   *
+   * @private
+   */
+  private wireEffectChain(): void {
+    const { effectChainInput, effects, gainNode, pannerNode, _destination } = this
+
+    // Disconnect existing chain safely
+    // Use try/catch because nodes may not be connected
+    try {
+      effectChainInput.disconnect()
+    }
+    catch {
+      // Already disconnected, ignore
+    }
+
+    // Disconnect effects
+    for (const effect of effects) {
+      try {
+        effect.output.disconnect()
+      }
+      catch {
+        // Already disconnected, ignore
+      }
+    }
+
+    // Disconnect gain -> panner -> destination chain
+    try {
+      gainNode.disconnect()
+    }
+    catch {
+      // Already disconnected, ignore
+    }
+    try {
+      pannerNode.disconnect()
+    }
+    catch {
+      // Already disconnected, ignore
+    }
+
+    // Build the new chain
+    // Start from effectChainInput
+    let currentNode: AudioNode = effectChainInput
+
+    // Connect through non-bypassed effects in order
+    for (const effect of effects) {
+      if (!effect.bypass) {
+        currentNode.connect(effect.input)
+        currentNode = effect.output
+      }
+    }
+
+    // Connect to gain -> panner -> destination
+    currentNode.connect(gainNode)
+    gainNode.connect(pannerNode)
+    pannerNode.connect(_destination)
+  }
+
+  /**
+   * Add an effect to the effect chain.
+   * Effects persist across multiple play() calls.
+   *
+   * @param effect - The Effect instance to add
+   * @param position - Optional index to insert at (defaults to end of chain)
+   * @returns this for chaining
+   *
+   * @example
+   * const filter = createFilterEffect(audioContext, 'lowpass', { frequency: 1000 })
+   * sound.addEffect(filter)
+   */
+  public addEffect(effect: Effect, position?: number): this {
+    if (position !== undefined && position >= 0 && position <= this.effects.length) {
+      this.effects.splice(position, 0, effect)
+    }
+    else {
+      this.effects.push(effect)
+    }
+    this.wireEffectChain()
+    // Debug log for effect chain change
+    debugConnection(
+      this,
+      `Effect added${position !== undefined ? ` at position ${position}` : ''}`,
+      this.audioContext.currentTime,
+      {
+        effectCount: this.effects.length,
+        effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`)
+      }
+    )
+    return this
+  }
+
+  /**
+   * Remove an effect from the effect chain.
+   *
+   * @param effect - The Effect instance to remove
+   * @returns this for chaining
+   *
+   * @example
+   * sound.removeEffect(filter)
+   */
+  public removeEffect(effect: Effect): this {
+    const index = this.effects.indexOf(effect)
+    if (index > -1) {
+      this.effects.splice(index, 1)
+      this.wireEffectChain()
+      // Debug log for effect chain change
+      debugConnection(
+        this,
+        'Effect removed',
+        this.audioContext.currentTime,
+        {
+          effectCount: this.effects.length,
+          effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`)
+        }
+      )
+    }
+    return this
+  }
+
+  /**
+   * Get a readonly copy of the current effects array.
+   *
+   * @returns Shallow copy of the effects array
+   */
+  public getEffects(): readonly Effect[] {
+    return [...this.effects]
+  }
+
+  /**
+   * Set a custom destination for audio output instead of audioContext.destination.
+   * Useful for routing to sub-mixes, analyzers, or other processing chains.
+   *
+   * @param node - The AudioNode to route output to
+   * @returns this for chaining
+   *
+   * @example
+   * const analyzer = audioContext.createAnalyser()
+   * analyzer.connect(audioContext.destination)
+   * sound.setDestination(analyzer)
+   */
+  public setDestination(node: AudioNode): this {
+    this._destination = node
+    this.wireEffectChain()
+    return this
+  }
+
+  /**
+   * Re-wire the effect chain. Call this after toggling effect.bypass
+   * to update the audio routing.
+   */
+  public rewireEffects(): void {
+    this.wireEffectChain()
   }
 
   // ===== Event System (EventTarget extension with typed events) =====
