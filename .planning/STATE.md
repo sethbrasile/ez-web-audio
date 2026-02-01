@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-02-01
-**Current Focus:** Phase 4 - Composition Features (Complete)
+**Current Focus:** Phase 5 - Effects and Visualization (In Progress)
 
 ## Project Reference
 
@@ -11,27 +11,27 @@
 
 ## Current Position
 
-**Phase:** 4 of 8 (Composition Features)
-**Plan:** 3 of 3 complete
-**Status:** Phase complete, verified ✓
+**Phase:** 5 of 8 (Effects and Visualization)
+**Plan:** 1 of 3 complete
+**Status:** In progress
 
-**Progress:** [██████████████░░░░░░] 70% (Phases 1-4 complete, 50/71 requirements)
+**Progress:** [███████████████░░░░░] 75% (Phases 1-4 complete, Plan 05-01 complete)
 
-**Phase Goal:** Create complex musical compositions with layered sounds, synchronized drum patterns, and smooth track transitions.
+**Phase Goal:** Add professional audio effects (reverb, filters, compression) and visualization capabilities.
 
-**Next Action:** Proceed to Phase 5 (Effects and Visualization).
+**Next Action:** Proceed to Plan 05-02 (Convolution Reverb).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 4 (complete)
+- Current phase: 5 (in progress)
 - Completed phases: 4
-- Overall completion: 70% (50/71 requirements)
+- Overall completion: 75%
 
 **Current Phase:**
-- Plans: 3 completed (04-01 LayeredSound, 04-02 BeatTrack timing, 04-03 Crossfade)
-- Remaining: 0
+- Plans: 1 completed (05-01 Effect Foundation)
+- Remaining: 2
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -43,6 +43,7 @@
 - Plan 04-01 completed in 9 minutes
 - Plan 04-02 completed in 11 minutes
 - Plan 04-03 completed in 14 minutes
+- Plan 05-01 completed in 8 minutes
 
 ## Accumulated Context
 
@@ -53,6 +54,7 @@
 - ADSR as separate Envelope class, integrated via controllers (Phase 2)
 - LayeredSound uses composition over inheritance (Phase 4)
 - Effects integrate with existing connections array (Phase 5)
+- Effect interface: input, output, bypass, mix properties (Phase 5)
 
 **Technical:**
 - All features use native Web Audio API (zero dependencies maintained)
@@ -129,6 +131,12 @@
 - Used native globalThis.setTimeout for test compatibility with vi.useFakeTimers
 - Preserve current gain values (no hardcoded start points) for mid-playback crossfades
 
+**Phase 5 Plan 01 Decisions:**
+- Single-node effects (GainEffect) share input/output reference
+- Multi-node effects use wet/dry parallel paths with equal-power crossfade
+- Duck typing for AudioNode detection (check for connect+disconnect methods)
+- ExternalEffect interface requires only connect() method for wrapping
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -145,6 +153,11 @@
 - [x] Plan 01: LayeredSound (synchronized multi-voice playback)
 - [x] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
 - [x] Plan 03: Crossfade utilities (smooth track transitions)
+
+**Phase 5 Execution (In Progress):**
+- [x] Plan 01: Effect Foundation (Effect interface, GainEffect, FilterEffect, EffectWrapper)
+- [ ] Plan 02: Convolution Reverb
+- [ ] Plan 03: Effect Chains
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -190,36 +203,34 @@
 
 ### Files Modified This Session
 
-**Plan 04-01:**
-- Created: src/layered-sound.ts (LayeredSound class, 320 lines)
-- Created: src/layered-sound.test.ts (20 tests, 353 lines)
-- Modified: src/events/event-types.ts (Added LayeredSoundEventMap, WarningEventDetail)
-- Modified: src/index.ts (Added createLayeredSound factory and exports)
-
-**Plan 04-02:**
-- Modified: src/beat-track.ts (Added lookahead scheduler, stop/pause/resume, tempo control)
-- Modified: src/beat-track.test.ts (Added 10 tests for timing control)
-- Modified: src/events/event-types.ts (Added BeatEventDetail, BeatTrackEventMap)
-
-**Plan 04-03:**
-- Created: src/utils/crossfade.ts (crossfade and generateEqualPowerCurve functions)
-- Created: src/utils/crossfade.test.ts (14 tests for crossfade behavior)
-- Modified: src/base-sound.ts (Made gainNode and audioContext public)
-- Modified: src/index.ts (Added crossfade export)
+**Plan 05-01:**
+- Created: src/effects/index.ts (Effect interface and exports)
+- Created: src/effects/gain-effect.ts (GainEffect class)
+- Created: src/effects/filter-effect.ts (FilterEffect with 8 filter types)
+- Created: src/effects/effect-wrapper.ts (EffectWrapper for external effects)
+- Created: src/effects/gain-effect.test.ts (24 tests)
+- Created: src/effects/filter-effect.test.ts (38 tests)
+- Created: src/effects/effect-wrapper.test.ts (24 tests)
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T03:52:12Z
-**Stopped at:** Completed 04-03-PLAN.md
+**Last session:** 2026-02-01T21:00:36Z
+**Stopped at:** Completed 05-01-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 4 (Composition Features) complete. All 3 plans finished.
+Phase 5 (Effects and Visualization) in progress. Plan 01 (Effect Foundation) complete.
 
 **What's next:**
-Proceed to Phase 5 (Effects and Visualization).
+Proceed to Plan 05-02 (Convolution Reverb).
 
 **Context to preserve:**
+- Effect interface: { input: AudioNode, output: AudioNode, bypass: boolean, mix: number }
+- GainEffect: thin wrapper around GainNode with bypass/mix support
+- FilterEffect: 8 BiquadFilter types (lowpass, highpass, bandpass, lowshelf, highshelf, peaking, notch, allpass)
+- EffectWrapper: wraps external effects with connect() method for bypass/mix control
+- Equal-power crossfade: cos(angle) for dry, sin(angle) for wet
+- Factory functions: createGainEffect(ctx, value?), createFilterEffect(ctx, type, opts?), wrapEffect(ctx, effect)
 - Crossfade: `crossfade(fromTrack, toTrack, duration)` for smooth transitions
 - Equal-power curves: cos(x) for fade-out, sin(x) for fade-in (maintains constant power)
 - Fire-and-forget: auto-stops source track and resets gain to 1.0 after fade
