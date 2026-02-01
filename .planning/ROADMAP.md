@@ -159,6 +159,13 @@ Plans:
 
 **Requirements:** TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06, TEST-07, TEST-08
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Sound and Track class comprehensive tests
+- [ ] 06-02-PLAN.md — Sampler class tests and BeatTrack enhancements
+- [ ] 06-03-PLAN.md — Controller classes tests (Base, Sound, Oscillator)
+
 **Success Criteria:**
 1. Sound, Track, Oscillator, Sampler, BeatTrack classes have comprehensive test coverage
 2. Controllers (BaseParamController, SoundController, OscillatorController) have test coverage
@@ -219,7 +226,7 @@ Plans:
 | 3 - Utility Features | Complete | 15 | 100% |
 | 4 - Composition Features | Complete | 13 | 100% |
 | 5 - Effects & Advanced | Complete | 16 | 100% |
-| 6 - Testing | Pending | 8 | 0% |
+| 6 - Testing | Planned | 8 | 0% |
 | 7 - Documentation & Demo | Pending | 9 | 0% |
 | 8 - Build & Distribution | Pending | 4 | 0% |
 
@@ -260,4 +267,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-02-01 after Phase 5 complete*
+*Last updated: 2026-02-01 after Phase 6 planning*
