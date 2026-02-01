@@ -22,12 +22,10 @@ export class GainEffect implements Effect {
   private _bypass = false
   private _mix = 1
   private _value: number
-  private _storedValue: number
 
   constructor(audioContext: AudioContext, initialValue = 1.0) {
     this.gainNode = audioContext.createGain()
     this._value = initialValue
-    this._storedValue = initialValue
     this.gainNode.gain.value = initialValue
   }
 
@@ -48,7 +46,6 @@ export class GainEffect implements Effect {
 
   set value(v: number) {
     this._value = v
-    this._storedValue = v
     if (!this._bypass) {
       this.applyEffectiveGain()
     }

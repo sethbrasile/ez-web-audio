@@ -42,7 +42,6 @@ export interface FilterEffectOptions {
  * ```
  */
 export class FilterEffect implements Effect {
-  private readonly audioContext: AudioContext
   private readonly filterNode: BiquadFilterNode
   private readonly inputNode: GainNode
   private readonly outputNode: GainNode
@@ -57,8 +56,6 @@ export class FilterEffect implements Effect {
     type: FilterType,
     options: FilterEffectOptions = {}
   ) {
-    this.audioContext = audioContext
-
     // Create nodes
     this.filterNode = audioContext.createBiquadFilter()
     this.inputNode = audioContext.createGain()

@@ -15,6 +15,10 @@ export interface Effect {
 
 // Re-export classes
 export { GainEffect } from './gain-effect'
+export { FilterEffect, type FilterType, type FilterEffectOptions } from './filter-effect'
+export { EffectWrapper, type ExternalEffect } from './effect-wrapper'
 
 // Factory functions
 export { createGainEffect } from './gain-effect'
+export { createFilterEffect } from './filter-effect'
+export { wrapEffect } from './effect-wrapper'
