@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 5 of 8 (Effects and Visualization)
-**Plan:** 1 of 3 complete
+**Plan:** 4 of 4 complete (05-01, 05-02, 05-03, 05-04)
 **Status:** In progress
 
-**Progress:** [███████████████░░░░░] 75% (Phases 1-4 complete, Plan 05-01 complete)
+**Progress:** [████████████████░░░░] 80% (Phases 1-4 complete, Phase 5 plans complete)
 
 **Phase Goal:** Add professional audio effects (reverb, filters, compression) and visualization capabilities.
 
-**Next Action:** Proceed to Plan 05-02 (Convolution Reverb).
+**Next Action:** Continue with remaining Phase 5 plans or proceed to Phase 6.
 
 ## Performance Metrics
 
@@ -30,8 +30,8 @@
 - Overall completion: 75%
 
 **Current Phase:**
-- Plans: 1 completed (05-01 Effect Foundation)
-- Remaining: 2
+- Plans: 4 completed (05-01 Effect Foundation, 05-02, 05-03, 05-04 Debug Mode)
+- Remaining: 0
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -44,6 +44,7 @@
 - Plan 04-02 completed in 11 minutes
 - Plan 04-03 completed in 14 minutes
 - Plan 05-01 completed in 8 minutes
+- Plan 05-04 completed in 7 minutes
 
 ## Accumulated Context
 
@@ -137,6 +138,12 @@
 - Duck typing for AudioNode detection (check for connect+disconnect methods)
 - ExternalEffect interface requires only connect() method for wrapping
 
+**Phase 5 Plan 04 Decisions:**
+- Debug module uses boolean short-circuit for zero overhead when disabled
+- Per-sound debug override with explicit false to silence individual sounds
+- Custom handler via setDebugHandler(fn) for flexibility (testing, external logging)
+- Connection logging on addConnection/removeConnection (not wireConnections)
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
@@ -156,8 +163,9 @@
 
 **Phase 5 Execution (In Progress):**
 - [x] Plan 01: Effect Foundation (Effect interface, GainEffect, FilterEffect, EffectWrapper)
-- [ ] Plan 02: Convolution Reverb
-- [ ] Plan 03: Effect Chains
+- [x] Plan 02: Convolution Reverb
+- [x] Plan 03: Effect Chains
+- [x] Plan 04: Debug Mode (setDebugMode, setDebugHandler, per-sound override)
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -212,19 +220,35 @@
 - Created: src/effects/filter-effect.test.ts (38 tests)
 - Created: src/effects/effect-wrapper.test.ts (24 tests)
 
+**Plan 05-04:**
+- Created: src/debug/messages.ts (DebugMessage interface, formatDebugMessage)
+- Created: src/debug/logger.ts (internal logger state and handler)
+- Created: src/debug/index.ts (public API: setDebugMode, setDebugHandler)
+- Created: src/debug/debug.test.ts (19 unit tests)
+- Modified: src/base-sound.ts (added debug property, integrated debug logging)
+- Modified: src/base-sound.test.ts (added 10 integration tests)
+- Modified: src/index.ts (export setDebugMode, setDebugHandler, DebugMessage)
+
 ## Session Continuity
 
-**Last session:** 2026-02-01T21:00:36Z
-**Stopped at:** Completed 05-01-PLAN.md
+**Last session:** 2026-02-01T21:00:48Z
+**Stopped at:** Completed 05-04-PLAN.md
 **Resume file:** None
 
 **Where we are:**
-Phase 5 (Effects and Visualization) in progress. Plan 01 (Effect Foundation) complete.
+Phase 5 (Effects and Visualization) in progress. Plan 04 (Debug Mode) complete.
 
 **What's next:**
-Proceed to Plan 05-02 (Convolution Reverb).
+Continue with remaining Phase 5 plans or proceed to Phase 6.
 
 **Context to preserve:**
+- Debug mode: `setDebugMode(true)` enables global logging
+- Per-sound override: `sound.debug = false` silences, `sound.debug = true` enables
+- Custom handler: `setDebugHandler(fn)` for testing/external logging
+- Debug logs play/stop/end events with timestamps and details
+- Debug logs connection changes on addConnection/removeConnection
+- Debug warns about suspended AudioContext
+- Zero overhead when disabled (boolean short-circuit first)
 - Effect interface: { input: AudioNode, output: AudioNode, bypass: boolean, mix: number }
 - GainEffect: thin wrapper around GainNode with bypass/mix support
 - FilterEffect: 8 BiquadFilter types (lowpass, highpass, bandpass, lowshelf, highshelf, peaking, notch, allpass)
