@@ -24,6 +24,8 @@ import { Track } from '@/track'
 import { Note } from '@/note'
 import type { OscillatorOpts } from '@/oscillator'
 import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
+import { AudioSprite } from './sprite'
+import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 
 let audioContext: AudioContext
 
@@ -130,6 +132,46 @@ export async function createFont(url: string): Promise<Font> {
   const keyValuePairs = await extractDecodedKeyValuePairs(audioContext, audioData)
   const notes = createNoteObjectsForFont(audioContext, keyValuePairs)
   return new Font(notes)
+}
+
+/**
+ * Create an audio sprite from an audio file and manifest.
+ * Sprites allow playing segments of a single audio file by name.
+ *
+ * @param audioUrl - URL of the audio file
+ * @param manifest - Sprite manifest with timing definitions
+ * @returns AudioSprite instance
+ *
+ * @example
+ * const sprite = await createSprite('sounds.mp3', {
+ *   spritemap: {
+ *     laser: { start: 0, end: 0.3 },
+ *     explosion: { start: 1.0, end: 2.5 }
+ *   }
+ * })
+ * sprite.play('laser', { gain: 0.5 })
+ */
+export async function createSprite(audioUrl: string, manifest: SpriteManifest): Promise<AudioSprite> {
+  await initAudio()
+  let buffer: AudioBuffer
+
+  if (responseCache.has(audioUrl)) {
+    const res = await responseCache.get(audioUrl)!.clone()
+    buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
+  }
+  else {
+    const response = await fetch(audioUrl)
+    if (!response.ok) {
+      throw new AudioLoadError(
+        `HTTP ${response.status} loading sprite audio. URL: ${audioUrl}`,
+        audioUrl,
+      )
+    }
+    responseCache.set(audioUrl, response)
+    buffer = await audioContext.decodeAudioData(await response.clone().arrayBuffer())
+  }
+
+  return new AudioSprite(audioContext, buffer, manifest)
 }
 
 export async function createWhiteNoise(): Promise<Sound> {
@@ -290,6 +332,8 @@ export {
   BeatTrack,
   // Envelope
   Envelope,
+  // Audio Sprites
+  AudioSprite,
   // Preload utilities
   preload,
   isPreloaded,
@@ -311,4 +355,7 @@ export type {
   OscillatorOpts,
   OscillatorOptsFilterValues,
   EnvelopeOptions,
+  SpriteDefinition,
+  SpriteManifest,
+  SpritePlayOptions,
 }
