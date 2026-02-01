@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-01T21:10:31Z
-**Current Focus:** Phase 5 - Effects and Visualization (In Progress)
+**Last Updated:** 2026-02-01T21:19:00Z
+**Current Focus:** Phase 5 - Effects and Visualization (Complete)
 
 ## Project Reference
 
@@ -13,24 +13,24 @@
 
 **Phase:** 5 of 8 (Effects and Visualization)
 **Plan:** 4 of 4 complete (05-01, 05-02, 05-03, 05-04)
-**Status:** In progress
+**Status:** Phase complete
 
-**Progress:** [████████████████░░░░] 80% (Phases 1-4 complete, Phase 5 plans complete)
+**Progress:** [████████████████████] 100% (Phases 1-5 complete)
 
 **Phase Goal:** Add professional audio effects (reverb, filters, compression) and visualization capabilities.
 
-**Next Action:** Continue with remaining Phase 5 plans or proceed to Phase 6.
+**Next Action:** Proceed to Phase 6 (Polyphony) or Phase 8 (Documentation).
 
 ## Performance Metrics
 
 **Roadmap:**
 - Total phases: 8
-- Current phase: 5 (in progress)
-- Completed phases: 4
-- Overall completion: 75%
+- Current phase: 5 (complete)
+- Completed phases: 5
+- Overall completion: 80%
 
 **Current Phase:**
-- Plans: 4 completed (05-01 Effect Foundation, 05-02, 05-03, 05-04 Debug Mode)
+- Plans: 4 completed (05-01 Effect Foundation, 05-02 Effect Integration, 05-03 Analyzer, 05-04 Debug Mode)
 - Remaining: 0
 
 **Velocity:**
@@ -45,6 +45,7 @@
 - Plan 04-03 completed in 14 minutes
 - Plan 05-01 completed in 8 minutes
 - Plan 05-02 completed in 6 minutes
+- Plan 05-03 completed in 6 minutes
 - Plan 05-04 completed in 7 minutes
 
 ## Accumulated Context
@@ -57,6 +58,7 @@
 - LayeredSound uses composition over inheritance (Phase 4)
 - Effects integrate with existing connections array (Phase 5)
 - Effect interface: input, output, bypass, mix properties (Phase 5)
+- Analyzer at end of chain shows processed signal (Phase 5)
 
 **Technical:**
 - All features use native Web Audio API (zero dependencies maintained)
@@ -145,6 +147,12 @@
 - Legacy connections array preserved for backward compatibility
 - rewireEffects() public method allows bypass toggle updates
 
+**Phase 5 Plan 03 Decisions:**
+- Analyzer inserted AFTER effects (shows processed signal)
+- Pre-allocate typed arrays for zero-allocation polling
+- FFT size validation (power of 2, 32-32768)
+- Compute binCount ourselves (fftSize/2) for mock compatibility
+
 **Phase 5 Plan 04 Decisions:**
 - Debug module uses boolean short-circuit for zero overhead when disabled
 - Per-sound debug override with explicit false to silence individual sounds
@@ -168,10 +176,10 @@
 - [x] Plan 02: BeatTrack timing improvements (stop/pause/tempo)
 - [x] Plan 03: Crossfade utilities (smooth track transitions)
 
-**Phase 5 Execution (In Progress):**
+**Phase 5 Execution (Complete):**
 - [x] Plan 01: Effect Foundation (Effect interface, GainEffect, FilterEffect, EffectWrapper)
-- [x] Plan 02: Convolution Reverb
-- [x] Plan 03: Effect Chains
+- [x] Plan 02: Effect Integration (addEffect, wireEffectChain, setDestination)
+- [x] Plan 03: Analyzer (frequency/waveform visualization data)
 - [x] Plan 04: Debug Mode (setDebugMode, setDebugHandler, per-sound override)
 
 **Cross-Phase:**
@@ -207,7 +215,7 @@
 - Phase 2: Fast retriggering edge cases - COMPLETE (Plan 03), polyphonic note management - future
 - Phase 3: Standard patterns (no deep research needed) - COMPLETE
 - Phase 4: Voice pooling strategies (needs research during planning)
-- Phase 5: Impulse response sourcing, FFT optimization (needs research during planning)
+- Phase 5: Impulse response sourcing, FFT optimization (needs research during planning) - COMPLETE
 
 **Dependency Chain:**
 - Events foundational for all features - COMPLETE
@@ -234,6 +242,13 @@
 - Modified: src/index.ts (export effect factories, classes, types)
 - Modified: src/base-sound.test.ts (added 21 effect system integration tests)
 
+**Plan 05-03:**
+- Created: src/analyzer.ts (Analyzer class, AnalyzerOptions interface, createAnalyzer factory)
+- Created: src/analyzer.test.ts (36 tests)
+- Modified: src/base-sound.ts (added _analyzer, setAnalyzer, getAnalyzer, updated wireEffectChain)
+- Modified: src/base-sound.test.ts (added 10 analyzer integration tests)
+- Modified: src/index.ts (export Analyzer, createAnalyzer, AnalyzerOptions)
+
 **Plan 05-04:**
 - Created: src/debug/messages.ts (DebugMessage interface, formatDebugMessage)
 - Created: src/debug/logger.ts (internal logger state and handler)
@@ -245,20 +260,26 @@
 
 ## Session Continuity
 
-**Last session:** 2026-02-01T21:10:31Z
-**Stopped at:** Completed 05-02-PLAN.md
+**Last session:** 2026-02-01T21:19:00Z
+**Stopped at:** Completed 05-03-PLAN.md (Phase 5 complete)
 **Resume file:** None
 
 **Where we are:**
-Phase 5 (Effects and Visualization) in progress. Plan 02 (Effect Integration) complete.
+Phase 5 (Effects and Visualization) complete. All 4 plans executed successfully.
 
 **What's next:**
-Continue with remaining Phase 5 plans (05-03) or proceed to Phase 6.
+Proceed to Phase 6 (Polyphony) or Phase 8 (Documentation).
 
 **Context to preserve:**
+- Analyzer: `createAnalyzer(ctx, opts)` returns Analyzer instance
+- Attach to sound: `sound.setAnalyzer(analyzer)`, `sound.getAnalyzer()`
+- Analyzer chain position: after effects, before destination (shows processed signal)
+- Polling methods: `analyzer.getFrequencyData()` (Uint8Array), `analyzer.getTimeDomainData()` (Uint8Array), `analyzer.getFloatFrequencyData()` (Float32Array)
+- FFT configuration: `{ fftSize, minDecibels, maxDecibels, smoothingTimeConstant }`
+- Pre-allocated arrays: zero-allocation polling for requestAnimationFrame
 - Effect integration: `sound.addEffect(effect)`, `sound.removeEffect(effect)`, `sound.getEffects()`
 - Custom routing: `sound.setDestination(node)` for sub-mixes and analyzers
-- Effect chain: source -> effectChainInput -> [effects] -> gain -> panner -> destination
+- Effect chain: source -> effectChainInput -> [effects] -> gain -> panner -> [analyzer] -> destination
 - Persistent effects: chain wired once, only source reconnects on play()
 - Bypass support: `effect.bypass = true` then `sound.rewireEffects()` to update chain
 - Debug mode: `setDebugMode(true)` enables global logging
@@ -296,4 +317,4 @@ Continue with remaining Phase 5 plans (05-03) or proceed to Phase 6.
 
 ---
 
-*STATE.md updated: 2026-02-01T21:10:31Z*
+*STATE.md updated: 2026-02-01T21:19:00Z*
