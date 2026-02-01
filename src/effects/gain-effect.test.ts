@@ -1,0 +1,180 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { GainEffect, createGainEffect } from './gain-effect'
+import type { Effect } from './index'
+
+function createMockContext() {
+  return new Mock() as unknown as AudioContext
+}
+
+describe('GainEffect', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  describe('creation', () => {
+    it('can be created with default value', () => {
+      const effect = new GainEffect(audioContext)
+      expect(effect).toBeTruthy()
+      expect(effect.value).toBe(1.0)
+    })
+
+    it('can be created with custom initial value', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      expect(effect.value).toBe(0.5)
+    })
+
+    it('factory function creates instance with default value', () => {
+      const effect = createGainEffect(audioContext)
+      expect(effect).toBeInstanceOf(GainEffect)
+      expect(effect.value).toBe(1.0)
+    })
+
+    it('factory function creates instance with custom value', () => {
+      const effect = createGainEffect(audioContext, 0.75)
+      expect(effect).toBeInstanceOf(GainEffect)
+      expect(effect.value).toBe(0.75)
+    })
+  })
+
+  describe('Effect interface implementation', () => {
+    it('has input property that is a GainNode', () => {
+      const effect = new GainEffect(audioContext)
+      expect(effect.input).toBeTruthy()
+      // Verify it's a GainNode by checking for gain property
+      expect((effect.input as GainNode).gain).toBeTruthy()
+    })
+
+    it('has output property that is a GainNode', () => {
+      const effect = new GainEffect(audioContext)
+      expect(effect.output).toBeTruthy()
+      // Verify it's a GainNode by checking for gain property
+      expect((effect.output as GainNode).gain).toBeTruthy()
+    })
+
+    it('input and output are the same node (single-node effect)', () => {
+      const effect = new GainEffect(audioContext)
+      expect(effect.input).toBe(effect.output)
+    })
+
+    it('has bypass property', () => {
+      const effect = new GainEffect(audioContext)
+      expect(typeof effect.bypass).toBe('boolean')
+      expect(effect.bypass).toBe(false)
+    })
+
+    it('has mix property', () => {
+      const effect = new GainEffect(audioContext)
+      expect(typeof effect.mix).toBe('number')
+      expect(effect.mix).toBe(1)
+    })
+
+    it('implements Effect interface', () => {
+      const effect: Effect = new GainEffect(audioContext)
+      expect(effect.input).toBeTruthy()
+      expect(effect.output).toBeTruthy()
+      expect(typeof effect.bypass).toBe('boolean')
+      expect(typeof effect.mix).toBe('number')
+    })
+  })
+
+  describe('value getter/setter', () => {
+    it('value getter returns current value', () => {
+      const effect = new GainEffect(audioContext, 0.8)
+      expect(effect.value).toBe(0.8)
+    })
+
+    it('value setter updates value', () => {
+      const effect = new GainEffect(audioContext)
+      effect.value = 0.3
+      expect(effect.value).toBe(0.3)
+    })
+
+    it('value setter updates the underlying GainNode', () => {
+      const effect = new GainEffect(audioContext)
+      effect.value = 0.6
+      expect((effect.input as GainNode).gain.value).toBe(0.6)
+    })
+  })
+
+  describe('bypass behavior', () => {
+    it('bypass defaults to false', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      expect(effect.bypass).toBe(false)
+    })
+
+    it('bypass=true sets gain to 1.0 (passthrough)', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.bypass = true
+      expect((effect.input as GainNode).gain.value).toBe(1.0)
+    })
+
+    it('bypass=false restores original value', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.bypass = true
+      effect.bypass = false
+      expect((effect.input as GainNode).gain.value).toBe(0.5)
+    })
+
+    it('bypass preserves value property while bypassed', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.bypass = true
+      expect(effect.value).toBe(0.5) // value property unchanged
+      expect((effect.input as GainNode).gain.value).toBe(1.0) // but actual gain is 1.0
+    })
+
+    it('changing value while bypassed updates stored value', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.bypass = true
+      effect.value = 0.3
+      expect(effect.value).toBe(0.3)
+      expect((effect.input as GainNode).gain.value).toBe(1.0) // still bypassed
+      effect.bypass = false
+      expect((effect.input as GainNode).gain.value).toBeCloseTo(0.3, 5) // restored to new value
+    })
+  })
+
+  describe('mix behavior', () => {
+    it('mix defaults to 1', () => {
+      const effect = new GainEffect(audioContext)
+      expect(effect.mix).toBe(1)
+    })
+
+    it('mix=0 results in passthrough (gain of 1.0)', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.mix = 0
+      // effectiveGain = 1 + (0.5 - 1) * 0 = 1
+      expect((effect.input as GainNode).gain.value).toBe(1.0)
+    })
+
+    it('mix=1 applies full effect', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.mix = 1
+      expect((effect.input as GainNode).gain.value).toBe(0.5)
+    })
+
+    it('mix=0.5 applies half effect', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.mix = 0.5
+      // effectiveGain = 1 + (0.5 - 1) * 0.5 = 1 + (-0.5) * 0.5 = 1 - 0.25 = 0.75
+      expect((effect.input as GainNode).gain.value).toBe(0.75)
+    })
+
+    it('mix is clamped to 0-1 range', () => {
+      const effect = new GainEffect(audioContext)
+      effect.mix = -0.5
+      expect(effect.mix).toBe(0)
+      effect.mix = 1.5
+      expect(effect.mix).toBe(1)
+    })
+
+    it('mix does not affect gain when bypassed', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      effect.bypass = true
+      effect.mix = 0.5
+      expect((effect.input as GainNode).gain.value).toBe(1.0) // still bypassed
+    })
+  })
+})
