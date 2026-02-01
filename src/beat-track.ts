@@ -3,6 +3,7 @@ import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
 import { Sampler } from './sampler'
+import type { BeatTrackEventMap } from './events/event-types'
 
 const beatBank = new WeakMap()
 
@@ -30,12 +31,24 @@ export interface BeatTrackOptions extends SamplerOptions {
  *
  * @class BeatTrack
  * @extends Sampler
- *
- * @todo need a way to stop a BeatTrack once it's started. Maybe by creating
- * the times in advance and not calling play until it's the next beat in the
- * queue?
  */
 export class BeatTrack extends Sampler {
+  // EventTarget for event emission
+  private eventTarget: EventTarget = new EventTarget()
+
+  // Lookahead scheduler state
+  private scheduleAheadTime = 0.1  // 100ms lookahead
+  private schedulerInterval = 25   // 25ms check interval
+  private nextBeatTime = 0
+  private currentBeatIndex = 0
+  private timerID: number | null = null
+  private currentTempo: number = 120
+  private noteType: number = 1/4
+
+  // Pause state
+  private pausedBeatIndex: number | null = null
+  private pausedBeatTime: number | null = null
+
   constructor(private audioContext: AudioContext, sounds: (Playable & Connectable)[], opts?: BeatTrackOptions) {
     super(sounds, opts)
     if (opts?.numBeats) {
@@ -127,7 +140,11 @@ export class BeatTrack extends Sampler {
    * eighth notes, pass in `1/8`.
    */
   public playBeats(bpm: number, noteType: number): void {
-    this.callPlayMethodOnBeats('playIn', bpm, noteType)
+    this.currentTempo = bpm
+    this.noteType = noteType
+    this.nextBeatTime = this.audioContext.currentTime
+    this.currentBeatIndex = 0
+    this.scheduler()
   }
 
   /**
@@ -142,7 +159,143 @@ export class BeatTrack extends Sampler {
    * eighth notes, pass in `1/8`.
    */
   public playActiveBeats(bpm: number, noteType: number): void {
-    this.callPlayMethodOnBeats('ifActivePlayIn', bpm, noteType)
+    this.currentTempo = bpm
+    this.noteType = noteType
+    this.nextBeatTime = this.audioContext.currentTime
+    this.currentBeatIndex = 0
+    this.scheduler()
+  }
+
+  /**
+   * @method stop
+   * Stops the beat scheduler immediately and resets position to beginning.
+   * Emits 'stop' event.
+   */
+  public stop(): void {
+    if (this.timerID !== null) {
+      clearTimeout(this.timerID)
+      this.timerID = null
+    }
+
+    this.currentBeatIndex = 0
+    this.nextBeatTime = 0
+    this.pausedBeatIndex = null
+    this.pausedBeatTime = null
+
+    this.emit('stop', {
+      time: this.audioContext.currentTime,
+      source: this
+    })
+  }
+
+  /**
+   * @method pause
+   * Pauses beat playback and preserves current position.
+   * Emits 'pause' event with current beat index.
+   */
+  public pause(): void {
+    if (this.timerID !== null) {
+      clearTimeout(this.timerID)
+      this.timerID = null
+    }
+
+    this.pausedBeatIndex = this.currentBeatIndex
+    this.pausedBeatTime = this.nextBeatTime
+
+    this.emit('pause', {
+      time: this.audioContext.currentTime,
+      source: this,
+      beatIndex: this.currentBeatIndex
+    })
+  }
+
+  /**
+   * @method resume
+   * Resumes beat playback from paused position.
+   * Emits 'resume' event with beat index.
+   */
+  public resume(): void {
+    if (this.pausedBeatIndex !== null) {
+      this.currentBeatIndex = this.pausedBeatIndex
+      this.nextBeatTime = this.pausedBeatTime ?? this.audioContext.currentTime
+
+      this.emit('resume', {
+        time: this.audioContext.currentTime,
+        source: this,
+        beatIndex: this.currentBeatIndex
+      })
+
+      this.scheduler()
+
+      this.pausedBeatIndex = null
+      this.pausedBeatTime = null
+    }
+  }
+
+  /**
+   * @method setTempo
+   * Changes the tempo. Takes effect on next scheduled beat.
+   *
+   * @param {number} bpm New tempo in beats per minute
+   */
+  public setTempo(bpm: number): void {
+    this.currentTempo = bpm
+  }
+
+  /**
+   * @method scheduler
+   * Lookahead scheduler that schedules beats 100ms ahead.
+   * @private
+   */
+  private scheduler(): void {
+    const currentTime = this.audioContext.currentTime
+
+    // Schedule all beats within lookahead window
+    while (this.nextBeatTime < currentTime + this.scheduleAheadTime) {
+      this.scheduleBeat(this.currentBeatIndex, this.nextBeatTime)
+      this.advanceToNextBeat()
+    }
+
+    this.timerID = window.setTimeout(
+      () => this.scheduler(),
+      this.schedulerInterval
+    )
+  }
+
+  /**
+   * @method scheduleBeat
+   * Schedules a single beat and emits beat event.
+   * @private
+   */
+  private scheduleBeat(beatIndex: number, time: number): void {
+    const beat = this.beats[beatIndex]
+
+    if (beat.active) {
+      // Schedule sound playback at exact time
+      beat.playIn(time - this.audioContext.currentTime)
+    }
+
+    // Emit beat event at SCHEDULE time (lookahead), not play time
+    // This gives UI ~100ms advance notice for smooth animations
+    this.emit('beat', {
+      time,
+      beatIndex,
+      active: beat.active,
+      source: this
+    })
+  }
+
+  /**
+   * @method advanceToNextBeat
+   * Advances to next beat using current tempo.
+   * @private
+   */
+  private advanceToNextBeat(): void {
+    // Calculate beat duration from CURRENT tempo
+    // http://bradthemad.org/guitar/tempo_explanation.php
+    const beatDuration = (240 * this.noteType) / this.currentTempo
+    this.nextBeatTime += beatDuration
+    this.currentBeatIndex = (this.currentBeatIndex + 1) % this.beats.length
   }
 
   /**
@@ -160,5 +313,72 @@ export class BeatTrack extends Sampler {
     // http://bradthemad.org/guitar/tempo_explanation.php
     const duration = (240 * noteType) / bpm
     this.beats.forEach((beat, idx) => beat[method](idx * duration))
+  }
+
+  /**
+   * Type-safe event emission for BeatTrack events.
+   * @protected
+   */
+  protected emit<K extends keyof BeatTrackEventMap>(
+    type: K,
+    detail: BeatTrackEventMap[K]['detail']
+  ): void {
+    const event = new CustomEvent(type, { detail })
+    this.eventTarget.dispatchEvent(event)
+  }
+
+  /**
+   * Type-safe addEventListener for BeatTrack events.
+   */
+  addEventListener<K extends keyof BeatTrackEventMap>(
+    type: K,
+    listener: (event: BeatTrackEventMap[K]) => void,
+    options?: boolean | AddEventListenerOptions
+  ): void {
+    this.eventTarget.addEventListener(type, listener as EventListener, options)
+  }
+
+  /**
+   * Type-safe removeEventListener for BeatTrack events.
+   */
+  removeEventListener<K extends keyof BeatTrackEventMap>(
+    type: K,
+    listener: (event: BeatTrackEventMap[K]) => void,
+    options?: boolean | EventListenerOptions
+  ): void {
+    this.eventTarget.removeEventListener(type, listener as EventListener, options)
+  }
+
+  /**
+   * Convenience method for adding event listeners.
+   */
+  on<K extends keyof BeatTrackEventMap>(
+    type: K,
+    listener: (event: BeatTrackEventMap[K]) => void
+  ): this {
+    this.addEventListener(type, listener)
+    return this
+  }
+
+  /**
+   * Convenience method for removing event listeners.
+   */
+  off<K extends keyof BeatTrackEventMap>(
+    type: K,
+    listener: (event: BeatTrackEventMap[K]) => void
+  ): this {
+    this.removeEventListener(type, listener)
+    return this
+  }
+
+  /**
+   * Convenience method for adding one-time event listeners.
+   */
+  once<K extends keyof BeatTrackEventMap>(
+    type: K,
+    listener: (event: BeatTrackEventMap[K]) => void
+  ): this {
+    this.addEventListener(type, listener, { once: true })
+    return this
   }
 }
