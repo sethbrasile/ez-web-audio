@@ -12,7 +12,18 @@ dist
 dist-app
 dist-docs
 dist-ssr
-docs
+
+# Docs (generated content, but keep VitePress config and source)
+docs/api/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+!docs/.vitepress/
+!docs/.vitepress/config.mts
+!docs/.vitepress/theme/
+!docs/index.md
+!docs/guide/
+!docs/examples/
+!docs/public/
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +35,4 @@ docs
 *.njsproj
 *.sln
 *.sw?
+.grepai/
