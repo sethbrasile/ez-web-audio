@@ -6,7 +6,9 @@ import dts from 'vite-plugin-dts'
 
 export default defineConfig({
   plugins: [
-    tsconfigPaths(),
+    tsconfigPaths({
+      projects: ['./tsconfig.test.json'], // Use test-specific config for path resolution
+    }),
     dts({
       rollupTypes: false,      // Keep per-file declarations for better IDE "Go to Definition"
       declarationMap: true,    // Enable .d.ts.map files
