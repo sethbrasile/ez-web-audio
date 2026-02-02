@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-02T00:37:33Z
+**Last Updated:** 2026-02-02T00:39:33Z
 **Current Focus:** Phase 7 - Documentation & Demo Site
 
 ## Project Reference
@@ -12,10 +12,10 @@
 ## Current Position
 
 **Phase:** 7 of 8 (Documentation & Demo Site)
-**Plan:** 2 of 3 complete
+**Plan:** 2b of 3 complete (02 and 02b both complete)
 **Status:** In progress
 
-**Progress:** [██████████████████░░] 90% (Phases 1-6 complete, Phase 7 in progress)
+**Progress:** [██████████████████░░] 92% (Phases 1-6 complete, Phase 7 plans 01, 02, 02b complete)
 
 **Phase Goal:** VitePress documentation site with interactive examples and API reference.
 
@@ -47,6 +47,7 @@
 - Plan 06-04 completed in 6 minutes (gap closure)
 - Plan 07-01 completed in 10 minutes
 - Plan 07-02 completed in 8 minutes
+- Plan 07-02b completed in 9 minutes
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@
 **Phase 7 Execution (In Progress):**
 - [x] Plan 01: VitePress Documentation Setup
 - [x] Plan 02: Core API JSDoc Documentation
+- [x] Plan 02b: Remaining Classes JSDoc Documentation
 - [ ] Plan 03: Interactive Examples
 
 **Cross-Phase:**
@@ -128,16 +130,18 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-02T00:37:33Z
-**Stopped at:** Completed 07-02-PLAN.md (Core API JSDoc Documentation)
+**Last session:** 2026-02-02T00:39:33Z
+**Stopped at:** Completed 07-02b-PLAN.md (Remaining Classes JSDoc Documentation)
 **Resume file:** None
 
 **Where we are:**
-Phase 7 Plan 02 complete. Modern JSDoc documentation with @example tags for:
-- All factory functions in index.ts
-- Sound, Track, Oscillator, BaseSound classes
-- Fluent API methods (update, onPlaySet, onPlayRamp)
-- TypeDoc generates comprehensive API reference
+Phase 7 Plans 02 and 02b complete. All public APIs now have modern JSDoc documentation:
+- Core classes: Sound, Track, Oscillator, BaseSound
+- Rhythm classes: Sampler, BeatTrack, Beat, Envelope
+- Utility classes: AudioSprite, Font, Note, SampledNote, LayeredSound
+- Effects: GainEffect, FilterEffect, EffectWrapper, Effect interface
+- Errors: AudioError, AudioContextError, AudioLoadError, InvalidNoteError
+- Mixin: MusicallyAware
 
 **What's next:**
 Plan 03 (Interactive Examples) - Create demo pages with working audio examples.
@@ -148,7 +152,8 @@ Plan 03 (Interactive Examples) - Create demo pages with working audio examples.
 - VitePress dev server: `npx vitepress dev docs`
 - TypeDoc generation: `pnpm typedoc`
 - JSDoc pattern: class-level docs + method @example blocks
+- All YUIDoc syntax removed from codebase
 
 ---
 
-*STATE.md updated: 2026-02-02T00:37:33Z*
+*STATE.md updated: 2026-02-02T00:39:33Z*
