@@ -1,0 +1,125 @@
+<template>
+  <div class="audio-demo">
+    <div class="controls">
+      <button @click="play" :disabled="loading" class="play-btn">
+        {{ loading ? 'Loading...' : 'Play Sound' }}
+      </button>
+      <div class="sliders">
+        <label>
+          Volume: {{ Math.round(gain * 100) }}%
+          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" />
+        </label>
+        <label>
+          Pan: {{ pan < 0 ? 'L' : pan > 0 ? 'R' : 'C' }} {{ Math.abs(Math.round(pan * 100)) }}
+          <input type="range" v-model.number="pan" min="-1" max="1" step="0.1" />
+        </label>
+      </div>
+    </div>
+    <div v-if="error" class="error">{{ error }}</div>
+    <slot></slot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onUnmounted } from 'vue'
+
+const props = defineProps<{
+  url?: string
+}>()
+
+const loading = ref(false)
+const error = ref('')
+const gain = ref(1)
+const pan = ref(0)
+
+let sound: any = null
+
+async function play() {
+  if (loading.value) return
+
+  try {
+    error.value = ''
+    loading.value = true
+
+    // Dynamic import for SSR compatibility
+    const { initAudio, createSound } = await import('ez-web-audio')
+    await initAudio()
+
+    const audioUrl = props.url || '/ez-web-audio/audio/click.mp3'
+    sound = await createSound(audioUrl)
+    sound.changeGainTo(gain.value)
+    sound.changePanTo(pan.value)
+    sound.play()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to play sound'
+  } finally {
+    loading.value = false
+  }
+}
+
+onUnmounted(() => {
+  if (sound) {
+    try { sound.stop() } catch {}
+  }
+})
+</script>
+
+<style scoped>
+.audio-demo {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--vp-c-bg-soft);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.play-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--vp-c-brand);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.play-btn:hover:not(:disabled) {
+  background: var(--vp-c-brand-dark);
+}
+
+.play-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sliders label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sliders input[type="range"] {
+  width: 120px;
+}
+
+.error {
+  color: var(--vp-c-danger);
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+</style>
