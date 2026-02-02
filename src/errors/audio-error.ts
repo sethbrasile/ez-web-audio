@@ -2,7 +2,21 @@
  * Base error class for all audio-related errors.
  *
  * Provides a consistent error structure with optional error codes
- * for programmatic error handling.
+ * for programmatic error handling. Subclasses add specific context
+ * like URL, note identifier, or AudioContext state.
+ *
+ * @example
+ * ```typescript
+ * import { AudioError } from 'ez-web-audio'
+ *
+ * try {
+ *   await sound.play()
+ * } catch (e) {
+ *   if (e instanceof AudioError) {
+ *     console.error(`Audio error [${e.code}]: ${e.message}`)
+ *   }
+ * }
+ * ```
  */
 export class AudioError extends Error {
   /**
