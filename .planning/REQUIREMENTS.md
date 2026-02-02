@@ -127,18 +127,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **DOC-01**: All public classes documented with TypeDoc
-- [ ] **DOC-02**: All public methods have JSDoc with examples
-- [ ] **DOC-03**: Getting started guide exists
-- [ ] **DOC-04**: API reference is complete and navigable
-- [ ] **DOC-05**: Interactive examples for each major feature
+- [x] **DOC-01**: All public classes documented with TypeDoc
+- [x] **DOC-02**: All public methods have JSDoc with examples
+- [x] **DOC-03**: Getting started guide exists
+- [x] **DOC-04**: API reference is complete and navigable
+- [x] **DOC-05**: Interactive examples for each major feature
 
 ### Demo Site
 
-- [ ] **SITE-01**: Demo site migrated to Vue + Vitepress
-- [ ] **SITE-02**: Interactive examples work in browser
-- [ ] **SITE-03**: API docs generated and integrated
-- [ ] **SITE-04**: Site is deployed and accessible
+- [x] **SITE-01**: Demo site migrated to Vue + Vitepress
+- [x] **SITE-02**: Interactive examples work in browser
+- [x] **SITE-03**: API docs generated and integrated
+- [x] **SITE-04**: Site is deployed and accessible
 
 ### Build & Distribution
 
@@ -202,8 +202,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIZ-01 to VIZ-05 | Phase 5 | Complete |
 | DBG-01 to DBG-05 | Phase 5 | Complete |
 | TEST-01 to TEST-08 | Phase 6 | Complete |
-| DOC-01 to DOC-05 | Phase 7 | Pending |
-| SITE-01 to SITE-04 | Phase 7 | Pending |
+| DOC-01 to DOC-05 | Phase 7 | Complete |
+| SITE-01 to SITE-04 | Phase 7 | Complete |
 | BUILD-01 to BUILD-04 | Phase 8 | Pending |
 
 **Coverage:**
