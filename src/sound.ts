@@ -4,23 +4,47 @@ import { SoundController } from './controllers/sound-controller'
 import { BaseSound } from './base-sound'
 
 /**
- * The Sound class provides the core functionality for
- * interacting with the Web Audio API's AudioContext, and is the base class for
- * all other {{#crossLinkModule "Audio"}}{{/crossLinkModule}} types. It prepares
- * an audio source, provides various methods for interacting with the audio source,
- * creates {{#crossLink "AudioNode"}}AudioNodes{{/crossLink}} from the
- * nodes array, sets up the necessary nodes/routing between them,
- * and provides some methods to {{#crossLink "Playable/play:method"}}{{/crossLink}}
- * and {{#crossLink "Sound/stop:method"}}{{/crossLink}} the audio source.
+ * One-shot audio playback from an AudioBuffer.
  *
- * @public
- * @class Sound
- * @implements Playable
+ * Sound is the core class for playing audio files. Each `.play()` call creates
+ * a new AudioBufferSourceNode, allowing simultaneous overlapping playback.
+ * Use {@link Track} instead if you need pause/resume/seek functionality.
+ *
+ * Sound extends {@link BaseSound} and inherits all audio parameter controls
+ * (gain, pan) and the fluent API for scheduling parameter changes.
+ *
+ * @example
+ * ```typescript
+ * import { createSound } from 'ez-web-audio'
+ *
+ * const sound = await createSound('click.mp3')
+ * sound.play()
+ *
+ * // Adjust volume before playing
+ * sound.changeGainTo(0.5)
+ * sound.play()
+ *
+ * // Schedule a fade-in
+ * sound.onPlaySet('gain').to(0).endingAt(1, 'exponential')
+ * sound.play()
+ * ```
  */
 export class Sound extends BaseSound {
+  /** The underlying AudioBufferSourceNode that plays the audio. */
   public audioSourceNode: AudioBufferSourceNode
+
+  /** Controller for managing gain, pan, and other audio parameters. */
   protected controller: SoundController
 
+  /**
+   * Create a Sound instance.
+   *
+   * Note: Use {@link createSound} factory function instead of calling this directly.
+   *
+   * @param audioContext - The AudioContext to use for audio operations
+   * @param audioBuffer - The decoded audio data to play
+   * @param opts - Optional configuration (name, setTimeout override)
+   */
   constructor(audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: any) {
     super(audioContext, opts)
 
@@ -32,6 +56,12 @@ export class Sound extends BaseSound {
     this.controller = new SoundController(this.audioSourceNode, this.gainNode, this.pannerNode)
   }
 
+  /**
+   * Set up a new AudioBufferSourceNode for playback.
+   * Called automatically before each play() - creates fresh source nodes
+   * since AudioBufferSourceNode is single-use.
+   * @protected
+   */
   protected setup(): void {
     // Disconnect old source if exists (prevents memory leak from accumulated nodes)
     if (this.audioSourceNode) {
@@ -65,6 +95,10 @@ export class Sound extends BaseSound {
     }
   }
 
+  /**
+   * Wire audio source through connections to the effect chain.
+   * @protected
+   */
   protected wireConnections(): void {
     // Connect source through legacy connections (if any) to the effect chain input
     // Chain: audioSourceNode -> [legacy connections] -> effectChainInput -> [effects] -> gain -> panner -> destination
@@ -90,6 +124,22 @@ export class Sound extends BaseSound {
     // Effect chain is already wired (gain -> panner -> destination) in BaseSound
   }
 
+  /**
+   * Get the duration of the audio buffer.
+   *
+   * Returns a TimeObject with the duration in multiple formats:
+   * - `raw`: Duration in seconds
+   * - `string`: Formatted as 'MM:SS'
+   * - `pojo`: Object with `minutes` and `seconds` properties
+   *
+   * @example
+   * ```typescript
+   * const sound = await createSound('song.mp3')
+   * console.log(sound.duration.raw)    // 180.5
+   * console.log(sound.duration.string) // '3:00'
+   * console.log(sound.duration.pojo)   // { minutes: 3, seconds: 0 }
+   * ```
+   */
   public get duration(): TimeObject {
     const buffer = this.audioSourceNode.buffer
     if (buffer === null)

@@ -5,35 +5,57 @@ import type { SeekType } from './controllers/base-param-controller'
 import withinRange from './utils/within-range'
 
 /**
- * A class that represents a "track" of music, similar in concept to a track on
- * a CD or an MP3 player. Provides methods for tracking the play position of the
- * underlying {{#crossLink "AudioBuffer"}}{{/crossLink}}, and pausing/resuming.
+ * Music track with position tracking, pause/resume, and seeking.
  *
- * @class Track
- * @extends Sound
+ * Track extends {@link Sound} with playback position awareness. Use Track for longer
+ * audio files where users need to pause, resume, or seek to specific positions.
+ * Each Track can only play once at a time (unlike Sound which allows overlap).
+ *
+ * @example
+ * ```typescript
+ * import { createTrack } from 'ez-web-audio'
+ *
+ * const track = await createTrack('song.mp3')
+ * track.play()
+ *
+ * // Pause and resume
+ * track.pause()
+ * track.resume()
+ *
+ * // Seek to 30 seconds
+ * track.seek(30).from('seconds')
+ *
+ * // Get current position
+ * console.log(track.position)
+ * // { raw: 30.5, string: '0:30', pojo: { minutes: 0, seconds: 30 } }
+ *
+ * // Check playback state
+ * console.log(track.isPlaying)     // true
+ * console.log(track.percentPlayed) // 15.5
+ * ```
  */
 export class Track extends Sound {
-  /**
-   * Stores the requestAnimationFrame ID for position tracking cleanup.
-   * @private
-   */
+  /** Stores the requestAnimationFrame ID for position tracking cleanup. */
   private rafId: number | null = null
 
   /**
-   * @property position Value is an object containing the current play position
-   * of the audioBuffer in three formats. The three
-   * formats are `raw`, `string`, and `pojo`.
+   * Get the current playback position.
    *
-   * Play position of 6 minutes would be output as:
+   * Returns a TimeObject with the position in multiple formats:
+   * - `raw`: Position in seconds
+   * - `string`: Formatted as 'MM:SS'
+   * - `pojo`: Object with `minutes` and `seconds` properties
    *
-   *     {
-   *       raw: 360, // seconds
-   *       string: '06:00',
-   *       pojo: {
-   *         minutes: 6,
-   *         seconds: 0
-   *       }
-   *     }
+   * @example
+   * ```typescript
+   * const track = await createTrack('song.mp3')
+   * track.play()
+   *
+   * // After playing for a while
+   * console.log(track.position.raw)    // 65.5
+   * console.log(track.position.string) // '1:05'
+   * console.log(track.position.pojo)   // { minutes: 1, seconds: 5 }
+   * ```
    */
   public get position(): TimeObject {
     const offset = this.startOffset
@@ -43,9 +65,16 @@ export class Track extends Sound {
   }
 
   /**
-   * @property percentPlayed
-   * Value is the current play position of the
-   * audioBuffer, formatted as a percentage.
+   * Get the current playback position as a percentage (0-100).
+   *
+   * @example
+   * ```typescript
+   * const track = await createTrack('song.mp3')
+   * track.play()
+   *
+   * // Use for progress bar
+   * progressBar.style.width = `${track.percentPlayed}%`
+   * ```
    */
   public get percentPlayed(): number {
     const ratio = this.startOffset / this.duration.raw
@@ -53,11 +82,9 @@ export class Track extends Sound {
   }
 
   /**
-   * Hook called after playback starts (from any play method).
+   * Hook called after playback starts.
    * Sets up the onended handler and starts position tracking.
-   *
    * @protected
-   * @override
    */
   protected override _onPlaybackStarted(): void {
     this.audioSourceNode.onended = () => this.stop()
@@ -65,11 +92,24 @@ export class Track extends Sound {
   }
 
   /**
-   * @method pause
-   * Pauses the audio source by stopping without
-   * setting startOffset back to 0.
+   * Pause playback at the current position.
    *
-   * Emits 'pause' event with the current playback position.
+   * The track remembers its position so it can be resumed later.
+   * Emits a 'pause' event with the current playback position.
+   *
+   * @example
+   * ```typescript
+   * const track = await createTrack('song.mp3')
+   * track.play()
+   *
+   * // Pause after 5 seconds
+   * setTimeout(() => track.pause(), 5000)
+   *
+   * // Listen for pause events
+   * track.on('pause', (e) => {
+   *   console.log('Paused at', e.detail.position)
+   * })
+   * ```
    */
   public pause(): void {
     // Cancel RAF first to prevent runaway loop
@@ -97,10 +137,25 @@ export class Track extends Sound {
   }
 
   /**
-   * @method resume
-   * Resume playback from paused position.
+   * Resume playback from the paused position.
    *
-   * Emits 'resume' event with the current playback position.
+   * If the track was paused, resumes from where it left off.
+   * Emits a 'resume' event with the playback position.
+   *
+   * @example
+   * ```typescript
+   * const track = await createTrack('song.mp3')
+   * track.play()
+   * track.pause()
+   *
+   * // Resume later
+   * track.resume()
+   *
+   * // Listen for resume events
+   * track.on('resume', (e) => {
+   *   console.log('Resumed at', e.detail.position)
+   * })
+   * ```
    */
   public resume(): void {
     if (!this._isPlaying && this.startOffset > 0) {
@@ -117,9 +172,20 @@ export class Track extends Sound {
   }
 
   /**
-   * @method stop
-   * Stops the audio source and sets
-   * startOffset to 0.
+   * Stop playback and reset position to the beginning.
+   *
+   * Unlike pause(), stop() resets the playback position to 0.
+   * The next play() will start from the beginning.
+   *
+   * @example
+   * ```typescript
+   * const track = await createTrack('song.mp3')
+   * track.play()
+   *
+   * // Stop and reset
+   * await track.stop()
+   * console.log(track.position.raw) // 0
+   * ```
    */
   public override async stop(): Promise<void> {
     // Cancel RAF first to prevent runaway loop
@@ -137,10 +203,9 @@ export class Track extends Sound {
   }
 
   /**
-   * @method trackPlayPosition
-   * Sets up a `requestAnimationFrame` based loop that updates the
-   * startOffset as `audioContext.currentTime` grows.
-   * Loop ends when `_isPlaying` is false or when cancelled via stop/pause.
+   * Update startOffset using requestAnimationFrame for smooth position tracking.
+   * Loop ends when playback stops or is paused.
+   * @private
    */
   private trackPlayPosition(): void {
     const { audioContext, startedPlayingAt, startOffset } = this
@@ -159,23 +224,34 @@ export class Track extends Sound {
   }
 
   /**
-   * Gets the bufferSource and stops the initAudio,
-   * changes it's play position, and restarts the audio.
+   * Seek to a specific position in the track.
    *
-   * Emits 'seek' event with the new and previous playback positions.
+   * Returns a fluent builder with `.from(type)` to specify the unit of the value:
+   * - `'seconds'`: Absolute position in seconds
+   * - `'percent'`: Percentage of total duration (0-100)
+   * - `'ratio'`: Ratio of total duration (0-1)
+   * - `'inverseRatio'`: Distance from end as ratio (0 = end, 1 = start)
    *
-   * returns a pojo with the `from` method that `value` is curried to, allowing
-   * one to specify which type of value is being provided.
+   * Emits a 'seek' event with the new and previous positions.
+   *
+   * @param amount - The position value (meaning depends on the `.from()` type)
+   * @returns Fluent builder with `.from(type)` method
    *
    * @example
-   *     // for a Sound instance with a duration of 100 seconds, these will all
-   *     // move the play position to 90 seconds.
-   *     soundInstance.seek(0.9).from('ratio');
-   *     soundInstance.seek(0.1).from('inverseRatio')
-   *     soundInstance.seek(90).from('percent');
-   *     soundInstance.seek(90).from('seconds');
+   * ```typescript
+   * const track = await createTrack('song.mp3')
    *
-   * @param {number} amount The new play position value.
+   * // For a track with 100 second duration, all of these seek to 90 seconds:
+   * track.seek(90).from('seconds')
+   * track.seek(90).from('percent')
+   * track.seek(0.9).from('ratio')
+   * track.seek(0.1).from('inverseRatio')
+   *
+   * // Listen for seek events
+   * track.on('seek', (e) => {
+   *   console.log('Seeked from', e.detail.previousPosition, 'to', e.detail.position)
+   * })
+   * ```
    */
   public seek(amount: number): { from: (type: SeekType) => void } {
     const duration = this.duration.raw
