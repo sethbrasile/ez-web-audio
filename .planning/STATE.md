@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-02T00:52:16Z
+**Last Updated:** 2026-02-02T01:32:00Z
 **Current Focus:** Phase 7 - Documentation & Demo Site (Complete)
 
 ## Project Reference
@@ -12,7 +12,7 @@
 ## Current Position
 
 **Phase:** 7 of 8 (Documentation & Demo Site)
-**Plan:** 5 of 5 complete
+**Plan:** 6 of 6 complete
 **Status:** Phase 7 complete
 
 **Progress:** [███████████████████░] 95% (Phases 1-7 complete)
@@ -27,7 +27,7 @@
 - Total phases: 8
 - Current phase: 7 (complete)
 - Completed phases: 7
-- Phase 7 progress: 5/5 plans
+- Phase 7 progress: 6/6 plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -51,6 +51,7 @@
 - Plan 07-03 completed in 3 minutes
 - Plan 07-04 completed in 2 minutes
 - Plan 07-05 completed in 3 minutes
+- Plan 07-06 completed in 38 minutes (includes human verification)
 
 ## Accumulated Context
 
@@ -87,6 +88,8 @@
 - Getting Started prioritizes quick wins (first sound in 5 minutes)
 - Core Concepts uses diagrams and tables for visual clarity
 - Component-first examples: interactive demos at top of pages before code (Plan 05)
+- Combined TypeDoc + VitePress in single docs:build script (Plan 06)
+- Split GitHub Actions into build and deploy jobs (Plan 06)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -102,6 +105,7 @@
 - [x] Plan 03: Getting Started and Core Concepts
 - [x] Plan 04: Interactive Audio Demo Components
 - [x] Plan 05: Interactive Example Pages
+- [x] Plan 06: Deployment Pipeline
 
 **Cross-Phase:**
 - [x] Verify standardized-audio-context-mock supports event testing - VERIFIED (works)
@@ -138,8 +142,8 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-02T00:52:16Z
-**Stopped at:** Completed 07-05-PLAN.md (Interactive Example Pages)
+**Last session:** 2026-02-02T01:32:00Z
+**Stopped at:** Completed 07-06-PLAN.md (Deployment Pipeline)
 **Resume file:** None
 
 **Where we are:**
@@ -151,6 +155,7 @@ Phase 7 complete. Documentation site now has:
 - Examples overview page
 - Interactive Vue components for demos (AudioDemo, OscillatorDemo, TrackDemo)
 - Three interactive example pages (basic-playback, synthesis, effects)
+- Complete deployment pipeline (GitHub Actions)
 
 **What's next:**
 Phase 8 (Packaging & Distribution) - prepare library for npm publication.
@@ -158,14 +163,17 @@ Phase 8 (Packaging & Distribution) - prepare library for npm publication.
 **Context to preserve:**
 - Full test suite: 711 tests all passing
 - Documentation packages: vitepress, typedoc-plugin-markdown, typedoc-vitepress-theme
-- VitePress dev server: `npx vitepress dev docs`
+- VitePress dev server: `pnpm docs:dev`
+- VitePress build: `pnpm docs:build`
+- VitePress preview: `pnpm docs:preview`
 - TypeDoc generation: `pnpm typedoc`
 - JSDoc pattern: class-level docs + method @example blocks
 - All YUIDoc syntax removed from codebase
 - Guide pages: getting-started.md (236 lines), concepts.md (365 lines)
 - Demo components: AudioDemo.vue (125), OscillatorDemo.vue (170), TrackDemo.vue (255)
 - Example pages: basic-playback.md (249), synthesis.md (342), effects.md (370)
+- GitHub Actions: deploy-docs-site.yml (VitePress deployment)
 
 ---
 
-*STATE.md updated: 2026-02-02T00:52:16Z*
+*STATE.md updated: 2026-02-02T01:32:00Z*
