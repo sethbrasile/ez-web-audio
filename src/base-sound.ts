@@ -8,25 +8,64 @@ import type { Analyzer } from './analyzer'
 import audioContextAwareTimeout from '@utils/timeout'
 import { debugEvent, debugConnection, debugWarning } from './debug'
 
+/**
+ * Configuration options for BaseSound and its subclasses.
+ */
 export interface BaseSoundOptions {
   /**
-   * @see BaseSound.name
+   * Optional name for identifying this sound instance.
+   * Useful for debugging and when managing multiple sounds.
    */
   name?: string
 
   /**
-   * @method setTimeout
+   * Custom setTimeout implementation.
    *
-   * A function that behaves like the native `setTimeout` function. This is used to schedule the stop method to be called after the sound has finished playing.
-   * By default, an `AudioContext`-aware version of `setTimeout` is used throughout `ez-web-audio`, but you can override this implementation if you need to.
+   * By default, an AudioContext-aware setTimeout is used that compensates
+   * for browser throttling. Override this if you need different timing behavior.
    *
-   * @default setTimeout from 'ez-web-audio/utils/timeout'
-   * @param fn
-   * @param delayMillis
+   * @param fn - Function to call after delay
+   * @param delayMillis - Delay in milliseconds
+   * @returns Timeout ID for cancellation
    */
   setTimeout?: (fn: () => void, delayMillis: number) => number
 }
 
+/**
+ * Abstract base class for all playable audio sources.
+ *
+ * BaseSound provides the core audio infrastructure that Sound, Track, and Oscillator
+ * build upon. It handles:
+ * - Audio node routing (gain, panner, effect chain, destination)
+ * - Playback control (play, stop, timing methods)
+ * - Parameter control via fluent API (update, onPlaySet, onPlayRamp)
+ * - Event system for lifecycle events (play, stop, end)
+ * - Effect chain management (addEffect, removeEffect)
+ * - Analyzer attachment for visualization
+ *
+ * @example
+ * ```typescript
+ * // Inherited by Sound, Track, Oscillator
+ * const sound = await createSound('click.mp3')
+ *
+ * // Immediate parameter update
+ * sound.update('gain').to(0.5).from('ratio')
+ *
+ * // Schedule parameter for next play
+ * sound.onPlaySet('gain').to(0).endingAt(1, 'exponential') // fade in
+ *
+ * // Ramp parameter during playback
+ * sound.onPlayRamp('gain').from(1).to(0).in(2) // fade out over 2s
+ *
+ * // Add effects
+ * const filter = createFilterEffect(ctx, 'lowpass', { frequency: 1000 })
+ * sound.addEffect(filter)
+ *
+ * // Listen for events
+ * sound.on('play', () => console.log('Started'))
+ * sound.on('end', () => console.log('Finished'))
+ * ```
+ */
 export abstract class BaseSound extends EventTarget implements Connectable, Playable {
   protected _isPlaying = false
   public gainNode: GainNode
@@ -581,6 +620,24 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this.getConnection(connectionName)?.audioNode as T | undefined
   }
 
+  /**
+   * Update an audio parameter immediately.
+   *
+   * Returns a fluent builder for setting the parameter value. Use `.to(value)`
+   * to set the value, then `.from(unit)` for unit interpretation.
+   *
+   * @param type - The parameter to update ('gain' or 'pan')
+   * @returns Fluent builder for setting the value
+   *
+   * @example
+   * ```typescript
+   * // Set gain to 50%
+   * sound.update('gain').to(0.5).from('ratio')
+   *
+   * // Set pan to left
+   * sound.update('pan').to(-1).from('ratio')
+   * ```
+   */
   public update(type: ControlType): {
     to: (value: number) => {
       from: (method: RatioType) => void
@@ -589,16 +646,68 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this.controller.update(type)
   }
 
+  /**
+   * Set the pan position immediately.
+   *
+   * Convenience method for `update('pan').to(value).from('ratio')`.
+   *
+   * @param value - Pan position from -1 (left) to 1 (right), 0 is center
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * sound.changePanTo(-1)  // Hard left
+   * sound.changePanTo(0)   // Center
+   * sound.changePanTo(1)   // Hard right
+   * ```
+   */
   public changePanTo(value: number): this {
     this.controller.update('pan').to(value).from('ratio')
     return this
   }
 
+  /**
+   * Set the gain (volume) immediately.
+   *
+   * Convenience method for `update('gain').to(value).from('ratio')`.
+   *
+   * @param value - Gain from 0 (silent) to 1 (full volume)
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * sound.changeGainTo(0.5)  // Half volume
+   * sound.changeGainTo(0)    // Muted
+   * sound.changeGainTo(1)    // Full volume
+   * ```
+   */
   public changeGainTo(value: number): this {
     this.controller.update('gain').to(value).from('ratio')
     return this
   }
 
+  /**
+   * Schedule a parameter value to be set when play() is called.
+   *
+   * Use this for fade-ins, fade-outs, or precise parameter timing.
+   * The value is applied relative to when play() is called.
+   *
+   * @param type - The parameter to control ('gain' or 'pan')
+   * @returns Fluent builder for setting value and timing
+   *
+   * @example
+   * ```typescript
+   * // Fade in: start at 0, ramp to 1 over 0.5 seconds
+   * sound.onPlaySet('gain').to(0).at(0)
+   * sound.onPlaySet('gain').to(1).endingAt(0.5, 'linear')
+   * sound.play()
+   *
+   * // Start panned left, move to center over 2 seconds
+   * sound.onPlaySet('pan').to(-1).at(0)
+   * sound.onPlaySet('pan').to(0).endingAt(2, 'linear')
+   * sound.play()
+   * ```
+   */
   public onPlaySet(type: ControlType): {
     to: (value: number) => {
       at: (time: number) => void
@@ -608,6 +717,26 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this.controller.onPlaySet(type)
   }
 
+  /**
+   * Schedule a parameter ramp when play() is called.
+   *
+   * Use this for smooth transitions like vibrato, tremolo, or automation.
+   *
+   * @param type - The parameter to ramp ('gain' or 'pan')
+   * @param rampType - Type of ramp curve ('linear' or 'exponential')
+   * @returns Fluent builder for setting start value, end value, and duration
+   *
+   * @example
+   * ```typescript
+   * // Fade out over 2 seconds
+   * sound.onPlayRamp('gain', 'linear').from(1).to(0).in(2)
+   * sound.play()
+   *
+   * // Pan sweep from left to right over 4 seconds
+   * sound.onPlayRamp('pan', 'linear').from(-1).to(1).in(4)
+   * sound.play()
+   * ```
+   */
   public onPlayRamp(type: ControlType, rampType?: RampType): {
     from: (startValue: number) => {
       to: (endValue: number) => {
@@ -632,17 +761,18 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   }
 
   /**
-   * Starts playing the audio source after `playIn` seconds have elapsed, then
-   * stops the audio source `stopAfter` seconds after it started playing.
+   * Play after a delay, then stop after a duration.
    *
-   * @public
-   * @method playInAndStopAfter
+   * Combines playIn() and stopIn() for precise timed playback.
    *
-   * @param {number} playIn Number of seconds from "now" that the audio source
-   * should play.
+   * @param playIn - Seconds from now until playback starts
+   * @param stopAfter - Seconds of playback before stopping (from play start)
    *
-   * @param {number} stopAfter Number of seconds from when the audio source
-   * started playing that the audio source should be stopped.
+   * @example
+   * ```typescript
+   * // Start in 1 second, play for 3 seconds
+   * sound.playInAndStopAfter(1, 3)
+   * ```
    */
   public playInAndStopAfter(playIn: number, stopAfter: number): void {
     this.playIn(playIn)
@@ -650,15 +780,26 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   }
 
   /**
-   * The underlying method that backs all of the `play` methods. Plays the audio source at
-   * the specified moment in time. A "moment in time" is measured in seconds from the moment
-   * that the {{#crossLink "AudioContext"}}{{/crossLink}} was instantiated.
+   * Play the audio source at a specific time.
    *
-   * @param {number} time The moment in time (in seconds, relative to the
-   * {{#crossLink "AudioContext"}}AudioContext's{{/crossLink}} "beginning of
-   * time") when the audio source should be played.
+   * This is the underlying method for all play variants. Time is measured in seconds
+   * from when the AudioContext was created (audioContext.currentTime).
    *
-   * @method playAt
+   * @param time - The AudioContext time when playback should start
+   *
+   * @example
+   * ```typescript
+   * // Play immediately
+   * sound.playAt(audioContext.currentTime)
+   *
+   * // Play in 2 seconds
+   * sound.playAt(audioContext.currentTime + 2)
+   *
+   * // Sync multiple sounds
+   * const startTime = audioContext.currentTime + 0.1
+   * sound1.playAt(startTime)
+   * sound2.playAt(startTime)
+   * ```
    */
   public async playAt(time: number): Promise<void> {
     const { audioContext } = this
@@ -725,40 +866,46 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   }
 
   /**
-   * Hook method called after playback starts. Override in subclasses to add
-   * behavior that should run for all play variants (play, playIn, playFor, etc.).
-   *
+   * Hook method called after playback starts.
+   * Override in subclasses to add behavior that runs for all play variants.
    * @protected
-   * @method _onPlaybackStarted
    */
   protected _onPlaybackStarted(): void {
     // Override in subclasses (e.g., Track for position tracking)
   }
 
   /**
-   * Stops the audio source after specified seconds have elapsed.
+   * Stop the audio source after a delay.
    *
-   * @public
-   * @method stopIn
+   * @param seconds - Seconds from now until playback stops
    *
-   * @param {number} seconds Number of seconds from "now" that the audio source
-   * should be stopped.
+   * @example
+   * ```typescript
+   * sound.play()
+   * // Stop after 5 seconds
+   * sound.stopIn(5)
+   * ```
    */
   public async stopIn(seconds: number): Promise<void> {
     await this.stopAt(this.audioContext.currentTime + seconds)
   }
 
   /**
-   * The underlying method that backs all of the `stop` methods. Stops sound and
-   * set `isPlaying` to false at specified time.
+   * Stop the audio source at a specific time.
    *
-   * Functionally equivalent to the `stopAt` method.
+   * This is the underlying method for all stop variants. Time is measured in seconds
+   * from when the AudioContext was created (audioContext.currentTime).
    *
-   * @method stopAt
+   * @param time - The AudioContext time when playback should stop
    *
-   * @param {number} time The moment in time (in seconds, relative to the
-   * {{#crossLink "AudioContext"}}AudioContext's{{/crossLink}} "beginning of
-   * time") when the audio source should be stopped.
+   * @example
+   * ```typescript
+   * // Stop immediately
+   * sound.stopAt(audioContext.currentTime)
+   *
+   * // Stop in 5 seconds
+   * sound.stopAt(audioContext.currentTime + 5)
+   * ```
    */
   public async stopAt(time: number): Promise<void> {
     await this.audioContext.resume()
