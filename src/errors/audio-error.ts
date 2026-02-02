@@ -18,6 +18,8 @@ export class AudioError extends Error {
     super(message)
     this.name = 'AudioError'
     // Maintains proper stack trace in V8 environments (Node.js, Chrome)
-    Error.captureStackTrace?.(this, this.constructor)
+    if ('captureStackTrace' in Error) {
+      (Error as { captureStackTrace?: (err: Error, constructor: Function) => void }).captureStackTrace?.(this, this.constructor)
+    }
   }
 }

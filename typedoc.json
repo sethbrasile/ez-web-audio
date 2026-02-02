@@ -1,0 +1,26 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "tsconfig": "tsconfig.typedoc.json",
+  "docsRoot": "./docs",
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "typedoc-vitepress-theme"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/app/**",
+    "src/test/**"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "readme": "none",
+  "name": "EZ Web Audio",
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}
