@@ -11,6 +11,8 @@ export default defineConfig({
       rollupTypes: false,      // Keep per-file declarations for better IDE "Go to Definition"
       declarationMap: true,    // Enable .d.ts.map files
       insertTypesEntry: true,  // Auto-add types entry
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/app/**', 'src/test/**'],
     }),
   ],
   test: {
