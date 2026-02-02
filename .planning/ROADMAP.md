@@ -218,14 +218,21 @@ Plans:
 
 **Requirements:** BUILD-01, BUILD-02, BUILD-03, BUILD-04
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Build configuration (vite.config.js, package.json, tsconfig.json)
+- [ ] 08-02-PLAN.md — Publishing pipeline (GitHub Actions workflow, local verification)
+- [ ] 08-03-PLAN.md — First release and verification (npm publish, consumer testing)
+
 **Success Criteria:**
 1. Library exports are tree-shakeable (unused features don't bloat bundles)
-2. ESM and CJS builds are available and working
-3. TypeScript declaration files (.d.ts) are included and accurate
+2. ESM-only build (per CONTEXT decision, no CJS)
+3. TypeScript declaration files (.d.ts) with declaration maps included
 4. Package is published to npm and installable via npm/pnpm/yarn
 5. Bundle size is reasonable (core library < 50kb gzipped)
 
-**Research Notes:** Vite build system already configured. Verify tree-shaking with bundle analyzer before publish.
+**Research Notes:** Vite build system already configured. ESM-only per user decision. OIDC trusted publishing for security.
 
 ---
 
@@ -240,7 +247,7 @@ Plans:
 | 5 - Effects & Advanced | Complete | 16 | 100% |
 | 6 - Testing | Complete | 8 | 100% |
 | 7 - Documentation & Demo | Complete | 9 | 100% |
-| 8 - Build & Distribution | Pending | 4 | 0% |
+| 8 - Build & Distribution | Planned | 4 | 0% |
 
 **Overall:** 71/71 requirements complete (100%)
 
@@ -279,4 +286,4 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
 
 ---
 
-*Last updated: 2026-02-01 after Phase 7 revision (added 07-02b)*
+*Last updated: 2026-02-01 after Phase 8 planning*
