@@ -87,7 +87,7 @@ pnpm install
 pnpm docs:dev
 ```
 
-Then visit http://localhost:5173/ez-web-audio/examples/
+Then visit `http://localhost:5173/ez-web-audio/examples/`
 
 ## Browser Compatibility
 
