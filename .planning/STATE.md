@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-02T01:32:00Z
-**Current Focus:** Phase 7 - Documentation & Demo Site (Complete)
+**Last Updated:** 2026-02-02T04:07:12Z
+**Current Focus:** Phase 8 - Build & Distribution (In Progress)
 
 ## Project Reference
 
@@ -11,15 +11,15 @@
 
 ## Current Position
 
-**Phase:** 7 of 8 (Documentation & Demo Site)
-**Plan:** 6 of 6 complete
-**Status:** Phase 7 complete
+**Phase:** 8 of 8 (Build & Distribution)
+**Plan:** 1 of 3 complete
+**Status:** In progress
 
-**Progress:** [███████████████████░] 95% (Phases 1-7 complete)
+**Progress:** [███████████████████▓] 96% (Phase 8.1 complete)
 
-**Phase Goal:** VitePress documentation site with interactive examples and API reference.
+**Phase Goal:** Package and publish the library to npm with tree-shakeable exports and proper TypeScript support.
 
-**Next Action:** Proceed to Phase 8 (Packaging & Distribution).
+**Next Action:** Continue Phase 8 (Plans 02-03).
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@
 - Plan 07-04 completed in 2 minutes
 - Plan 07-05 completed in 3 minutes
 - Plan 07-06 completed in 38 minutes (includes human verification)
+- Plan 08-01 completed in 2 minutes
 
 ## Accumulated Context
 
@@ -90,6 +91,16 @@
 - Component-first examples: interactive demos at top of pages before code (Plan 05)
 - Combined TypeDoc + VitePress in single docs:build script (Plan 06)
 - Split GitHub Actions into build and deploy jobs (Plan 06)
+
+**Phase 8 Decisions:**
+- ESM-only build (no CommonJS/UMD) - modern Node.js/bundler support only
+- Per-file type declarations (rollupTypes: false) - better IDE "Go to Definition" experience
+- Unminified source for npm - consumers handle minification in their builds
+- External source maps and declaration maps included for debugging and IDE navigation
+- Version 0.1.0 for initial release - allows breaking changes before 1.0 stabilization
+- Modern package.json exports field only (no legacy main/module fallback)
+- Tree-shaking via sideEffects: false
+- Files whitelist (dist, README.md, LICENSE) for security
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -142,38 +153,30 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-02T01:32:00Z
-**Stopped at:** Completed 07-06-PLAN.md (Deployment Pipeline)
+**Last session:** 2026-02-02T04:07:12Z
+**Stopped at:** Completed 08-01-PLAN.md (Build Configuration)
 **Resume file:** None
 
 **Where we are:**
-Phase 7 complete. Documentation site now has:
-- VitePress setup with TypeDoc API generation
-- Modern JSDoc documentation for all public APIs
-- Getting Started tutorial (install to first sound)
-- Core Concepts guide (Sound/Track/Oscillator mental model)
-- Examples overview page
-- Interactive Vue components for demos (AudioDemo, OscillatorDemo, TrackDemo)
-- Three interactive example pages (basic-playback, synthesis, effects)
-- Complete deployment pipeline (GitHub Actions)
+Phase 8 (Plan 1 complete). Build configuration now ready:
+- Vite configured for ESM-only library build
+- Modern package.json exports field with tree-shaking
+- TypeScript declarations with source maps
+- Version 0.1.0 set for initial release
+- Build output: 120KB bundle (29KB gzipped)
 
 **What's next:**
-Phase 8 (Packaging & Distribution) - prepare library for npm publication.
+Phase 8 Plans 02-03 (Package testing and publishing workflow).
 
 **Context to preserve:**
 - Full test suite: 711 tests all passing
-- Documentation packages: vitepress, typedoc-plugin-markdown, typedoc-vitepress-theme
-- VitePress dev server: `pnpm docs:dev`
-- VitePress build: `pnpm docs:build`
-- VitePress preview: `pnpm docs:preview`
-- TypeDoc generation: `pnpm typedoc`
-- JSDoc pattern: class-level docs + method @example blocks
-- All YUIDoc syntax removed from codebase
-- Guide pages: getting-started.md (236 lines), concepts.md (365 lines)
-- Demo components: AudioDemo.vue (125), OscillatorDemo.vue (170), TrackDemo.vue (255)
-- Example pages: basic-playback.md (249), synthesis.md (342), effects.md (370)
-- GitHub Actions: deploy-docs-site.yml (VitePress deployment)
+- Build artifacts: dist/index.js, index.js.map, index.d.ts, index.d.ts.map
+- Build command: `pnpm build:lib` (tsc + vite build)
+- Zero dependencies maintained in package.json
+- prepublishOnly script ensures clean builds
+- Files whitelist: dist, README.md, LICENSE
+- Documentation site: deployed via GitHub Actions
 
 ---
 
-*STATE.md updated: 2026-02-02T01:32:00Z*
+*STATE.md updated: 2026-02-02T04:07:12Z*
