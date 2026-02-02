@@ -1,0 +1,255 @@
+<template>
+  <div class="track-demo">
+    <div class="controls">
+      <div class="transport">
+        <button @click="playPause" :disabled="loading" class="play-btn">
+          {{ loading ? 'Loading...' : (isPlaying ? 'Pause' : 'Play') }}
+        </button>
+        <button @click="stop" :disabled="!loaded" class="stop-btn">Stop</button>
+      </div>
+
+      <div class="time-display">
+        <span class="current">{{ positionString }}</span>
+        <span class="separator">/</span>
+        <span class="total">{{ durationString }}</span>
+      </div>
+
+      <div class="seek-bar">
+        <input
+          type="range"
+          v-model.number="seekPosition"
+          :max="duration"
+          step="0.1"
+          @change="seek"
+          :disabled="!loaded"
+        />
+        <span class="percent">{{ Math.round(percentPlayed * 100) }}%</span>
+      </div>
+
+      <div class="volume">
+        <label>
+          Vol: {{ Math.round(gain * 100) }}%
+          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" @change="updateGain" />
+        </label>
+      </div>
+    </div>
+
+    <div v-if="error" class="error">{{ error }}</div>
+    <slot></slot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onUnmounted } from 'vue'
+
+const props = defineProps<{
+  url?: string
+}>()
+
+const loading = ref(false)
+const loaded = ref(false)
+const isPlaying = ref(false)
+const error = ref('')
+const gain = ref(1)
+const seekPosition = ref(0)
+const duration = ref(0)
+const percentPlayed = ref(0)
+const positionString = ref('0:00')
+const durationString = ref('0:00')
+
+let track: any = null
+let animationFrame: number | null = null
+
+async function loadTrack() {
+  if (loaded.value) return
+
+  try {
+    error.value = ''
+    loading.value = true
+
+    const { initAudio, createTrack } = await import('ez-web-audio')
+    await initAudio()
+
+    const audioUrl = props.url || '/ez-web-audio/audio/short-music.mp3'
+    track = await createTrack(audioUrl)
+
+    duration.value = track.duration.raw
+    durationString.value = track.duration.string
+
+    track.on('end', () => {
+      isPlaying.value = false
+      seekPosition.value = 0
+      positionString.value = '0:00'
+      percentPlayed.value = 0
+    })
+
+    loaded.value = true
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to load track'
+  } finally {
+    loading.value = false
+  }
+}
+
+function updatePosition() {
+  if (track && isPlaying.value) {
+    seekPosition.value = track.position.raw
+    positionString.value = track.position.string
+    percentPlayed.value = track.percentPlayed
+    animationFrame = requestAnimationFrame(updatePosition)
+  }
+}
+
+async function playPause() {
+  if (!loaded.value) {
+    await loadTrack()
+    if (!loaded.value) return
+  }
+
+  if (isPlaying.value) {
+    track.pause()
+    isPlaying.value = false
+    if (animationFrame) cancelAnimationFrame(animationFrame)
+  } else {
+    track.changeGainTo(gain.value)
+    if (track.position.raw > 0) {
+      track.resume()
+    } else {
+      track.play()
+    }
+    isPlaying.value = true
+    updatePosition()
+  }
+}
+
+function stop() {
+  if (track) {
+    track.stop()
+    isPlaying.value = false
+    seekPosition.value = 0
+    positionString.value = '0:00'
+    percentPlayed.value = 0
+    if (animationFrame) cancelAnimationFrame(animationFrame)
+  }
+}
+
+function seek() {
+  if (track) {
+    track.seek(seekPosition.value)
+    positionString.value = track.position.string
+    percentPlayed.value = track.percentPlayed
+  }
+}
+
+function updateGain() {
+  if (track) {
+    track.changeGainTo(gain.value)
+  }
+}
+
+onUnmounted(() => {
+  if (animationFrame) cancelAnimationFrame(animationFrame)
+  if (track) {
+    try { track.stop() } catch {}
+  }
+})
+</script>
+
+<style scoped>
+.track-demo {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--vp-c-bg-soft);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.transport {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.play-btn, .stop-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.play-btn {
+  background: var(--vp-c-brand);
+  color: white;
+}
+
+.play-btn:hover:not(:disabled) {
+  background: var(--vp-c-brand-dark);
+}
+
+.stop-btn {
+  background: var(--vp-c-bg-mute);
+  color: var(--vp-c-text-1);
+}
+
+.stop-btn:hover:not(:disabled) {
+  background: var(--vp-c-bg-soft);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-display {
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.separator {
+  margin: 0 0.25rem;
+  color: var(--vp-c-text-3);
+}
+
+.seek-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 150px;
+}
+
+.seek-bar input {
+  flex: 1;
+}
+
+.percent {
+  font-size: 0.8rem;
+  color: var(--vp-c-text-3);
+  min-width: 40px;
+}
+
+.volume label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.volume input {
+  width: 80px;
+}
+
+.error {
+  color: var(--vp-c-danger);
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+</style>
