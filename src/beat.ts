@@ -1,26 +1,26 @@
 import audioContextAwareTimeout from './utils/timeout'
 
 /**
- * This class represents a single "beat" for a rhythmic instrument. An instance of this
- * class can be set to `active` or not to facilitate the way that most drum
- * machines work (when a beat is not `active`, the time that it occupies still
- * exists, but it does not cause audio to play, effectively resulting in a
- * "rest"). It provides properties that track when it is played, and when a "rest"
- * is played in it's place.
+ * A single beat position in a rhythmic pattern.
  *
- * This class does not have the ability to create audio on it's own and is
- * expected be a "child" of one of the Sound classes. See it's implementation in
- * {{#crossLink "BeatTrack"}}BeatTrack{{/crossLink}} for an example.
+ * Beat represents one position in a drum machine lane. When active, it triggers
+ * playback when its time comes. When inactive, it creates a rest (silence).
+ * Beat tracks timing and provides properties for UI synchronization.
  *
- *     // Cannot play audio on it's own.
- *     // Must pass in parentPlay and/or parentPlayIn from a parent class.
- *     new Beat(audioContext, {
- *       parentPlayIn: parent.playIn.bind(parent),
- *       parentPlay: parent.play.bind(parent),
- *     };
+ * @example
+ * ```typescript
+ * // Beats are typically created by BeatTrack, not directly
+ * const track = await createBeatTrack(['snare.mp3'], { numBeats: 8 })
  *
- * @class Beat
- * @todo add playAt
+ * // Toggle a beat on/off
+ * track.beats[2].active = true
+ * track.beats[2].active = false
+ *
+ * // Check if this beat was just played
+ * if (beat.isPlaying) {
+ *   // Highlight in UI
+ * }
+ * ```
  */
 export interface BeatOptions {
   duration?: number
@@ -49,58 +49,47 @@ export class Beat {
   private setTimeout: (fn: () => void, delayMillis: number) => number
 
   /**
-   * @property active
-   *
-   * If `active` is `true`, all methods of play will cause this instance to play.
-   * If `active` is `false`, the `playIfActive()` and `ifActivePlayIn()`
-   * methods will treat this instance as a rest (a timed period of silence).
+   * Whether this beat should play when triggered.
+   * When false, the beat position becomes a rest (silence).
+   * @default false
    */
   public active = false
 
   /**
-   * @property currentTimeIsPlaying
-   *
-   * Whether a Beat instance is currently playing, considering both active and
-   * inactive beats (rests). When switched to `true`, is automatically returned
-   * to false after the time specified by the duration property.
-   *
+   * Whether this beat's time position is currently active (playing or resting).
+   * True for both active beats and rests during their time slot.
+   * Automatically resets to false after `duration` milliseconds.
    * @default false
    */
   public currentTimeIsPlaying = false
 
   /**
-   * @property isPlaying
-   *
-   * Whether a Beat instance is currently playing, considering only active beats.
-   * When switched to `true`, is automatically returned to false after the time
-   * specified by the duration property.
-   *
+   * Whether this beat is currently playing audio (only true for active beats).
+   * Automatically resets to false after `duration` milliseconds.
+   * Use this for visual feedback that should only appear when sound plays.
    * @default false
    */
   public isPlaying = false
 
   /**
-   * @property duration
-   *
-   * If specified, Determines length of time, in milliseconds, before isPlaying
-   * and currentTimeIsPlaying are automatically switched back to false after
-   * having been switched to true. 100ms is used by default.
-   *
+   * How long (in milliseconds) the `isPlaying` flags stay true.
+   * Useful for controlling visual feedback duration.
    * @default 100
    */
   public duration: number
 
   /**
-   * @method playIn
+   * Play this beat after a delay.
    *
-   * Calls it's parent's `playIn()` method directly to play the beat in
-   * `${offset}` seconds.
+   * Sets `isPlaying` and `currentTimeIsPlaying` to true after the offset elapses,
+   * then resets them after `duration` milliseconds.
    *
-   * isPlaying and currentTimeIsPlaying are both marked true after the provided
-   * offset has elapsed.
+   * @param offset - Number of seconds from now to play
    *
-   * @param {number} offset Number of seconds from "now" that the audio should
-   * play.
+   * @example
+   * ```typescript
+   * beat.playIn(0.5) // plays in 0.5 seconds
+   * ```
    */
   public playIn(offset = 0): void {
     const msOffset = offset * 1000
@@ -114,18 +103,12 @@ export class Beat {
   }
 
   /**
-   * @method ifActivePlayIn
+   * Play this beat after a delay, but only if active.
    *
-   * If the beat is marked `active`, calls it's parent's `playIn()` method
-   * directly to play the beat in `${offset}` seconds.
+   * If active, plays and sets `isPlaying` to true after the offset.
+   * Always sets `currentTimeIsPlaying` to true (for UI beat indicators).
    *
-   * If active, `isPlaying` is marked true after the provided offset has elapsed.
-   *
-   * `currentTimeIsPlaying` is marked true after the provided offset has elapsed,
-   * even if beat is not active.
-   *
-   * @param {number} offset Number of seconds from "now" that the audio should
-   * play.
+   * @param offset - Number of seconds from now to play
    */
   public ifActivePlayIn(offset = 0): void {
     const msOffset = offset * 1000
@@ -139,11 +122,15 @@ export class Beat {
   }
 
   /**
-   * @method play
+   * Play this beat immediately.
    *
-   * Calls it's parent's `play()` method directly to play the beat immediately.
+   * Sets `isPlaying` and `currentTimeIsPlaying` to true immediately,
+   * then resets them after `duration` milliseconds.
    *
-   * `isPlaying` and `currentTimeIsPlaying` are both immediately marked true.
+   * @example
+   * ```typescript
+   * beat.play() // plays immediately
+   * ```
    */
   public play(): void {
     this.parentPlay()
@@ -152,14 +139,10 @@ export class Beat {
   }
 
   /**
-   * @method playIfActive
+   * Play this beat immediately, but only if active.
    *
-   * If `active`, calls it's parent's `play()` method directly to play the beat
-   * immediately.
-   *
-   * If `active`, `isPlaying` is immediately marked true.
-   *
-   * `currentTimeIsPlaying` is immediately marked true, even if beat is not `active`.
+   * If active, plays and sets `isPlaying` to true.
+   * Always sets `currentTimeIsPlaying` to true (for UI beat indicators).
    */
   public playIfActive(): void {
     if (this.active) {
@@ -171,10 +154,8 @@ export class Beat {
   }
 
   /**
-   * @method markPlaying
-   *
-   * Sets `isPlaying` to `true` and sets up a timer that sets `isPlaying` back
-   * to false after `duration` has elapsed.
+   * Mark this beat as currently playing and schedule reset.
+   * @internal
    */
   private markPlaying(): void {
     this.isPlaying = true
@@ -182,10 +163,8 @@ export class Beat {
   }
 
   /**
-   * @method markCurrentTimePlaying
-   *
-   * Sets `currentTimeIsPlaying` to `true` and sets up a timer that sets
-   * `currentTimeIsPlaying` back to false after `duration` has elapsed.
+   * Mark this beat's time slot as active and schedule reset.
+   * @internal
    */
   private markCurrentTimePlaying(): void {
     this.currentTimeIsPlaying = true

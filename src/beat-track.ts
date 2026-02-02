@@ -24,13 +24,31 @@ export interface BeatTrackOptions extends SamplerOptions {
 }
 
 /**
- * An instance of this class has an array of "sounds" (comprised of one or multiple
- * audio sources, if multiple are provided, they are played in a round-robin fashion)
- * and provides methods to play that sound repeatedly, mixed with "rests," in a
- * rhythmic way. An instance of this class behaves very similarly to a "lane" on a drum machine.
+ * Drum machine lane with rhythmic beat patterns.
  *
- * @class BeatTrack
- * @extends Sampler
+ * BeatTrack manages an array of Beat instances for creating drum patterns.
+ * It extends Sampler for round-robin sample variation and adds tempo-synced
+ * playback with beat events for visual synchronization.
+ *
+ * @example
+ * ```typescript
+ * import { createBeatTrack } from 'ez-web-audio'
+ *
+ * const kick = await createBeatTrack(['kick.mp3'], { numBeats: 8 })
+ *
+ * // Set a basic 4-on-the-floor pattern
+ * kick.beats[0].active = true  // beat 1
+ * kick.beats[2].active = true  // beat 3
+ * kick.beats[4].active = true  // beat 5
+ * kick.beats[6].active = true  // beat 7
+ *
+ * kick.playBeats(120, 1/4) // Play quarter notes at 120 BPM
+ *
+ * // Listen for beat events
+ * kick.on('beat', (e) => {
+ *   console.log(`Beat ${e.detail.beatIndex}`)
+ * })
+ * ```
  */
 export class BeatTrack extends Sampler {
   // EventTarget for event emission
@@ -63,37 +81,41 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @property wrapWith
-   * see BeatTrackOptions wrapWith for more info
+   * Optional function to wrap each beat as it's created (e.g., with observables).
+   * @internal
    */
   private wrapWith?: (beat: Beat) => Beat
 
   /**
-   * @property numBeats
-   *
-   * Determines the number of beats in a BeatTrack instance.
+   * Number of beats in this track.
+   * @default 4
    */
   public numBeats = 4
 
   /**
-   * @property duration
-   *
-   * If specified, Determines length of time, in milliseconds, before isPlaying
-   * and currentTimeIsPlaying are automatically switched back to false after
-   * having been switched to true for each beat. 100ms is used by default.
-   *
+   * How long (in milliseconds) the `isPlaying` flag stays true after a beat plays.
+   * Useful for visual feedback in the UI.
    * @default 100
    */
   public duration = 100
 
   /**
-   * @property beats
+   * Array of Beat instances in this track.
    *
-   * Computed property. An array of Beat instances. The number of Beat instances
-   * in the array is always the same as the `numBeats` property. If 'numBeats'
-   * or duration changes. This property will be recomputed, but any beats that
-   * previously existed are reused so that they will maintain their `active`
-   * state.
+   * The array length always matches `numBeats`. Beats are reused when the
+   * count changes, preserving their `active` state.
+   *
+   * @example
+   * ```typescript
+   * // Toggle individual beats
+   * track.beats[0].active = true
+   * track.beats[1].active = false
+   *
+   * // Check all beat states
+   * track.beats.forEach((beat, i) => {
+   *   console.log(`Beat ${i}: ${beat.active ? 'on' : 'off'}`)
+   * })
+   * ```
    */
   public get beats(): Beat[] {
     let beats = []
@@ -130,14 +152,19 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method playBeats
+   * Start playing all beats in the pattern continuously.
    *
-   * Calls play on all Beat instances in the beats array.
+   * Starts a lookahead scheduler that triggers beats at precise audio times.
+   * Emits 'beat' events for UI synchronization.
    *
-   * @param {number} bpm The tempo at which the beats should be played.
-   * @param noteType {number} The (rhythmic) length of each beat. Fractions
-   * are suggested here so that it's easy to reason about. For example, for
-   * eighth notes, pass in `1/8`.
+   * @param bpm - Tempo in beats per minute
+   * @param noteType - Rhythmic length of each beat (e.g., 1/4 for quarter notes, 1/8 for eighths)
+   *
+   * @example
+   * ```typescript
+   * track.playBeats(120, 1/4)  // 120 BPM, quarter notes
+   * track.playBeats(140, 1/8)  // 140 BPM, eighth notes
+   * ```
    */
   public playBeats(bpm: number, noteType: number): void {
     this.currentTempo = bpm
@@ -148,15 +175,21 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method playActiveBeats
+   * Start playing only active beats in the pattern continuously.
    *
-   * Calls play on `active` Beat instances in the beats array. Any beat that
-   * is not marked active is effectively a "rest".
+   * Same as playBeats(), but only plays beats where `active === true`.
+   * Inactive beats become rests (silence), maintaining timing.
    *
-   * @param {number} bpm The tempo at which the beats and rests should be played.
-   * @param noteType {number} The (rhythmic) length of each beat/rest. Fractions
-   * are suggested here so that it's easy to reason about. For example, for
-   * eighth notes, pass in `1/8`.
+   * @param bpm - Tempo in beats per minute
+   * @param noteType - Rhythmic length of each beat/rest
+   *
+   * @example
+   * ```typescript
+   * // Set up a pattern with rests
+   * track.beats[0].active = true
+   * track.beats[2].active = true
+   * track.playActiveBeats(120, 1/4)  // Only beats 0 and 2 play
+   * ```
    */
   public playActiveBeats(bpm: number, noteType: number): void {
     this.currentTempo = bpm
@@ -167,9 +200,15 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method stop
-   * Stops the beat scheduler immediately and resets position to beginning.
-   * Emits 'stop' event.
+   * Stop playback and reset to the beginning.
+   *
+   * Emits a 'stop' event. Use pause() instead if you want to resume later.
+   *
+   * @example
+   * ```typescript
+   * track.stop()
+   * track.on('stop', () => console.log('Stopped'))
+   * ```
    */
   public stop(): void {
     if (this.timerID !== null) {
@@ -189,9 +228,17 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method pause
-   * Pauses beat playback and preserves current position.
-   * Emits 'pause' event with current beat index.
+   * Pause playback at the current position.
+   *
+   * Emits a 'pause' event with the current beat index.
+   * Use resume() to continue from where you left off.
+   *
+   * @example
+   * ```typescript
+   * track.pause()
+   * // later...
+   * track.resume()
+   * ```
    */
   public pause(): void {
     if (this.timerID !== null) {
@@ -210,9 +257,17 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method resume
-   * Resumes beat playback from paused position.
-   * Emits 'resume' event with beat index.
+   * Resume playback from where it was paused.
+   *
+   * Emits a 'resume' event with the beat index where playback resumes.
+   * Has no effect if not paused.
+   *
+   * @example
+   * ```typescript
+   * track.pause()
+   * // ...user clicks play button...
+   * track.resume() // continues from paused position
+   * ```
    */
   public resume(): void {
     if (this.pausedBeatIndex !== null) {
@@ -233,19 +288,26 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method setTempo
-   * Changes the tempo. Takes effect on next scheduled beat.
+   * Change the tempo while playing.
    *
-   * @param {number} bpm New tempo in beats per minute
+   * The new tempo takes effect on the next scheduled beat.
+   *
+   * @param bpm - New tempo in beats per minute
+   *
+   * @example
+   * ```typescript
+   * track.playBeats(120, 1/4)
+   * // later, speed up...
+   * track.setTempo(140)
+   * ```
    */
   public setTempo(bpm: number): void {
     this.currentTempo = bpm
   }
 
   /**
-   * @method scheduler
    * Lookahead scheduler that schedules beats 100ms ahead.
-   * @private
+   * @internal
    */
   private scheduler(): void {
     const currentTime = this.audioContext.currentTime
@@ -263,9 +325,8 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method scheduleBeat
-   * Schedules a single beat and emits beat event.
-   * @private
+   * Schedule a single beat and emit the beat event.
+   * @internal
    */
   private scheduleBeat(beatIndex: number, time: number): void {
     const beat = this.beats[beatIndex]
@@ -286,9 +347,8 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method advanceToNextBeat
-   * Advances to next beat using current tempo.
-   * @private
+   * Advance to the next beat in the pattern using current tempo.
+   * @internal
    */
   private advanceToNextBeat(): void {
     // Calculate beat duration from CURRENT tempo
@@ -299,15 +359,8 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * @method callPlayMethodOnBeats
-   *
-   * The underlying method behind playBeats and playActiveBeats.
-   *
-   * @param {string} method The method that should be called on each beat.
-   * @param {number} bpm The tempo that should be used to calculate the length
-   * of a beat/rest.
-   * @param noteType {number} The (rhythmic) length of each beat/rest that should
-   * be used to calculate the length of a beat/rest in seconds.
+   * The underlying method for playing beats at calculated intervals.
+   * @internal
    */
   protected callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType: number = 1 / 4): void {
     // http://bradthemad.org/guitar/tempo_explanation.php
@@ -316,8 +369,8 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Type-safe event emission for BeatTrack events.
-   * @protected
+   * Emit a typed event with the given detail.
+   * @internal
    */
   protected emit<K extends keyof BeatTrackEventMap>(
     type: K,
@@ -328,7 +381,11 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Type-safe addEventListener for BeatTrack events.
+   * Add a typed event listener for BeatTrack lifecycle events.
+   *
+   * @param type - Event type: 'beat', 'stop', 'pause', 'resume'
+   * @param listener - Handler function
+   * @param options - Standard addEventListener options
    */
   addEventListener<K extends keyof BeatTrackEventMap>(
     type: K,
@@ -339,7 +396,11 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Type-safe removeEventListener for BeatTrack events.
+   * Remove a typed event listener.
+   *
+   * @param type - Event type to unsubscribe from
+   * @param listener - Handler function to remove
+   * @param options - Standard removeEventListener options
    */
   removeEventListener<K extends keyof BeatTrackEventMap>(
     type: K,
@@ -350,7 +411,21 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Convenience method for adding event listeners.
+   * Subscribe to an event. Supports chaining.
+   *
+   * @param type - Event type: 'beat', 'stop', 'pause', 'resume'
+   * @param listener - Handler function
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * track.on('beat', (e) => {
+   *   console.log(`Beat ${e.detail.beatIndex}`)
+   *   highlightBeat(e.detail.beatIndex)
+   * }).on('stop', () => {
+   *   console.log('Stopped')
+   * })
+   * ```
    */
   on<K extends keyof BeatTrackEventMap>(
     type: K,
@@ -361,7 +436,11 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Convenience method for removing event listeners.
+   * Unsubscribe from an event. Supports chaining.
+   *
+   * @param type - Event type to unsubscribe from
+   * @param listener - Handler function to remove
+   * @returns this for chaining
    */
   off<K extends keyof BeatTrackEventMap>(
     type: K,
@@ -372,7 +451,18 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Convenience method for adding one-time event listeners.
+   * Subscribe to an event once. Handler is removed after first invocation.
+   *
+   * @param type - Event type to listen for
+   * @param listener - Handler function (called only once)
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * track.once('stop', () => {
+   *   console.log('Track stopped for the first time')
+   * })
+   * ```
    */
   once<K extends keyof BeatTrackEventMap>(
     type: K,

@@ -6,16 +6,29 @@ export interface SamplerOptions {
 }
 
 /**
- * An instance of the Sampler class behaves just like a Sound, but allows
- * many {{#crossLink "AudioBuffer"}}AudioBuffers{{/crossLink}} to exist and
- * automatically alternately plays them (round-robin) each time any of the play
- * methods are called.
+ * Round-robin playback of multiple sounds.
  *
- * @public
- * @class Sampler
+ * Sampler holds multiple Sound instances and automatically alternates between them
+ * on each play() call. This creates realistic variation when playing repeated samples
+ * (e.g., multiple recordings of the same drum hit).
  *
- * @todo humanize gain and time - should be optional and customizable
- * @todo loop
+ * @example
+ * ```typescript
+ * import { createSampler } from 'ez-web-audio'
+ *
+ * // Load multiple kick drum samples for variation
+ * const kick = await createSampler([
+ *   'kick-1.mp3',
+ *   'kick-2.mp3',
+ *   'kick-3.mp3'
+ * ])
+ *
+ * // Each play() uses the next sample in rotation
+ * kick.play() // plays kick-1
+ * kick.play() // plays kick-2
+ * kick.play() // plays kick-3
+ * kick.play() // back to kick-1
+ * ```
  */
 export class Sampler {
   constructor(sounds: (Playable & Connectable)[], opts?: SamplerOptions) {
@@ -25,79 +38,81 @@ export class Sampler {
   }
 
   /**
-   * @property name
-   * Optional property which serves to aid in identification
+   * Optional name to aid in identification.
    */
   public name: string
 
   /**
-   * @property gain
-   * Determines the gain applied to each sample.
+   * Gain level applied to each sample when played.
+   * @default 1
    */
   public gain: number = 1
 
   /**
-   * @property pan
-   * Determines the stereo pan position of each sample.
+   * Stereo pan position applied to each sample (-1 = left, 0 = center, 1 = right).
+   * @default 0
    */
   public pan: number = 0
 
   /**
-   * @property soundIterator
-   * Temporary storage for the iterable that comes from the sounds Set.
-   * This iterable is meant to be replaced with a new copy every time it reaches
-   * it's end, resulting in an infinite stream of Sound instances.
+   * Iterator over the sounds Set for round-robin cycling.
+   * @internal
    */
   private soundIterator: Iterator<Playable & Connectable>
 
   /**
-   * @property sounds
-   * Acts as a register for loaded audio sources. Audio sources can be anything
-   * that uses {{#crossLink "Playable"}}{{/crossLink}}. If not set on
-   * instantiation, automatically set to `new Set()` via `_initSounds`.
+   * Collection of sounds that are cycled through on each play.
+   * @internal
    */
   protected sounds: Set<Playable & Connectable>
 
   /**
-   * @method play
-   * Gets the next audio source and plays it immediately.
+   * Play the next sound in the rotation immediately.
+   *
+   * @example
+   * ```typescript
+   * sampler.play() // plays sound 1
+   * sampler.play() // plays sound 2
+   * sampler.play() // plays sound 3 (then wraps to 1)
+   * ```
    */
   public play(): void {
     this.getNextSound().play()
   }
 
   /**
-   * @method playIn
-   * Gets the next Sound and plays it after the specified offset has elapsed.
+   * Play the next sound in the rotation after a delay.
    *
-   * @param {number} seconds Number of seconds from "now" that the next Sound
-   * should be played.
+   * @param seconds - Number of seconds from now to play the sound
+   *
+   * @example
+   * ```typescript
+   * sampler.playIn(0.5) // plays next sound in 0.5 seconds
+   * ```
    */
   public playIn(seconds: number): void {
     this.getNextSound().playIn(seconds)
   }
 
   /**
-   * Gets the next Sound and plays it at the specified moment in time. A
-   * "moment in time" is measured in seconds from the moment that the
-   * {{#crossLink "AudioContext"}}{{/crossLink}} was instantiated.
+   * Play the next sound at a specific AudioContext time.
    *
-   * @param {number} time The moment in time (in seconds, relative to the
-   * {{#crossLink "AudioContext"}}AudioContext's{{/crossLink}} "beginning of
-   * time") when the next Sound should be played.
+   * @param time - The AudioContext.currentTime value when to play
    *
-   * @method playAt
+   * @example
+   * ```typescript
+   * const startTime = audioContext.currentTime + 1
+   * sampler.playAt(startTime) // plays next sound at exactly startTime
+   * ```
    */
   public playAt(time: number): void {
     this.getNextSound().playAt(time)
   }
 
   /**
-   * Gets soundIterator and returns it's next value. If soundIterator has
-   * reached it's end, replaces soundIterator with a fresh copy from sounds
-   * and returns the first value from that.
-   *
-   * @method getNextSound
+   * Get the next sound from the round-robin rotation.
+   * When the iterator reaches the end, it automatically restarts.
+   * @internal
    */
   private getNextSound(): Playable & Connectable {
     let soundIterator = this.soundIterator
@@ -116,10 +131,8 @@ export class Sampler {
   }
 
   /**
-   * Applies the `gain` and `pan` properties from the Sampler instance to a
-   * Sound instance and returns the Sound instance.
-   *
-   * @method setGainAndPan
+   * Apply the sampler's gain and pan settings to a sound before playing.
+   * @internal
    */
   private setGainAndPan(sound: Playable & Connectable): Playable & Connectable {
     sound.changeGainTo(this.gain)
