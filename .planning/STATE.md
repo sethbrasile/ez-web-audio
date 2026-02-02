@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-02T04:07:12Z
+**Last Updated:** 2026-02-02T04:13:27Z
 **Current Focus:** Phase 8 - Build & Distribution (In Progress)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 8 of 8 (Build & Distribution)
-**Plan:** 1 of 3 complete
+**Plan:** 2 of 3 complete
 **Status:** In progress
 
-**Progress:** [███████████████████▓] 96% (Phase 8.1 complete)
+**Progress:** [███████████████████▓] 97% (Phase 8.2 complete)
 
 **Phase Goal:** Package and publish the library to npm with tree-shakeable exports and proper TypeScript support.
 
-**Next Action:** Continue Phase 8 (Plans 02-03).
+**Next Action:** Continue Phase 8 (Plan 03 - final publish).
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@
 - Plan 07-05 completed in 3 minutes
 - Plan 07-06 completed in 38 minutes (includes human verification)
 - Plan 08-01 completed in 2 minutes
+- Plan 08-02 completed in 3 minutes
 
 ## Accumulated Context
 
@@ -101,6 +102,10 @@
 - Modern package.json exports field only (no legacy main/module fallback)
 - Tree-shaking via sideEffects: false
 - Files whitelist (dist, README.md, LICENSE) for security
+- Use pnpm 10 in CI to match packageManager field (Plan 02)
+- Run tests before publishing to fail fast on broken builds (Plan 02)
+- Include npm provenance flag for supply chain attestation (Plan 02)
+- Exclude src/app and src/test from package via dts plugin (Plan 02)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -153,30 +158,29 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-02T04:07:12Z
-**Stopped at:** Completed 08-01-PLAN.md (Build Configuration)
+**Last session:** 2026-02-02T04:13:27Z
+**Stopped at:** Completed 08-02-PLAN.md (npm Publishing Pipeline)
 **Resume file:** None
 
 **Where we are:**
-Phase 8 (Plan 1 complete). Build configuration now ready:
-- Vite configured for ESM-only library build
-- Modern package.json exports field with tree-shaking
-- TypeScript declarations with source maps
-- Version 0.1.0 set for initial release
-- Build output: 120KB bundle (29KB gzipped)
+Phase 8 (Plan 2 complete). Publishing pipeline now ready:
+- GitHub Actions workflow publishes to npm on v* tags
+- npm pack produces clean 142.2 KB package (98 files)
+- Demo app and test files excluded from distribution
+- Release process documented in README
 
 **What's next:**
-Phase 8 Plans 02-03 (Package testing and publishing workflow).
+Phase 8 Plan 03 (Pre-publish checklist and first npm publish).
 
 **Context to preserve:**
 - Full test suite: 711 tests all passing
-- Build artifacts: dist/index.js, index.js.map, index.d.ts, index.d.ts.map
-- Build command: `pnpm build:lib` (tsc + vite build)
+- Package verified: types resolve, installs correctly
+- Build output: 120KB bundle (29KB gzipped), 142.2 KB tarball
 - Zero dependencies maintained in package.json
-- prepublishOnly script ensures clean builds
-- Files whitelist: dist, README.md, LICENSE
+- GitHub Actions workflow requires NPM_TOKEN secret
+- Package contains: dist/, readme.md, LICENSE, package.json only
 - Documentation site: deployed via GitHub Actions
 
 ---
 
-*STATE.md updated: 2026-02-02T04:07:12Z*
+*STATE.md updated: 2026-02-02T04:13:27Z*
