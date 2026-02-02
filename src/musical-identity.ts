@@ -18,27 +18,33 @@ export interface IMusicallyAware {
 }
 
 /**
- * This mixin allows an object to have an awareness of it's "musical identity"
- * or "note value" based on western musical standards (a standard piano).
- * If any of the following are provided, all of the remaining properties will be
- * calculated:
+ * Mixin that adds musical identity to any class.
  *
- * 1. frequency
- * 2. identifier (i.e. "Ab1")
- * 3. letter, octave, and (optionally) accidental
+ * MusicallyAware provides note properties (letter, accidental, octave, frequency,
+ * identifier) that are automatically calculated from any provided value.
+ * Provide frequency, identifier (e.g., "A4"), or letter/octave/accidental.
  *
- * This mixin only makes sense when the consuming object is part of a collection,
- * as the only functionality it provides serves to facilitate identification.
+ * @example
+ * ```typescript
+ * import { MusicallyAware, Sound } from 'ez-web-audio'
  *
- * Example usage is the SampledNote class definition:
+ * // Create a class with musical identity
+ * class MyNote extends MusicallyAware(Sound) {
+ *   customMethod() { return this.frequency * 2 }
+ * }
+ *
+ * // Or with any base class
+ * class NoteDisplay extends MusicallyAware(class {}) {
+ *   render() { return `${this.letter}${this.accidental}${this.octave}` }
+ * }
+ *
+ * // Usage
+ * const note = new NoteDisplay({ identifier: 'A4' })
+ * console.log(note.letter)     // "A"
+ * console.log(note.octave)     // "4"
+ * console.log(note.frequency)  // 440
+ * console.log(note.render())   // "A4"
  * ```
- * export class SampledNote extends MusicallyAware(Sound) {}
- * ```
- *
- * SampledNote becomes a combination of Sound and MusicallyAware giving it the properties of both.
- *
- * @public
- * @class MusicalIdentity
  */
 const { warn } = console
 // eslint-disable-next-line ts/explicit-function-return-type
@@ -70,23 +76,24 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
     }
 
     /**
-     * @property letter For note `Ab5`, this would be `A`.
+     * The note letter (A-G). For note "Ab5", this would be "A".
      */
     letter: NoteLetter = 'A'
 
     /**
-     * @property accidental For note `Ab5`, this would be `b`.
+     * The accidental: "" (natural), "b" (flat), or "#" (sharp).
+     * For note "Ab5", this would be "b".
      */
     accidental: Accidental = ''
 
     /**
-     * @property octave For note `Ab5`, this would be `5`.
+     * The octave (0-8). For note "Ab5", this would be "5".
      */
     octave: Octave = '0'
 
     /**
-     * @property name Computed property. Value is `${letter}` or `${letter}${accidental}` if accidental exists.
-     * @todo 'type' letter + accidental
+     * The note name without octave (e.g., "A" or "Ab").
+     * Computed from letter and accidental.
      */
     get name(): string {
       const { accidental, letter } = this
@@ -100,10 +107,16 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
     }
 
     /**
-     * @property frequency Computed property. The frequency of the note in hertz. Calculated by
-     * comparing western musical standards (a standard piano) and the note
-     * identifier (i.e. `Ab1`). If this property is set directly, all other
-     * properties are updated to reflect the provided frequency.
+     * The frequency of the note in hertz.
+     *
+     * Computed from the note identifier using standard piano frequencies.
+     * Setting this value updates all other properties to match.
+     *
+     * @example
+     * ```typescript
+     * note.frequency = 440 // Sets to A4
+     * console.log(note.identifier) // "A4"
+     * ```
      */
     get frequency(): number {
       const { identifier } = this
@@ -123,10 +136,19 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
     }
 
     /**
-     * @property identifier Computed property. Value is `${letter}${octave}` or
-     * `${letter}${accidental}${octave}` if accidental exists. If this property
-     * is set directly, all other properties are updated to reflect the provided
-     * identifier.
+     * The full note identifier (e.g., "A4", "Bb3", "C#5").
+     *
+     * Computed from letter, accidental, and octave.
+     * Setting this value updates all other properties to match.
+     *
+     * @example
+     * ```typescript
+     * note.identifier = 'Bb3'
+     * console.log(note.letter)     // "B"
+     * console.log(note.accidental) // "b"
+     * console.log(note.octave)     // "3"
+     * console.log(note.frequency)  // 233.08
+     * ```
      */
     get identifier(): AcceptableNote {
       const { accidental, letter, octave } = this

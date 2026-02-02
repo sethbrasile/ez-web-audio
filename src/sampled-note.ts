@@ -2,29 +2,30 @@ import { Sound } from './sound'
 import { MusicallyAware } from './musical-identity'
 
 /**
- * Provides helper classes that represent musical concepts meant to be used by
- * classes from the Audio module.
+ * A Sound with musical identity.
  *
- * @public
- * @module MusicalConcepts
- */
-
-/**
- * Represents a musical note, created from sampled audio.
- * When a soundfont is created via the
- * {{#crossLink "Audio"}}Audio Service{{/crossLink}}, an instance of this class
- * is created for every musical note that is represented in a soundfont. This
- * class can be used for any collection of Sound instances where each instance
- * needs an awareness of what "musical note" it is (i.e. octave, accidental, etc..).
+ * SampledNote extends Sound with musical properties (letter, accidental, octave,
+ * frequency) via the MusicallyAware mixin. Used in Font collections where each
+ * sound represents a specific musical note.
  *
- * This class only makes sense when used in the context of a collection, as the
- * only functionality it provides over a
- * {{#crossLink "Sound"}}Sound{{/crossLink}}, serves to facilitate identification.
+ * @example
+ * ```typescript
+ * import { createFont } from 'ez-web-audio'
  *
- * @public
- * @class SampledNote
- * @extends Sound
- * @uses MusicalIdentity
+ * // SampledNote is typically created via createFont(), not directly
+ * const piano = await createFont('piano.js')
+ * const noteA4 = piano.getNote('A4')
+ *
+ * // Access musical properties
+ * console.log(noteA4?.frequency)   // 440
+ * console.log(noteA4?.identifier)  // "A4"
+ * console.log(noteA4?.letter)      // "A"
+ * console.log(noteA4?.octave)      // "4"
+ *
+ * // Use Sound methods
+ * noteA4?.changeGainTo(0.5)
+ * noteA4?.play()
+ * ```
  */
 export class SampledNote extends MusicallyAware(Sound) {
 }

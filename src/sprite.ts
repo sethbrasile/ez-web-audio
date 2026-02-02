@@ -33,17 +33,28 @@ export interface SpritePlayOptions {
 
 /**
  * AudioSprite enables playing segments of a single audio file by name.
- * Uses audiosprite-compatible JSON format for defining sprite timing.
+ *
+ * Use sprites to bundle multiple short sounds into one file, reducing HTTP requests.
+ * Compatible with the audiosprite JSON format.
  *
  * @example
  * ```typescript
+ * import { createSprite } from 'ez-web-audio'
+ *
  * const sprite = await createSprite('sounds.mp3', {
  *   spritemap: {
  *     laser: { start: 0, end: 0.3 },
- *     explosion: { start: 1.0, end: 2.5 }
+ *     explosion: { start: 1.0, end: 2.5 },
+ *     powerup: { start: 3.0, end: 3.5 }
  *   }
  * })
- * sprite.play('laser', { gain: 0.5 })
+ *
+ * // Play specific sounds by name
+ * sprite.play('laser')
+ * sprite.play('explosion', { gain: 0.7 })
+ *
+ * // Check available sprites
+ * console.log(sprite.names) // ['laser', 'explosion', 'powerup']
  * ```
  */
 export class AudioSprite {
@@ -54,22 +65,46 @@ export class AudioSprite {
   ) {}
 
   /**
-   * Get list of available sprite names.
+   * List of available sprite names defined in the manifest.
+   *
+   * @example
+   * ```typescript
+   * sprite.names.forEach(name => console.log(name))
+   * ```
    */
   get names(): string[] {
     return Object.keys(this.manifest.spritemap)
   }
 
   /**
-   * Check if a sprite exists.
+   * Check if a sprite with the given name exists.
+   *
+   * @param name - The sprite name to check
+   * @returns true if the sprite exists
+   *
+   * @example
+   * ```typescript
+   * if (sprite.has('laser')) {
+   *   sprite.play('laser')
+   * }
+   * ```
    */
   has(name: string): boolean {
     return name in this.manifest.spritemap
   }
 
   /**
-   * Get duration of a sprite in seconds.
+   * Get the duration of a sprite in seconds.
+   *
+   * @param name - The sprite name
+   * @returns Duration in seconds
    * @throws Error if sprite name not found
+   *
+   * @example
+   * ```typescript
+   * const duration = sprite.getDuration('explosion')
+   * console.log(`Explosion lasts ${duration} seconds`)
+   * ```
    */
   getDuration(name: string): number {
     const sprite = this.manifest.spritemap[name]
@@ -80,9 +115,28 @@ export class AudioSprite {
   }
 
   /**
-   * Play a sprite by name with optional gain/pan.
-   * Creates new AudioBufferSourceNode per play (allows concurrent playback).
+   * Play a sprite by name.
+   *
+   * Each call creates a new AudioBufferSourceNode, allowing concurrent playback
+   * of the same sprite. Use options to control gain and pan.
+   *
+   * @param name - The sprite name to play
+   * @param options - Optional gain (0-1) and pan (-1 to 1) settings
    * @throws Error if sprite name not found
+   *
+   * @example
+   * ```typescript
+   * // Simple playback
+   * sprite.play('laser')
+   *
+   * // With options
+   * sprite.play('explosion', { gain: 0.5, pan: -0.5 })
+   *
+   * // Rapid fire (each creates new source)
+   * sprite.play('laser')
+   * sprite.play('laser')
+   * sprite.play('laser')
+   * ```
    */
   play(name: string, options: SpritePlayOptions = {}): void {
     const sprite = this.manifest.spritemap[name]
