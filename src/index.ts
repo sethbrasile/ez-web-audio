@@ -64,6 +64,29 @@ async function unlockAudioContext(): Promise<void> {
 }
 
 let iosWorkaroundPerformed = false
+
+/**
+ * Initialize the audio system. Must be called in response to a user interaction
+ * (click, tap, keypress) due to browser autoplay policies.
+ *
+ * This function creates the AudioContext if it doesn't exist and handles
+ * iOS-specific workarounds for audio playback while the mute switch is on.
+ *
+ * @param useIosMuteWorkaround - Whether to apply iOS mute switch workaround (default: true)
+ * @throws {AudioContextError} If AudioContext cannot be created or is interrupted
+ *
+ * @example
+ * ```typescript
+ * import { initAudio, createSound } from 'ez-web-audio'
+ *
+ * // Call initAudio on user interaction
+ * button.addEventListener('click', async () => {
+ *   await initAudio()
+ *   const sound = await createSound('click.mp3')
+ *   sound.play()
+ * })
+ * ```
+ */
 export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
   if (!audioContext) {
     audioContext = new AudioContext()
@@ -93,12 +116,46 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
   await unlockAudioContext()
 }
 
+/**
+ * Get the shared AudioContext instance, initializing it if needed.
+ *
+ * The library uses a single AudioContext instance for all audio operations.
+ * This function ensures the context is initialized before returning it.
+ *
+ * @returns The shared AudioContext instance
+ *
+ * @example
+ * ```typescript
+ * import { getAudioContext } from 'ez-web-audio'
+ *
+ * // Get the AudioContext for custom Web Audio operations
+ * const ctx = await getAudioContext()
+ * const oscillator = ctx.createOscillator()
+ * ```
+ */
 export async function getAudioContext(): Promise<AudioContext> {
   await initAudio()
   return audioContext
 }
 
-// Notes do not require AudioContext
+/**
+ * Create an array of Note objects from a frequency map.
+ *
+ * Notes represent musical pitches with letter, accidental, octave, and frequency.
+ * If no frequency map is provided, uses the default 12-TET frequency map.
+ *
+ * @param json - Optional frequency map object (default: built-in frequencyMap)
+ * @returns Array of Note objects
+ *
+ * @example
+ * ```typescript
+ * import { createNotes } from 'ez-web-audio'
+ *
+ * // Create notes from default frequency map
+ * const notes = createNotes()
+ * const a4 = notes.find(n => n.frequency === 440)
+ * ```
+ */
 export function createNotes(json?: any): Note[] {
   const notes = []
   if (!json) {
@@ -114,25 +171,163 @@ export function createNotes(json?: any): Note[] {
   return notes
 }
 
+/**
+ * Create a Sound from an audio file URL.
+ *
+ * Sound is for one-shot audio playback (sound effects, UI sounds). Each call to
+ * `.play()` creates a new audio source, allowing overlapping playback.
+ * Use {@link createTrack} instead for music with pause/resume/seek.
+ *
+ * @param url - URL to the audio file (local path, relative URL, or absolute URL)
+ * @returns Promise resolving to a Sound instance
+ * @throws {AudioLoadError} If the audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createSound } from 'ez-web-audio'
+ *
+ * const click = await createSound('click.mp3')
+ * click.play()
+ *
+ * // Sounds can overlap
+ * click.play()
+ * click.play()
+ *
+ * // Control volume
+ * click.changeGainTo(0.5)
+ * click.play()
+ * ```
+ */
 export function createSound(url: string): Promise<Sound> {
   return load(url, 'sound') as Promise<Sound>
 }
 
+/**
+ * Create a Track from an audio file URL.
+ *
+ * Track extends Sound with position tracking, pause/resume, and seeking.
+ * Use Track for music or longer audio where users need playback control.
+ * Unlike Sound, only one playback can be active at a time.
+ *
+ * @param url - URL to the audio file (local path, relative URL, or absolute URL)
+ * @returns Promise resolving to a Track instance
+ * @throws {AudioLoadError} If the audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createTrack } from 'ez-web-audio'
+ *
+ * const song = await createTrack('song.mp3')
+ * song.play()
+ *
+ * // Pause and resume
+ * song.pause()
+ * song.resume()
+ *
+ * // Seek to 30 seconds
+ * song.seek(30).from('seconds')
+ *
+ * // Get current position
+ * console.log(song.position.string) // '0:30'
+ * ```
+ */
 export async function createTrack(url: string): Promise<Track> {
   return load(url, 'track') as Promise<Track>
 }
 
+/**
+ * Create a BeatTrack for drum machine-style rhythmic patterns.
+ *
+ * A BeatTrack manages a sequence of Beats, where each Beat can be active (plays sound)
+ * or inactive (rest). Sounds are played in round-robin fashion to prevent overlapping.
+ *
+ * @param urls - Array of audio file URLs to load as sound sources
+ * @param opts - Optional BeatTrack configuration
+ * @returns Promise resolving to a BeatTrack instance
+ * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createBeatTrack } from 'ez-web-audio'
+ *
+ * // Create a kick drum track with 3 sounds for round-robin
+ * const kick = await createBeatTrack(['kick1.mp3', 'kick2.mp3', 'kick3.mp3'])
+ *
+ * // Set up a 4/4 beat pattern (kick on 1 and 3)
+ * kick.beats[0].active = true  // Beat 1
+ * kick.beats[2].active = true  // Beat 3
+ *
+ * // Play the pattern
+ * kick.play()
+ * ```
+ */
 export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): Promise<BeatTrack> {
   const sounds = await Promise.all(urls.map(async url => load(url, 'sound') as Promise<Sound>))
   return new BeatTrack(audioContext, sounds, opts)
 }
 
+/**
+ * Create a Sampler for round-robin playback of multiple sounds.
+ *
+ * Sampler holds multiple Sound instances and cycles through them on each play,
+ * providing natural variation and preventing the "machine gun" effect of
+ * identical sounds played rapidly.
+ *
+ * @param urls - Array of audio file URLs to load as sound sources
+ * @param opts - Optional Sampler configuration
+ * @returns Promise resolving to a Sampler instance
+ * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createSampler } from 'ez-web-audio'
+ *
+ * // Create a sampler with multiple gunshot variations
+ * const gunshot = await createSampler([
+ *   'shot1.mp3', 'shot2.mp3', 'shot3.mp3'
+ * ])
+ *
+ * // Each play uses the next sound in rotation
+ * gunshot.play() // shot1
+ * gunshot.play() // shot2
+ * gunshot.play() // shot3
+ * gunshot.play() // shot1 (wraps around)
+ * ```
+ */
 export async function createSampler(urls: string[], opts?: SamplerOptions): Promise<Sampler> {
   const sounds = await Promise.all(urls.map(async url => load(url, 'sound') as Promise<Sound>))
   await initAudio()
   return new Sampler(sounds, opts)
 }
 
+/**
+ * Create an Oscillator for synthesizing audio from waveforms.
+ *
+ * Oscillators generate sound from sine, square, sawtooth, or triangle waves.
+ * They support filters for tone shaping and ADSR envelopes for
+ * professional-quality synthesis.
+ *
+ * @param options - Optional oscillator configuration (frequency, type, filters, envelope)
+ * @returns Promise resolving to an Oscillator instance
+ *
+ * @example
+ * ```typescript
+ * import { createOscillator } from 'ez-web-audio'
+ *
+ * // Simple sine wave at 440Hz (A4)
+ * const synth = await createOscillator({ frequency: 440, type: 'sine' })
+ * synth.play()
+ * setTimeout(() => synth.stop(), 500)
+ *
+ * // With ADSR envelope for piano-like decay
+ * const piano = await createOscillator({
+ *   frequency: 440,
+ *   type: 'triangle',
+ *   envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.5 }
+ * })
+ * piano.play()
+ * ```
+ */
 export async function createOscillator(options?: OscillatorOpts): Promise<Oscillator> {
   await initAudio()
   return new Oscillator(audioContext, options)
@@ -165,6 +360,30 @@ export async function createLayeredSound(
   return new LayeredSound(audioContext, layers, opts)
 }
 
+/**
+ * Create a Font from a soundfont file.
+ *
+ * A Font is a collection of sampled notes (like a piano or organ) that can be
+ * played by note name. Soundfont files contain base64-encoded audio samples
+ * for each note.
+ *
+ * @param url - URL to the soundfont JavaScript file
+ * @returns Promise resolving to a Font instance
+ * @throws {AudioLoadError} If the soundfont cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createFont } from 'ez-web-audio'
+ *
+ * // Load a piano soundfont
+ * const piano = await createFont('acoustic_grand_piano-mp3.js')
+ *
+ * // Play notes by name
+ * piano.play('C4')  // Middle C
+ * piano.play('E4')  // E above middle C
+ * piano.play('G4')  // G above middle C
+ * ```
+ */
 export async function createFont(url: string): Promise<Font> {
   const response = await fetch(url)
   const text = await response.text()
@@ -215,6 +434,31 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
   return new AudioSprite(audioContext, buffer, manifest)
 }
 
+/**
+ * Create a Sound containing white noise.
+ *
+ * White noise is useful for sound effects (rain, static, wind) and as a
+ * synthesis building block when combined with filters.
+ *
+ * @returns Promise resolving to a Sound containing 1 second of white noise
+ *
+ * @example
+ * ```typescript
+ * import { createWhiteNoise, createFilterEffect } from 'ez-web-audio'
+ *
+ * // Create white noise
+ * const noise = await createWhiteNoise()
+ * noise.play()
+ *
+ * // Filter white noise to create wind-like sound
+ * const wind = await createWhiteNoise()
+ * const lowpass = createFilterEffect(await getAudioContext(), 'lowpass', {
+ *   frequency: 400
+ * })
+ * wind.addEffect(lowpass)
+ * wind.play()
+ * ```
+ */
 export async function createWhiteNoise(): Promise<Sound> {
   const bufferSize = audioContext.sampleRate
   const audioBuffer = audioContext.createBuffer(1, bufferSize, bufferSize)
@@ -228,17 +472,12 @@ export async function createWhiteNoise(): Promise<Sound> {
 }
 
 /**
- * Creates an {{#crossLinkModule "Audio"}}Audio Class{{/crossLinkModule}}
- * instance (which is based on which "type" is specified), and passes "props"
- * to the new instance.
+ * Factory function to create the appropriate sound class based on type.
  *
  * @private
- * @method createSoundFor
- *
- * @param {string} type The type of
- * {{#crossLinkModule "Audio"}}Audio Class{{/crossLinkModule}} to be created.
- *
- * @param {object} props POJO to pass to the new instance
+ * @param type - The type of sound class to create ('sound', 'track', or 'sampler')
+ * @param props - Audio buffer or configuration to pass to the constructor
+ * @returns Sound, Track, or Sampler instance
  */
 function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound | Sampler | Track {
   switch (type) {
@@ -252,19 +491,15 @@ function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound 
 }
 
 /**
- * Loads and decodes an audio file, creating a Sound, Track, or BeatTrack
- * instance (as determined by the "type" parameter) and places the instance
- * into it's corresponding register.
+ * Load and decode an audio file, creating the appropriate sound instance.
+ *
+ * Handles caching via responseCache to avoid duplicate network requests.
  *
  * @private
- * @method _load
- *
- * @param {string} src The URI location of an audio file. Will be used by
- * "fetch" to get the audio file. Can be a local or a relative URL
- *
- * @param {string} type Determines the type of object that should be created,
- * as well as which register the instance should be placed in. Can be 'sound',
- * 'track', or 'beatTrack'.
+ * @param src - URL to the audio file
+ * @param type - Type of sound instance to create ('sound', 'track', or 'sampler')
+ * @returns Promise resolving to Sound, Track, or Sampler instance
+ * @throws {AudioLoadError} If the file cannot be loaded or decoded
  */
 async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<Sound | Sampler | Track> {
   if (responseCache.has(src)) {
@@ -314,6 +549,22 @@ interface Player {
   stop: () => void
 }
 
+/**
+ * Prevent default behavior for common interaction events on an element.
+ *
+ * Useful for piano keys or other interactive audio controls where you want
+ * to prevent text selection, context menus, and drag-and-drop behaviors.
+ *
+ * @param key - HTML element to attach event prevention to
+ *
+ * @example
+ * ```typescript
+ * import { preventEventDefaults } from 'ez-web-audio'
+ *
+ * const pianoKey = document.getElementById('key-c4')
+ * preventEventDefaults(pianoKey)
+ * ```
+ */
 export function preventEventDefaults(key: HTMLElement): void {
   function prevent(e: Event): void {
     e.preventDefault()
@@ -340,6 +591,26 @@ export function preventEventDefaults(key: HTMLElement): void {
   events.forEach(event => key.addEventListener(event, prevent))
 }
 
+/**
+ * Attach play/stop handlers to an element for touch and mouse interactions.
+ *
+ * Binds touchstart/mousedown to play() and touchend/mouseup/mouseleave to stop().
+ * Automatically initializes audio on first interaction.
+ *
+ * @param key - HTML element to attach handlers to
+ * @param player - Object with play() and stop() methods
+ *
+ * @example
+ * ```typescript
+ * import { useInteractionMethods, createOscillator } from 'ez-web-audio'
+ *
+ * const synth = await createOscillator({ frequency: 440 })
+ * const pianoKey = document.getElementById('key-a4')
+ *
+ * await useInteractionMethods(pianoKey, synth)
+ * // Now touching/clicking the element plays the synth
+ * ```
+ */
 export async function useInteractionMethods(key: HTMLElement, player: Player): Promise<void> {
   async function play(): Promise<void> {
     await initAudio()
