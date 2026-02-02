@@ -16,6 +16,8 @@
 export function arraySwap<T>(arr: T[], index: number): T[] {
   const endOfArr = arr.slice(0, index)
   const beginOfArr = arr.slice(index, arr.length)
+  // console.log('begin', beginOfArr)
+  // console.log(index, arr.length)
   beginOfArr.push(...endOfArr)
   return beginOfArr
 }

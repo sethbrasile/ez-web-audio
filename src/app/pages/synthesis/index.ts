@@ -1,6 +1,6 @@
 import { codeBlock, htmlBlock, inlineCode } from '../../utils'
 import nav from './nav'
-import { createNotes, createOscillator, initAudio, preventEventDefaults, useInteractionMethods } from '@/index'
+import { createNotes, createOscillator, preventEventDefaults, useInteractionMethods } from '@/index'
 
 const Content = {
   async setup() {
