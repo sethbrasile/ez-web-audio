@@ -32,5 +32,6 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["local-docs-server.ts", "src"]
+  "include": ["src"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "dist", "node_modules"]
 }

@@ -2,12 +2,16 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import dtsPlugin from 'vite-plugin-dts'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig({
   plugins: [
     tsconfigPaths(),
-    dtsPlugin(),
+    dts({
+      rollupTypes: false,      // Keep per-file declarations for better IDE "Go to Definition"
+      declarationMap: true,    // Enable .d.ts.map files
+      insertTypesEntry: true,  // Auto-add types entry
+    }),
   ],
   test: {
     environment: 'happy-dom',
@@ -15,8 +19,14 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'ez-web-audio',
-      fileName: 'index',
+      name: 'EzWebAudio',
+      formats: ['es'],         // ESM-only per CONTEXT decision
+      fileName: 'index',       // Produces index.js
+    },
+    sourcemap: true,           // External source maps
+    minify: false,             // Don't minify - consumers handle this
+    rollupOptions: {
+      external: [],            // No dependencies to externalize
     },
   },
 })
