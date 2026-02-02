@@ -1,59 +1,61 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static docs content to Pages
+# Simple workflow for deploying VitePress docs to GitHub Pages
+name: Deploy VitePress docs to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: [main]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        node-version: [20]
+  build:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
-      - name: Use Node.js ${{ matrix.node-version }}
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           cache: pnpm
+
       - name: Install dependencies
         run: pnpm install
-      - name: Build lib, app, typedoc
-        run: VITE_DOCS_URL=https://${{ github.actor }}.github.io/${{ github.event.repository.name }}/docs pnpm run build:docs &&
-      - name: Move typedoc docs into dist-docs
-        run: mv docs ./dist-docs/
+
+      - name: Build library (needed for examples that import it)
+        run: pnpm build:lib
+
+      - name: Generate TypeDoc and build VitePress
+        run: pnpm docs:build
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload dist folder
-          path: ./dist-docs
+          path: docs/.vitepress/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
