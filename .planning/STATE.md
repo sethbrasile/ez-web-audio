@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-14T08:27:07Z
+**Last Updated:** 2026-02-14T08:28:54Z
 **Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 9 of 9 (Interactive Examples)
-**Plan:** Gap closure in progress (09-08 complete)
-**Status:** Fixing critical demo component bugs
+**Plan:** Gap closure in progress (09-09 complete)
+**Status:** UI/UX polish complete, ready for verification
 
 **Progress:** [█████████░] 95%
 
 **Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** Execute 09-09-PLAN.md (gap closure - component UI issues)
+**Next Action:** Execute 09-10-PLAN.md (gap closure - timing code snippets) or human verification
 
 **Resume file:** `.planning/phases/09-interactive-examples/.continue-here.md`
 
@@ -63,8 +63,7 @@
 - Plan 09-05 completed in 3 minutes
 - Plan 09-06 completed in 3 minutes
 - Plan 09-08 completed in 2 minutes (gap closure - critical demo fixes)
-- Plan 09-09 completed in 3 minutes (gap closure - UI issues)
-- Plan 09-10 completed in 1 minute (gap closure - timing snippets)
+- Plan 09-09 completed in 4 minutes (gap closure - UI issues)
 
 ## Accumulated Context
 
@@ -139,6 +138,9 @@
 - Linear ramps for fade-to-silence effects - exponential ramps cannot mathematically reach 0 (Gap 08)
 - BeatTrack/Sampler don't support changeGainTo - they don't inherit from BaseSound (Gap 08)
 - update().from() only accepts 'ratio', 'inverseRatio', 'percent' - not arbitrary strings (Gap 08)
+- Always render container divs to prevent layout shift - use loading overlays not v-if/v-else (Gap 09)
+- Sine waves for distortion demos - pure tone makes added harmonics dramatically audible (Gap 09)
+- Removed redundant browser warnings - user interaction is already required (Gap 09)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -196,16 +198,16 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-14T08:27:07Z
-**Stopped at:** Completed 09-08-PLAN.md (gap closure - critical demo component fixes)
+**Last session:** 2026-02-14T08:28:54Z
+**Stopped at:** Completed 09-09-PLAN.md (gap closure - UI/UX polish)
 **Resume file:** `.planning/phases/09-interactive-examples/.continue-here.md`
 
 **Where we are:**
 Phase 9 gap closure in progress:
 - ✅ Plan 09-08: Fixed 4 critically broken demos (DrumMachine, FilterDemo, XYPad, SynthDrumKit)
-- ✅ Plan 09-09: Fixed UI issues (layout shift, flicker, waveform)
-- ✅ Plan 09-10: Added timing code snippets
-- Remaining: Verify all fixes work in browser
+- ✅ Plan 09-09: Fixed UI issues (layout shift, flicker, waveform, removed redundant warnings)
+- ⏳ Plan 09-10: Add timing code snippets (remaining)
+- Remaining: Complete 09-10, then verify all fixes work in browser
 
 **Context to preserve:**
 - All 10 component files exist and are globally registered in theme/index.ts
@@ -215,4 +217,4 @@ Phase 9 gap closure in progress:
 
 ---
 
-*STATE.md updated: 2026-02-14T08:27:07Z*
+*STATE.md updated: 2026-02-14T08:28:54Z*
