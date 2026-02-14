@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-14T07:23:37Z
+**Last Updated:** 2026-02-14T07:24:47Z
 **Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 9 of 9 (Interactive Examples)
-**Plan:** 2 of 9+ complete
+**Plan:** 4 of 7 complete
 **Status:** In progress
 
-**Progress:** [████████████████████░] 98% (Phase 9.2 complete)
+**Progress:** [█████████░] 87%
 
 **Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** Continue Phase 9 (Plan 03+ - build remaining example components).
+**Next Action:** Continue Phase 9 (Plan 05 - build remaining example components).
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@
 - Total phases: 9
 - Current phase: 9 (in progress)
 - Completed phases: 8
-- Phase 9 progress: 2/9+ plans
+- Phase 9 progress: 4/7 plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -56,6 +56,7 @@
 - Plan 08-02 completed in 3 minutes
 - Plan 09-01 completed in 2 minutes
 - Plan 09-02 completed in 4 minutes
+- Plan 09-04 completed in 5 minutes
 
 ## Accumulated Context
 
@@ -117,6 +118,10 @@
 - Use flat notation (Db, Eb) to match frequencyMap structure (Plan 02)
 - Extract PianoKeyboard as shared component for reuse (Plan 02)
 - Set for activeKeys, Map for oscillator tracking (efficient O(1) operations, Plan 02)
+- Logarithmic frequency mapping (100 * Math.pow(20, ratio)) for XY pad musical feel (Plan 04)
+- Layer snare as triangle oscillator + filtered white noise for educational breakdown (Plan 04)
+- Use update() API for XY pad real-time control to avoid audible clicks (Plan 04)
+- 6 square oscillators at metallic ratios for hi-hat characteristic timbre (Plan 04)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -173,19 +178,19 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-14T07:23:37Z
-**Stopped at:** Completed 09-02-PLAN.md (Piano Keyboard & Synth Keyboard)
+**Last session:** 2026-02-14T07:24:47Z
+**Stopped at:** Completed 09-04-PLAN.md (XY Pad & Synth Drum Kit)
 **Resume file:** None
 
 **Where we are:**
-Phase 9 (Plan 2 complete). Piano keyboard and synthesizer components built:
-- PianoKeyboard.vue: reusable piano UI with mouse/touch/keyboard input
-- SynthKeyboard.vue: polyphonic synth with ADSR envelope controls
-- synth-keyboard.md: component-first example page
-- 4 ADSR presets (Piano, Pad, Pluck, Lead)
+Phase 9 (Plan 4 complete). XY pad and synthesized drums built:
+- XYPad.vue: canvas-based real-time frequency/gain control with logarithmic scaling
+- xy-pad.md: demonstrates update() API for click-free parameter modulation
+- SynthDrumKit.vue: kick, snare, hi-hat synthesized from oscillators + filters (no audio files)
+- synth-drum-kit.md: educational breakdown of synthesis techniques
 
 **What's next:**
-Phase 9 Plan 03+ (Continue building example components - Soundfont Piano, Drum Machine, etc.)
+Phase 9 Plan 05+ (Continue building example components - Sampled Drum Kit, Timing Demo, Filter Demo, etc.)
 
 **Context to preserve:**
 - All audio assets available at /ez-web-audio/audio/ paths
@@ -193,9 +198,10 @@ Phase 9 Plan 03+ (Continue building example components - Soundfont Piano, Drum M
 - Overview page lists 10 examples with descriptions and learning objectives
 - Total docs audio: ~6.7MB (9 WAV drum samples + piano.js soundfont + note MP3s)
 - License attribution: Prezja Productions (kick/snare), Erkan Dogantimur (hi-hat)
-- PianoKeyboard.vue ready for reuse by SoundfontPiano (Plan 05)
-- ADSR preset pattern established for future synth components
+- PianoKeyboard.vue ready for reuse by SoundfontPiano
+- Logarithmic frequency scaling pattern (XY pad) for musical UIs
+- Layered synthesis pattern (snare) for educational demonstrations
 
 ---
 
-*STATE.md updated: 2026-02-14T07:23:37Z*
+*STATE.md updated: 2026-02-14T07:24:47Z*
