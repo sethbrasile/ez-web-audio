@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-02T04:13:27Z
-**Current Focus:** Phase 8 - Build & Distribution (In Progress)
+**Last Updated:** 2026-02-14T07:21:44Z
+**Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
 
@@ -11,23 +11,23 @@
 
 ## Current Position
 
-**Phase:** 8 of 8 (Build & Distribution)
-**Plan:** 2 of 3 complete
+**Phase:** 9 of 9 (Interactive Examples)
+**Plan:** 1 of 9+ complete
 **Status:** In progress
 
-**Progress:** [███████████████████▓] 97% (Phase 8.2 complete)
+**Progress:** [████████████████████░] 98% (Phase 9.1 complete)
 
-**Phase Goal:** Package and publish the library to npm with tree-shakeable exports and proper TypeScript support.
+**Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** Continue Phase 8 (Plan 03 - final publish).
+**Next Action:** Continue Phase 9 (Plan 02+ - build example components).
 
 ## Performance Metrics
 
 **Roadmap:**
-- Total phases: 8
-- Current phase: 7 (complete)
-- Completed phases: 7
-- Phase 7 progress: 6/6 plans
+- Total phases: 9
+- Current phase: 9 (in progress)
+- Completed phases: 8
+- Phase 9 progress: 1/9+ plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -54,6 +54,7 @@
 - Plan 07-06 completed in 38 minutes (includes human verification)
 - Plan 08-01 completed in 2 minutes
 - Plan 08-02 completed in 3 minutes
+- Plan 09-01 completed in 2 minutes
 
 ## Accumulated Context
 
@@ -107,10 +108,20 @@
 - Include npm provenance flag for supply chain attestation (Plan 02)
 - Exclude src/app and src/test from package via dts plugin (Plan 02)
 
+**Phase 9 Decisions:**
+- Skip large MP3s (barely-there.mp3, do-wah-diddy.mp3) - keep docs audio under 7MB
+- Keep existing synthesis.md for backward compatibility during transition
+- Attribution for sample packs in LICENSE.txt (Prezja Productions, Erkan Dogantimur)
+- Total audio budget under 7MB for efficient GitHub Pages deployment
+
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
 - Debug mode included in Phase 5 (development tool value)
 - Framework bindings (React/Vue) deferred to v2 (separate packages)
+
+### Roadmap Evolution
+
+- Phase 9 added: Interactive Examples
 
 ### Active TODOs
 
@@ -158,29 +169,27 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-02T04:13:27Z
-**Stopped at:** Completed 08-02-PLAN.md (npm Publishing Pipeline)
+**Last session:** 2026-02-14T07:21:44Z
+**Stopped at:** Completed 09-01-PLAN.md (Foundation Setup)
 **Resume file:** None
 
 **Where we are:**
-Phase 8 (Plan 2 complete). Publishing pipeline now ready:
-- GitHub Actions workflow publishes to npm on v* tags
-- npm pack produces clean 142.2 KB package (98 files)
-- Demo app and test files excluded from distribution
-- Release process documented in README
+Phase 9 (Plan 1 complete). Foundation for interactive examples established:
+- Audio assets copied to docs/public/audio/ (~6.7MB total)
+- VitePress sidebar restructured with 5 category groups
+- Examples overview page rewritten with all 10 planned examples
+- Proper attribution in LICENSE.txt for sample packs
 
 **What's next:**
-Phase 8 Plan 03 (Pre-publish checklist and first npm publish).
+Phase 9 Plan 02+ (Build interactive example components - Drum Machine, Synth Keyboard, etc.)
 
 **Context to preserve:**
-- Full test suite: 711 tests all passing
-- Package verified: types resolve, installs correctly
-- Build output: 120KB bundle (29KB gzipped), 142.2 KB tarball
-- Zero dependencies maintained in package.json
-- GitHub Actions workflow requires NPM_TOKEN secret
-- Package contains: dist/, readme.md, LICENSE, package.json only
-- Documentation site: deployed via GitHub Actions
+- All audio assets available at /ez-web-audio/audio/ paths
+- Sidebar shows: Examples, Sampling, Synthesis, Timing & Sequencing, Effects & Routing
+- Overview page lists 10 examples with descriptions and learning objectives
+- Total docs audio: ~6.7MB (9 WAV drum samples + piano.js soundfont + note MP3s)
+- License attribution: Prezja Productions (kick/snare), Erkan Dogantimur (hi-hat)
 
 ---
 
-*STATE.md updated: 2026-02-02T04:13:27Z*
+*STATE.md updated: 2026-02-14T07:21:44Z*
