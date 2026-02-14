@@ -236,6 +236,35 @@ Plans:
 
 ---
 
+### Phase 9: Interactive Examples
+
+**Goal:** Users can experience the full power of EZ Web Audio through 9 rich interactive demos, letting people try the library before reading a line of code.
+
+**Depends on:** Phase 8
+
+**Plans:** 7 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Audio assets, sidebar restructure, and examples overview
+- [ ] 09-02-PLAN.md — PianoKeyboard shared component and Synth Keyboard
+- [ ] 09-03-PLAN.md — Drum Machine step sequencer
+- [ ] 09-04-PLAN.md — XY Pad and Synth Drum Kit
+- [ ] 09-05-PLAN.md — Sampled Drum Kit and Soundfont Piano
+- [ ] 09-06-PLAN.md — Timing Basics and Audio Routing
+- [ ] 09-07-PLAN.md — Filter Demo, global registration, and verification
+
+**Success Criteria:**
+1. 9 new interactive examples are accessible from the docs site sidebar
+2. Drum Machine plays patterns with visual playhead sync
+3. Synth Keyboard supports polyphonic playback with ADSR presets
+4. XY Pad demonstrates real-time frequency/gain control via canvas
+5. All synthesis demos work with zero audio file dependencies
+6. Sampling demos load and play real audio samples with round-robin
+7. All components follow established patterns (dynamic imports, cleanup, VitePress theming)
+8. VitePress docs build succeeds with all new pages
+
+---
+
 ## Progress
 
 | Phase | Status | Requirements | Completion |
@@ -275,15 +304,16 @@ All 71 v1 requirements mapped to phases:
 
 ```
 Phase 1: Foundation (Events + Bug Fixes + Error Handling)
-    ├─→ Phase 2: ADSR Envelopes (depends on events)
-    ├─→ Phase 3: Utility Features (depends on events)
-    └─→ Phase 4: Composition Features (depends on events + ADSR)
-            └─→ Phase 5: Effects & Advanced (depends on composition)
-                    └─→ Phase 6: Testing (validates all features)
-                            └─→ Phase 7: Documentation & Demo (documents tested features)
-                                    └─→ Phase 8: Build & Distribution (publishes complete library)
+    |-> Phase 2: ADSR Envelopes (depends on events)
+    |-> Phase 3: Utility Features (depends on events)
+    +-> Phase 4: Composition Features (depends on events + ADSR)
+            +-> Phase 5: Effects & Advanced (depends on composition)
+                    +-> Phase 6: Testing (validates all features)
+                            +-> Phase 7: Documentation & Demo (documents tested features)
+                                    +-> Phase 8: Build & Distribution (publishes complete library)
+                                            +-> Phase 9: Interactive Examples (docs enhancement)
 ```
 
 ---
 
-*Last updated: 2026-02-01 after Phase 8 planning*
+*Last updated: 2026-02-14 after Phase 9 planning*
