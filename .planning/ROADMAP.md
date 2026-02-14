@@ -242,16 +242,19 @@ Plans:
 
 **Depends on:** Phase 8
 
-**Plans:** 7 plans
+**Plans:** 10 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Audio assets, sidebar restructure, and examples overview
-- [ ] 09-02-PLAN.md — PianoKeyboard shared component and Synth Keyboard
-- [ ] 09-03-PLAN.md — Drum Machine step sequencer
-- [ ] 09-04-PLAN.md — XY Pad and Synth Drum Kit
-- [ ] 09-05-PLAN.md — Sampled Drum Kit and Soundfont Piano
-- [ ] 09-06-PLAN.md — Timing Basics and Audio Routing
-- [ ] 09-07-PLAN.md — Filter Demo, global registration, and verification
+- [x] 09-01-PLAN.md — Audio assets, sidebar restructure, and examples overview
+- [x] 09-02-PLAN.md — PianoKeyboard shared component and Synth Keyboard
+- [x] 09-03-PLAN.md — Drum Machine step sequencer
+- [x] 09-04-PLAN.md — XY Pad and Synth Drum Kit
+- [x] 09-05-PLAN.md — Sampled Drum Kit and Soundfont Piano
+- [x] 09-06-PLAN.md — Timing Basics and Audio Routing
+- [x] 09-07-PLAN.md — Filter Demo, global registration, and verification
+- [ ] 09-08-PLAN.md — Gap closure: Fix critical audio bugs (DrumMachine, FilterDemo, XYPad, SynthDrumKit)
+- [ ] 09-09-PLAN.md — Gap closure: UI/UX fixes (layout shift, flicker, warnings, distortion waveform)
+- [ ] 09-10-PLAN.md — Gap closure: Timing demo code snippets
 
 **Success Criteria:**
 1. 9 new interactive examples are accessible from the docs site sidebar
@@ -262,6 +265,32 @@ Plans:
 6. Sampling demos load and play real audio samples with round-robin
 7. All components follow established patterns (dynamic imports, cleanup, VitePress theming)
 8. VitePress docs build succeeds with all new pages
+
+---
+
+### Phase 10: Lazy AudioContext Initialization
+
+**Goal:** Developers using ez-web-audio never need to think about AudioContext initialization. The library lazily creates and resumes the AudioContext on first use, warns clearly if audio can't start yet, and keeps `initAudio()` available for developers who want explicit control.
+
+**Dependencies:** Phase 1 (modifies core AudioContext management in index.ts)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 10 to break down)
+
+**Success Criteria:**
+1. Developer can call `createSound()`, `createOscillator()`, etc. without ever calling `initAudio()` first — the AudioContext is created lazily on first use
+2. `play()` automatically resumes a suspended AudioContext and logs a `console.warn` if the context remains suspended (no user gesture yet), rather than silently failing
+3. `initAudio()` remains available as an optional explicit API for developers who need to control initialization timing (e.g., iOS mute workaround timing, pre-warming the context)
+4. The iOS mute workaround runs automatically on first `play()` if it hasn't been run yet
+5. `createWhiteNoise()` and any other functions that use the module-level `audioContext` directly are updated to use the lazy initializer
+6. All existing tests continue to pass — this is a non-breaking change
+7. Documentation is updated to reflect that `initAudio()` is optional (Getting Started guide, Core Concepts, API docs)
+8. Interactive example components (Vue demos) are updated to remove explicit `initAudio()` calls and "Browser Audio Requirement" warnings, demonstrating the simpler usage pattern
+9. Example code snippets in markdown pages show the new simplified API (no `initAudio()` boilerplate)
+
+**Research Notes:** The library already calls `initAudio()` inside most factory functions and calls `audioContext.resume()` in `playAt()`. The main change is replacing the raw module-level `let audioContext` with a lazy getter, ensuring all code paths go through it, and adding a user-visible warning when the context can't resume.
 
 ---
 
@@ -312,8 +341,7 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
                             +-> Phase 7: Documentation & Demo (documents tested features)
                                     +-> Phase 8: Build & Distribution (publishes complete library)
                                             +-> Phase 9: Interactive Examples (docs enhancement)
+                                                    +-> Phase 10: Lazy AudioContext Init (DX improvement)
 ```
 
----
-
-*Last updated: 2026-02-14 after Phase 9 planning*
+*Last updated: 2026-02-14 after Phase 9 gap closure planning*
