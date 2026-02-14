@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-14T07:21:44Z
+**Last Updated:** 2026-02-14T07:23:37Z
 **Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 9 of 9 (Interactive Examples)
-**Plan:** 1 of 9+ complete
+**Plan:** 2 of 9+ complete
 **Status:** In progress
 
-**Progress:** [████████████████████░] 98% (Phase 9.1 complete)
+**Progress:** [████████████████████░] 98% (Phase 9.2 complete)
 
 **Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** Continue Phase 9 (Plan 02+ - build example components).
+**Next Action:** Continue Phase 9 (Plan 03+ - build remaining example components).
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@
 - Total phases: 9
 - Current phase: 9 (in progress)
 - Completed phases: 8
-- Phase 9 progress: 1/9+ plans
+- Phase 9 progress: 2/9+ plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -55,6 +55,7 @@
 - Plan 08-01 completed in 2 minutes
 - Plan 08-02 completed in 3 minutes
 - Plan 09-01 completed in 2 minutes
+- Plan 09-02 completed in 4 minutes
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@
 - Keep existing synthesis.md for backward compatibility during transition
 - Attribution for sample packs in LICENSE.txt (Prezja Productions, Erkan Dogantimur)
 - Total audio budget under 7MB for efficient GitHub Pages deployment
+- Use flat notation (Db, Eb) to match frequencyMap structure (Plan 02)
+- Extract PianoKeyboard as shared component for reuse (Plan 02)
+- Set for activeKeys, Map for oscillator tracking (efficient O(1) operations, Plan 02)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -169,19 +173,19 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-14T07:21:44Z
-**Stopped at:** Completed 09-01-PLAN.md (Foundation Setup)
+**Last session:** 2026-02-14T07:23:37Z
+**Stopped at:** Completed 09-02-PLAN.md (Piano Keyboard & Synth Keyboard)
 **Resume file:** None
 
 **Where we are:**
-Phase 9 (Plan 1 complete). Foundation for interactive examples established:
-- Audio assets copied to docs/public/audio/ (~6.7MB total)
-- VitePress sidebar restructured with 5 category groups
-- Examples overview page rewritten with all 10 planned examples
-- Proper attribution in LICENSE.txt for sample packs
+Phase 9 (Plan 2 complete). Piano keyboard and synthesizer components built:
+- PianoKeyboard.vue: reusable piano UI with mouse/touch/keyboard input
+- SynthKeyboard.vue: polyphonic synth with ADSR envelope controls
+- synth-keyboard.md: component-first example page
+- 4 ADSR presets (Piano, Pad, Pluck, Lead)
 
 **What's next:**
-Phase 9 Plan 02+ (Build interactive example components - Drum Machine, Synth Keyboard, etc.)
+Phase 9 Plan 03+ (Continue building example components - Soundfont Piano, Drum Machine, etc.)
 
 **Context to preserve:**
 - All audio assets available at /ez-web-audio/audio/ paths
@@ -189,7 +193,9 @@ Phase 9 Plan 02+ (Build interactive example components - Drum Machine, Synth Key
 - Overview page lists 10 examples with descriptions and learning objectives
 - Total docs audio: ~6.7MB (9 WAV drum samples + piano.js soundfont + note MP3s)
 - License attribution: Prezja Productions (kick/snare), Erkan Dogantimur (hi-hat)
+- PianoKeyboard.vue ready for reuse by SoundfontPiano (Plan 05)
+- ADSR preset pattern established for future synth components
 
 ---
 
-*STATE.md updated: 2026-02-14T07:21:44Z*
+*STATE.md updated: 2026-02-14T07:23:37Z*
