@@ -67,7 +67,7 @@ Examples: `C4` (middle C), `Db4` (C# above middle C), `A4` (concert A at 440Hz)
 
 ## Comparison with Synthesis
 
-This piano uses **real recorded samples**. Compare with the [Synth Keyboard](/ez-web-audio/examples/synth-keyboard) which generates sounds from oscillators.
+This piano uses **real recorded samples**. Compare with the [Synth Keyboard](/examples/synth-keyboard) which generates sounds from oscillators.
 
 | Soundfont Piano | Synth Keyboard |
 |-----------------|----------------|
@@ -89,7 +89,7 @@ This piano uses **real recorded samples**. Compare with the [Synth Keyboard](/ez
 
 ## Component Reuse
 
-This example reuses the `PianoKeyboard` component from [Synth Keyboard](/ez-web-audio/examples/synth-keyboard). The same visual piano keyboard works for both synthesized and sampled instruments — just swap out the sound engine!
+This example reuses the `PianoKeyboard` component from [Synth Keyboard](/examples/synth-keyboard). The same visual piano keyboard works for both synthesized and sampled instruments — just swap out the sound engine!
 
 ## API Used
 
@@ -102,6 +102,6 @@ This example demonstrates:
 
 ## Next Steps
 
-- Try [Sampled Drum Kit](/ez-web-audio/examples/sampled-drum-kit) for another example of sample-based playback
-- Explore [Synth Keyboard](/ez-web-audio/examples/synth-keyboard) to compare with oscillator-based synthesis
-- Learn about [Beat Track](/ez-web-audio/examples/beat-track) to sequence notes into melodies
+- Try [Sampled Drum Kit](/examples/sampled-drum-kit) for another example of sample-based playback
+- Explore [Synth Keyboard](/examples/synth-keyboard) to compare with oscillator-based synthesis
+- Learn about [Drum Machine](/examples/drum-machine) to sequence notes into melodies

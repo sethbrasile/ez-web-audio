@@ -174,6 +174,6 @@ sound.addEffect(chorusEffect)
 
 ## Next Steps
 
-- [Sampled Drum Kit](/examples/sampled-drums) — Multi-zone velocity-sensitive pads
-- [Synthesizer](/examples/synthesizer) — Oscillator playground with filter controls
+- [Sampled Drum Kit](/examples/sampled-drum-kit) — Multi-zone velocity-sensitive pads
+- [Synth Keyboard](/examples/synth-keyboard) — Oscillator playground with filter controls
 - [Timing Basics](/examples/timing) — Master Web Audio's scheduling system

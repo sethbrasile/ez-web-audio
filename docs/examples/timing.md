@@ -113,5 +113,5 @@ All scheduling happens instantly in JavaScript. The sounds will play at their sc
 ## Next Steps
 
 - [Drum Machine](/examples/drum-machine) — Build rhythmic patterns with `BeatTrack`
-- [Sampled Drum Kit](/examples/sampled-drums) — Multi-zone drum pad with velocity layers
+- [Sampled Drum Kit](/examples/sampled-drum-kit) — Multi-zone drum pad with velocity layers
 - [Audio Routing](/examples/audio-routing) — Add custom effects to the signal chain

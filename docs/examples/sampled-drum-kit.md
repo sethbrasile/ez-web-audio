@@ -70,6 +70,6 @@ This example demonstrates:
 
 ## Next Steps
 
-- Explore [Beat Track](/examples/beat-track) to sequence these samples into rhythmic patterns
+- Explore [Drum Machine](/examples/drum-machine) to sequence these samples into rhythmic patterns
 - Try [Soundfont Piano](/examples/soundfont-piano) for another sampling-based instrument
 - Learn about [synthesis](/examples/synth-drum-kit) as an alternative to samples

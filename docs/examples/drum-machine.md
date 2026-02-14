@@ -134,5 +134,5 @@ hihat.changeGainTo(0.6)   // 60% volume
 ## Next Steps
 
 - Explore [Sampled Drum Kit](/examples/sampled-drum-kit) for one-shot drum triggering
-- Learn about [Timing & Scheduling](/examples/timing-demo) for advanced rhythm patterns
+- Learn about [Timing & Scheduling](/examples/timing) for advanced rhythm patterns
 - Try the [Synth Drum Kit](/examples/synth-drum-kit) to hear synthesized percussion sounds
