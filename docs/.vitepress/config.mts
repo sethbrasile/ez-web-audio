@@ -41,8 +41,36 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/examples/' },
             { text: 'Basic Playback', link: '/examples/basic-playback' },
+          ]
+        },
+        {
+          text: 'Sampling',
+          items: [
+            { text: 'Sampled Drum Kit', link: '/examples/sampled-drum-kit' },
+            { text: 'Soundfont Piano', link: '/examples/soundfont-piano' },
+          ]
+        },
+        {
+          text: 'Synthesis',
+          items: [
             { text: 'Synthesis', link: '/examples/synthesis' },
-            { text: 'Effects', link: '/examples/effects' }
+            { text: 'Synth Keyboard', link: '/examples/synth-keyboard' },
+            { text: 'XY Pad', link: '/examples/xy-pad' },
+            { text: 'Synth Drum Kit', link: '/examples/synth-drum-kit' },
+          ]
+        },
+        {
+          text: 'Timing & Sequencing',
+          items: [
+            { text: 'Timing Basics', link: '/examples/timing' },
+            { text: 'Drum Machine', link: '/examples/drum-machine' },
+          ]
+        },
+        {
+          text: 'Effects & Routing',
+          items: [
+            { text: 'Effects', link: '/examples/effects' },
+            { text: 'Audio Routing', link: '/examples/audio-routing' },
           ]
         }
       ],
