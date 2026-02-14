@@ -90,9 +90,8 @@ async function playKick() {
 
     // Frequency sweep: 150Hz down to near 0
     osc.onPlayRamp('frequency').from(150).to(0.01).in(0.1)
-    // Gain envelope
-    osc.onPlayRamp('gain').from(1).to(0).in(0.1)
-    osc.changeGainTo(0.8)
+    // Gain envelope (use linear to allow ramping to 0)
+    osc.onPlayRamp('gain', 'linear').from(1).to(0).in(0.1)
     osc.play()
 
     // Stop after sound completes
@@ -114,8 +113,7 @@ async function playSnareMeat() {
   })
 
   osc.onPlayRamp('frequency').from(100).to(60).in(0.15)
-  osc.onPlayRamp('gain').from(1).to(0).in(0.15)
-  osc.changeGainTo(0.6)
+  osc.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
   osc.play()
 
   setTimeout(() => {
@@ -138,8 +136,7 @@ async function playSnareCrack() {
   })
 
   noise.addEffect(highpass)
-  noise.onPlayRamp('gain').from(1).to(0).in(0.15)
-  noise.changeGainTo(0.4)
+  noise.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
   noise.play()
 
   setTimeout(() => {
@@ -193,8 +190,7 @@ async function playHiHat() {
         })
 
         osc.addEffect(highpass)
-        osc.onPlayRamp('gain').from(0.3).to(0).in(0.08)
-        osc.changeGainTo(0.15) // Quiet - multiple oscillators add up
+        osc.onPlayRamp('gain', 'linear').from(0.3).to(0).in(0.08)
         return osc
       })
     )
@@ -226,7 +222,7 @@ async function playBassDrop() {
 
     // Long frequency sweep
     osc.onPlayRamp('frequency').from(100).to(0.01).in(10)
-    osc.onPlayRamp('gain').from(0.6).to(0).in(10)
+    osc.onPlayRamp('gain', 'linear').from(0.6).to(0).in(10)
     osc.play()
 
     // Auto-stop after 10 seconds
