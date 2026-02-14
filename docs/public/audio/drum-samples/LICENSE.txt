@@ -1,0 +1,24 @@
+# Audio Sample Attribution
+
+## Kick and Snare Samples
+
+All kick and snare samples are made by Fabian Prezja of Prezja Productions and are free to use personally/commercially.
+
+Contact:
+- www.facebook.com/prezjaproductions
+- www.facebook.com/prezja
+- Mail: Wishmaster@metalmessiahradio.com
+
+## Hi-hat Samples
+
+Hi-hat samples recorded by Erkan Dogantimur at Gävle, Sweden, 14 September 2008.
+
+Recorded with an AKG Perception 100, through a Mackie Mini Series mixer, into an M-Audio Delta1010LT.
+
+License: Free for private use only. Commercial use requires permission from Erkan Dogantimur (e_m_p@live.se).
+
+These samples are 100% raw, unprocessed recordings. Studios/Corporations/Organizations are NOT allowed to use these samples without written permission.
+
+---
+
+These samples are used for demonstration purposes in the EZ Web Audio documentation examples.
