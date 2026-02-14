@@ -24,19 +24,6 @@
       <div v-for="(trackData, trackIndex) in trackInfo" :key="trackIndex" class="track-row">
         <div class="track-header">
           <span class="track-name">{{ trackData.name }}</span>
-          <div class="volume-control">
-            <label>
-              Vol: {{ Math.round(trackData.volume * 100) }}%
-              <input
-                type="range"
-                v-model.number="trackData.volume"
-                min="0"
-                max="1"
-                step="0.1"
-                :disabled="!initialized"
-              />
-            </label>
-          </div>
         </div>
 
         <div class="beat-grid">
@@ -141,11 +128,6 @@ async function initializeDrumMachine() {
       }, delay)
     })
 
-    // Set initial volumes
-    kickTrack.changeGainTo(trackInfo.value[0].volume)
-    snareTrack.changeGainTo(trackInfo.value[1].volume)
-    hihatTrack.changeGainTo(trackInfo.value[2].volume)
-
     initialized.value = true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to initialize drum machine'
@@ -162,16 +144,16 @@ async function togglePlay() {
 
   if (playing.value) {
     // Stop
-    kickTrack.stopAll()
-    snareTrack.stopAll()
-    hihatTrack.stopAll()
+    kickTrack.stop()
+    snareTrack.stop()
+    hihatTrack.stop()
     playing.value = false
     currentBeat.value = -1
   } else {
     // Play
-    kickTrack.playActiveBeats(bpm.value, 1/4)
-    snareTrack.playActiveBeats(bpm.value, 1/4)
-    hihatTrack.playActiveBeats(bpm.value, 1/4)
+    kickTrack.playBeats(bpm.value, 1/4)
+    snareTrack.playBeats(bpm.value, 1/4)
+    hihatTrack.playBeats(bpm.value, 1/4)
     playing.value = true
   }
 }
@@ -191,36 +173,25 @@ function toggleBeat(trackIndex: number, beatIndex: number) {
 watch(bpm, () => {
   if (playing.value && kickTrack && snareTrack && hihatTrack) {
     // BeatTrack doesn't support tempo change mid-playback, so stop and restart
-    kickTrack.stopAll()
-    snareTrack.stopAll()
-    hihatTrack.stopAll()
+    kickTrack.stop()
+    snareTrack.stop()
+    hihatTrack.stop()
 
-    kickTrack.playActiveBeats(bpm.value, 1/4)
-    snareTrack.playActiveBeats(bpm.value, 1/4)
-    hihatTrack.playActiveBeats(bpm.value, 1/4)
+    kickTrack.playBeats(bpm.value, 1/4)
+    snareTrack.playBeats(bpm.value, 1/4)
+    hihatTrack.playBeats(bpm.value, 1/4)
   }
-})
-
-// Watch volume changes
-watch(() => trackInfo.value[0].volume, (newVol) => {
-  if (kickTrack) kickTrack.changeGainTo(newVol)
-})
-watch(() => trackInfo.value[1].volume, (newVol) => {
-  if (snareTrack) snareTrack.changeGainTo(newVol)
-})
-watch(() => trackInfo.value[2].volume, (newVol) => {
-  if (hihatTrack) hihatTrack.changeGainTo(newVol)
 })
 
 onUnmounted(() => {
   if (kickTrack) {
-    try { kickTrack.stopAll() } catch {}
+    try { kickTrack.stop() } catch {}
   }
   if (snareTrack) {
-    try { snareTrack.stopAll() } catch {}
+    try { snareTrack.stop() } catch {}
   }
   if (hihatTrack) {
-    try { hihatTrack.stopAll() } catch {}
+    try { hihatTrack.stop() } catch {}
   }
 })
 </script>

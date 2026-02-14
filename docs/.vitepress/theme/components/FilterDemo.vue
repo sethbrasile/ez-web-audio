@@ -154,19 +154,12 @@ async function playSound() {
 
     // Create source based on selected type
     if (sourceType.value === 'oscillator') {
-      source = lib.createOscillator(200, 'sawtooth')
+      source = await lib.createOscillator({ frequency: 200, type: 'sawtooth' })
       source.update('gain').to(0.3).from('ratio')
     } else {
-      // White noise using buffer with random values
-      const bufferSize = 2 * ctx.sampleRate
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
-      const output = noiseBuffer.getChannelData(0)
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1
-      }
-      source = lib.createSound(noiseBuffer)
-      source.update('gain').to(0.15).from('ratio')
-      source.loop = true
+      // White noise
+      source = await lib.createWhiteNoise()
+      source.changeGainTo(0.15)
     }
 
     // Create filter
