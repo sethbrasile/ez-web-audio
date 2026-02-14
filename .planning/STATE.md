@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-14T07:42:32Z
+**Last Updated:** 2026-02-14T08:27:07Z
 **Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
@@ -12,16 +12,16 @@
 ## Current Position
 
 **Phase:** 9 of 9 (Interactive Examples)
-**Plan:** 7 of 7 code complete, verification FAILED
-**Status:** Gaps found — needs gap closure plan
+**Plan:** Gap closure in progress (09-08 complete)
+**Status:** Fixing critical demo component bugs
 
-**Progress:** [█████████░] 93%
+**Progress:** [█████████░] 95%
 
 **Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** `/gsd:plan-phase 9 --gaps` — Create gap closure plan for 9 verification issues.
+**Next Action:** Execute 09-09-PLAN.md (gap closure - component UI issues)
 
-**Resume file:** None
+**Resume file:** `.planning/phases/09-interactive-examples/.continue-here.md`
 
 ## Performance Metrics
 
@@ -62,7 +62,9 @@
 - Plan 09-04 completed in 5 minutes
 - Plan 09-05 completed in 3 minutes
 - Plan 09-06 completed in 3 minutes
-- Plan 09-10 completed in 1 minute (gap closure)
+- Plan 09-08 completed in 2 minutes (gap closure - critical demo fixes)
+- Plan 09-09 completed in 3 minutes (gap closure - UI issues)
+- Plan 09-10 completed in 1 minute (gap closure - timing snippets)
 
 ## Accumulated Context
 
@@ -134,6 +136,9 @@
 - requestAnimationFrame countdown synced to audioContext.currentTime for accurate timing visual feedback (Plan 06)
 - Signal chain visualization uses flexbox layout instead of canvas for better accessibility and theming (Plan 06)
 - WaveShaper distortion curve uses mathematical formula with configurable amount parameter (50-1000) (Plan 06)
+- Linear ramps for fade-to-silence effects - exponential ramps cannot mathematically reach 0 (Gap 08)
+- BeatTrack/Sampler don't support changeGainTo - they don't inherit from BaseSound (Gap 08)
+- update().from() only accepts 'ratio', 'inverseRatio', 'percent' - not arbitrary strings (Gap 08)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -191,30 +196,23 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-14T07:42:32Z
-**Stopped at:** Completed 09-10-PLAN.md (gap closure - timing code snippets)
+**Last session:** 2026-02-14T08:27:07Z
+**Stopped at:** Completed 09-08-PLAN.md (gap closure - critical demo component fixes)
 **Resume file:** `.planning/phases/09-interactive-examples/.continue-here.md`
 
 **Where we are:**
-Phase 9 all 7 plans executed (code written), but human verification found bugs:
-- 3 Critical: Drum Machine non-functional, XY Pad sound doesn't update, Synth Drum Kit no audio, Filter Demo runtime error
-- 3 Medium: Synth Keyboard layout jump, Sampled Drum Kit flash, Soundfont Piano flash, Audio Routing wrong oscillator
-- 1 Low: Timing Basics needs inline code snippets
-- 1 Global: Remove "Browser Audio Requirement" warnings from ALL examples
-
-**What's next:**
-1. `/clear` for fresh context
-2. `/gsd:plan-phase 9 --gaps` to create gap closure plan from .continue-here.md
-3. Execute gap closure
-4. Re-run human verification
+Phase 9 gap closure in progress:
+- ✅ Plan 09-08: Fixed 4 critically broken demos (DrumMachine, FilterDemo, XYPad, SynthDrumKit)
+- ✅ Plan 09-09: Fixed UI issues (layout shift, flicker, waveform)
+- ✅ Plan 09-10: Added timing code snippets
+- Remaining: Verify all fixes work in browser
 
 **Context to preserve:**
 - All 10 component files exist and are globally registered in theme/index.ts
 - All 9 example markdown pages exist with sidebar navigation
 - Audio assets are in docs/public/audio/ (working)
-- The issues are documented in detail in .continue-here.md
-- Key API mismatches to investigate: update() on non-Oscillator, BeatTrack init, createOscillator play patterns
+- Critical API patterns clarified: BeatTrack.stop(), createOscillator await, update().from('ratio'), linear ramps to 0
 
 ---
 
-*STATE.md updated: 2026-02-14T07:42:32Z*
+*STATE.md updated: 2026-02-14T08:27:07Z*
