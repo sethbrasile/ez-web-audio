@@ -10,10 +10,6 @@ import SynthKeyboard from '../.vitepress/theme/components/SynthKeyboard.vue'
 
 An interactive polyphonic synthesizer with ADSR envelope control. Play multiple notes simultaneously using your mouse, touch, or computer keyboard.
 
-::: warning Browser Requirement
-This demo requires a modern browser with Web Audio API support. Click a key to initialize audio (required by browser autoplay policies).
-:::
-
 <SynthKeyboard />
 
 ## How It Works

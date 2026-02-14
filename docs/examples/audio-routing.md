@@ -2,10 +2,6 @@
 
 Learn how to integrate custom Web Audio effects into your signal chain using the adapter pattern.
 
-::: warning SOUND ON
-This page plays audio. Turn up your volume!
-:::
-
 <DistortionDemo />
 
 ## How Effects Work

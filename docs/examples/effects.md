@@ -6,10 +6,6 @@ title: Effects
 
 Shape your audio with filters, gain effects, and custom audio processing. This page covers the built-in effects, effect chains, and integrating external effect libraries.
 
-::: warning Browser Requirement
-Interactive demos require a modern browser with Web Audio API support. Click the Play button to activate audio.
-:::
-
 ## Try It: Real-Time Filter Control
 
 Experiment with different filter types and parameters. Try switching between the oscillator and white noise sources to hear how filters affect different signals.

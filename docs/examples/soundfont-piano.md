@@ -6,10 +6,6 @@ Play a realistic piano with real instrument samples loaded from a soundfont.
 import SoundfontPiano from '../.vitepress/theme/components/SoundfontPiano.vue'
 </script>
 
-::: warning Browser Audio Requirement
-This example requires user interaction to initialize the Web Audio API. Click or tap a piano key to start.
-:::
-
 <SoundfontPiano />
 
 ## What is a Soundfont?

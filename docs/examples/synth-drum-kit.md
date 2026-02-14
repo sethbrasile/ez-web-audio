@@ -6,10 +6,6 @@ title: Synth Drum Kit
 
 Create realistic drum sounds entirely from synthesis — no audio files needed. This example demonstrates advanced synthesis techniques using oscillators, white noise, and filters to build kick, snare, and hi-hat sounds from scratch.
 
-::: warning Browser Requirement
-Audio playback requires user interaction (click/tap) to start. This is a browser security requirement that cannot be bypassed.
-:::
-
 ## Try It: Synthesized Drums
 
 Tap the pads to hear drum sounds created entirely from synthesis. Each sound is generated in real-time using oscillators and filters.

@@ -6,10 +6,6 @@ title: Synthesis
 
 Generate sounds programmatically with oscillators. This page covers waveform types, ADSR envelopes for shaping tone, and musical note generation.
 
-::: warning Browser Requirement
-Audio playback requires user interaction (click/tap) to start. This is a browser security requirement that cannot be bypassed.
-:::
-
 ## Try It: Oscillator Demo
 
 Experiment with different waveforms and frequencies. The note name updates in real-time as you change the frequency.

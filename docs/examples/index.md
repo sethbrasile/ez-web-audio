@@ -6,11 +6,6 @@ title: Interactive Examples
 
 Try EZ Web Audio features directly in your browser. Each example demonstrates core library features through interactive demos you can play with immediately.
 
-::: warning Browser Requirement
-All examples require clicking a button to start. This is a browser security
-requirement - audio cannot auto-play without user interaction.
-:::
-
 ## Audio Files
 
 ### [Basic Playback](/examples/basic-playback)

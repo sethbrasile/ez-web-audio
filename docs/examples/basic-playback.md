@@ -6,10 +6,6 @@ title: Basic Playback
 
 Learn how to load and play audio files with EZ Web Audio. This page covers the two main ways to play audio: **Sound** for one-shot effects and **Track** for music with playback control.
 
-::: warning Browser Requirement
-Audio playback requires user interaction (click/tap) to start. This is a browser security requirement that cannot be bypassed.
-:::
-
 ## Try It: Sound Demo
 
 Click the button to play a sound effect. Adjust volume and pan before or after playing.

@@ -10,10 +10,6 @@ import DrumMachine from '../.vitepress/theme/components/DrumMachine.vue'
 
 Create rhythmic patterns with a step sequencer using the BeatTrack API. This example demonstrates sample-accurate timing, round-robin playback, and visual synchronization with Web Audio scheduling.
 
-::: warning Browser Requirement
-This demo requires a browser with Web Audio API support. Click "Play" to initialize audio (required by browser autoplay policies).
-:::
-
 <DrumMachine />
 
 ## How to Use

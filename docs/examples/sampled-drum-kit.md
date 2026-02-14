@@ -6,10 +6,6 @@ Play realistic drum sounds with round-robin sample variations for more natural p
 import SampledDrumKit from '../.vitepress/theme/components/SampledDrumKit.vue'
 </script>
 
-::: warning Browser Audio Requirement
-This example requires user interaction to initialize the Web Audio API. Click or tap a drum pad to start.
-:::
-
 <SampledDrumKit />
 
 ## What is Round-Robin?

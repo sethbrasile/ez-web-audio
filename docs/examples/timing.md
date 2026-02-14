@@ -2,10 +2,6 @@
 
 Master Web Audio's scheduling system for precise, synchronized playback.
 
-::: warning SOUND ON
-This page plays audio. Turn up your volume!
-:::
-
 ## Quick Reference
 
 The interactive demo below shows four timing methods:
