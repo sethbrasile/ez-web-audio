@@ -2,11 +2,10 @@
   <div class="soundfont-piano">
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-if="loading" class="loading">
-      {{ loadProgress }}
-    </div>
-
-    <div v-else class="piano-container">
+    <div class="piano-container">
+      <div v-if="loading" class="loading">
+        {{ loadProgress }}
+      </div>
       <div class="current-note">
         {{ currentNote || 'Click a key to play' }}
       </div>

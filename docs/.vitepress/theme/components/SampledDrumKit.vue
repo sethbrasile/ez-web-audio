@@ -1,9 +1,10 @@
 <template>
   <div class="sampled-drum-kit">
     <div v-if="error" class="error">{{ error }}</div>
+
     <div v-if="loading" class="loading">Loading drum samples...</div>
 
-    <div v-else class="drum-pads">
+    <div class="drum-pads">
       <div
         v-for="pad in pads"
         :key="pad.name"

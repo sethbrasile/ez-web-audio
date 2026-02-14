@@ -51,8 +51,8 @@
       </div>
     </div>
 
-    <div v-if="currentNote" class="current-note">
-      {{ currentNote }}
+    <div class="current-note">
+      {{ currentNote || '&nbsp;' }}
     </div>
 
     <PianoKeyboard

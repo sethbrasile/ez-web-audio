@@ -140,7 +140,7 @@ async function togglePlayback() {
       await initIfNeeded()
       oscillator = await lib.createOscillator({
         frequency: 200,
-        type: 'sawtooth'
+        type: 'sine'
       })
       oscillator.changeGainTo(0.3)
       oscillator.play()
