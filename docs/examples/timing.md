@@ -6,6 +6,28 @@ Master Web Audio's scheduling system for precise, synchronized playback.
 This page plays audio. Turn up your volume!
 :::
 
+## Quick Reference
+
+The interactive demo below shows four timing methods:
+
+```typescript
+// 1. Immediate playback
+sound.play()
+
+// 2. Delayed playback (relative)
+sound.playIn(1) // plays in 1 second
+
+// 3. Precise scheduling (absolute)
+const ctx = await getAudioContext()
+sound.playAt(ctx.currentTime + 0.5) // plays at exact time
+
+// 4. Perfect sync - multiple sounds at same time
+const now = ctx.currentTime
+osc1.playAt(now)
+osc2.playAt(now)
+osc3.playAt(now)
+```
+
 <TimingDemo />
 
 ## Why Timing Matters
