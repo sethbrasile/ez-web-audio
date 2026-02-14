@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-14T07:31:35Z
+**Last Updated:** 2026-02-14T07:37:56Z
 **Current Focus:** Phase 9 - Interactive Examples (In Progress)
 
 ## Project Reference
@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 9 of 9 (Interactive Examples)
-**Plan:** 5 of 7 complete
+**Plan:** 6 of 7 complete
 **Status:** In progress
 
-**Progress:** [█████████░] 90%
+**Progress:** [██████████] 95%
 
 **Phase Goal:** Create interactive examples for the documentation site that demonstrate library features.
 
-**Next Action:** Continue Phase 9 (Plan 05 - build remaining example components).
+**Next Action:** Continue Phase 9 (Plan 07 - final example component).
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@
 - Total phases: 9
 - Current phase: 9 (in progress)
 - Completed phases: 8
-- Phase 9 progress: 5/7 plans
+- Phase 9 progress: 6/7 plans
 
 **Velocity:**
 - Plan 02-01 completed in 6 minutes
@@ -58,6 +58,7 @@
 - Plan 09-02 completed in 4 minutes
 - Plan 09-03 completed in 2 minutes
 - Plan 09-04 completed in 5 minutes
+- Plan 09-06 completed in 3 minutes
 
 ## Accumulated Context
 
@@ -126,6 +127,9 @@
 - Single beat event listener on kick track for visual sync since all tracks are synchronized (Plan 03)
 - Calculate visual delay from beat event time to sync playhead with audio (Plan 03)
 - Restart playback on BPM change - BeatTrack doesn't support mid-playback tempo changes (Plan 03)
+- requestAnimationFrame countdown synced to audioContext.currentTime for accurate timing visual feedback (Plan 06)
+- Signal chain visualization uses flexbox layout instead of canvas for better accessibility and theming (Plan 06)
+- WaveShaper distortion curve uses mathematical formula with configurable amount parameter (50-1000) (Plan 06)
 
 **Scope:**
 - Visualization (VIZ) included in Phase 5 (research suggested optional v2)
@@ -182,19 +186,19 @@ None active.
 
 ## Session Continuity
 
-**Last session:** 2026-02-14T07:31:35Z
-**Stopped at:** Completed 09-03-PLAN.md (Drum Machine)
+**Last session:** 2026-02-14T07:37:56Z
+**Stopped at:** Completed 09-06-PLAN.md (Timing & Audio Routing)
 **Resume file:** None
 
 **Where we are:**
-Phase 9 (Plan 5 complete). Drum machine step sequencer built:
-- DrumMachine.vue: 3-lane x 16-step grid with kick, snare, hi-hat tracks
-- drum-machine.md: demonstrates BeatTrack API with visual playhead synchronization
-- Beat event timing pattern using lookahead delay calculation for perfect visual sync
-- Real-time BPM control (60-200) and per-track volume sliders
+Phase 9 (Plan 6 complete). Timing and audio routing examples built:
+- TimingDemo.vue: 4 sections demonstrating play(), playIn(), playAt() with visual feedback
+- timing.md: explains Web Audio scheduling model vs JavaScript timers
+- DistortionDemo.vue: WaveShaper effect with amount/mix controls and signal chain visualization
+- audio-routing.md: demonstrates wrapEffect adapter pattern for custom effects
 
 **What's next:**
-Phase 9 Plan 05+ (Continue building example components - Sampled Drum Kit, Timing Demo, Filter Demo, etc.)
+Phase 9 Plan 07 (Final example component)
 
 **Context to preserve:**
 - All audio assets available at /ez-web-audio/audio/ paths
@@ -206,6 +210,9 @@ Phase 9 Plan 05+ (Continue building example components - Sampled Drum Kit, Timin
 - Logarithmic frequency scaling pattern (XY pad) for musical UIs
 - Layered synthesis pattern (snare) for educational demonstrations
 - Beat event visual sync pattern (drum machine) for step sequencers
+- RAF countdown synced to audioContext.currentTime (timing demo) for accurate visual feedback
+- Signal chain visualization pattern (audio routing) for effect flow diagrams
+- wrapEffect adapter pattern (audio routing) for integrating custom Web Audio nodes
 
 ---
 
