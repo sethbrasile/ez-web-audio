@@ -6,6 +6,20 @@ title: Effects
 
 Shape your audio with filters, gain effects, and custom audio processing. This page covers the built-in effects, effect chains, and integrating external effect libraries.
 
+::: warning Browser Requirement
+Interactive demos require a modern browser with Web Audio API support. Click the Play button to activate audio.
+:::
+
+## Try It: Real-Time Filter Control
+
+Experiment with different filter types and parameters. Try switching between the oscillator and white noise sources to hear how filters affect different signals.
+
+<script setup>
+import FilterDemo from '../.vitepress/theme/components/FilterDemo.vue'
+</script>
+
+<FilterDemo />
+
 ## Effect Types
 
 EZ Web Audio provides two built-in effect types and a wrapper for external effects:
@@ -367,4 +381,6 @@ track.play()
 
 - [Basic Playback](/examples/basic-playback) - Load and play audio files
 - [Synthesis](/examples/synthesis) - Generate sounds with oscillators
+- [Audio Routing](/examples/audio-routing) - Connect sounds to custom effects
+- [Synth Drum Kit](/examples/synth-drum-kit) - Build synthesized percussion
 - [Core Concepts](/guide/concepts) - Understand the audio system architecture
