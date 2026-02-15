@@ -3,11 +3,8 @@
     <div v-if="error" class="error">{{ error }}</div>
 
     <div class="piano-container">
-      <div v-if="loading" class="loading">
-        {{ loadProgress }}
-      </div>
       <div class="current-note">
-        {{ currentNote || 'Click a key to play' }}
+        {{ loading ? loadProgress : (currentNote || 'Click a key to play') }}
       </div>
 
       <PianoKeyboard
@@ -119,13 +116,6 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   border-radius: 4px;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: var(--vp-c-text-2);
-  font-size: 0.95rem;
 }
 
 .piano-container {

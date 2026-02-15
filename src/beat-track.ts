@@ -330,11 +330,12 @@ export class BeatTrack extends Sampler {
    */
   private scheduleBeat(beatIndex: number, time: number): void {
     const beat = this.beats[beatIndex]
+    const offset = time - this.audioContext.currentTime
 
-    if (beat.active) {
-      // Schedule sound playback at exact time
-      beat.playIn(time - this.audioContext.currentTime)
-    }
+    // ifActivePlayIn handles everything:
+    // - Active beats: plays sound, sets isPlaying + currentTimeIsPlaying (both auto-reset)
+    // - Inactive beats: sets currentTimeIsPlaying only (visual playhead on rests)
+    beat.ifActivePlayIn(offset)
 
     // Emit beat event at SCHEDULE time (lookahead), not play time
     // This gives UI ~100ms advance notice for smooth animations

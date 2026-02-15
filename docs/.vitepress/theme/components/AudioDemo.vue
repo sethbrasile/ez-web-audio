@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 
 const props = defineProps<{
   url?: string
@@ -33,6 +33,18 @@ const gain = ref(1)
 const pan = ref(0)
 
 let sound: any = null
+let lib: any = null
+
+async function ensureInit() {
+  if (!lib) {
+    lib = await import('ez-web-audio')
+    await lib.initAudio()
+  }
+  if (!sound) {
+    const audioUrl = props.url || '/ez-web-audio/audio/click.mp3'
+    sound = await lib.createSound(audioUrl)
+  }
+}
 
 async function play() {
   if (loading.value) return
@@ -41,12 +53,7 @@ async function play() {
     error.value = ''
     loading.value = true
 
-    // Dynamic import for SSR compatibility
-    const { initAudio, createSound } = await import('ez-web-audio')
-    await initAudio()
-
-    const audioUrl = props.url || '/ez-web-audio/audio/click.mp3'
-    sound = await createSound(audioUrl)
+    await ensureInit()
     sound.changeGainTo(gain.value)
     sound.changePanTo(pan.value)
     sound.play()
@@ -56,6 +63,14 @@ async function play() {
     loading.value = false
   }
 }
+
+watch(gain, (val) => {
+  if (sound) sound.changeGainTo(val)
+})
+
+watch(pan, (val) => {
+  if (sound) sound.changePanTo(val)
+})
 
 onUnmounted(() => {
   if (sound) {

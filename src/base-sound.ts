@@ -849,7 +849,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     if (duration && Number.isFinite(duration)) {
       this.setTimeout(() => {
         this._isPlaying = false
-      }, this.duration.pojo.seconds * 1000)
+      }, (duration - this.startOffset) * 1000)
     }
 
     if (time <= currentTime) {

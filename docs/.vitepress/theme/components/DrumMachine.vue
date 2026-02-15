@@ -1,47 +1,39 @@
 <template>
   <div class="drum-machine">
     <div class="controls">
-      <button @click="togglePlay" :disabled="loading" class="play-btn">
-        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
+      <button @click="togglePlay" class="play-btn">
+        {{ playing ? 'Stop' : 'Play' }}
       </button>
 
       <div class="bpm-control">
         <label>
           BPM: {{ bpm }}
-          <input
-            type="range"
-            v-model.number="bpm"
-            min="60"
-            max="200"
-            step="1"
-            :disabled="loading"
-          />
+          <input type="range" v-model.number="bpm" min="60" max="200" step="1" />
         </label>
       </div>
     </div>
 
     <div class="sequencer">
-      <div v-for="(trackData, trackIndex) in trackInfo" :key="trackIndex" class="track-row">
+      <div v-for="track in tracks" :key="track.name" class="track-row">
         <div class="track-header">
-          <span class="track-name">{{ trackData.name }}</span>
+          <span class="track-name">{{ track.name }}</span>
         </div>
 
         <div class="beat-grid">
           <button
-            v-for="(active, beatIndex) in beats[trackIndex]"
-            :key="beatIndex"
-            @click="toggleBeat(trackIndex, beatIndex)"
+            v-for="(beat, i) in track.beats"
+            :key="i"
+            @click="beat.active = !beat.active"
             :class="[
               'beat-cell',
               {
-                'active': active,
-                'current': currentBeat === beatIndex && playing,
-                [`track-${trackData.name.toLowerCase()}`]: active
+                'active': beat.active,
+                'current': beat.currentTimeIsPlaying && playing,
+                [`track-${track.name.toLowerCase()}`]: beat.active
               }
             ]"
-            :disabled="!initialized && !loading"
           >
-            <span class="beat-number">{{ beatIndex + 1 }}</span>
+            <span class="beat-number">{{ i + 1 }}</span>
           </button>
         </div>
       </div>
@@ -52,147 +44,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, reactive, watch, onUnmounted, markRaw } from 'vue'
 
-const loading = ref(false)
-const initialized = ref(false)
 const playing = ref(false)
 const bpm = ref(120)
-const currentBeat = ref(-1)
 const error = ref('')
 
-const trackInfo = ref([
-  { name: 'KICK', volume: 1 },
-  { name: 'SNARE', volume: 0.8 },
-  { name: 'HIHAT', volume: 0.6 }
-])
+const NUM_BEATS = 16
 
-// 3 tracks x 16 beats
-const beats = ref<boolean[][]>([
-  [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], // Kick: 1, 5, 9, 13 (four on the floor)
-  [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], // Snare: 5, 13 (backbeat)
-  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false] // Hihat: eighth notes
-])
+// Default patterns
+const defaultPatterns: Record<string, number[]> = {
+  KICK:  [0, 4, 8, 12],
+  SNARE: [4, 12],
+  HIHAT: [0, 2, 4, 6, 8, 10, 12, 14],
+}
 
-let kickTrack: any = null
-let snareTrack: any = null
-let hihatTrack: any = null
-let audioContext: any = null
+// Create immediate UI beats — same shape as real Beat objects
+function makeBeats(name: string) {
+  const activeSet = new Set(defaultPatterns[name] ?? [])
+  return Array.from({ length: NUM_BEATS }, (_, i) =>
+    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false })
+  )
+}
 
-async function initializeDrumMachine() {
-  if (initialized.value) return
+const trackDefs = [
+  { name: 'KICK', samples: ['kick1', 'kick2', 'kick3'] },
+  { name: 'SNARE', samples: ['snare1', 'snare2', 'snare3'] },
+  { name: 'HIHAT', samples: ['hihat1', 'hihat2', 'hihat3'] },
+]
 
+// Tracks render immediately with stub beats
+const tracks = ref(trackDefs.map(d => ({
+  name: d.name,
+  beats: makeBeats(d.name),
+  beatTrack: null as any,
+})))
+
+let initialized = false
+
+async function init() {
+  if (initialized) return
   try {
-    error.value = ''
-    loading.value = true
-
-    // Dynamic import for SSR compatibility
-    const { initAudio, createBeatTrack, getAudioContext } = await import('ez-web-audio')
+    const { initAudio, createBeatTrack } = await import('ez-web-audio')
     await initAudio()
-    audioContext = await getAudioContext()
 
-    // Create 3 BeatTrack instances with round-robin samples
-    kickTrack = await createBeatTrack([
-      '/ez-web-audio/audio/drum-samples/kick1.wav',
-      '/ez-web-audio/audio/drum-samples/kick2.wav',
-      '/ez-web-audio/audio/drum-samples/kick3.wav'
-    ], { numBeats: 16 })
+    const opts = { numBeats: NUM_BEATS, wrapWith: (beat: any) => reactive(beat) }
 
-    snareTrack = await createBeatTrack([
-      '/ez-web-audio/audio/drum-samples/snare1.wav',
-      '/ez-web-audio/audio/drum-samples/snare2.wav',
-      '/ez-web-audio/audio/drum-samples/snare3.wav'
-    ], { numBeats: 16 })
+    for (const track of tracks.value) {
+      const def = trackDefs.find(d => d.name === track.name)!
+      const urls = def.samples.map(s => `/ez-web-audio/audio/drum-samples/${s}.wav`)
+      const bt = await createBeatTrack(urls, opts)
 
-    hihatTrack = await createBeatTrack([
-      '/ez-web-audio/audio/drum-samples/hihat1.wav',
-      '/ez-web-audio/audio/drum-samples/hihat2.wav',
-      '/ez-web-audio/audio/drum-samples/hihat3.wav'
-    ], { numBeats: 16 })
+      // Transfer pattern from stubs to real beats
+      track.beats.forEach((stub, i) => { bt.beats[i].active = stub.active })
 
-    // Sync beat state from refs to BeatTrack instances
-    const tracks = [kickTrack, snareTrack, hihatTrack]
-    tracks.forEach((track, trackIndex) => {
-      beats.value[trackIndex].forEach((active, beatIndex) => {
-        track.beats[beatIndex].active = active
-      })
-    })
+      // Swap in real beats — template updates seamlessly
+      track.beats = bt.beats
+      // markRaw prevents Vue from wrapping BeatTrack in a reactive Proxy,
+      // which would break the internal WeakMap-based beats cache
+      track.beatTrack = markRaw(bt)
+    }
 
-    // Set up beat event listener for visual playhead (only need on one track since they're synced)
-    kickTrack.on('beat', (e: any) => {
-      // Calculate delay to sync visuals with audio playback
-      // Beat events fire at schedule time (~100ms early)
-      const delay = Math.max(0, (e.detail.time - audioContext.currentTime) * 1000)
-      setTimeout(() => {
-        currentBeat.value = e.detail.beatIndex
-      }, delay)
-    })
-
-    initialized.value = true
+    initialized = true
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to initialize drum machine'
-  } finally {
-    loading.value = false
+    error.value = e instanceof Error ? e.message : 'Failed to initialize'
   }
 }
 
 async function togglePlay() {
-  if (!initialized.value) {
-    await initializeDrumMachine()
-    if (!initialized.value) return
-  }
+  if (!initialized) await init()
+  if (!initialized) return
 
   if (playing.value) {
-    // Stop
-    kickTrack.stop()
-    snareTrack.stop()
-    hihatTrack.stop()
+    tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
-    currentBeat.value = -1
   } else {
-    // Play
-    kickTrack.playBeats(bpm.value, 1/4)
-    snareTrack.playBeats(bpm.value, 1/4)
-    hihatTrack.playBeats(bpm.value, 1/4)
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/4))
     playing.value = true
   }
 }
 
-function toggleBeat(trackIndex: number, beatIndex: number) {
-  // Toggle in local state
-  beats.value[trackIndex][beatIndex] = !beats.value[trackIndex][beatIndex]
-
-  // Toggle in corresponding BeatTrack
-  const tracks = [kickTrack, snareTrack, hihatTrack]
-  if (tracks[trackIndex]) {
-    tracks[trackIndex].beats[beatIndex].active = beats.value[trackIndex][beatIndex]
-  }
-}
-
-// Watch BPM changes - need to restart playback with new tempo
-watch(bpm, () => {
-  if (playing.value && kickTrack && snareTrack && hihatTrack) {
-    // BeatTrack doesn't support tempo change mid-playback, so stop and restart
-    kickTrack.stop()
-    snareTrack.stop()
-    hihatTrack.stop()
-
-    kickTrack.playBeats(bpm.value, 1/4)
-    snareTrack.playBeats(bpm.value, 1/4)
-    hihatTrack.playBeats(bpm.value, 1/4)
+watch(bpm, (val) => {
+  if (playing.value) {
+    tracks.value.forEach(t => t.beatTrack?.setTempo(val))
   }
 })
 
 onUnmounted(() => {
-  if (kickTrack) {
-    try { kickTrack.stop() } catch {}
-  }
-  if (snareTrack) {
-    try { snareTrack.stop() } catch {}
-  }
-  if (hihatTrack) {
-    try { hihatTrack.stop() } catch {}
-  }
+  tracks.value.forEach(t => { try { t.beatTrack?.stop() } catch {} })
 })
 </script>
 
@@ -225,13 +164,8 @@ onUnmounted(() => {
   color: white;
 }
 
-.play-btn:hover:not(:disabled) {
+.play-btn:hover {
   background: var(--vp-c-brand-dark);
-}
-
-.play-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .bpm-control label {
@@ -271,18 +205,6 @@ onUnmounted(() => {
   color: var(--vp-c-text-1);
 }
 
-.volume-control label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-}
-
-.volume-control input {
-  width: 80px;
-}
-
 .beat-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
@@ -306,14 +228,9 @@ onUnmounted(() => {
   color: var(--vp-c-text-3);
 }
 
-.beat-cell:hover:not(:disabled) {
+.beat-cell:hover {
   border-color: var(--vp-c-brand);
   transform: scale(1.05);
-}
-
-.beat-cell:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .beat-cell.active {
@@ -356,15 +273,9 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 .beat-number {
@@ -378,19 +289,16 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-/* Mobile responsive */
 @media (max-width: 768px) {
   .beat-grid {
     gap: 2px;
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
-
   .beat-cell {
     min-width: 24px;
     min-height: 24px;
   }
-
   .track-header {
     flex-wrap: wrap;
   }

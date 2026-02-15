@@ -2,14 +2,11 @@
   <div class="sampled-drum-kit">
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-if="loading" class="loading">Loading drum samples...</div>
-
     <div class="drum-pads">
       <div
         v-for="pad in pads"
         :key="pad.name"
         :class="['drum-pad', pad.color, { pressed: lastPlayed === pad.name }]"
-        :disabled="!initialized"
         @mousedown="playPad(pad.name)"
         @touchstart.prevent="playPad(pad.name)"
       >
@@ -145,13 +142,6 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: var(--vp-c-text-2);
-  font-size: 0.95rem;
-}
-
 .drum-pads {
   display: flex;
   gap: 1.5rem;
@@ -179,7 +169,7 @@ onUnmounted(() => {
   color: white;
 }
 
-.drum-pad.blue:hover:not([disabled]) {
+.drum-pad.blue:hover {
   background: #2563eb;
   transform: translateY(-2px);
 }
@@ -189,7 +179,7 @@ onUnmounted(() => {
   color: white;
 }
 
-.drum-pad.orange:hover:not([disabled]) {
+.drum-pad.orange:hover {
   background: #ea580c;
   transform: translateY(-2px);
 }
@@ -199,7 +189,7 @@ onUnmounted(() => {
   color: white;
 }
 
-.drum-pad.yellow:hover:not([disabled]) {
+.drum-pad.yellow:hover {
   background: #ca8a04;
   transform: translateY(-2px);
 }
@@ -208,10 +198,6 @@ onUnmounted(() => {
   transform: scale(0.95) !important;
 }
 
-.drum-pad[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .pad-label {
   font-size: 1.25rem;

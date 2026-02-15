@@ -23,13 +23,12 @@
           @change="seek"
           :disabled="!loaded"
         />
-        <span class="percent">{{ Math.round(percentPlayed * 100) }}%</span>
       </div>
 
       <div class="volume">
         <label>
           Vol: {{ Math.round(gain * 100) }}%
-          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" @change="updateGain" />
+          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" />
         </label>
       </div>
     </div>
@@ -40,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 
 const props = defineProps<{
   url?: string
@@ -53,7 +52,6 @@ const error = ref('')
 const gain = ref(1)
 const seekPosition = ref(0)
 const duration = ref(0)
-const percentPlayed = ref(0)
 const positionString = ref('0:00')
 const durationString = ref('0:00')
 
@@ -76,11 +74,14 @@ async function loadTrack() {
     duration.value = track.duration.raw
     durationString.value = track.duration.string
 
-    track.on('end', () => {
+    track.on('stop', () => {
       isPlaying.value = false
       seekPosition.value = 0
       positionString.value = '0:00'
-      percentPlayed.value = 0
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+        animationFrame = null
+      }
     })
 
     loaded.value = true
@@ -95,7 +96,6 @@ function updatePosition() {
   if (track && isPlaying.value) {
     seekPosition.value = track.position.raw
     positionString.value = track.position.string
-    percentPlayed.value = track.percentPlayed
     animationFrame = requestAnimationFrame(updatePosition)
   }
 }
@@ -109,7 +109,10 @@ async function playPause() {
   if (isPlaying.value) {
     track.pause()
     isPlaying.value = false
-    if (animationFrame) cancelAnimationFrame(animationFrame)
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame)
+      animationFrame = null
+    }
   } else {
     track.changeGainTo(gain.value)
     if (track.position.raw > 0) {
@@ -124,28 +127,27 @@ async function playPause() {
 
 function stop() {
   if (track) {
-    track.stop()
-    isPlaying.value = false
-    seekPosition.value = 0
-    positionString.value = '0:00'
-    percentPlayed.value = 0
-    if (animationFrame) cancelAnimationFrame(animationFrame)
+    try { track.stop() } catch {}
+  }
+  isPlaying.value = false
+  seekPosition.value = 0
+  positionString.value = '0:00'
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame)
+    animationFrame = null
   }
 }
 
 function seek() {
   if (track) {
-    track.seek(seekPosition.value)
+    track.seek(seekPosition.value).from('seconds')
     positionString.value = track.position.string
-    percentPlayed.value = track.percentPlayed
   }
 }
 
-function updateGain() {
-  if (track) {
-    track.changeGainTo(gain.value)
-  }
-}
+watch(gain, (val) => {
+  if (track) track.changeGainTo(val)
+})
 
 onUnmounted(() => {
   if (animationFrame) cancelAnimationFrame(animationFrame)
@@ -228,12 +230,6 @@ button:disabled {
 
 .seek-bar input {
   flex: 1;
-}
-
-.percent {
-  font-size: 0.8rem;
-  color: var(--vp-c-text-3);
-  min-width: 40px;
 }
 
 .volume label {
