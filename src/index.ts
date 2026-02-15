@@ -41,9 +41,16 @@ import {
 } from './effects'
 import type { Effect, FilterType, FilterEffectOptions, ExternalEffect } from './effects'
 
-let audioContext: AudioContext
+let _audioContext: AudioContext | null = null
 
-async function unlockAudioContext(): Promise<void> {
+function getOrCreateAudioContext(): AudioContext {
+  if (!_audioContext) {
+    _audioContext = new AudioContext()
+  }
+  return _audioContext
+}
+
+async function unlockAudioContext(audioContext: AudioContext): Promise<void> {
   if (audioContext.state !== 'suspended')
     return
 
@@ -88,16 +95,7 @@ let iosWorkaroundPerformed = false
  * ```
  */
 export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
-  if (!audioContext) {
-    audioContext = new AudioContext()
-  }
-
-  if (!audioContext) {
-    throw new AudioContextError(
-      'AudioContext could not be created. Call initAudio() after a user interaction (click, tap, keypress).',
-      'closed',
-    )
-  }
+  const audioContext = getOrCreateAudioContext()
 
   // Handle interrupted state (iOS backgrounded)
   if (audioContext.state === 'interrupted' as AudioContextState) {
@@ -113,7 +111,7 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
     iosWorkaroundPerformed = true
   }
   // TODO: without this, synth note hangs on first press?
-  await unlockAudioContext()
+  await unlockAudioContext(audioContext)
 }
 
 /**
@@ -135,7 +133,7 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
  */
 export async function getAudioContext(): Promise<AudioContext> {
   await initAudio()
-  return audioContext
+  return getOrCreateAudioContext()
 }
 
 /**
@@ -263,7 +261,7 @@ export async function createTrack(url: string): Promise<Track> {
  */
 export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): Promise<BeatTrack> {
   const sounds = await Promise.all(urls.map(async url => load(url, 'sound') as Promise<Sound>))
-  return new BeatTrack(audioContext, sounds, opts)
+  return new BeatTrack(getOrCreateAudioContext(), sounds, opts)
 }
 
 /**
@@ -330,7 +328,7 @@ export async function createSampler(urls: string[], opts?: SamplerOptions): Prom
  */
 export async function createOscillator(options?: OscillatorOpts): Promise<Oscillator> {
   await initAudio()
-  return new Oscillator(audioContext, options)
+  return new Oscillator(getOrCreateAudioContext(), options)
 }
 
 /**
@@ -357,7 +355,7 @@ export async function createLayeredSound(
 ): Promise<import('./layered-sound').LayeredSound> {
   await initAudio()
   const { LayeredSound } = await import('./layered-sound')
-  return new LayeredSound(audioContext, layers, opts)
+  return new LayeredSound(getOrCreateAudioContext(), layers, opts)
 }
 
 /**
@@ -389,6 +387,7 @@ export async function createFont(url: string): Promise<Font> {
   const text = await response.text()
   const audioData = mungeSoundFont(text)
   await initAudio()
+  const audioContext = getOrCreateAudioContext()
   const keyValuePairs = await extractDecodedKeyValuePairs(audioContext, audioData)
   const notes = createNoteObjectsForFont(audioContext, keyValuePairs)
   return new Font(notes)
@@ -413,6 +412,7 @@ export async function createFont(url: string): Promise<Font> {
  */
 export async function createSprite(audioUrl: string, manifest: SpriteManifest): Promise<AudioSprite> {
   await initAudio()
+  const audioContext = getOrCreateAudioContext()
   let buffer: AudioBuffer
 
   if (responseCache.has(audioUrl)) {
@@ -460,6 +460,8 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
  * ```
  */
 export async function createWhiteNoise(): Promise<Sound> {
+  await initAudio()
+  const audioContext = getOrCreateAudioContext()
   const bufferSize = audioContext.sampleRate
   const audioBuffer = audioContext.createBuffer(1, bufferSize, bufferSize)
   const output = audioBuffer.getChannelData(0)
@@ -480,6 +482,7 @@ export async function createWhiteNoise(): Promise<Sound> {
  * @returns Sound, Track, or Sampler instance
  */
 function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound | Sampler | Track {
+  const audioContext = getOrCreateAudioContext()
   switch (type) {
     case 'track':
       return new Track(audioContext, props)
@@ -502,6 +505,8 @@ function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound 
  * @throws {AudioLoadError} If the file cannot be loaded or decoded
  */
 async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<Sound | Sampler | Track> {
+  const audioContext = getOrCreateAudioContext()
+
   if (responseCache.has(src)) {
     const res = await responseCache.get(src)!.clone()
     const buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
