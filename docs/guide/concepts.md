@@ -160,21 +160,41 @@ R = Release: Time to fade after key released
 
 ## AudioContext Lifecycle
 
-### Initialization
+### Lazy Initialization
 
-The Web Audio API requires a user gesture before playing audio:
+EZ Web Audio creates the AudioContext automatically when you first use a factory
+function like `createSound()` or `createOscillator()`. You don't need to call
+`initAudio()` explicitly — just make sure your first audio call happens inside
+a user interaction handler (click, tap, keypress).
 
 ```typescript
-// This works
+// This works — AudioContext created automatically
 button.onclick = async () => {
-  await initAudio() // Creates AudioContext inside click handler
   const sound = await createSound('/audio/click.mp3')
   sound.play()
 }
 
-// This fails silently or throws
-await initAudio() // No user gesture!
+// This also works
+button.onclick = async () => {
+  const osc = await createOscillator({ frequency: 440 })
+  osc.play()
+}
 ```
+
+::: tip Advanced: Explicit initialization
+If you need explicit control (iOS mute workaround, pre-warming), you can call
+`initAudio()`:
+
+```typescript
+import { initAudio, createSound } from 'ez-web-audio'
+
+button.onclick = async () => {
+  await initAudio() // Optional — for explicit control
+  const sound = await createSound('/audio/click.mp3')
+  sound.play()
+}
+```
+:::
 
 ### Single Context
 
@@ -185,7 +205,7 @@ const sound1 = await createSound('/a.mp3')
 const sound2 = await createSound('/b.mp3')
 const osc = await createOscillator({ frequency: 440 })
 
-// All three use the same AudioContext
+// All three use the same AudioContext (created lazily on first call)
 // This is efficient and prevents resource exhaustion
 ```
 
@@ -196,7 +216,7 @@ The AudioContext can be in different states:
 | State | Meaning | Action |
 |-------|---------|--------|
 | `running` | Normal operation | None needed |
-| `suspended` | Waiting for interaction | Call `initAudio()` |
+| `suspended` | Waiting for interaction | Handled automatically — `play()` calls resume(). If still suspended, a console warning appears. |
 | `interrupted` | iOS backgrounded | Wait for foreground |
 | `closed` | Context destroyed | Cannot recover |
 

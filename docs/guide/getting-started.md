@@ -27,25 +27,40 @@ yarn add ez-web-audio
 Play a sound file with just a few lines of code:
 
 ```typescript
-import { initAudio, createSound } from 'ez-web-audio'
+import { createSound } from 'ez-web-audio'
 
-// Must be called in response to user interaction (browser requirement)
 document.querySelector('button')?.addEventListener('click', async () => {
-  await initAudio()
   const sound = await createSound('/sounds/click.mp3')
   sound.play()
 })
 ```
 
-### Why initAudio()?
+### AudioContext & User Interaction
 
 Browsers require a user interaction (click, tap, keypress) before playing audio.
-This is a security feature to prevent auto-playing sounds. `initAudio()` creates
-and unlocks the AudioContext. Call it once, inside a click handler.
+This is a security feature to prevent auto-playing sounds. EZ Web Audio handles
+this automatically — the AudioContext is created lazily when you first call a
+factory function like `createSound()` or `createOscillator()`.
 
 ::: tip
-You only need to call `initAudio()` once. After that, you can create and play
-sounds anywhere in your code.
+You don't need to call `initAudio()`. The library creates and manages the
+AudioContext automatically. Just make sure your first audio call happens inside
+a user interaction handler (click, tap, keypress).
+:::
+
+::: details Advanced: Explicit initialization
+If you need explicit control over initialization timing (e.g., iOS mute switch
+workaround, pre-warming the context), you can still call `initAudio()`:
+
+```typescript
+import { initAudio, createSound } from 'ez-web-audio'
+
+button.addEventListener('click', async () => {
+  await initAudio() // Optional — for explicit control
+  const sound = await createSound('/sounds/click.mp3')
+  sound.play()
+})
+```
 :::
 
 ## Playing Music Tracks
@@ -53,11 +68,9 @@ sounds anywhere in your code.
 For longer audio files with pause/resume:
 
 ```typescript
-import { initAudio, createTrack } from 'ez-web-audio'
+import { createTrack } from 'ez-web-audio'
 
 button.addEventListener('click', async () => {
-  await initAudio()
-
   const track = await createTrack('/music/song.mp3')
   track.play()
 
@@ -83,11 +96,9 @@ button.addEventListener('click', async () => {
 Create sounds from scratch with oscillators:
 
 ```typescript
-import { initAudio, createOscillator } from 'ez-web-audio'
+import { createOscillator } from 'ez-web-audio'
 
 button.addEventListener('click', async () => {
-  await initAudio()
-
   const synth = await createOscillator({
     frequency: 440, // A4 note
     type: 'sine'    // sine, square, sawtooth, or triangle
@@ -192,12 +203,10 @@ if (isPreloaded('/sounds/click.mp3')) {
 Here's a complete example combining multiple features:
 
 ```typescript
-import { initAudio, createSound, createTrack, createOscillator } from 'ez-web-audio'
+import { createSound, createTrack, createOscillator } from 'ez-web-audio'
 
 // Wait for user interaction
 document.getElementById('start')?.addEventListener('click', async () => {
-  await initAudio()
-
   // Sound effect for UI feedback
   const click = await createSound('/sounds/click.mp3')
   click.changeGainTo(0.5)
