@@ -34,7 +34,7 @@ kick.beats[4].active = true
 kick.beats[8].active = true
 kick.beats[12].active = true
 
-kick.playBeats(120, 1/4) // 120 BPM, quarter notes
+kick.playBeats(120, 1/16) // 120 BPM, sixteenth notes
 ```
 
 ## Visual Sync
@@ -66,18 +66,6 @@ Then bind directly in your template — no event listeners, no setTimeout, no se
   :class="{ active: beat.active, current: beat.currentTimeIsPlaying }"
 />
 ```
-
-::: warning Vue: use markRaw on BeatTrack
-BeatTrack uses an internal cache keyed by object identity. If Vue wraps it in a reactive Proxy, the cache lookup fails silently and playback breaks. Always use `markRaw()` when storing a BeatTrack in reactive state:
-
-```typescript
-import { markRaw } from 'vue'
-
-track.beatTrack = markRaw(bt)  // prevent Vue proxy wrapping
-```
-
-The individual Beat objects are already reactive via `wrapWith` — you don't need reactivity on the BeatTrack itself.
-:::
 
 BeatTrack also emits `beat` events for framework-agnostic use (vanilla JS, React, etc.) — see [Advanced: Event-Based Sync](#advanced-event-based-sync) below.
 
@@ -111,7 +99,7 @@ Here's a complete drum machine — the Beat objects ARE the state:
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, watch, onUnmounted } from 'vue'
+import { ref, reactive, watch, onUnmounted } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -134,11 +122,9 @@ async function init() {
   ;[0, 4, 8, 12].forEach(i => kick.beats[i].active = true)
   ;[4, 12].forEach(i => snare.beats[i].active = true)
 
-  // markRaw prevents Vue from wrapping BeatTrack in a reactive Proxy,
-  // which would break the internal WeakMap-based beats cache
   tracks.value = [
-    { name: 'Kick', beatTrack: markRaw(kick) },
-    { name: 'Snare', beatTrack: markRaw(snare) },
+    { name: 'Kick', beatTrack: kick },
+    { name: 'Snare', beatTrack: snare },
   ]
 }
 
@@ -149,7 +135,7 @@ async function toggle() {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
   } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/4))
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
     playing.value = true
   }
 }

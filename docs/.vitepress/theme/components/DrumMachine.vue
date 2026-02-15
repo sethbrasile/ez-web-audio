@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted, markRaw } from 'vue'
+import { ref, reactive, watch, onUnmounted } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -100,9 +100,7 @@ async function init() {
 
       // Swap in real beats — template updates seamlessly
       track.beats = bt.beats
-      // markRaw prevents Vue from wrapping BeatTrack in a reactive Proxy,
-      // which would break the internal WeakMap-based beats cache
-      track.beatTrack = markRaw(bt)
+      track.beatTrack = bt
     }
 
     initialized = true
@@ -119,7 +117,7 @@ async function togglePlay() {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
   } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/4))
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
     playing.value = true
   }
 }

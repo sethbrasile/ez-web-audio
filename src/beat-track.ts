@@ -5,8 +5,6 @@ import type { SamplerOptions } from './sampler'
 import { Sampler } from './sampler'
 import type { BeatTrackEventMap } from './events/event-types'
 
-const beatBank = new WeakMap()
-
 export interface BeatTrackOptions extends SamplerOptions {
   numBeats?: number
   duration?: number
@@ -67,6 +65,9 @@ export class BeatTrack extends Sampler {
   private pausedBeatIndex: number | null = null
   private pausedBeatTime: number | null = null
 
+  // Beat cache (replaces module-level WeakMap for framework proxy compatibility)
+  private _beats: Beat[] = []
+
   constructor(private audioContext: AudioContext, sounds: (Playable & Connectable)[], opts?: BeatTrackOptions) {
     super(sounds, opts)
     if (opts?.numBeats) {
@@ -118,37 +119,23 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public get beats(): Beat[] {
-    let beats = []
-    let numBeats = this.numBeats
-    let existingBeats
-
-    if (beatBank.has(this)) {
-      existingBeats = beatBank.get(this)
-      numBeats = numBeats - existingBeats.length
+    if (this._beats.length >= this.numBeats) {
+      return this._beats
     }
 
-    for (let i = 0; i < numBeats; i++) {
+    const needed = this.numBeats - this._beats.length
+
+    for (let i = 0; i < needed; i++) {
       const beat = new Beat(this.audioContext, {
         duration: this.duration,
         playIn: this.playIn.bind(this),
         play: this.play.bind(this),
       })
 
-      if (this.wrapWith) {
-        beats.push(this.wrapWith(beat))
-      }
-      else {
-        beats.push(beat)
-      }
+      this._beats.push(this.wrapWith ? this.wrapWith(beat) : beat)
     }
 
-    if (existingBeats) {
-      beats = existingBeats.concat(beats)
-    }
-
-    beatBank.set(this, beats)
-
-    return beats
+    return this._beats
   }
 
   /**
