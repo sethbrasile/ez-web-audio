@@ -360,7 +360,14 @@ Plans:
   9. Dependency health checked with upgrade recommendations and vulnerability reports
   10. Test quality reviewed with examples of false positives, missing edge cases, and weak assertions
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 12-01-PLAN.md — Code quality and dead code audit (QUAL-01, QUAL-03)
+- [ ] 12-02-PLAN.md — Developer experience audit (DX-01, DX-02, DX-03, DX-04)
+- [ ] 12-03-PLAN.md — Maintainability and forward-compatibility audit (MAINT-01, MAINT-02)
+- [ ] 12-04-PLAN.md — Dependency health audit (MAINT-03)
+- [ ] 12-05-PLAN.md — Test quality audit (TEST-03)
 
 ---
 
@@ -454,7 +461,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 9. Interactive Examples | v1.0 | 10/10 | Complete | 2026-02-12 |
 | 10. Lazy AudioContext | v1.0 | 4/4 | Complete | 2026-02-13 |
 | 11. Drum Machine Examples | v1.0 | 2/2 | Complete | 2026-02-14 |
-| 12. Comprehensive Audit | v1.1 | 0/TBD | Not started | - |
+| 12. Comprehensive Audit | v1.1 | 0/5 | Not started | - |
 | 13. Code Quality | v1.1 | 0/TBD | Not started | - |
 | 14. Docs & Examples Polish | v1.1 | 0/TBD | Not started | - |
 | 15. Test Coverage | v1.1 | 0/TBD | Not started | - |
