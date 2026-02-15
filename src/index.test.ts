@@ -316,4 +316,31 @@ describe('AudioContext Initialization', () => {
       expect(secondCallCount).toBeGreaterThanOrEqual(firstCallCount)
     })
   })
+
+  describe('lazy AudioContext initialization', () => {
+    it('creates AudioContext lazily when factory function is called', async () => {
+      const { createWhiteNoise } = await import('./index')
+
+      // createWhiteNoise should create AudioContext internally
+      await createWhiteNoise()
+      expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
+    })
+
+    it('reuses same AudioContext across multiple factory calls', async () => {
+      const { createOscillator, createWhiteNoise } = await import('./index')
+
+      await createWhiteNoise()
+      await createOscillator({ frequency: 440 })
+
+      // Should only create one AudioContext
+      expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
+    })
+
+    it('initAudio() still works as explicit API', async () => {
+      const { initAudio } = await import('./index')
+
+      await initAudio()
+      expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
+    })
+  })
 })

@@ -6,7 +6,7 @@ import type { SoundEventMap } from './events/event-types'
 import type { Effect } from './effects'
 import type { Analyzer } from './analyzer'
 import audioContextAwareTimeout from '@utils/timeout'
-import { debugEvent, debugConnection, debugWarning } from './debug'
+import { debugEvent, debugConnection } from './debug'
 
 /**
  * Configuration options for BaseSound and its subclasses.
@@ -72,6 +72,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   protected pannerNode: StereoPannerNode
   protected setTimeout: (fn: () => void, delayMillis: number) => number
   protected startedPlayingAt: number = 0
+  private static _hasWarnedAboutSuspended = false
 
   /**
    * @property effects
@@ -806,12 +807,16 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     const { currentTime } = audioContext
     const duration = this.duration.raw
 
-    // Debug warning for suspended AudioContext
-    if (audioContext.state === 'suspended') {
-      debugWarning(this, 'AudioContext suspended - call initAudio() first', currentTime)
-    }
-
     await audioContext.resume()
+
+    // Warn if AudioContext remains suspended after resume attempt
+    if (audioContext.state === 'suspended' && !BaseSound._hasWarnedAboutSuspended) {
+      console.warn(
+        'ez-web-audio: AudioContext is suspended. Audio will not play until a user interaction (click, tap, keypress) occurs. ' +
+        'Call initAudio() from a user gesture handler, or ensure play() is called after user interaction.'
+      )
+      BaseSound._hasWarnedAboutSuspended = true
+    }
 
     this.setup()
 
