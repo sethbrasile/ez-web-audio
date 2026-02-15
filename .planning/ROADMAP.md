@@ -274,10 +274,12 @@ Plans:
 
 **Dependencies:** Phase 1 (modifies core AudioContext management in index.ts)
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 10 to break down)
+- [ ] 10-01-PLAN.md — Lazy AudioContext getter, factory function refactor, suspended warning, tests
+- [ ] 10-02-PLAN.md — Documentation updates (Getting Started, Core Concepts, JSDoc)
+- [ ] 10-03-PLAN.md — Vue demo component cleanup and example markdown updates
 
 **Success Criteria:**
 1. Developer can call `createSound()`, `createOscillator()`, etc. without ever calling `initAudio()` first — the AudioContext is created lazily on first use
@@ -291,6 +293,32 @@ Plans:
 9. Example code snippets in markdown pages show the new simplified API (no `initAudio()` boilerplate)
 
 **Research Notes:** The library already calls `initAudio()` inside most factory functions and calls `audioContext.resume()` in `playAt()`. The main change is replacing the raw module-level `let audioContext` with a lazy getter, ensuring all code paths go through it, and adding a user-visible warning when the context can't resume.
+
+---
+
+### Phase 11: Drum Machine Example Pages
+
+**Goal:** Two fully fleshed-out drum machine example pages — one Vue (reactive properties) and one vanilla TypeScript (event-based) — that validate both UI sync approaches work correctly and serve as real-world reference implementations.
+
+**Dependencies:** Phase 9 (existing drum machine component and docs infrastructure)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11 to break down)
+
+**Success Criteria:**
+1. Vue drum machine page (`/examples/drum-machine-vue`) demonstrates the reactive property pattern — `beat.currentTimeIsPlaying` and `beat.isPlaying` drive UI directly via `wrapWith: reactive`, no event listeners needed for visual sync
+2. Vanilla TS drum machine page (`/examples/drum-machine-vanilla`) demonstrates the event-based pattern — `track.on('beat', ...)` drives UI updates using plain DOM manipulation, proving events fire at the correct time without setTimeout workarounds
+3. Both pages use 16th notes (`1/16`) with 16-step grids at configurable BPM (60-200)
+4. Both pages include: play/stop controls, BPM slider, per-track mute/solo, visual playhead that highlights the current step in sync with audio
+5. Both pages use round-robin samples (kick, snare, hihat with 3 variations each) to demonstrate the anti-machine-gun pattern
+6. Vanilla TS page proves the AudioContext-aware event timing works — no visible drift between audio and visual playhead even under sustained playback (2+ minutes)
+7. Vue page proves reactive Beat properties toggle correctly without markRaw workaround (validates the WeakMap→instance property refactor)
+8. Both pages have clear code examples showing the pattern being used, with explanation of why each approach suits different frameworks
+9. Sidebar navigation groups both pages under an "Integration Patterns" or similar section
+
+**Research Notes:** The BeatTrack `beat` event now fires at play time (not schedule time) using `audioContextAwareTimeout`, which uses `requestAnimationFrame` + `audioContext.currentTime` for precise timing. The reactive property approach uses the same timing internally in the Beat class. Both approaches should produce identical visual results — this phase validates that claim.
 
 ---
 
@@ -327,8 +355,6 @@ All 71 v1 requirements mapped to phases:
 **Total mapped:** 71/71
 **Orphaned requirements:** 0
 
----
-
 ## Dependency Graph
 
 ```
@@ -342,6 +368,7 @@ Phase 1: Foundation (Events + Bug Fixes + Error Handling)
                                     +-> Phase 8: Build & Distribution (publishes complete library)
                                             +-> Phase 9: Interactive Examples (docs enhancement)
                                                     +-> Phase 10: Lazy AudioContext Init (DX improvement)
+                                            +-> Phase 11: Drum Machine Example Pages (Vue + vanilla TS)
 ```
 
 *Last updated: 2026-02-14 after Phase 9 gap closure planning*
