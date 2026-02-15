@@ -277,10 +277,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Lazy AudioContext getter, factory function refactor, suspended warning, tests
-- [ ] 10-02-PLAN.md — Documentation updates (Getting Started, Core Concepts, JSDoc)
-- [ ] 10-03-PLAN.md — Vue demo component cleanup (remove initAudio calls)
-- [ ] 10-04-PLAN.md — Example markdown code snippet updates
+- [x] 10-01-PLAN.md — Lazy AudioContext getter, factory function refactor, suspended warning, tests
+- [x] 10-02-PLAN.md — Documentation updates (Getting Started, Core Concepts, JSDoc)
+- [x] 10-03-PLAN.md — Vue demo component cleanup (remove initAudio calls)
+- [x] 10-04-PLAN.md — Example markdown code snippet updates
 
 **Success Criteria:**
 1. Developer can call `createSound()`, `createOscillator()`, etc. without ever calling `initAudio()` first — the AudioContext is created lazily on first use
