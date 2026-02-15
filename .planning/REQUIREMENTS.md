@@ -110,16 +110,37 @@ Explicitly excluded. Documented to prevent scope creep.
 | Lazy AudioContext | Phase 10 | Complete |
 | Drum Machine examples | Phase 11 | Complete |
 
-### v1.1 (Pending)
+### v1.1
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| QUAL-01 | Phase 12 | Pending |
+| QUAL-02 | Phase 13 | Pending |
+| QUAL-03 | Phase 12 | Pending |
+| QUAL-04 | Phase 13 | Pending |
+| DX-01 | Phase 12 | Pending |
+| DX-02 | Phase 12 | Pending |
+| DX-03 | Phase 12 | Pending |
+| DX-04 | Phase 12 | Pending |
+| DOCS-01 | Phase 14 | Pending |
+| DOCS-02 | Phase 14 | Pending |
+| DOCS-03 | Phase 14 | Pending |
+| DOCS-04 | Phase 14 | Pending |
+| DOCS-05 | Phase 14 | Pending |
+| TEST-01 | Phase 15 | Pending |
+| TEST-02 | Phase 15 | Pending |
+| TEST-03 | Phase 12 | Pending |
+| MAINT-01 | Phase 12 | Pending |
+| MAINT-02 | Phase 12 | Pending |
+| MAINT-03 | Phase 12 | Pending |
+| SEO-01 | Phase 16 | Pending |
+| SEO-02 | Phase 16 | Pending |
+| SEO-03 | Phase 16 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20
+- v1.1 requirements: 22 total
+- Mapped to phases: 22
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-01-31*

@@ -1,15 +1,25 @@
-# Roadmap: EZ Audio v1
+# Roadmap: EZ Audio
 
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
-**Depth:** Standard (8 phases)
 **Created:** 2026-01-31
+**Last Updated:** 2026-02-15
+
+## Milestones
+
+- ✅ **v1.0 MVP** - Phases 1-11 (shipped 2026-02-14)
+- 🚧 **v1.1 Quality & Polish** - Phases 12-16 (in progress)
 
 ## Overview
 
-EZ Audio v1 roadmap delivers a complete Web Audio API wrapper with advanced synthesis features (ADSR envelopes, effects presets, layered sounds) while maintaining zero dependencies and TypeScript-first simplicity. The phase structure follows a foundation-first approach where events and bug fixes establish stability, then advanced features build incrementally on proven patterns.
+EZ Audio v1 delivered a complete Web Audio API wrapper with advanced synthesis features (ADSR envelopes, effects presets, layered sounds) while maintaining zero dependencies and TypeScript-first simplicity. All 71 v1 requirements complete, 711 tests across 29 files.
 
-Research findings drive the phase order: Events system is foundational for all advanced features, ADSR requires events for testing, utility features are independent and can be built in parallel, and LayeredSound depends on all previous capabilities being stable.
+v1.1 Quality & Polish milestone conducts a comprehensive audit and polish pass across the entire project — code quality, DX, docs, tests, maintainability, and SEO — ensuring the library is ready to inspire ambitious audio projects.
+
+---
+
+<details>
+<summary>✅ v1.0 MVP (Phases 1-11) - SHIPPED 2026-02-14</summary>
 
 ## Phases
 
@@ -221,9 +231,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Build configuration (vite.config.js, package.json, tsconfig.json)
-- [ ] 08-02-PLAN.md — Publishing pipeline (GitHub Actions workflow, local verification)
-- [ ] 08-03-PLAN.md — First release and verification (npm publish, consumer testing)
+- [x] 08-01-PLAN.md — Build configuration (vite.config.js, package.json, tsconfig.json)
+- [x] 08-02-PLAN.md — Publishing pipeline (GitHub Actions workflow, local verification)
+- [x] 08-03-PLAN.md — First release and verification (npm publish, consumer testing)
 
 **Success Criteria:**
 1. Library exports are tree-shakeable (unused features don't bloat bundles)
@@ -252,9 +262,9 @@ Plans:
 - [x] 09-05-PLAN.md — Sampled Drum Kit and Soundfont Piano
 - [x] 09-06-PLAN.md — Timing Basics and Audio Routing
 - [x] 09-07-PLAN.md — Filter Demo, global registration, and verification
-- [ ] 09-08-PLAN.md — Gap closure: Fix critical audio bugs (DrumMachine, FilterDemo, XYPad, SynthDrumKit)
-- [ ] 09-09-PLAN.md — Gap closure: UI/UX fixes (layout shift, flicker, warnings, distortion waveform)
-- [ ] 09-10-PLAN.md — Gap closure: Timing demo code snippets
+- [x] 09-08-PLAN.md — Gap closure: Fix critical audio bugs (DrumMachine, FilterDemo, XYPad, SynthDrumKit)
+- [x] 09-09-PLAN.md — Gap closure: UI/UX fixes (layout shift, flicker, warnings, distortion waveform)
+- [x] 09-10-PLAN.md — Gap closure: Timing demo code snippets
 
 **Success Criteria:**
 1. 9 new interactive examples are accessible from the docs site sidebar
@@ -303,11 +313,11 @@ Plans:
 
 **Dependencies:** Phase 9 (existing drum machine component and docs infrastructure)
 
-**Plans:** 2/2 plans complete
+**Plans:** 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Vue reactive drum machine page with mute/solo, sidebar update
-- [ ] 11-02-PLAN.md — Vanilla TS event-based drum machine page
+- [x] 11-01-PLAN.md — Vue reactive drum machine page with mute/solo, sidebar update
+- [x] 11-02-PLAN.md — Vanilla TS event-based drum machine page
 
 **Success Criteria:**
 1. Vue drum machine page (`/examples/drum-machine-vue`) demonstrates the reactive property pattern — `beat.currentTimeIsPlaying` and `beat.isPlaying` drive UI directly via `wrapWith: reactive`, no event listeners needed for visual sync
@@ -322,55 +332,166 @@ Plans:
 
 **Research Notes:** The BeatTrack `beat` event now fires at play time (not schedule time) using `audioContextAwareTimeout`, which uses `requestAnimationFrame` + `audioContext.currentTime` for precise timing. The reactive property approach uses the same timing internally in the Beat class. Both approaches should produce identical visual results — this phase validates that claim.
 
+</details>
+
+---
+
+## 🚧 v1.1 Quality & Polish (In Progress)
+
+**Milestone Goal:** Comprehensive audit and polish pass across the entire project — code quality, DX, docs, tests, maintainability, and SEO — ensuring the library is ready to inspire ambitious audio projects.
+
+### Phase 12: Comprehensive Audit
+
+**Goal:** Produce actionable findings reports across all quality dimensions via parallel sub-agent reviews
+
+**Depends on:** Phase 11
+
+**Requirements:** QUAL-01, QUAL-03, DX-01, DX-02, DX-03, DX-04, MAINT-01, MAINT-02, MAINT-03, TEST-03
+
+**Success Criteria** (what must be TRUE):
+  1. Library code reviewed with consistency, readability, and pattern findings documented in actionable report
+  2. Dead code, unused exports, and WeakMap holdovers identified with specific file/line references
+  3. API naming conventions and patterns analyzed for inconsistencies across all public classes
+  4. Abstraction quality evaluated — unnecessary complexity and missing abstractions documented with recommendations
+  5. API surface approachability reviewed from beginner perspective with specific improvement suggestions
+  6. Error messages and edge cases analyzed with examples of unclear errors and recommended improvements
+  7. Brittle areas identified with specific APIs likely to cause issues under change
+  8. Forward-compatibility reviewed — APIs evaluated for v2 extensibility concerns
+  9. Dependency health checked with upgrade recommendations and vulnerability reports
+  10. Test quality reviewed with examples of false positives, missing edge cases, and weak assertions
+
+**Plans:** TBD
+
+---
+
+### Phase 13: Code Quality Implementation
+
+**Goal:** Implement audit findings for library code quality and API documentation
+
+**Depends on:** Phase 12
+
+**Requirements:** QUAL-02, QUAL-04
+
+**Success Criteria** (what must be TRUE):
+  1. Refactoring opportunities from audit implemented (measurable LOC reduction and clarity improvements)
+  2. Public API docs (TypeDoc/JSDoc) reviewed and fixed for accuracy and completeness
+  3. Code patterns are consistent across all library modules
+  4. Dead code and unused exports removed from codebase
+
+**Plans:** TBD
+
+---
+
+### Phase 14: Documentation & Examples Polish
+
+**Goal:** Improve existing docs and add creative new examples showcasing library capabilities
+
+**Depends on:** Phase 12 (audit informs improvements)
+
+**Requirements:** DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05
+
+**Success Criteria** (what must be TRUE):
+  1. Existing demo pages have polished UX, code quality, and visual design
+  2. New creative demo pages added that showcase advanced library capabilities
+  3. Getting Started guide provides clear, quick-win developer experience
+  4. Core Concepts and usage guides are complete and accurate
+  5. All code examples in docs verified against current API (no outdated examples)
+
+**Plans:** TBD
+
+---
+
+### Phase 15: Test Coverage Implementation
+
+**Goal:** Fill test gaps identified in audit and add E2E testing for docs site
+
+**Depends on:** Phase 12 (audit identifies gaps)
+
+**Requirements:** TEST-01, TEST-02
+
+**Success Criteria** (what must be TRUE):
+  1. Library unit test gaps filled (meaningful coverage of edge cases and error paths)
+  2. E2E tests added for docs site interactive demos using Playwright
+  3. Interactive demos work correctly in actual browsers (not just local dev)
+
+**Plans:** TBD
+
+---
+
+### Phase 16: SEO & Discoverability
+
+**Goal:** Optimize docs site for audio developer searches and clear value communication
+
+**Depends on:** Phase 14 (docs content polished)
+
+**Requirements:** SEO-01, SEO-02, SEO-03
+
+**Success Criteria** (what must be TRUE):
+  1. Meta tags, OpenGraph data, and structured data optimized for audio developer searches
+  2. CTAs and messaging communicate library value clearly to new visitors
+  3. Keywords and content optimized for discoverability (web audio, audio library, synthesizer, etc.)
+  4. Docs site homepage immediately communicates what ez-audio does and why developers should use it
+
+**Plans:** TBD
+
 ---
 
 ## Progress
 
-| Phase | Status | Requirements | Completion |
-|-------|--------|--------------|------------|
-| 1 - Foundation | Complete | 15 | 100% |
-| 2 - ADSR Envelopes | Complete | 7 | 100% |
-| 3 - Utility Features | Complete | 15 | 100% |
-| 4 - Composition Features | Complete | 13 | 100% |
-| 5 - Effects & Advanced | Complete | 16 | 100% |
-| 6 - Testing | Complete | 8 | 100% |
-| 7 - Documentation & Demo | Complete | 9 | 100% |
-| 8 - Build & Distribution | Planned | 4 | 0% |
+**Execution Order:**
+Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 
-**Overall:** 71/71 requirements complete (100%)
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation | v1.0 | 4/4 | Complete | 2026-02-01 |
+| 2. ADSR Envelopes | v1.0 | 4/4 | Complete | 2026-02-02 |
+| 3. Utility Features | v1.0 | 3/3 | Complete | 2026-02-03 |
+| 4. Composition Features | v1.0 | 3/3 | Complete | 2026-02-04 |
+| 5. Effects & Advanced | v1.0 | 4/4 | Complete | 2026-02-05 |
+| 6. Testing | v1.0 | 4/4 | Complete | 2026-02-06 |
+| 7. Documentation & Demo | v1.0 | 7/7 | Complete | 2026-02-08 |
+| 8. Build & Distribution | v1.0 | 3/3 | Complete | 2026-02-09 |
+| 9. Interactive Examples | v1.0 | 10/10 | Complete | 2026-02-12 |
+| 10. Lazy AudioContext | v1.0 | 4/4 | Complete | 2026-02-13 |
+| 11. Drum Machine Examples | v1.0 | 2/2 | Complete | 2026-02-14 |
+| 12. Comprehensive Audit | v1.1 | 0/TBD | Not started | - |
+| 13. Code Quality | v1.1 | 0/TBD | Not started | - |
+| 14. Docs & Examples Polish | v1.1 | 0/TBD | Not started | - |
+| 15. Test Coverage | v1.1 | 0/TBD | Not started | - |
+| 16. SEO & Discoverability | v1.1 | 0/TBD | Not started | - |
 
 ---
 
 ## Coverage Validation
 
-All 71 v1 requirements mapped to phases:
+### v1.0 (Complete)
+All 71 v1 requirements mapped to phases 1-11. Coverage: 71/71 (100%)
 
-- Phase 1: 15 requirements (EVT-01 to EVT-07, FIX-01 to FIX-04, ERR-01 to ERR-04)
-- Phase 2: 7 requirements (ADSR)
-- Phase 3: 15 requirements (SPRITE + COLL + PRE)
-- Phase 4: 13 requirements (LAYER + BEAT + FADE)
-- Phase 5: 16 requirements (FX + VIZ + DBG)
-- Phase 6: 8 requirements (TEST)
-- Phase 7: 9 requirements (DOC + SITE)
-- Phase 8: 4 requirements (BUILD)
+### v1.1 (In Progress)
+All 22 v1.1 requirements mapped to phases 12-16:
 
-**Total mapped:** 71/71
+- Phase 12 (Audit): 10 requirements (QUAL-01, QUAL-03, DX-01, DX-02, DX-03, DX-04, MAINT-01, MAINT-02, MAINT-03, TEST-03)
+- Phase 13 (Code Quality): 2 requirements (QUAL-02, QUAL-04)
+- Phase 14 (Docs & Examples): 5 requirements (DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05)
+- Phase 15 (Test Coverage): 2 requirements (TEST-01, TEST-02)
+- Phase 16 (SEO): 3 requirements (SEO-01, SEO-02, SEO-03)
+
+**Total mapped:** 22/22
 **Orphaned requirements:** 0
+**Coverage:** 100% ✓
+
+---
 
 ## Dependency Graph
 
 ```
-Phase 1: Foundation (Events + Bug Fixes + Error Handling)
-    |-> Phase 2: ADSR Envelopes (depends on events)
-    |-> Phase 3: Utility Features (depends on events)
-    +-> Phase 4: Composition Features (depends on events + ADSR)
-            +-> Phase 5: Effects & Advanced (depends on composition)
-                    +-> Phase 6: Testing (validates all features)
-                            +-> Phase 7: Documentation & Demo (documents tested features)
-                                    +-> Phase 8: Build & Distribution (publishes complete library)
-                                            +-> Phase 9: Interactive Examples (docs enhancement)
-                                                    +-> Phase 10: Lazy AudioContext Init (DX improvement)
-                                            +-> Phase 11: Drum Machine Example Pages (Vue + vanilla TS)
+v1.0: Phases 1-11 (Complete)
+    |
+    +-> Phase 12: Comprehensive Audit (parallel sub-agent reviews)
+            |-> Phase 13: Code Quality Implementation (implements audit findings)
+            |-> Phase 14: Docs & Examples Polish (informed by audit)
+            |       +-> Phase 16: SEO & Discoverability (requires polished docs)
+            +-> Phase 15: Test Coverage Implementation (fills gaps from audit)
 ```
 
-*Last updated: 2026-02-14 after Phase 9 gap closure planning*
+*Last updated: 2026-02-15 after v1.1 roadmap creation*
