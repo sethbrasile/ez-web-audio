@@ -177,6 +177,13 @@ kick.play()  // kick3.wav
 kick.play()  // kick1.wav (wraps around)
 ```
 
+## Integration Pattern Examples
+
+These pages build on the drum machine concept with full implementations showing different UI sync approaches:
+
+- **[Vue Reactive Pattern](/examples/drum-machine-vue)** — Beat properties drive UI directly via `wrapWith: reactive()`. No event listeners needed for visual sync. Includes mute/solo controls demonstrating direct Beat property manipulation.
+- **[Vanilla TS Events](/examples/drum-machine-vanilla)** — `track.on('beat', ...)` drives DOM updates. Framework-agnostic pattern for React, vanilla JS, or any environment without reactive proxies.
+
 ## API Reference
 
 | Method / Property | Description |
