@@ -117,8 +117,6 @@ async function handleNoteOn(note: string) {
     // Initialize audio on first interaction
     if (!initialized.value) {
       loading.value = true
-      const { initAudio } = await import('ez-web-audio')
-      await initAudio()
       initialized.value = true
       loading.value = false
     }

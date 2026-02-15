@@ -65,8 +65,7 @@ async function loadTrack() {
     error.value = ''
     loading.value = true
 
-    const { initAudio, createTrack } = await import('ez-web-audio')
-    await initAudio()
+    const { createTrack } = await import('ez-web-audio')
 
     const audioUrl = props.url || '/ez-web-audio/audio/short-music.mp3'
     track = await createTrack(audioUrl)

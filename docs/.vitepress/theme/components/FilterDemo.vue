@@ -146,7 +146,6 @@ async function playSound() {
     // Dynamically import library
     if (!lib) {
       lib = await import('ez-web-audio')
-      await lib.initAudio()
       initialized.value = true
     }
 

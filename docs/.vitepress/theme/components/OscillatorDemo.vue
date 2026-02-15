@@ -66,8 +66,7 @@ async function toggle() {
 
 async function play() {
   try {
-    const { initAudio, createOscillator } = await import('ez-web-audio')
-    await initAudio()
+    const { createOscillator } = await import('ez-web-audio')
 
     oscillator = await createOscillator({
       frequency: frequency.value,

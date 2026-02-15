@@ -105,7 +105,6 @@ let effect: any = null
 async function initIfNeeded() {
   if (!lib) {
     lib = await import('ez-web-audio')
-    await lib.initAudio()
   }
 }
 

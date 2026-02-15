@@ -54,7 +54,6 @@ async function initSamplers() {
 
     // Dynamic import for SSR compatibility
     lib = await import('ez-web-audio')
-    await lib.initAudio()
 
     // Create samplers with 3 variations each
     kickSampler = await lib.createSampler([

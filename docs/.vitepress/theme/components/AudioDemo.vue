@@ -38,7 +38,6 @@ let lib: any = null
 async function ensureInit() {
   if (!lib) {
     lib = await import('ez-web-audio')
-    await lib.initAudio()
   }
   if (!sound) {
     const audioUrl = props.url || '/ez-web-audio/audio/click.mp3'

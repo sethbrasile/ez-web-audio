@@ -44,7 +44,6 @@ async function initFont() {
 
     // Dynamic import for SSR compatibility
     lib = await import('ez-web-audio')
-    await lib.initAudio()
 
     // Load the piano soundfont
     font = await lib.createFont('/ez-web-audio/audio/piano.js')

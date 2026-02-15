@@ -85,8 +85,7 @@ let initialized = false
 async function init() {
   if (initialized) return
   try {
-    const { initAudio, createBeatTrack } = await import('ez-web-audio')
-    await initAudio()
+    const { createBeatTrack } = await import('ez-web-audio')
 
     const opts = { numBeats: NUM_BEATS, wrapWith: (beat: any) => reactive(beat) }
 
