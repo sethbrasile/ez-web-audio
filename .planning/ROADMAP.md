@@ -274,12 +274,13 @@ Plans:
 
 **Dependencies:** Phase 1 (modifies core AudioContext management in index.ts)
 
-**Plans:** 3 plans
+**Plans:** 4 plans
 
 Plans:
 - [ ] 10-01-PLAN.md — Lazy AudioContext getter, factory function refactor, suspended warning, tests
 - [ ] 10-02-PLAN.md — Documentation updates (Getting Started, Core Concepts, JSDoc)
-- [ ] 10-03-PLAN.md — Vue demo component cleanup and example markdown updates
+- [ ] 10-03-PLAN.md — Vue demo component cleanup (remove initAudio calls)
+- [ ] 10-04-PLAN.md — Example markdown code snippet updates
 
 **Success Criteria:**
 1. Developer can call `createSound()`, `createOscillator()`, etc. without ever calling `initAudio()` first — the AudioContext is created lazily on first use
