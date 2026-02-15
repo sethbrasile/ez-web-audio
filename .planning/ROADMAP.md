@@ -303,10 +303,11 @@ Plans:
 
 **Dependencies:** Phase 9 (existing drum machine component and docs infrastructure)
 
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 11 to break down)
+- [ ] 11-01-PLAN.md — Vue reactive drum machine page with mute/solo, sidebar update
+- [ ] 11-02-PLAN.md — Vanilla TS event-based drum machine page
 
 **Success Criteria:**
 1. Vue drum machine page (`/examples/drum-machine-vue`) demonstrates the reactive property pattern — `beat.currentTimeIsPlaying` and `beat.isPlaying` drive UI directly via `wrapWith: reactive`, no event listeners needed for visual sync
