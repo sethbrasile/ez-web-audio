@@ -32,36 +32,23 @@ Existing functionality that's working and relied upon:
 
 ### Active
 
-Requirements for v1 release, grouped by priority:
+Requirements for v1.1 Quality & Polish milestone:
 
-**Must-Have (Core Functionality):**
+- See `.planning/REQUIREMENTS.md` for detailed REQ-IDs
 
-- [ ] **LAYER-01**: LayeredSound class — play multiple sounds simultaneously as a single unit
-- [ ] **ADSR-01**: ADSR envelope abstraction for Oscillator — attack/decay/sustain/release without manual scheduling
-- [ ] **EVENT-01**: Event system — subscribe to play/stop/seek/end events on any Playable
-- [ ] **BEAT-01**: BeatTrack stop mechanism — ability to stop drum patterns mid-playback
-- [ ] **UTIL-01**: Collection utilities — stopAll/pauseAll/playAll that work on arrays (including nested)
-- [ ] **FIX-01**: Track.play override fragility — refactor to _play method pattern
-- [ ] **FIX-02**: Oscillator.duration — implement or explicitly document as not applicable
-- [ ] **TEST-01**: Comprehensive test coverage for all core classes (Sound, Track, Oscillator, Sampler, BeatTrack)
-- [ ] **TEST-02**: Test coverage for controllers (BaseParamController, SoundController, OscillatorController)
-- [ ] **TEST-03**: Test coverage for audio context initialization and iOS workarounds
-- [ ] **DOC-01**: Complete API documentation with TypeDoc
-- [ ] **DOC-02**: Usage guides and examples
+## Current Milestone: v1.1 Quality & Polish
 
-**Nice-to-Have (Enhanced Features):**
+**Goal:** Comprehensive audit and polish pass across the entire project — code quality, DX, docs, tests, maintainability, and SEO — ensuring the library is ready to inspire ambitious audio projects.
 
-- [ ] **VIZ-01**: Audio visualization — expose AnalyserNode data for waveform/spectrum display
-- [ ] **SPRITE-01**: Audio sprites — multiple sounds in one file with timing metadata
-- [ ] **FX-01**: Effects presets — simple reverb/delay/distortion without manual node wiring
-- [ ] **FADE-01**: Crossfading — smooth transitions between tracks
-- [ ] **ERR-01**: Better error messages — clear, actionable guidance when things go wrong
-- [ ] **DEBUG-01**: Debug mode — logging of audio events, node connections, timing
-- [ ] **TREE-01**: Tree-shakeable exports — only bundle features you use
-- [ ] **PRELOAD-01**: Preloading API — preload sounds before they're needed
-- [ ] **SITE-01**: Demo site migration to Vue + Vitepress
-- [ ] **REACT-01**: React hooks package (separate npm package)
-- [ ] **VUE-01**: Vue composables package (separate npm package)
+**Target features:**
+- Code quality audit across library and docs (refactoring opportunities, LOC reduction, test gaps)
+- DX review (API consistency, abstraction quality, approachability of Web Audio concepts)
+- Documentation polish (improve existing demos, create new creative examples)
+- Test coverage audit (meaningful coverage, docs site E2E testing)
+- Maintainability review (brittle APIs, future-proofing)
+- SEO optimization (discoverability, CTAs, keywords for audio developers)
+
+**Vision:** Enable developers to build DAWs, live instrument processors, guitar effect chains, and creative audio tools with ease. The DX should be so good that ambitious projects feel tractable.
 
 ### Out of Scope
 
@@ -104,4 +91,4 @@ Explicitly excluded from v1, documented to prevent scope creep:
 | Framework bindings as separate packages | Keep core library dependency-free; React hooks and Vue composables are separate npm packages. | — Pending |
 
 ---
-*Last updated: 2026-01-31 after initialization*
+*Last updated: 2026-02-15 after v1.1 milestone start*
