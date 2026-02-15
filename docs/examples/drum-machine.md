@@ -22,9 +22,7 @@ Create rhythmic patterns with a step sequencer using the BeatTrack API.
 ## Quick Start
 
 ```typescript
-import { initAudio, createBeatTrack } from 'ez-web-audio'
-
-await initAudio()
+import { createBeatTrack } from 'ez-web-audio'
 
 const kick = await createBeatTrack(['/audio/kick1.wav'], { numBeats: 16 })
 
@@ -106,8 +104,7 @@ const bpm = ref(120)
 const tracks = ref<{ name: string; beatTrack: any }[]>([])
 
 async function init() {
-  const { initAudio, createBeatTrack } = await import('ez-web-audio')
-  await initAudio()
+  const { createBeatTrack } = await import('ez-web-audio')
 
   const kick = await createBeatTrack(['/audio/kick1.wav'], {
     numBeats: 16,
@@ -152,19 +149,13 @@ onUnmounted(() => {
 
 ## Advanced: Event-Based Sync
 
-For frameworks without reactive proxies (vanilla JS, React), use `beat` events instead. The event fires ~100ms before the sound plays, so delay the visual update to match:
+For frameworks without reactive proxies (vanilla JS, React), use `beat` events instead. Events fire in sync with the audio using AudioContext-aware timing:
 
 ```typescript
-const ctx = getAudioContext()
-
 kick.on('beat', (e) => {
-  const { beatIndex, active, time } = e.detail
-  const delay = Math.max(0, (time - ctx.currentTime) * 1000)
-
-  setTimeout(() => {
-    highlightStep(beatIndex)
-    if (active) flashPad(beatIndex)
-  }, delay)
+  const { beatIndex, active } = e.detail
+  highlightStep(beatIndex)
+  if (active) flashPad(beatIndex)
 })
 ```
 

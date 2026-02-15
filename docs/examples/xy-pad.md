@@ -85,7 +85,7 @@ This is why piano keys are evenly spaced even though the frequencies double each
 Here's a simplified version of the XY pad logic:
 
 ```typescript
-import { createOscillator, initAudio } from 'ez-web-audio'
+import { createOscillator } from 'ez-web-audio'
 
 let oscillator: any = null
 let isPlaying = false
@@ -103,7 +103,6 @@ async function handleMouseDown(e: MouseEvent) {
   const gain = 1 - (y / canvas.height)
 
   // Create and play oscillator
-  await initAudio()
   oscillator = await createOscillator({
     frequency,
     type: 'sine'
@@ -140,7 +139,6 @@ function handleMouseUp() {
 ## API Used
 
 - `createOscillator()` - Creates a synthesizer
-- `initAudio()` - Initializes audio context
 - `update()` - Real-time parameter modulation
 - `changeGainTo()` - Set volume
 

@@ -15,13 +15,10 @@ Click the button to play a sound effect. Adjust volume and pan before or after p
 ### Code
 
 ```typescript
-import { initAudio, createSound } from 'ez-web-audio'
+import { createSound } from 'ez-web-audio'
 
-// Initialize audio on user interaction
+// Load and play a sound on user interaction
 button.addEventListener('click', async () => {
-  await initAudio()
-
-  // Load and play a sound
   const click = await createSound('/audio/click.mp3')
   click.play()
 })
@@ -36,11 +33,9 @@ Tracks provide full playback control for music: play, pause, resume, seek, and p
 ### Code
 
 ```typescript
-import { initAudio, createTrack } from 'ez-web-audio'
+import { createTrack } from 'ez-web-audio'
 
 async function playMusic() {
-  await initAudio()
-
   const song = await createTrack('/audio/music.mp3')
 
   // Play the track

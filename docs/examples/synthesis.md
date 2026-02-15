@@ -15,11 +15,9 @@ Experiment with different waveforms and frequencies. The note name updates in re
 ### Code
 
 ```typescript
-import { initAudio, createOscillator } from 'ez-web-audio'
+import { createOscillator } from 'ez-web-audio'
 
 async function playSynth() {
-  await initAudio()
-
   const synth = await createOscillator({
     frequency: 440,  // A4 note
     type: 'sine'     // Waveform type
@@ -270,15 +268,13 @@ Oscillators can be quite loud. Start with a gain of 0.3-0.5 to protect your ears
 ## Building a Simple Keyboard
 
 ```typescript
-import { createOscillator, frequencyMap, initAudio } from 'ez-web-audio'
+import { createOscillator, frequencyMap } from 'ez-web-audio'
 
 const keys = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
 const oscillators = new Map()
 
 // Create an oscillator for each key
 async function setup() {
-  await initAudio()
-
   for (const note of keys) {
     const osc = await createOscillator({
       frequency: frequencyMap[note],

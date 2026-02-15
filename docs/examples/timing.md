@@ -73,9 +73,9 @@ This achieves **sample-perfect synchronization** — the kind of precision impos
 For simple cases where you just want to play a sound right now:
 
 ```typescript
-import { createSound, initAudio } from 'ez-web-audio'
+import { createSound } from 'ez-web-audio'
 
-await initAudio() // Must be called in response to user interaction
+// Must be called in response to user interaction (e.g., button click)
 const sound = await createSound('/audio/click.mp3')
 sound.play()
 ```

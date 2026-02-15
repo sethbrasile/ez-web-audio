@@ -73,11 +73,14 @@ async function unlockAudioContext(audioContext: AudioContext): Promise<void> {
 let iosWorkaroundPerformed = false
 
 /**
- * Initialize the audio system. Must be called in response to a user interaction
- * (click, tap, keypress) due to browser autoplay policies.
+ * Optionally initialize the audio system explicitly.
  *
- * This function creates the AudioContext if it doesn't exist and handles
- * iOS-specific workarounds for audio playback while the mute switch is on.
+ * The library creates the AudioContext lazily on first use, so calling this
+ * function is not required. Use it when you need explicit control over
+ * initialization timing (iOS mute workaround, pre-warming the context).
+ *
+ * Note: If called explicitly, it must be in response to a user interaction
+ * (click, tap, keypress) due to browser autoplay policies.
  *
  * @param useIosMuteWorkaround - Whether to apply iOS mute switch workaround (default: true)
  * @throws {AudioContextError} If AudioContext cannot be created or is interrupted
@@ -86,9 +89,15 @@ let iosWorkaroundPerformed = false
  * ```typescript
  * import { initAudio, createSound } from 'ez-web-audio'
  *
- * // Call initAudio on user interaction
+ * // Optional explicit initialization
  * button.addEventListener('click', async () => {
- *   await initAudio()
+ *   await initAudio() // Optional — for explicit control
+ *   const sound = await createSound('click.mp3')
+ *   sound.play()
+ * })
+ *
+ * // Or just use factory functions directly (AudioContext created automatically)
+ * button.addEventListener('click', async () => {
  *   const sound = await createSound('click.mp3')
  *   sound.play()
  * })
@@ -115,10 +124,10 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
 }
 
 /**
- * Get the shared AudioContext instance, initializing it if needed.
+ * Get the shared AudioContext instance, creating it lazily if it doesn't exist.
  *
  * The library uses a single AudioContext instance for all audio operations.
- * This function ensures the context is initialized before returning it.
+ * This function creates the context automatically on first call.
  *
  * @returns The shared AudioContext instance
  *
