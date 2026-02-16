@@ -409,7 +409,12 @@ Plans:
   4. Core Concepts and usage guides are complete and accurate
   5. All code examples in docs verified against current API (no outdated examples)
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — Audit and polish existing demo components (UX, code quality, consistency)
+- [ ] 14-02-PLAN.md — Verify and update guides and code examples against current API
+- [ ] 14-03-PLAN.md — Create new creative demo pages (Ambient Generator, Visualization)
 
 ---
 
