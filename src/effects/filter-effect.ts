@@ -1,4 +1,5 @@
 import type { Effect } from './index'
+import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 
 /**
  * All available BiquadFilter types.
@@ -166,19 +167,10 @@ export class FilterEffect implements Effect {
 
   /**
    * Apply wet/dry mix using equal-power crossfade.
-   * cos(angle) for dry, sin(angle) for wet where angle = mix * PI/2
+   * Delegates to shared utility for consistent mixing across all effects.
    */
   private applyMix(): void {
-    if (this._bypass) {
-      // Full dry when bypassed
-      this.dryGain.gain.value = 1
-      this.wetGain.gain.value = 0
-    } else {
-      // Equal-power crossfade
-      const angle = this._mix * 0.5 * Math.PI // 0 to PI/2
-      this.dryGain.gain.value = Math.cos(angle) // 1 -> 0
-      this.wetGain.gain.value = Math.sin(angle) // 0 -> 1
-    }
+    applyEqualPowerCrossfade(this.dryGain, this.wetGain, this._mix, this._bypass)
   }
 }
 

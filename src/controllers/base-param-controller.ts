@@ -36,6 +36,10 @@ export interface ParamController {
   }
 }
 
+/**
+ * Duck-type interface for audio source nodes (OscillatorNode, AudioBufferSourceNode).
+ * Defines the minimum AudioParam properties needed by the controller system for parameter automation.
+ */
 interface AudioSource {
   detune: {
     value: number

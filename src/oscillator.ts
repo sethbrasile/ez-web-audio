@@ -10,19 +10,22 @@ import { Envelope, type EnvelopeOptions } from './envelope'
 /**
  * Filter configuration for oscillator frequency shaping.
  */
-export interface OscillatorOptsFilterValues {
+export interface OscillatorFilterOptions {
   /** Filter cutoff frequency in Hz. */
   frequency?: number
   /** Filter Q factor (resonance). Higher values create more pronounced peaks. */
   q?: number
 }
 
+/** @deprecated Use OscillatorFilterOptions instead */
+export type OscillatorOptsFilterValues = OscillatorFilterOptions
+
 /**
  * Configuration options for creating an Oscillator.
  *
  * @example
  * ```typescript
- * const opts: OscillatorOpts = {
+ * const opts: OscillatorOptions = {
  *   frequency: 440,      // A4
  *   type: 'sawtooth',    // Rich harmonic content
  *   gain: 0.5,           // Half volume
@@ -39,7 +42,7 @@ export interface OscillatorOptsFilterValues {
  * }
  * ```
  */
-export interface OscillatorOpts extends BaseSoundOptions {
+export interface OscillatorOptions extends BaseSoundOptions {
   /** Starting offset in seconds (rarely used for oscillators). */
   startOffset?: number
   /** Base frequency in Hz (default: 440). */
@@ -51,24 +54,27 @@ export interface OscillatorOpts extends BaseSoundOptions {
   /** Waveform type: 'sine', 'square', 'sawtooth', or 'triangle'. */
   type?: OscillatorType
   /** Highpass filter - removes frequencies below cutoff. */
-  highpass?: OscillatorOptsFilterValues
+  highpass?: OscillatorFilterOptions
   /** Bandpass filter - allows frequencies near cutoff, attenuates others. */
-  bandpass?: OscillatorOptsFilterValues
+  bandpass?: OscillatorFilterOptions
   /** Lowpass filter - removes frequencies above cutoff. */
-  lowpass?: OscillatorOptsFilterValues
+  lowpass?: OscillatorFilterOptions
   /** Lowshelf filter - boosts/cuts frequencies below cutoff. */
-  lowshelf?: OscillatorOptsFilterValues
+  lowshelf?: OscillatorFilterOptions
   /** Highshelf filter - boosts/cuts frequencies above cutoff. */
-  highshelf?: OscillatorOptsFilterValues
+  highshelf?: OscillatorFilterOptions
   /** Peaking filter - boosts/cuts frequencies around cutoff. */
-  peaking?: OscillatorOptsFilterValues
+  peaking?: OscillatorFilterOptions
   /** Notch filter - attenuates frequencies at cutoff. */
-  notch?: OscillatorOptsFilterValues
+  notch?: OscillatorFilterOptions
   /** Allpass filter - shifts phase without changing amplitude. */
-  allpass?: OscillatorOptsFilterValues
+  allpass?: OscillatorFilterOptions
   /** ADSR envelope for amplitude shaping. */
   envelope?: EnvelopeOptions
 }
+
+/** @deprecated Use OscillatorOptions instead */
+export type OscillatorOpts = OscillatorOptions
 
 const FILTERS = [
   'highpass',
@@ -145,7 +151,7 @@ export class Oscillator extends BaseSound {
    * @param audioContext - The AudioContext to use for audio operations
    * @param options - Oscillator configuration (frequency, type, filters, envelope)
    */
-  constructor(audioContext: AudioContext, options?: OscillatorOpts) {
+  constructor(audioContext: AudioContext, options?: OscillatorOptions) {
     super(audioContext, options)
     this.type = options?.type || 'sine'
     this.freq = options?.frequency || 440
@@ -168,7 +174,7 @@ export class Oscillator extends BaseSound {
     }
 
     FILTERS.forEach((filter) => {
-      const vals = get<OscillatorOptsFilterValues | undefined>(options, filter)
+      const vals = get<OscillatorFilterOptions | undefined>(options, filter)
       if (vals) {
         const filterNode = audioContext.createBiquadFilter()
         filterNode.type = filter as any

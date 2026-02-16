@@ -1,4 +1,4 @@
-import type { OscillatorOptsFilterValues } from './oscillator'
+import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import { Envelope } from './envelope'
 import type { EnvelopeOptions } from './envelope'
 import { stopAll, pauseAll, playAll } from './utils/collections'
@@ -22,7 +22,6 @@ import { Oscillator } from '@/oscillator'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Note } from '@/note'
-import type { OscillatorOpts } from '@/oscillator'
 import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
 import { AudioSprite } from './sprite'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
@@ -163,7 +162,7 @@ export async function getAudioContext(): Promise<AudioContext> {
  * const a4 = notes.find(n => n.frequency === 440)
  * ```
  */
-export function createNotes(json?: any): Note[] {
+export function createNotes(json?: Record<string, number>): Note[] {
   const notes = []
   if (!json) {
     json = frequencyMap
@@ -335,7 +334,7 @@ export async function createSampler(urls: string[], opts?: SamplerOptions): Prom
  * piano.play()
  * ```
  */
-export async function createOscillator(options?: OscillatorOpts): Promise<Oscillator> {
+export async function createOscillator(options?: OscillatorOptions): Promise<Oscillator> {
   await initAudio()
   return new Oscillator(getOrCreateAudioContext(), options)
 }
@@ -486,17 +485,15 @@ export async function createWhiteNoise(): Promise<Sound> {
  * Factory function to create the appropriate sound class based on type.
  *
  * @private
- * @param type - The type of sound class to create ('sound', 'track', or 'sampler')
- * @param props - Audio buffer or configuration to pass to the constructor
- * @returns Sound, Track, or Sampler instance
+ * @param type - The type of sound class to create ('sound' or 'track' - samplers use createSampler)
+ * @param props - Audio buffer to pass to the constructor
+ * @returns Sound or Track instance
  */
-function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound | Sampler | Track {
+function createSoundFor(type: 'sound' | 'track', props: AudioBuffer): Sound | Track {
   const audioContext = getOrCreateAudioContext()
   switch (type) {
     case 'track':
       return new Track(audioContext, props)
-    case 'sampler':
-      return new Sampler(props)
     default:
       return new Sound(audioContext, props)
   }
@@ -513,7 +510,7 @@ function createSoundFor(type: 'sound' | 'track' | 'sampler', props: any): Sound 
  * @returns Promise resolving to Sound, Track, or Sampler instance
  * @throws {AudioLoadError} If the file cannot be loaded or decoded
  */
-async function load(src: string, type: 'sound' | 'track' | 'sampler'): Promise<Sound | Sampler | Track> {
+async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track> {
   const audioContext = getOrCreateAudioContext()
 
   if (responseCache.has(src)) {
@@ -698,8 +695,8 @@ export type { LayeredSoundEventMap, WarningEventDetail } from './events/event-ty
 export type {
   Connectable,
   Playable,
-  OscillatorOpts,
-  OscillatorOptsFilterValues,
+  OscillatorOptions,
+  OscillatorFilterOptions,
   EnvelopeOptions,
   SpriteDefinition,
   SpriteManifest,
@@ -713,3 +710,11 @@ export type {
   // Analyzer types
   AnalyzerOptions,
 }
+
+// Deprecated type aliases for backwards compatibility
+export type {
+  /** @deprecated Use OscillatorOptions instead */
+  OscillatorOpts,
+  /** @deprecated Use OscillatorFilterOptions instead */
+  OscillatorOptsFilterValues,
+} from './oscillator'

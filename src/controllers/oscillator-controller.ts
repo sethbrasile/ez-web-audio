@@ -78,28 +78,10 @@ export class OscillatorController extends BaseParamController implements ParamCo
       const time = currentTime + item.time
       switch (item.type) {
         case 'frequency':
-          switch (rampType) {
-            case 'exponential':
-              oscillator.frequency.exponentialRampToValueAtTime(item.value, time)
-              break
-            case 'linear':
-              oscillator.frequency.linearRampToValueAtTime(item.value, time)
-              break
-            default:
-              throw new Error(`Unsupported ramp type: ${rampType}`)
-          }
+          this.applyRampToParam(oscillator.frequency, item.value, time, rampType)
           break
         case 'gain':
-          switch (rampType) {
-            case 'exponential':
-              gainNode.gain.exponentialRampToValueAtTime(item.value, time)
-              break
-            case 'linear':
-              gainNode.gain.linearRampToValueAtTime(item.value, time)
-              break
-            default:
-              throw new Error(`Unsupported ramp type: ${rampType}`)
-          }
+          this.applyRampToParam(gainNode.gain, item.value, time, rampType)
           break
         default:
           throw new Error("Unsupported control type: '" + item.type + "'. Supported types for OscillatorController: 'gain', 'frequency'.")
