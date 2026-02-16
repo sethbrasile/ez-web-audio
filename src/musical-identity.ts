@@ -50,6 +50,11 @@ const { warn } = console
 // eslint-disable-next-line ts/explicit-function-return-type
 export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
   return class MusicalIdentity extends Base implements IMusicallyAware {
+    /**
+     * Constructor accepts any args to pass through to the mixin base class.
+     * The last argument is treated as note identifier options (frequency, identifier, letter, accidental, octave).
+     * The any[] type is required by TypeScript's mixin pattern — the mixin must accept all possible base class constructor signatures.
+     */
     constructor(...args: any[]) {
       super(...args)
 

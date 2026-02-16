@@ -118,7 +118,8 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
     unmuteIosAudio(audioContext)
     iosWorkaroundPerformed = true
   }
-  // TODO: without this, synth note hangs on first press?
+  // unlockAudioContext handles Safari/iOS where AudioContext starts suspended and requires
+  // a user gesture to resume. Without this, the first synth note may hang because the context never resumes.
   await unlockAudioContext(audioContext)
 }
 
@@ -635,7 +636,7 @@ export async function useInteractionMethods(key: HTMLElement, player: Player): P
 
   key.addEventListener('touchstart', play)
   key.addEventListener('touchend', stop)
-  // key.addEventListener('touchcancel', stop)
+  key.addEventListener('touchcancel', stop)
   key.addEventListener('mousedown', play)
   key.addEventListener('mouseup', stop)
   key.addEventListener('mouseleave', stop)
