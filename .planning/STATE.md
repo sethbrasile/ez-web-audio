@@ -64,6 +64,9 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 14-03]: Track active oscillators in SynthDrumKit for proper cleanup (prevents memory leaks)
 - [Phase 14-03]: Replace console.error with console.warn in demos (errors shown in UI, not console-critical)
 - [Phase 14-03]: Add keyboard navigation to custom interactive elements (SampledDrumKit pads)
+- [Phase 14-04]: Added utility functions section to Core Concepts (debug mode, crossfade, collections, white noise)
+- [Phase 14-04]: Fixed seek() API calls to use required fluent .from() syntax
+- [Phase 14-04]: Updated test count on homepage from 711 to 714 per current test suite
 - [Phase 14-06]: Use separate Canvas instances for frequency and waveform visualization (clearer visual separation)
 - [Phase 14-06]: Remove API links from documentation pages (TypeDoc paths cause dead links; use plain text references)
 - [Phase 14-06]: Place creative demos in dedicated section after Effects & Routing (groups advanced examples separately)
@@ -78,4 +81,4 @@ None active.
 
 ---
 
-*STATE.md updated: 2026-02-15*
+*STATE.md updated: 2026-02-16*
