@@ -12,11 +12,11 @@
 ## Current Position
 
 Phase: 14 of 16 (Docs & Examples Polish)
-Plan: 03 of 06 complete
-Status: In progress - Specialized demo components verified
-Last activity: 2026-02-16 — Verified specialized demo components polish (SynthDrumKit, SampledDrumKit, SoundfontPiano, DrumMachines) - work pre-completed (14-03)
+Plan: 06 of 06 complete
+Status: Complete - All docs and examples polish tasks finished
+Last activity: 2026-02-15 — Created 2 new creative demo pages (Ambient Generator and Visualization) showcasing advanced library capabilities (14-06)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 100%
 
 ## Roadmap Summary
 
@@ -24,7 +24,7 @@ Last activity: 2026-02-16 — Verified specialized demo components polish (Synth
 |-------|------|-------------|--------|
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
 | 13 | Code Quality Implementation | QUAL-02, QUAL-04 | Complete (4/4) |
-| 14 | Docs & Examples Polish | DOCS-01-05 | In progress (3/6) |
+| 14 | Docs & Examples Polish | DOCS-01-05 | Complete (6/6) |
 | 15 | Test Coverage | TEST-01, TEST-02 | Not started |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
 
@@ -64,6 +64,9 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 14-03]: Track active oscillators in SynthDrumKit for proper cleanup (prevents memory leaks)
 - [Phase 14-03]: Replace console.error with console.warn in demos (errors shown in UI, not console-critical)
 - [Phase 14-03]: Add keyboard navigation to custom interactive elements (SampledDrumKit pads)
+- [Phase 14-06]: Use separate Canvas instances for frequency and waveform visualization (clearer visual separation)
+- [Phase 14-06]: Remove API links from documentation pages (TypeDoc paths cause dead links; use plain text references)
+- [Phase 14-06]: Place creative demos in dedicated section after Effects & Routing (groups advanced examples separately)
 
 ### Known Blockers
 
@@ -75,4 +78,4 @@ None active.
 
 ---
 
-*STATE.md updated: 2026-02-16*
+*STATE.md updated: 2026-02-15*
