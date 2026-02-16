@@ -49,9 +49,9 @@ Comprehensive audit and polish pass before npm publish. Each category is reviewe
 
 ### SEO & Discoverability
 
-- [ ] **SEO-01**: Meta tags, OpenGraph data, and structured data optimized for audio developer searches
-- [ ] **SEO-02**: CTAs and messaging reviewed — docs site communicates library value clearly to new visitors
-- [ ] **SEO-03**: Keywords and content optimized for discoverability (web audio, audio library, synthesizer, etc.)
+- [x] **SEO-01**: Meta tags, OpenGraph data, and structured data optimized for audio developer searches
+- [x] **SEO-02**: CTAs and messaging reviewed — docs site communicates library value clearly to new visitors
+- [x] **SEO-03**: Keywords and content optimized for discoverability (web audio, audio library, synthesizer, etc.)
 
 ## v2 Requirements
 
@@ -133,9 +133,9 @@ Explicitly excluded. Documented to prevent scope creep.
 | MAINT-01 | Phase 12 | Complete |
 | MAINT-02 | Phase 12 | Complete |
 | MAINT-03 | Phase 12 | Complete |
-| SEO-01 | Phase 16 | Pending |
-| SEO-02 | Phase 16 | Pending |
-| SEO-03 | Phase 16 | Pending |
+| SEO-01 | Phase 16 | Complete |
+| SEO-02 | Phase 16 | Complete |
+| SEO-03 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 22 total
