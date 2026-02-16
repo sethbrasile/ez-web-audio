@@ -124,7 +124,7 @@ Clone the repository and run the development server:
 git clone https://github.com/sethbrasile/ez-web-audio.git
 cd ez-web-audio
 pnpm install
-pnpm docs:dev
+pnpm dev
 ```
 
 Then visit `http://localhost:5173/ez-web-audio/examples/`

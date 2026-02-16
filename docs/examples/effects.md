@@ -313,7 +313,7 @@ const analyzer = createAnalyzer(ctx, {
   fftSize: 2048,
   smoothingTimeConstant: 0.8
 })
-sound.attachAnalyzer(analyzer)
+sound.setAnalyzer(analyzer)
 
 // Get frequency data for visualization
 const dataArray = new Uint8Array(analyzer.frequencyBinCount)
