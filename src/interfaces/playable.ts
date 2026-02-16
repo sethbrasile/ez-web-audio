@@ -10,7 +10,6 @@ export interface Playable {
   stop: () => void
   stopIn: (seconds: number) => void
   stopAt: (time: number) => void
-  // stopAfter: (duration: number) => void
   isPlaying: boolean
   duration: TimeObject
 

@@ -58,7 +58,10 @@ export class BaseParamController {
   protected exponentialValues: ValueAtTime[] = []
   protected linearValues: ValueAtTime[] = []
 
-  // TODO: handle all gainNode and pannerNode props
+  /**
+   * Currently exposes gain and pan. Additional AudioParam properties
+   * (e.g., for spatial audio) should be added via mapped types in v2.
+   */
   public get gain(): number {
     return this.gainNode.gain.value
   }
@@ -103,7 +106,10 @@ export class BaseParamController {
     }
   }
 
-  // TODO: Consider changing 'from' to be something like 'using' or 'as'
+  /**
+   * Note: The .from() method name in the fluent API is a known DX concern —
+   * deferred to v2 as a breaking change.
+   */
   public update(type: ControlType): { to: (value: number) => { from: (method: RatioType) => void } } {
     return {
       to: (value: number) => {

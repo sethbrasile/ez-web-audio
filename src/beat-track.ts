@@ -318,6 +318,11 @@ export class BeatTrack extends Sampler {
 
   /**
    * Lookahead scheduler that schedules beats 100ms ahead.
+   *
+   * This pattern checks every 25ms and schedules beats 100ms ahead of current time.
+   * It prevents timing gaps from JS event loop jitter while keeping beat triggers
+   * close to real-time for UI synchronization.
+   *
    * @internal
    */
   private scheduler(): void {
