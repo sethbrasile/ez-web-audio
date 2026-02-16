@@ -9,6 +9,12 @@ export interface ParamValue {
 export interface ValueAtTime extends ParamValue {
   time: number
 }
+/**
+ * Contract for audio parameter controllers.
+ *
+ * SoundController and OscillatorController implement this interface to provide
+ * fluent API access to audio parameters (gain, pan, frequency, detune).
+ */
 export interface ParamController {
   gain: number
   pan: number
@@ -37,8 +43,11 @@ export interface ParamController {
 }
 
 /**
- * Duck-type interface for audio source nodes (OscillatorNode, AudioBufferSourceNode).
- * Defines the minimum AudioParam properties needed by the controller system for parameter automation.
+ * Duck-type interface for audio source nodes.
+ *
+ * Represents the minimum AudioParam surface needed by the controller system.
+ * Both OscillatorNode and AudioBufferSourceNode satisfy this interface.
+ * The `frequency` property is optional because only OscillatorNode has it.
  */
 interface AudioSource {
   detune: {
@@ -50,6 +59,13 @@ interface AudioSource {
   // Add other properties as needed
 }
 
+/**
+ * Shared base class for audio parameter automation.
+ *
+ * Provides the core fluent API implementation (update, onPlaySet, onPlayRamp)
+ * and manages scheduled parameter changes. SoundController and OscillatorController
+ * extend this class to add control-type-specific logic.
+ */
 export class BaseParamController {
   constructor(protected audioSource: AudioSource, protected gainNode: GainNode, protected pannerNode: StereoPannerNode) {}
 

@@ -20,6 +20,13 @@ export interface ExternalEffect {
  * External effects only need a connect() method to be wrapped. The wrapper creates
  * the necessary infrastructure for wet/dry mixing and bypass functionality.
  *
+ * ## Supported Effect Types
+ *
+ * Supports three types of external effects:
+ * 1. **Tuna.js effects** — Have an `input` AudioNode property
+ * 2. **Native AudioNodes** — WaveShaperNode, ConvolverNode, etc.
+ * 3. **Any object with connect()** — Minimum interface requirement
+ *
  * Routing:
  * - Dry path: input -> dryGain -> output
  * - Wet path: input -> externalEffect -> wetGain -> output
@@ -69,14 +76,16 @@ export class EffectWrapper implements Effect {
     // Since external effects may have complex internal routing, we need to assume
     // they have an input node or we connect to them directly
 
-    // For external effects that have an input property (like Tuna.js effects)
-    // We check for 'input' property that has a connect method (duck typing)
+    // Branch 1: Effects with an `input` property (e.g., Tuna.js effects)
+    // Tuna effects expose an `input` AudioNode for receiving signal.
+    // We detect this via duck-typing: check for .input.connect method.
     const effectWithInput = externalEffect as { input?: { connect?: (dest: AudioNode) => void } }
     if (effectWithInput.input && typeof effectWithInput.input.connect === 'function') {
       this.inputNode.connect(effectWithInput.input as AudioNode)
     } else if (typeof (externalEffect as { connect: (dest: AudioNode) => void }).connect === 'function' && 'disconnect' in externalEffect) {
-      // If the effect itself is an AudioNode (like WaveShaperNode)
-      // AudioNodes have both connect and disconnect methods
+      // Branch 2: Effects that ARE AudioNodes (e.g., WaveShaperNode, ConvolverNode)
+      // Native AudioNodes have both connect() and disconnect() methods.
+      // We detect this by checking for both methods (duck-typing).
       this.inputNode.connect(externalEffect as unknown as AudioNode)
     }
 

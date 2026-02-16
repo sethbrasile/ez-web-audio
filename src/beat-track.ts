@@ -154,7 +154,7 @@ export class BeatTrack extends Sampler {
    * Emits 'beat' events for UI synchronization.
    *
    * @param bpm - Tempo in beats per minute
-   * @param noteType - Rhythmic length of each beat (e.g., 1/4 for quarter notes, 1/8 for eighths)
+   * @param noteType - Rhythmic subdivision as a fraction. Common values: 1/4 (quarter notes), 1/8 (eighth notes), 1/16 (sixteenth notes). The beat duration in seconds is calculated as: (240 * noteType) / bpm.
    *
    * @example
    * ```typescript
@@ -183,7 +183,7 @@ export class BeatTrack extends Sampler {
    * Inactive beats become rests (silence), maintaining timing.
    *
    * @param bpm - Tempo in beats per minute
-   * @param noteType - Rhythmic length of each beat/rest
+   * @param noteType - Rhythmic subdivision as a fraction. Common values: 1/4 (quarter notes), 1/8 (eighth notes), 1/16 (sixteenth notes). The beat duration in seconds is calculated as: (240 * noteType) / bpm.
    *
    * @example
    * ```typescript
