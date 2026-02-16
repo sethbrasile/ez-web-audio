@@ -51,12 +51,14 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest",
+    "test:e2e": "playwright test",
     "prepublishOnly": "pnpm build:lib"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.27.3",
     "@dotenvx/dotenvx": "^1.14.2",
     "@nx-js/observer-util": "^4.2.2",
+    "@playwright/test": "^1.58.2",
     "@types/prismjs": "^1.26.4",
     "concurrently": "^9.0.1",
     "eslint": "9.5.0",

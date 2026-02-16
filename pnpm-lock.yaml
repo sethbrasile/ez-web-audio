@@ -17,6 +17,9 @@ importers:
       '@nx-js/observer-util':
         specifier: ^4.2.2
         version: 4.2.2
+      '@playwright/test':
+        specifier: ^1.58.2
+        version: 1.58.2
       '@types/prismjs':
         specifier: ^1.26.4
         version: 1.26.4
@@ -586,6 +589,11 @@ packages:
   '@pkgr/core@0.1.1':
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.58.2':
+    resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@rollup/pluginutils@5.1.2':
     resolution: {integrity: sha512-/FIdS3PyZ39bjZlwqFnWqCOVnW7o963LtKMwQOD0NhQqw22gSr2YY1afu3FxRip4ZCZNsD5jq6Aaz6QV3D/Njw==}
@@ -1598,6 +1606,11 @@ packages:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -2101,6 +2114,16 @@ packages:
 
   pkg-types@1.2.0:
     resolution: {integrity: sha512-+ifYuSSqOQ8CqP4MbZA5hDpb97n3E8SVWdJe+Wms9kj745lmd3b7EZJiqvmLwAlmRfjrI7Hi5z3kdBJ93lFNPA==}
+
+  playwright-core@1.58.2:
+    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.58.2:
+    resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
@@ -3322,6 +3345,10 @@ snapshots:
 
   '@pkgr/core@0.1.1': {}
 
+  '@playwright/test@1.58.2':
+    dependencies:
+      playwright: 1.58.2
+
   '@rollup/pluginutils@5.1.2(rollup@4.22.5)':
     dependencies:
       '@types/estree': 1.0.6
@@ -4488,6 +4515,9 @@ snapshots:
       jsonfile: 4.0.0
       universalify: 0.1.2
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -4955,6 +4985,14 @@ snapshots:
       confbox: 0.1.7
       mlly: 1.7.1
       pathe: 1.1.2
+
+  playwright-core@1.58.2: {}
+
+  playwright@1.58.2:
+    dependencies:
+      playwright-core: 1.58.2
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pluralize@8.0.0: {}
 
