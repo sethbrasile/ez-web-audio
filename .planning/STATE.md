@@ -11,10 +11,10 @@
 
 ## Current Position
 
-Phase: 15 of 16 (Test Coverage)
-Plan: 04 of 04 complete
-Status: Complete - All test coverage requirements fulfilled
-Last activity: 2026-02-16 — Created Playwright E2E test suite for docs site (20 tests covering all demo pages and navigation) (15-04)
+Phase: 16 of 16 (SEO & Discoverability)
+Plan: 01 of 02 complete
+Status: In Progress - Added comprehensive SEO metadata and rewrote homepage messaging
+Last activity: 2026-02-16 — Added SEO meta tags (keywords, OG, Twitter, JSON-LD) and rewrote homepage with keyword-rich messaging for discoverability (16-01)
 
 **Progress:** [██████████] 100%
 
@@ -86,6 +86,9 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 15-04]: E2E tests focus on error detection rather than UI verification (VitePress SPA hydration timing unreliable)
 - [Phase 15-04]: Use 3s timeout for Vue/VitePress hydration instead of complex element selectors
 - [Phase 15-04]: Chromium-only E2E testing keeps test suite fast (no Firefox/WebKit)
+- [Phase 16-01]: Use Schema.org SoftwareSourceCode type for JSON-LD (most appropriate for code library)
+- [Phase 16-01]: Add third CTA "API Reference" instead of keeping GitHub link (better for new visitors, GitHub in nav)
+- [Phase 16-01]: Add "What is EZ Web Audio?" section below hero (provides indexable text for search engines)
 
 ### Known Blockers
 
@@ -96,6 +99,12 @@ None active.
 **913 unit tests across 36 test files** (Phase 15-01: +93 tests for untested modules; Phase 15-02: +30 edge case tests, fixed 6 false positives; Phase 15-03: +20 edge/error path tests)
 
 **20 E2E tests via Playwright** (Phase 15-04: All demo pages + core navigation verified)
+
+### Performance Metrics
+
+| Phase-Plan | Duration | Tasks | Files | Date |
+|------------|----------|-------|-------|------|
+| 16-01 | 140s | 2 | 2 | 2026-02-16 |
 
 ---
 
