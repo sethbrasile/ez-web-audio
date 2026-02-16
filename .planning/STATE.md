@@ -12,11 +12,11 @@
 ## Current Position
 
 Phase: 15 of 16 (Test Coverage)
-Plan: 03 of 04 complete
-Status: In Progress - Adding edge case and error path coverage
-Last activity: 2026-02-16 — Added 20+ edge case tests for Track, Sprite, and BaseSound; documented SampledNote.name property conflict (15-03)
+Plan: 04 of 04 complete
+Status: Complete - All test coverage requirements fulfilled
+Last activity: 2026-02-16 — Created Playwright E2E test suite for docs site (20 tests covering all demo pages and navigation) (15-04)
 
-**Progress:** [██████████] 97%
+**Progress:** [██████████] 100%
 
 ## Roadmap Summary
 
@@ -25,7 +25,7 @@ Last activity: 2026-02-16 — Added 20+ edge case tests for Track, Sprite, and B
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
 | 13 | Code Quality Implementation | QUAL-02, QUAL-04 | Complete (4/4) |
 | 14 | Docs & Examples Polish | DOCS-01-05 | Complete (6/6) |
-| 15 | Test Coverage | TEST-01, TEST-02 | In Progress (3/4) |
+| 15 | Test Coverage | TEST-01, TEST-02 | Complete (4/4) |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
 
 ## Accumulated Context
@@ -83,6 +83,9 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 15-03]: Track pause/resume when not playing/paused is safe (no errors, no events emitted)
 - [Phase 15-03]: Sprite allows invalid ranges (end<start, beyond buffer) - Web Audio API handles edge cases
 - [Phase 15-03]: BaseSound effect operations are idempotent and safe (remove non-existent effect doesn't error)
+- [Phase 15-04]: E2E tests focus on error detection rather than UI verification (VitePress SPA hydration timing unreliable)
+- [Phase 15-04]: Use 3s timeout for Vue/VitePress hydration instead of complex element selectors
+- [Phase 15-04]: Chromium-only E2E testing keeps test suite fast (no Firefox/WebKit)
 
 ### Known Blockers
 
@@ -90,7 +93,9 @@ None active.
 
 ### Test Coverage Summary
 
-**893 tests across 36 test files** (Phase 15-01: +93 tests for untested modules; Phase 15-02: +30 edge case tests, fixed 6 false positives; Phase 15-03: +20 edge/error path tests)
+**913 unit tests across 36 test files** (Phase 15-01: +93 tests for untested modules; Phase 15-02: +30 edge case tests, fixed 6 false positives; Phase 15-03: +20 edge/error path tests)
+
+**20 E2E tests via Playwright** (Phase 15-04: All demo pages + core navigation verified)
 
 ---
 
