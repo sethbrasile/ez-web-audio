@@ -409,12 +409,15 @@ Plans:
   4. Core Concepts and usage guides are complete and accurate
   5. All code examples in docs verified against current API (no outdated examples)
 
-**Plans:** 3 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — Audit and polish existing demo components (UX, code quality, consistency)
-- [ ] 14-02-PLAN.md — Verify and update guides and code examples against current API
-- [ ] 14-03-PLAN.md — Create new creative demo pages (Ambient Generator, Visualization)
+- [ ] 14-01-PLAN.md — Polish core demo components (AudioDemo, TrackDemo, OscillatorDemo, FilterDemo, DistortionDemo, TimingDemo)
+- [ ] 14-02-PLAN.md — Polish interactive complex demos (DrumMachine, XYPad, SynthKeyboard, PianoKeyboard)
+- [ ] 14-03-PLAN.md — Polish specialized demo variations (SynthDrumKit, SampledDrumKit, SoundfontPiano, DrumMachineVue, DrumMachineVanilla)
+- [ ] 14-04-PLAN.md — Verify and update Getting Started, Core Concepts guides, and homepage
+- [ ] 14-05-PLAN.md — Verify and update all example page code snippets against current API
+- [ ] 14-06-PLAN.md — Create new creative demo pages (Ambient Generator, Visualization)
 
 ---
 
