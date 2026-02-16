@@ -12,18 +12,18 @@
 ## Current Position
 
 Phase: 13 of 16 (Code Quality Implementation)
-Plan: 01 of 04 complete
-Status: In progress - shared helpers extracted, dead code removed
-Last activity: 2026-02-16 — Completed shared helpers extraction & dead code removal (13-01)
+Plan: 03 of 04 complete
+Status: In progress - JSDoc and TypeDoc documentation complete
+Last activity: 2026-02-16 — Completed JSDoc & TypeDoc review (13-03)
 
-**Progress:** [██████████] 96%
+**Progress:** [██████████] 98%
 
 ## Roadmap Summary
 
 | Phase | Name | Requirements | Status |
 |-------|------|-------------|--------|
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
-| 13 | Code Quality Implementation | QUAL-02, QUAL-04 | In progress (1/4) |
+| 13 | Code Quality Implementation | QUAL-02, QUAL-04 | In progress (3/4) |
 | 14 | Docs & Examples Polish | DOCS-01-05 | Not started |
 | 15 | Test Coverage | TEST-01, TEST-02 | Not started |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
@@ -54,6 +54,8 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 13]: Use string concatenation for error messages instead of template literals (consistency)
 - [Phase 13]: Keep deprecated type aliases for backwards compatibility (OscillatorOpts, OscillatorOptsFilterValues)
 - [Phase 13]: Add console.warn for gain > 1 instead of error (non-fatal but alerts to potential distortion)
+- [Phase 13-03]: Keep startOffset public with @deprecated tag for backwards compatibility
+- [Phase 13-03]: Document noteType with formula and common values for improved discoverability
 
 ### Known Blockers
 
