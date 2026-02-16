@@ -12,11 +12,11 @@
 ## Current Position
 
 Phase: 15 of 16 (Test Coverage)
-Plan: 02 of 04 complete
-Status: In Progress - Improving test quality and edge case coverage
-Last activity: 2026-02-16 — Fixed 6 false positive tests and added 30+ edge case tests covering boundary conditions, rapid state changes, and input validation (15-02)
+Plan: 03 of 04 complete
+Status: In Progress - Adding edge case and error path coverage
+Last activity: 2026-02-16 — Added 20+ edge case tests for Track, Sprite, and BaseSound; documented SampledNote.name property conflict (15-03)
 
-**Progress:** [███████████░░] 88%
+**Progress:** [██████████] 97%
 
 ## Roadmap Summary
 
@@ -25,7 +25,7 @@ Last activity: 2026-02-16 — Fixed 6 false positive tests and added 30+ edge ca
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
 | 13 | Code Quality Implementation | QUAL-02, QUAL-04 | Complete (4/4) |
 | 14 | Docs & Examples Polish | DOCS-01-05 | Complete (6/6) |
-| 15 | Test Coverage | TEST-01, TEST-02 | In Progress (1/4) |
+| 15 | Test Coverage | TEST-01, TEST-02 | In Progress (3/4) |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
 
 ## Accumulated Context
@@ -78,6 +78,11 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 15-01]: Only test flat accidentals (sharps commented out in frequency-map)
 - [Phase 15-01]: Use mock SampledNote objects for Font tests (avoid AudioContext setup complexity)
 - [Phase 15-01]: Pre-existing test failures in unrelated files logged to deferred-items.md (out of scope for utility module tests)
+- [Phase 15-03]: Task 1 (SampledNote, Oscillator, Envelope tests) already completed in 15-02 execution
+- [Phase 15-03]: SampledNote.name property shadowed by BaseSound.name - architectural decision needed
+- [Phase 15-03]: Track pause/resume when not playing/paused is safe (no errors, no events emitted)
+- [Phase 15-03]: Sprite allows invalid ranges (end<start, beyond buffer) - Web Audio API handles edge cases
+- [Phase 15-03]: BaseSound effect operations are idempotent and safe (remove non-existent effect doesn't error)
 
 ### Known Blockers
 
@@ -85,7 +90,7 @@ None active.
 
 ### Test Coverage Summary
 
-**873 tests across 36 test files** (Phase 15-01 added 93 tests for untested modules; Phase 15-02 added 30+ edge case tests and fixed 6 false positives)
+**893 tests across 36 test files** (Phase 15-01: +93 tests for untested modules; Phase 15-02: +30 edge case tests, fixed 6 false positives; Phase 15-03: +20 edge/error path tests)
 
 ---
 
