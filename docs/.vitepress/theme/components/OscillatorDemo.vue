@@ -1,14 +1,20 @@
 <template>
   <div class="oscillator-demo">
+    <div v-if="error" class="error">{{ error }}</div>
+
+    <div class="warning">
+      <strong>Note:</strong> Oscillators can be loud. Start with low volume.
+    </div>
+
     <div class="controls">
-      <button @click="toggle" :class="{ active: playing }" class="play-btn">
-        {{ playing ? 'Stop' : 'Play' }}
+      <button @click="toggle" :class="{ active: playing }" :disabled="loading" class="play-btn">
+        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
       </button>
 
       <div class="params">
-        <label>
+        <label for="waveform-select">
           Waveform:
-          <select v-model="waveType">
+          <select id="waveform-select" v-model="waveType" :disabled="loading">
             <option value="sine">Sine</option>
             <option value="square">Square</option>
             <option value="sawtooth">Sawtooth</option>
@@ -16,14 +22,30 @@
           </select>
         </label>
 
-        <label>
+        <label for="frequency-slider">
           Frequency: {{ frequency }}Hz
-          <input type="range" v-model.number="frequency" min="100" max="1000" step="10" />
+          <input
+            id="frequency-slider"
+            type="range"
+            v-model.number="frequency"
+            min="100"
+            max="1000"
+            step="10"
+            :aria-label="`Frequency: ${frequency} Hz`"
+          />
         </label>
 
-        <label>
+        <label for="volume-slider">
           Volume: {{ Math.round(gain * 100) }}%
-          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" />
+          <input
+            id="volume-slider"
+            type="range"
+            v-model.number="gain"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          />
         </label>
       </div>
     </div>
@@ -39,10 +61,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 
+const loading = ref(false)
 const playing = ref(false)
+const error = ref('')
 const waveType = ref<'sine' | 'square' | 'sawtooth' | 'triangle'>('sine')
 const frequency = ref(440)
-const gain = ref(0.5)
+const gain = ref(0.3)
 
 let oscillator: any = null
 
@@ -66,6 +90,9 @@ async function toggle() {
 
 async function play() {
   try {
+    error.value = ''
+    loading.value = true
+
     const { createOscillator } = await import('ez-web-audio')
 
     oscillator = await createOscillator({
@@ -76,7 +103,9 @@ async function play() {
     oscillator.play()
     playing.value = true
   } catch (e) {
-    console.error('Failed to play oscillator:', e)
+    error.value = e instanceof Error ? e.message : 'Failed to play oscillator'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -165,5 +194,25 @@ onUnmounted(() => {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--vp-c-brand);
+}
+
+.error {
+  color: var(--vp-c-danger);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.warning {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-warning-soft);
+  border-left: 3px solid var(--vp-c-warning);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.warning strong {
+  color: var(--vp-c-warning);
 }
 </style>

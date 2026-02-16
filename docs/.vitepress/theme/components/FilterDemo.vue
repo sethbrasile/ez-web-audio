@@ -2,6 +2,10 @@
   <div class="filter-demo">
     <div v-if="error" class="error">{{ error }}</div>
 
+    <div class="warning">
+      <strong>Note:</strong> Audio sources can be loud. Start with caution.
+    </div>
+
     <div class="controls">
       <div class="control-group">
         <div class="row">
@@ -56,6 +60,7 @@
             max="100"
             v-model.number="frequencySlider"
             :disabled="!playing"
+            :aria-label="`Filter frequency: ${Math.round(frequency)} Hz`"
           />
           <span class="value">{{ Math.round(frequency) }} Hz</span>
         </div>
@@ -70,6 +75,7 @@
             step="0.1"
             v-model.number="q"
             :disabled="!playing"
+            :aria-label="`Resonance Q: ${q.toFixed(1)}`"
           />
           <span class="value">{{ q.toFixed(1) }}</span>
         </div>
@@ -84,6 +90,7 @@
             step="0.5"
             v-model.number="filterGain"
             :disabled="!playing"
+            :aria-label="`Filter gain: ${filterGain > 0 ? '+' : ''}${filterGain.toFixed(1)} dB`"
           />
           <span class="value">{{ filterGain > 0 ? '+' : '' }}{{ filterGain.toFixed(1) }} dB</span>
         </div>
@@ -175,8 +182,7 @@ async function playSound() {
     source.play()
     playing.value = true
   } catch (err: any) {
-    error.value = err.message || 'Failed to play audio'
-    console.error('FilterDemo error:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to play audio'
   } finally {
     loading.value = false
   }
@@ -213,7 +219,7 @@ watch(filterType, async (newType) => {
     source.addEffect(filter)
     source.rewireEffects()
   } catch (err) {
-    console.error('Error changing filter type:', err)
+    error.value = err instanceof Error ? err.message : 'Error changing filter type'
   }
 })
 
@@ -384,5 +390,19 @@ button.active {
   .button-group button {
     flex: 1;
   }
+}
+
+.warning {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-warning-soft);
+  border-left: 3px solid var(--vp-c-warning);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.warning strong {
+  color: var(--vp-c-warning);
 }
 </style>

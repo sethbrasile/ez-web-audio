@@ -5,13 +5,29 @@
         {{ loading ? 'Loading...' : 'Play Sound' }}
       </button>
       <div class="sliders">
-        <label>
+        <label for="audio-volume">
           Volume: {{ Math.round(gain * 100) }}%
-          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" />
+          <input
+            id="audio-volume"
+            type="range"
+            v-model.number="gain"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          />
         </label>
-        <label>
+        <label for="audio-pan">
           Pan: {{ pan < 0 ? 'L' : pan > 0 ? 'R' : 'C' }} {{ Math.abs(Math.round(pan * 100)) }}
-          <input type="range" v-model.number="pan" min="-1" max="1" step="0.1" />
+          <input
+            id="audio-pan"
+            type="range"
+            v-model.number="pan"
+            min="-1"
+            max="1"
+            step="0.1"
+            :aria-label="`Pan: ${pan < 0 ? 'Left' : pan > 0 ? 'Right' : 'Center'} ${Math.abs(Math.round(pan * 100))}`"
+          />
         </label>
       </div>
     </div>

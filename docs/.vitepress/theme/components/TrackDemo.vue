@@ -16,19 +16,29 @@
 
       <div class="seek-bar">
         <input
+          id="track-seek"
           type="range"
           v-model.number="seekPosition"
           :max="duration"
           step="0.1"
           @change="seek"
           :disabled="!loaded"
+          :aria-label="`Seek position: ${positionString}`"
         />
       </div>
 
       <div class="volume">
-        <label>
+        <label for="track-volume">
           Vol: {{ Math.round(gain * 100) }}%
-          <input type="range" v-model.number="gain" min="0" max="1" step="0.1" />
+          <input
+            id="track-volume"
+            type="range"
+            v-model.number="gain"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          />
         </label>
       </div>
     </div>

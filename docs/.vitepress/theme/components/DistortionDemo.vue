@@ -49,28 +49,32 @@
       </div>
 
       <div v-if="distortionEnabled" class="effect-controls">
-        <label class="slider-control">
+        <label class="slider-control" for="distortion-amount">
           <span class="control-label">Distortion Amount:</span>
           <input
+            id="distortion-amount"
             type="range"
             v-model.number="distortionAmount"
             min="50"
             max="1000"
             step="50"
             @input="updateDistortionCurve"
+            :aria-label="`Distortion amount: ${distortionAmount}`"
           />
           <span class="control-value">{{ distortionAmount }}</span>
         </label>
 
-        <label class="slider-control">
+        <label class="slider-control" for="wet-dry-mix">
           <span class="control-label">Wet/Dry Mix:</span>
           <input
+            id="wet-dry-mix"
             type="range"
             v-model.number="wetDryMix"
             min="0"
             max="1"
             step="0.1"
             @input="updateMix"
+            :aria-label="`Wet/Dry mix: ${Math.round(wetDryMix * 100)}%`"
           />
           <span class="control-value">{{ Math.round(wetDryMix * 100) }}%</span>
         </label>
@@ -179,12 +183,13 @@ async function toggleDistortion() {
   }
 }
 
-function updateDistortionCurve() {
+async function updateDistortionCurve() {
   if (!effect || !lib) return
 
   try {
+    error.value = ''
     // Update the WaveShaper curve
-    const ctx = lib.getAudioContext()
+    const ctx = await lib.getAudioContext()
     const newCurve = makeDistortionCurve(distortionAmount.value)
 
     // Access the underlying distortion node
@@ -210,7 +215,9 @@ function updateBypass() {
 onUnmounted(() => {
   if (oscillator) {
     try { oscillator.stop() } catch {}
+    oscillator = null
   }
+  effect = null
 })
 </script>
 
