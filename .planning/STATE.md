@@ -12,9 +12,9 @@
 ## Current Position
 
 Phase: 14 of 16 (Docs & Examples Polish)
-Plan: 05 of 05 complete
-Status: In progress - Example pages verified for API accuracy
-Last activity: 2026-02-16 — Verified all example page code snippets (14-05)
+Plan: 01 of 05 complete
+Status: In progress - Core demo components polished
+Last activity: 2026-02-16 — Polished 6 core demo components for UX and accessibility (14-01)
 
 **Progress:** [█████████░] 92%
 
@@ -24,7 +24,7 @@ Last activity: 2026-02-16 — Verified all example page code snippets (14-05)
 |-------|------|-------------|--------|
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
 | 13 | Code Quality Implementation | QUAL-02, QUAL-04 | Complete (4/4) |
-| 14 | Docs & Examples Polish | DOCS-01-05 | In progress (5/5) |
+| 14 | Docs & Examples Polish | DOCS-01-05 | In progress (1/5) |
 | 15 | Test Coverage | TEST-01, TEST-02 | Not started |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
 
@@ -56,8 +56,8 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 13]: Add console.warn for gain > 1 instead of error (non-fatal but alerts to potential distortion)
 - [Phase 13-03]: Keep startOffset public with @deprecated tag for backwards compatibility
 - [Phase 13-03]: Document noteType with formula and common values for improved discoverability
-- [Phase 14-05]: pnpm dev is canonical local development command (not pnpm docs:dev)
-- [Phase 14-05]: setAnalyzer is correct method name for attaching analyzers (not attachAnalyzer)
+- [Phase 14-01]: Reduced default oscillator gain from 0.5 to 0.3 for safer initial volume in demos
+- [Phase 14-01]: Added volume warnings to oscillator and filter demos (can be loud)
 
 ### Known Blockers
 
