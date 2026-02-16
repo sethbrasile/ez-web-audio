@@ -15,8 +15,45 @@ try {
 
 export default defineConfig({
   title: 'EZ Web Audio',
-  description: 'Making the Web Audio API super EZ since 2024',
+  description: 'A zero-dependency TypeScript library that makes the Web Audio API easy — play sounds, synthesizers, drum machines, and audio effects with minimal code.',
   base: '/ez-web-audio/',
+
+  head: [
+    // Basic meta tags
+    ['meta', { name: 'keywords', content: 'web audio api, javascript audio library, typescript audio, synthesizer, oscillator, drum machine, audio effects, sound playback, browser audio, audio visualization' }],
+    ['meta', { name: 'author', content: 'Seth Brasile' }],
+    ['meta', { name: 'robots', content: 'index, follow' }],
+
+    // OpenGraph tags
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'EZ Web Audio - Simple Web Audio API for JavaScript & TypeScript' }],
+    ['meta', { property: 'og:description', content: 'Zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, create synthesizers, build drum machines, and add audio effects with minimal code.' }],
+    ['meta', { property: 'og:url', content: 'https://sethbrasile.github.io/ez-web-audio/' }],
+    ['meta', { property: 'og:site_name', content: 'EZ Web Audio' }],
+
+    // Twitter Card tags
+    ['meta', { name: 'twitter:card', content: 'summary' }],
+    ['meta', { name: 'twitter:title', content: 'EZ Web Audio - Simple Web Audio API for JavaScript & TypeScript' }],
+    ['meta', { name: 'twitter:description', content: 'Zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, create synthesizers, build drum machines, and add audio effects with minimal code.' }],
+
+    // JSON-LD structured data
+    ['script', { type: 'application/ld+json' }, JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareSourceCode",
+      "name": "ez-web-audio",
+      "description": "Zero-dependency TypeScript library that wraps the Web Audio API with a simpler, more intuitive interface.",
+      "url": "https://github.com/sethbrasile/ez-web-audio",
+      "codeRepository": "https://github.com/sethbrasile/ez-web-audio",
+      "programmingLanguage": ["TypeScript", "JavaScript"],
+      "runtimePlatform": "Browser",
+      "license": "https://opensource.org/licenses/MIT",
+      "author": {
+        "@type": "Person",
+        "name": "Seth Brasile",
+        "url": "https://github.com/sethbrasile"
+      }
+    })]
+  ],
 
   themeConfig: {
     nav: [
