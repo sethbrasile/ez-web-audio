@@ -68,7 +68,15 @@ export interface BaseSoundOptions {
  */
 export abstract class BaseSound extends EventTarget implements Connectable, Playable {
   protected _isPlaying = false
+
+  /**
+   * The GainNode controlling this sound's volume.
+   *
+   * Exposed for advanced custom audio routing. For simple volume control,
+   * use changeGainTo() or update('gain').
+   */
   public gainNode: GainNode
+
   protected pannerNode: StereoPannerNode
   protected setTimeout: (fn: () => void, delayMillis: number) => number
   protected startedPlayingAt: number = 0
@@ -135,6 +143,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    *
    * This is useful for starting a sound at a specific offset from the beginning of the sound. Manipulation of this value is used
    * extensively in the `Track` class to allow for starting the track at specific positions.
+   *
+   * @deprecated This property will become protected in v2. Use seek() on Track for position control.
    *
    * @default 0
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode/start
@@ -560,6 +570,14 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this
   }
 
+  /**
+   * Add a connection to the legacy connection chain.
+   *
+   * @deprecated Use addEffect() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
+   *
+   * @param connection - The connection to add
+   * @returns this for chaining
+   */
   public addConnection(connection: Connection): this {
     this.connections.push(connection)
     this.wireConnections()
@@ -576,6 +594,14 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this
   }
 
+  /**
+   * Remove a connection from the legacy connection chain.
+   *
+   * @deprecated Use removeEffect() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
+   *
+   * @param name - The name of the connection to remove
+   * @returns this for chaining
+   */
   public removeConnection(name: string): this {
     const connection = this.getConnection(name)
     if (connection) {
@@ -598,12 +624,26 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this
   }
 
-  // Allows you to get any user created connection in the connections array
+  /**
+   * Get a connection from the legacy connection chain by name.
+   *
+   * @deprecated Use getEffects() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
+   *
+   * @param name - The name of the connection to retrieve
+   * @returns The connection, or undefined if not found
+   */
   public getConnection(name: string): Connection | undefined {
     return this.connections.find(c => c.name === name)
   }
 
-  // Allows you to get node from any user created connection in the connections array
+  /**
+   * Get an AudioNode from a legacy connection by name.
+   *
+   * @deprecated Use getEffects() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
+   *
+   * @param connectionName - The name of the connection whose node to retrieve
+   * @returns The AudioNode, or undefined if not found
+   */
   public getNodeFrom<T extends AudioNode | StereoPannerNode>(connectionName: string): T | undefined {
     return this.getConnection(connectionName)?.audioNode as T | undefined
   }
