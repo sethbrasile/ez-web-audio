@@ -501,3 +501,139 @@ it('supports multiple pause/resume cycles', () => {
   expect(pauseCount).toBe(2)
   expect(resumeCount).toBe(2)
 })
+
+describe('edge cases', () => {
+  describe('tempo boundary values', () => {
+    it('setTempo(0) throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      track.playActiveBeats(120, 1/4)
+
+      // Current behavior: setTempo validates BPM > 0
+      expect(() => track.setTempo(0)).toThrow('BPM must be greater than 0')
+    })
+
+    it('setTempo with negative value throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      track.playActiveBeats(120, 1/4)
+
+      // Current behavior: negative BPM is rejected
+      expect(() => track.setTempo(-120)).toThrow('BPM must be greater than 0')
+    })
+
+    it('setTempo with very high value (999) works', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      track.playActiveBeats(120, 1/4)
+
+      // High BPM values should work without error
+      expect(() => track.setTempo(999)).not.toThrow()
+      expect(track.getCurrentTempo()).toBe(999)
+
+      track.stop()
+    })
+
+    it('playBeats(0) throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      // Zero BPM is invalid
+      expect(() => track.playBeats(0, 1/4)).toThrow('BPM must be greater than 0')
+    })
+
+    it('playBeats with negative BPM throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      expect(() => track.playBeats(-120, 1/4)).toThrow('BPM must be greater than 0')
+    })
+
+    it('playActiveBeats(0) throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      expect(() => track.playActiveBeats(0, 1/4)).toThrow('BPM must be greater than 0')
+    })
+
+    it('playActiveBeats with negative BPM throws error', () => {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      expect(() => track.playActiveBeats(-120, 1/4)).toThrow('BPM must be greater than 0')
+    })
+  })
+
+  describe('numBeats boundary values', () => {
+    it('numBeats = 0 creates empty beats array', () => {
+      const track = createBeatTrack()
+      track.numBeats = 0
+
+      // Current behavior: allows 0 beats
+      expect(track.beats).toHaveLength(0)
+    })
+
+    it('numBeats = 1 creates single beat', () => {
+      const track = createBeatTrack()
+      track.numBeats = 1
+
+      expect(track.beats).toHaveLength(1)
+      expect(track.beats[0]).toBeDefined()
+    })
+
+    it('numBeats = 16 creates 16 beats', () => {
+      const track = createBeatTrack()
+      track.numBeats = 16
+
+      expect(track.beats).toHaveLength(16)
+    })
+
+    it('reducing numBeats preserves active state of remaining beats', () => {
+      const track = createBeatTrack()
+      track.numBeats = 8
+
+      // Set some beats active
+      track.beats[0].active = true
+      track.beats[2].active = true
+      track.beats[6].active = true
+
+      // Reduce to 4 beats
+      track.numBeats = 4
+
+      // First 4 beats should preserve their state
+      expect(track.beats[0].active).toBe(true)
+      expect(track.beats[1].active).toBe(false)
+      expect(track.beats[2].active).toBe(true)
+      expect(track.beats[3].active).toBe(false)
+    })
+
+    it('increasing numBeats adds new inactive beats', () => {
+      const track = createBeatTrack()
+      track.numBeats = 4
+
+      track.beats[0].active = true
+      track.beats[1].active = true
+
+      // Expand to 8 beats
+      track.numBeats = 8
+
+      // Original beats preserve state
+      expect(track.beats[0].active).toBe(true)
+      expect(track.beats[1].active).toBe(true)
+
+      // New beats default to false
+      expect(track.beats[4].active).toBe(false)
+      expect(track.beats[7].active).toBe(false)
+    })
+  })
+})

@@ -600,4 +600,93 @@ describe('Sound', () => {
       expect(handler).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('edge cases', () => {
+    describe('rapid play-stop-play cycles', () => {
+      it('handles rapid play-stop-play without errors', async () => {
+        const sound = createSound(audioContext)
+
+        // Rapid play-stop-play cycle
+        await sound.play()
+        expect(sound.isPlaying).toBe(true)
+
+        await sound.stop()
+        expect(sound.isPlaying).toBe(false)
+
+        await sound.play()
+        expect(sound.isPlaying).toBe(true)
+      })
+
+      it('isPlaying is true after rapid play-stop-play', async () => {
+        const sound = createSound(audioContext)
+
+        sound.play()
+        sound.stop()
+        sound.play()
+
+        // Final state should be playing
+        expect(await settle(() => sound.isPlaying)).toBe(true)
+      })
+    })
+
+    describe('play while already playing', () => {
+      it('calling play twice creates new source node', async () => {
+        const sound = createSound(audioContext)
+
+        await sound.play()
+        const firstSource = sound.audioSourceNode
+        expect(sound.isPlaying).toBe(true)
+
+        // Play again without stopping
+        await sound.play()
+        const secondSource = sound.audioSourceNode
+
+        // Should create a new source node (AudioBufferSourceNode is single-use)
+        expect(secondSource).not.toBe(firstSource)
+        expect(sound.isPlaying).toBe(true)
+      })
+
+      it('second play emits play event again', async () => {
+        const sound = createSound(audioContext)
+        const handler = vi.fn()
+        sound.on('play', handler)
+
+        await sound.play()
+        await sound.play()
+
+        expect(handler).toHaveBeenCalledTimes(2)
+      })
+    })
+
+    describe('startOffset boundaries', () => {
+      it('startOffset can be set to value within duration', () => {
+        const sound = createSound(audioContext, 10) // 10 seconds
+        sound.startOffset = 5
+        expect(sound.startOffset).toBe(5)
+      })
+
+      it('startOffset greater than duration is accepted (current behavior)', () => {
+        const sound = createSound(audioContext, 10) // 10 seconds
+        // Setting startOffset beyond duration is allowed (Web Audio API handles this)
+        sound.startOffset = 999
+        expect(sound.startOffset).toBe(999)
+        // Note: When played, Web Audio API will handle out-of-bounds offset
+      })
+
+      it('negative startOffset is accepted (current behavior)', () => {
+        const sound = createSound(audioContext, 10)
+        // Negative values are allowed - Web Audio API clamps to 0
+        sound.startOffset = -5
+        expect(sound.startOffset).toBe(-5)
+        // Note: Web Audio API will clamp negative offset to 0 during playback
+      })
+
+      it('startOffset of 0 plays from beginning', async () => {
+        const sound = createSound(audioContext, 10)
+        sound.startOffset = 0
+        await sound.play()
+        expect(sound.isPlaying).toBe(true)
+      })
+    })
+  })
 })

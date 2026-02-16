@@ -28,32 +28,24 @@ it('can be created', () => {
 })
 
 it('identifier is formatted properly', () => {
-  expect(1)
-
   const note = new Note({ frequency: 51.91 })
 
   assert.strictEqual(note.identifier, 'Ab1')
 })
 
 it('identifier is formatted properly when note has no accidental', () => {
-  expect(1)
-
   const note = new Note({ frequency: 55 })
 
   assert.strictEqual(note.identifier, 'A1')
 })
 
 it('name is formatted properly', () => {
-  expect(1)
-
   const note = new Note({ frequency: 51.91 })
 
   assert.strictEqual(note.name, 'Ab')
 })
 
 it('setting frequency properly calculates other props', () => {
-  expect(5)
-
   const note = new Note({ frequency: 440 })
 
   assert.strictEqual(note.identifier, 'A4')
@@ -64,8 +56,6 @@ it('setting frequency properly calculates other props', () => {
 })
 
 it('setting identifier properly calculates other props', () => {
-  expect(5)
-
   const note = new Note({ identifier: 'A4' })
 
   assert.strictEqual(note.frequency, 440)
@@ -76,8 +66,6 @@ it('setting identifier properly calculates other props', () => {
 })
 
 it('setting identifier with accidental properly calculates other props', () => {
-  expect(5)
-
   const note = new Note({ identifier: 'Ab4' })
 
   assert.strictEqual(note.frequency, 415.3)
@@ -88,8 +76,6 @@ it('setting identifier with accidental properly calculates other props', () => {
 })
 
 it('still works if manually set letter, accidental and octave', () => {
-  expect(3)
-
   const note = new Note({ letter: 'A', accidental: 'b', octave: '4' })
 
   assert.strictEqual(note.frequency, 415.3)
@@ -98,8 +84,6 @@ it('still works if manually set letter, accidental and octave', () => {
 })
 
 it('still works if manually set letter and octave (no accidental)', () => {
-  expect(3)
-
   const note = new Note({ letter: 'A', octave: '4' })
 
   assert.strictEqual(note.frequency, 440)
