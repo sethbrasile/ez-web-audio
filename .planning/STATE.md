@@ -39,6 +39,10 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 12]: Prioritize error path testing in Phase 15 (found largely untested)
 - [Phase 12]: Create test files for untested core features (font.ts, sampled-note.ts, create-time-object.ts, frequency-map.ts)
 - [Phase 12]: Fix 6 false positive tests that provide zero value
+- [Phase 12]: Single global AudioContext blocks v2 spatial audio - requires opt-in multi-context mode
+- [Phase 12]: ControlType union should be extensible via mapped type for v2 parameter additions
+- [Phase 12]: Spatial audio requires PannerNode (3D) vs StereoPannerNode (2D) - add setSpatialMode() API
+- [Phase 12]: Framework bindings (React/Vue) require zero library changes - external packages only
 
 ### Known Blockers
 
