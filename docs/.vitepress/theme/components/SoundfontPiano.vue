@@ -1,14 +1,12 @@
 <template>
   <div class="soundfont-piano">
+    <div v-if="loading" class="loading">Loading piano soundfont...</div>
     <div v-if="error" class="error">{{ error }}</div>
 
     <div class="piano-container">
-      <div class="current-note">
-        {{ loading ? loadProgress : (currentNote || 'Click a key to play') }}
-      </div>
-
       <PianoKeyboard
         :activeKeys="activeNotes"
+        :disabled="loading"
         @noteOn="playNote"
         @noteOff="stopNote"
       />
@@ -24,12 +22,10 @@
 import { ref, onUnmounted } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
-const loading = ref(false)
 const initialized = ref(false)
+const loading = ref(false)
 const error = ref('')
 const activeNotes = ref(new Set<string>())
-const currentNote = ref('')
-const loadProgress = ref('')
 
 let font: any = null
 let lib: any = null
@@ -37,9 +33,8 @@ let lib: any = null
 async function initFont() {
   if (initialized.value) return
 
+  loading.value = true
   try {
-    loading.value = true
-    loadProgress.value = 'Loading piano soundfont (1.4MB)...'
     error.value = ''
 
     // Dynamic import for SSR compatibility
@@ -69,9 +64,7 @@ async function playNote(note: string) {
     // which matches the library's frequencyMap structure
     font.play(note)
 
-    // Update visual state
     activeNotes.value.add(note)
-    currentNote.value = note
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play note'
   }
@@ -81,11 +74,6 @@ function stopNote(note: string) {
   // For sampled notes, they naturally decay - no explicit stop needed
   // But we update activeNotes set for visual feedback
   activeNotes.value.delete(note)
-
-  // Clear current note display if this was the last note
-  if (activeNotes.value.size === 0) {
-    currentNote.value = ''
-  }
 }
 
 onUnmounted(() => {
@@ -109,6 +97,14 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--vp-c-text-2);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
 .error {
   color: var(--vp-c-danger);
   padding: 0.5rem;
@@ -122,15 +118,6 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-}
-
-.current-note {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--vp-c-brand);
-  min-height: 2rem;
-  display: flex;
-  align-items: center;
 }
 
 .info-text {

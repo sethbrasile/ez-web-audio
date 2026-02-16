@@ -1,27 +1,35 @@
 <template>
   <div class="synth-drum-kit">
+    <div v-if="loading" class="loading">Loading synth...</div>
+
     <div class="pads-container">
       <button
         class="drum-pad kick"
         :class="{ playing: lastPlayed === 'kick' }"
+        :disabled="loading"
         @mousedown="playKick"
         @touchstart.prevent="playKick"
+        aria-label="Play kick drum"
       >
         KICK
       </button>
       <button
         class="drum-pad snare"
         :class="{ playing: lastPlayed === 'snare' }"
+        :disabled="loading"
         @mousedown="playSnare"
         @touchstart.prevent="playSnare"
+        aria-label="Play snare drum"
       >
         SNARE
       </button>
       <button
         class="drum-pad hihat"
         :class="{ playing: lastPlayed === 'hihat' }"
+        :disabled="loading"
         @mousedown="playHiHat"
         @touchstart.prevent="playHiHat"
+        aria-label="Play hi-hat"
       >
         HI-HAT
       </button>
@@ -29,7 +37,9 @@
 
     <button
       class="bass-drop-btn"
+      :disabled="loading"
       @click="playBassDrop"
+      aria-label="Play bass drop effect"
     >
       BASS DROP
     </button>
@@ -37,13 +47,13 @@
     <div class="breakdown-section">
       <h4>Snare Breakdown</h4>
       <div class="breakdown-buttons">
-        <button @click="playSnareMeat" class="breakdown-btn">
+        <button @click="playSnareMeat" class="breakdown-btn" :disabled="loading" aria-label="Play snare meat layer only">
           Meat Only
         </button>
-        <button @click="playSnareCrack" class="breakdown-btn">
+        <button @click="playSnareCrack" class="breakdown-btn" :disabled="loading" aria-label="Play snare crack layer only">
           Crack Only
         </button>
-        <button @click="playSnare" class="breakdown-btn">
+        <button @click="playSnare" class="breakdown-btn" :disabled="loading" aria-label="Play full snare (both layers)">
           Full Snare
         </button>
       </div>
@@ -54,18 +64,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 const initialized = ref(false)
+const loading = ref(false)
 const error = ref('')
 const lastPlayed = ref('')
 
 let lib: any = null
+let activeOscillators: any[] = []
 
 async function initIfNeeded() {
   if (!lib) {
-    lib = await import('ez-web-audio')
-    initialized.value = true
+    loading.value = true
+    try {
+      lib = await import('ez-web-audio')
+      initialized.value = true
+    } finally {
+      loading.value = false
+    }
   }
 }
 
@@ -91,15 +108,20 @@ async function playKick() {
     osc.onPlayRamp('frequency').from(150).to(0.01).in(0.1)
     // Gain envelope (use linear to allow ramping to 0)
     osc.onPlayRamp('gain', 'linear').from(1).to(0).in(0.1)
+    activeOscillators.push(osc)
     osc.play()
 
     // Stop after sound completes
     setTimeout(() => {
-      try { osc.stop() } catch {}
+      try {
+        osc.stop()
+        const idx = activeOscillators.indexOf(osc)
+        if (idx > -1) activeOscillators.splice(idx, 1)
+      } catch {}
     }, 200)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play kick'
-    console.error('Kick error:', e)
+    console.warn('Kick error:', e)
   }
 }
 
@@ -113,10 +135,15 @@ async function playSnareMeat() {
 
   osc.onPlayRamp('frequency').from(100).to(60).in(0.15)
   osc.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
+  activeOscillators.push(osc)
   osc.play()
 
   setTimeout(() => {
-    try { osc.stop() } catch {}
+    try {
+      osc.stop()
+      const idx = activeOscillators.indexOf(osc)
+      if (idx > -1) activeOscillators.splice(idx, 1)
+    } catch {}
   }, 200)
 
   return osc
@@ -136,10 +163,15 @@ async function playSnareCrack() {
 
   noise.addEffect(highpass)
   noise.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
+  activeOscillators.push(noise)
   noise.play()
 
   setTimeout(() => {
-    try { noise.stop() } catch {}
+    try {
+      noise.stop()
+      const idx = activeOscillators.indexOf(noise)
+      if (idx > -1) activeOscillators.splice(idx, 1)
+    } catch {}
   }, 200)
 
   return noise
@@ -158,7 +190,7 @@ async function playSnare() {
     ])
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play snare'
-    console.error('Snare error:', e)
+    console.warn('Snare error:', e)
   }
 }
 
@@ -195,17 +227,24 @@ async function playHiHat() {
     )
 
     // Play all oscillators
-    oscillators.forEach(osc => osc.play())
+    oscillators.forEach(osc => {
+      activeOscillators.push(osc)
+      osc.play()
+    })
 
     // Stop after sound completes
     setTimeout(() => {
       oscillators.forEach(osc => {
-        try { osc.stop() } catch {}
+        try {
+          osc.stop()
+          const idx = activeOscillators.indexOf(osc)
+          if (idx > -1) activeOscillators.splice(idx, 1)
+        } catch {}
       })
     }, 100)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play hi-hat'
-    console.error('Hi-hat error:', e)
+    console.warn('Hi-hat error:', e)
   }
 }
 
@@ -222,17 +261,32 @@ async function playBassDrop() {
     // Long frequency sweep
     osc.onPlayRamp('frequency').from(100).to(0.01).in(10)
     osc.onPlayRamp('gain', 'linear').from(0.6).to(0).in(10)
+    activeOscillators.push(osc)
     osc.play()
 
     // Auto-stop after 10 seconds
     setTimeout(() => {
-      try { osc.stop() } catch {}
+      try {
+        osc.stop()
+        const idx = activeOscillators.indexOf(osc)
+        if (idx > -1) activeOscillators.splice(idx, 1)
+      } catch {}
     }, 10100)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play bass drop'
-    console.error('Bass drop error:', e)
+    console.warn('Bass drop error:', e)
   }
 }
+
+onUnmounted(() => {
+  // Stop all active oscillators
+  activeOscillators.forEach(osc => {
+    try {
+      osc.stop()
+    } catch {}
+  })
+  activeOscillators = []
+})
 </script>
 
 <style scoped>
@@ -242,6 +296,13 @@ async function playBassDrop() {
   padding: 1.5rem;
   margin: 1rem 0;
   background: var(--vp-c-bg-soft);
+}
+
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--vp-c-text-2);
+  font-style: italic;
 }
 
 .pads-container {
@@ -268,8 +329,13 @@ async function playBassDrop() {
   -webkit-tap-highlight-color: transparent;
 }
 
-.drum-pad:active {
+.drum-pad:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+.drum-pad:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .drum-pad.playing {
@@ -321,8 +387,13 @@ async function playBassDrop() {
   color: white;
 }
 
-.bass-drop-btn:active {
+.bass-drop-btn:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+.bass-drop-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .breakdown-section {
@@ -364,8 +435,13 @@ async function playBassDrop() {
   border-color: var(--vp-c-brand);
 }
 
-.breakdown-btn:active {
+.breakdown-btn:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+.breakdown-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .error {

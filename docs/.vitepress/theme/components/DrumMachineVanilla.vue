@@ -3,14 +3,14 @@
     <div class="pattern-label">Event-Based</div>
 
     <div class="controls">
-      <button @click="togglePlay" class="play-btn">
+      <button @click="togglePlay" class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'">
         {{ playing ? 'Stop' : 'Play' }}
       </button>
 
       <div class="bpm-control">
         <label>
           BPM: {{ bpm }}
-          <input type="range" v-model.number="bpm" min="60" max="200" step="1" />
+          <input type="range" v-model.number="bpm" min="60" max="200" step="1" aria-label="Tempo in beats per minute" />
         </label>
       </div>
     </div>
@@ -51,6 +51,8 @@
                 [`track-${track.name.toLowerCase()}`]: active
               }
             ]"
+            :aria-label="`${track.name} step ${i + 1}${active ? ' (active)' : ' (inactive)'}`"
+            :aria-pressed="active"
           >
             <span class="beat-number">{{ i + 1 }}</span>
           </button>

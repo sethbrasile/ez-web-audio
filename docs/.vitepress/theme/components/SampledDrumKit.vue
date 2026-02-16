@@ -1,14 +1,21 @@
 <template>
   <div class="sampled-drum-kit">
+    <div v-if="loading" class="loading">Loading drum samples...</div>
     <div v-if="error" class="error">{{ error }}</div>
 
     <div class="drum-pads">
       <div
         v-for="pad in pads"
         :key="pad.name"
-        :class="['drum-pad', pad.color, { pressed: lastPlayed === pad.name }]"
-        @mousedown="playPad(pad.name)"
-        @touchstart.prevent="playPad(pad.name)"
+        :class="['drum-pad', pad.color, { pressed: lastPlayed === pad.name, disabled: loading }]"
+        :role="loading ? undefined : 'button'"
+        :tabindex="loading ? -1 : 0"
+        :aria-label="`Play ${pad.label.toLowerCase()} drum`"
+        :aria-disabled="loading"
+        @mousedown="loading ? null : playPad(pad.name)"
+        @touchstart.prevent="loading ? null : playPad(pad.name)"
+        @keydown.enter="loading ? null : playPad(pad.name)"
+        @keydown.space.prevent="loading ? null : playPad(pad.name)"
       >
         <div class="pad-label">{{ pad.label }}</div>
         <div class="sample-counter">Sample {{ playCount[pad.name] }}/3</div>
@@ -133,6 +140,14 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--vp-c-text-2);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
 .error {
   color: var(--vp-c-danger);
   padding: 0.5rem;
@@ -195,6 +210,11 @@ onUnmounted(() => {
 
 .drum-pad.pressed {
   transform: scale(0.95) !important;
+}
+
+.drum-pad.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 

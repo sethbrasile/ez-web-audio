@@ -1,14 +1,14 @@
 <template>
   <div class="drum-machine-vue">
     <div class="controls">
-      <button @click="togglePlay" class="play-btn">
+      <button @click="togglePlay" class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'">
         {{ playing ? 'Stop' : 'Play' }}
       </button>
 
       <div class="bpm-control">
         <label>
           BPM: {{ bpm }}
-          <input type="range" v-model.number="bpm" min="60" max="200" step="1" />
+          <input type="range" v-model.number="bpm" min="60" max="200" step="1" aria-label="Tempo in beats per minute" />
         </label>
       </div>
 
@@ -59,6 +59,8 @@
                 [`track-${track.name.toLowerCase()}`]: beat.active
               }
             ]"
+            :aria-label="`${track.name} step ${i + 1}${beat.active ? ' (active)' : ' (inactive)'}`"
+            :aria-pressed="beat.active"
           >
             <span class="beat-number">{{ i + 1 }}</span>
           </button>
