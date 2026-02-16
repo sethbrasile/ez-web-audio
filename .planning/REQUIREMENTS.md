@@ -37,8 +37,8 @@ Comprehensive audit and polish pass before npm publish. Each category is reviewe
 
 ### Test Coverage
 
-- [ ] **TEST-01**: Library unit test gaps identified and filled (meaningful coverage, not 100% target)
-- [ ] **TEST-02**: E2E tests added for docs site interactive demos (Playwright)
+- [x] **TEST-01**: Library unit test gaps identified and filled (meaningful coverage, not 100% target)
+- [x] **TEST-02**: E2E tests added for docs site interactive demos (Playwright)
 - [x] **TEST-03**: Test quality reviewed — no false positives, meaningful assertions, edge cases covered
 
 ### Maintainability
@@ -127,8 +127,8 @@ Explicitly excluded. Documented to prevent scope creep.
 | DOCS-03 | Phase 14 | Complete |
 | DOCS-04 | Phase 14 | Complete |
 | DOCS-05 | Phase 14 | Complete |
-| TEST-01 | Phase 15 | Pending |
-| TEST-02 | Phase 15 | Pending |
+| TEST-01 | Phase 15 | Complete |
+| TEST-02 | Phase 15 | Complete |
 | TEST-03 | Phase 12 | Complete |
 | MAINT-01 | Phase 12 | Complete |
 | MAINT-02 | Phase 12 | Complete |
