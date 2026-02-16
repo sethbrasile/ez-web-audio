@@ -618,4 +618,84 @@ describe('Track', () => {
       expect(() => track.seek(0.25).from('inverseRatio')).not.toThrow()
     })
   })
+
+  describe('edge cases', () => {
+    it('pause when not playing does nothing and emits no event', async () => {
+      const track = createTrack(audioContext)
+      const handler = vi.fn()
+      track.on('pause', handler)
+
+      // Not playing
+      expect(track.isPlaying).toBe(false)
+
+      // Pause when not playing
+      track.pause()
+
+      // No pause event should be emitted
+      expect(handler).not.toHaveBeenCalled()
+      expect(track.isPlaying).toBe(false)
+    })
+
+    it('resume when not paused does nothing (startOffset is 0)', async () => {
+      const track = createTrack(audioContext)
+      const handler = vi.fn()
+      track.on('resume', handler)
+
+      // Not paused (startOffset is 0)
+      expect(track.startOffset).toBe(0)
+
+      // Resume when not paused
+      track.resume()
+
+      // No resume event should be emitted
+      expect(handler).not.toHaveBeenCalled()
+      expect(track.isPlaying).toBe(false)
+    })
+
+    it('concurrent seek calls - final position reflects last seek', () => {
+      const track = createTrack(audioContext, 10)
+
+      // First seek
+      track.seek(0.5).from('ratio') // 5 seconds
+      expect(track.startOffset).toBeCloseTo(5, 0)
+
+      // Immediate second seek (no async gap)
+      track.seek(0.8).from('ratio') // 8 seconds
+      expect(track.startOffset).toBeCloseTo(8, 0)
+    })
+
+    it('seek to exactly duration sets position to end', () => {
+      const track = createTrack(audioContext, 10)
+      const duration = track.duration.raw
+
+      track.seek(duration).from('seconds')
+
+      // Should be at or very close to duration
+      expect(track.startOffset).toBeCloseTo(duration, 0)
+    })
+
+    it('seek to exactly duration via ratio (1.0)', () => {
+      const track = createTrack(audioContext, 10)
+      const duration = track.duration.raw
+
+      track.seek(1.0).from('ratio')
+
+      expect(track.startOffset).toBeCloseTo(duration, 0)
+    })
+
+    it('seek emits event with correct position on multiple seeks', () => {
+      const track = createTrack(audioContext, 10)
+      const positions: number[] = []
+
+      track.on('seek', (e) => {
+        positions.push(e.detail.position)
+      })
+
+      track.seek(3).from('seconds')
+      track.seek(7).from('seconds')
+      track.seek(2).from('seconds')
+
+      expect(positions).toEqual([3, 7, 2])
+    })
+  })
 })

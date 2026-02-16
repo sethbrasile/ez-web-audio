@@ -290,4 +290,90 @@ describe('AudioSprite', () => {
       expect(sprite.names).toEqual(['test'])
     })
   })
+
+  describe('edge cases', () => {
+    it('sprite with end < start plays with negative duration (documented behavior)', () => {
+      const manifest: SpriteManifest = {
+        spritemap: {
+          backwards: { start: 5, end: 2 }, // end before start
+        },
+      }
+      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+
+      // Current behavior: plays with negative duration passed to AudioBufferSourceNode
+      // Web Audio API handles this (may play nothing or clip)
+      expect(() => sprite.play('backwards')).not.toThrow()
+
+      // Duration calculation will be negative
+      expect(sprite.getDuration('backwards')).toBe(-3)
+    })
+
+    it('sprite with start > buffer duration plays beyond buffer', () => {
+      // audioBuffer is 1 second (44100 samples at 44100 Hz)
+      const manifest: SpriteManifest = {
+        spritemap: {
+          beyondBuffer: { start: 10, end: 12 }, // starts at 10s, buffer is 1s
+        },
+      }
+      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+
+      // Current behavior: allows out-of-range start time
+      // Web Audio API will handle playing beyond buffer (likely silent)
+      expect(() => sprite.play('beyondBuffer')).not.toThrow()
+
+      expect(sprite.getDuration('beyondBuffer')).toBe(2)
+    })
+
+    it('sprite with start === end (zero duration)', () => {
+      const manifest: SpriteManifest = {
+        spritemap: {
+          instant: { start: 1, end: 1 },
+        },
+      }
+      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+
+      // Zero duration is valid
+      expect(sprite.getDuration('instant')).toBe(0)
+
+      // Playing zero-duration sprite should not error
+      expect(() => sprite.play('instant')).not.toThrow()
+    })
+
+    it('play sprite that does not exist throws with helpful message', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      // Should throw with available sprite names listed
+      expect(() => sprite.play('nonexistent')).toThrow(
+        'Sprite "nonexistent" not found. Available: laser, explosion, bgm',
+      )
+    })
+
+    it('getDuration for nonexistent sprite throws with helpful message', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      expect(() => sprite.getDuration('missing')).toThrow(
+        'Sprite "missing" not found. Available: laser, explosion, bgm',
+      )
+    })
+
+    it('empty spritemap has no names', () => {
+      const emptyManifest: SpriteManifest = { spritemap: {} }
+      const sprite = new AudioSprite(audioContext, audioBuffer, emptyManifest)
+
+      expect(sprite.names).toEqual([])
+      expect(sprite.has('anything')).toBe(false)
+    })
+
+    it('sprite with very large duration value', () => {
+      const manifest: SpriteManifest = {
+        spritemap: {
+          long: { start: 0, end: 999999 }, // Very long duration
+        },
+      }
+      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+
+      expect(sprite.getDuration('long')).toBe(999999)
+      expect(() => sprite.play('long')).not.toThrow()
+    })
+  })
 })
