@@ -458,7 +458,11 @@ Plans:
   3. Keywords and content optimized for discoverability (web audio, audio library, synthesizer, etc.)
   4. Docs site homepage immediately communicates what ez-audio does and why developers should use it
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — SEO metadata (meta tags, OpenGraph, Twitter Cards, JSON-LD) and homepage messaging
+- [ ] 16-02-PLAN.md — Per-page SEO frontmatter for all guide and example pages
 
 ---
 
@@ -484,7 +488,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 13. Code Quality | v1.1 | Complete    | 2026-02-16 | - |
 | 14. Docs & Examples Polish | v1.1 | Complete    | 2026-02-16 | - |
 | 15. Test Coverage | v1.1 | Complete    | 2026-02-16 | - |
-| 16. SEO & Discoverability | v1.1 | 0/TBD | Not started | - |
+| 16. SEO & Discoverability | v1.1 | 0/2 | Not started | - |
 
 ---
 
