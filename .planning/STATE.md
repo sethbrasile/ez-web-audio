@@ -11,12 +11,12 @@
 
 ## Current Position
 
-Phase: 14 of 16 (Docs & Examples Polish)
-Plan: 06 of 06 complete
-Status: Complete - All docs and examples polish tasks finished
-Last activity: 2026-02-15 — Created 2 new creative demo pages (Ambient Generator and Visualization) showcasing advanced library capabilities (14-06)
+Phase: 15 of 16 (Test Coverage)
+Plan: 01 of 04 complete
+Status: In Progress - Adding test coverage for untested core modules
+Last activity: 2026-02-16 — Added 93 tests covering 6 untested modules: createTimeObject, frequency-map, prop-access, Note, Font, and all error classes (15-01)
 
-**Progress:** [██████████] 100%
+**Progress:** [███████████░░] 87%
 
 ## Roadmap Summary
 
@@ -25,7 +25,7 @@ Last activity: 2026-02-15 — Created 2 new creative demo pages (Ambient Generat
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
 | 13 | Code Quality Implementation | QUAL-02, QUAL-04 | Complete (4/4) |
 | 14 | Docs & Examples Polish | DOCS-01-05 | Complete (6/6) |
-| 15 | Test Coverage | TEST-01, TEST-02 | Not started |
+| 15 | Test Coverage | TEST-01, TEST-02 | In Progress (1/4) |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
 
 ## Accumulated Context
@@ -70,6 +70,10 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 14-06]: Use separate Canvas instances for frequency and waveform visualization (clearer visual separation)
 - [Phase 14-06]: Remove API links from documentation pages (TypeDoc paths cause dead links; use plain text references)
 - [Phase 14-06]: Place creative demos in dedicated section after Effects & Routing (groups advanced examples separately)
+- [Phase 15-01]: frequency-map has 100 entries (12 notes × 8 octaves + 4 notes in octave 8, not 84)
+- [Phase 15-01]: Only test flat accidentals (sharps commented out in frequency-map)
+- [Phase 15-01]: Use mock SampledNote objects for Font tests (avoid AudioContext setup complexity)
+- [Phase 15-01]: Pre-existing test failures in unrelated files logged to deferred-items.md (out of scope for utility module tests)
 
 ### Known Blockers
 
@@ -77,7 +81,7 @@ None active.
 
 ### Test Coverage Summary
 
-**714 tests across 29 test files** (from v1 milestone + Phase 13)
+**844 tests across 35 test files** (added 93 tests in Phase 15-01 for createTimeObject, frequency-map, prop-access, Note, Font, error classes)
 
 ---
 
