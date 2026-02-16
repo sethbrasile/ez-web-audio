@@ -91,11 +91,11 @@ export class BaseParamController {
         break
       case 'detune':
         if (!this.audioSource.detune)
-          throw new Error('Audio source does not support detune')
+          throw new Error("Audio source does not support detune. Only Oscillator instances support the 'detune' control type.")
         this.audioSource.detune.value = value
         break
       default:
-        throw new Error(`Control type '${type}' not supported`)
+        throw new Error("Unsupported control type: '" + type + "'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).")
     }
   }
 
@@ -116,7 +116,7 @@ export class BaseParamController {
                 this._update(type, value / 100)
                 break
               default:
-                throw new Error(`Control method '${method}' not supported`)
+                throw new Error("Unsupported ratio type: '" + method + "'. Supported types: 'ratio', 'inverseRatio', 'percent'.")
             }
           },
         }
@@ -171,6 +171,34 @@ export class BaseParamController {
         break
       case 'linear':
         this.linearValues.push(valueAtTime)
+        break
+      default:
+        throw new Error("Unsupported ramp type: '" + rampType + "'. Supported types: 'linear', 'exponential'.")
+    }
+  }
+
+  /**
+   * Apply a ramp to an AudioParam using the specified ramp type.
+   * Shared helper to eliminate duplication between controllers.
+   *
+   * @param param - The AudioParam to apply the ramp to
+   * @param value - The target value
+   * @param time - The absolute audio context time to reach the target value
+   * @param rampType - 'exponential' or 'linear' ramp
+   * @protected
+   */
+  protected applyRampToParam(
+    param: AudioParam,
+    value: number,
+    time: number,
+    rampType: 'exponential' | 'linear'
+  ): void {
+    switch (rampType) {
+      case 'exponential':
+        param.exponentialRampToValueAtTime(value, time)
+        break
+      case 'linear':
+        param.linearRampToValueAtTime(value, time)
         break
       default:
         throw new Error(`Unsupported ramp type: ${rampType}`)

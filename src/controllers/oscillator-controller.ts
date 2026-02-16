@@ -67,7 +67,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
           gainNode.gain.setValueAtTime(item.value, currentTime)
           break
         default:
-          throw new Error(`Unsupported control type: ${item.type}`)
+          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for OscillatorController: 'gain', 'frequency'.")
       }
     })
   }
@@ -102,7 +102,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
           }
           break
         default:
-          throw new Error(`ControlType of ${item.type} not supported`)
+          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for OscillatorController: 'gain', 'frequency'.")
       }
     })
   }

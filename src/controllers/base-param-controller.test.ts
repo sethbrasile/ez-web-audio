@@ -106,14 +106,14 @@ describe('BaseParamController', () => {
       expect(() => {
         // @ts-expect-error - testing invalid type
         controller.update('invalid').to(1).from('ratio')
-      }).toThrow("Control type 'invalid' not supported")
+      }).toThrow("Unsupported control type: 'invalid'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).")
     })
 
     it('throws for unsupported method type', () => {
       expect(() => {
         // @ts-expect-error - testing invalid method
         controller.update('gain').to(0.5).from('invalid')
-      }).toThrow("Control method 'invalid' not supported")
+      }).toThrow("Unsupported ratio type: 'invalid'. Supported types: 'ratio', 'inverseRatio', 'percent'.")
     })
 
     it('supports method chaining for multiple updates', () => {

@@ -155,12 +155,12 @@ describe('OscillatorController', () => {
 
     it('throws for unsupported control type in applyValues', () => {
       controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: pan')
+      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for OscillatorController: 'gain', 'frequency'.")
     })
 
     it('throws for unsupported control type in applyRampValues', () => {
       controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow('ControlType of pan not supported')
+      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for OscillatorController: 'gain', 'frequency'.")
     })
   })
 

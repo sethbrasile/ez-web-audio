@@ -102,13 +102,13 @@ it(`remembers beats' 'active' state when numBeats changes`, () => {
 it('playActiveBeats method calls callPlayMethodOnBeats with "playIn" as first param', () => {
   const result = createBeatTrack()
   result.callPlayMethodOnBeats = arg1 => assert.strictEqual(arg1, 'playIn')
-  result.playBeats(0, 0)
+  result.playBeats(120, 1/4)
 })
 
 it('playActiveBeats method calls callPlayMethodOnBeats with "ifActivePlayIn" as first param', () => {
   const result = createBeatTrack()
   result.callPlayMethodOnBeats = arg1 => assert.strictEqual(arg1, 'ifActivePlayIn')
-  result.playActiveBeats(0, 0)
+  result.playActiveBeats(120, 1/4)
 })
 
 it('callPlayMethodOnBeats method calls "method" arg on all beats in beats array', () => {

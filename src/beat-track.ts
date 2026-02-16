@@ -4,6 +4,7 @@ import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
 import { Sampler } from './sampler'
 import type { BeatTrackEventMap } from './events/event-types'
+import audioContextAwareTimeout from './utils/timeout'
 
 export interface BeatTrackOptions extends SamplerOptions {
   numBeats?: number
@@ -68,8 +69,13 @@ export class BeatTrack extends Sampler {
   // Beat cache (replaces module-level WeakMap for framework proxy compatibility)
   private _beats: Beat[] = []
 
+  // AudioContext-aware setTimeout for precise event timing
+  private acTimeout: (fn: () => void, delayMillis: number) => number
+
   constructor(private audioContext: AudioContext, sounds: (Playable & Connectable)[], opts?: BeatTrackOptions) {
     super(sounds, opts)
+    const { setTimeout } = audioContextAwareTimeout(audioContext)
+    this.acTimeout = setTimeout
     if (opts?.numBeats) {
       this.numBeats = opts.numBeats
     }
@@ -78,6 +84,9 @@ export class BeatTrack extends Sampler {
     }
     if (opts?.wrapWith) {
       this.wrapWith = opts.wrapWith
+    }
+    if (this.numBeats <= 0) {
+      throw new Error("numBeats must be greater than 0. Received: " + this.numBeats)
     }
   }
 
@@ -154,6 +163,12 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public playBeats(bpm: number, noteType: number): void {
+    if (bpm <= 0) {
+      throw new Error("BPM must be greater than 0. Received: " + bpm)
+    }
+    if (noteType <= 0) {
+      throw new Error("noteType must be greater than 0. Received: " + noteType)
+    }
     this.currentTempo = bpm
     this.noteType = noteType
     this.nextBeatTime = this.audioContext.currentTime
@@ -179,6 +194,12 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public playActiveBeats(bpm: number, noteType: number): void {
+    if (bpm <= 0) {
+      throw new Error("BPM must be greater than 0. Received: " + bpm)
+    }
+    if (noteType <= 0) {
+      throw new Error("noteType must be greater than 0. Received: " + noteType)
+    }
     this.currentTempo = bpm
     this.noteType = noteType
     this.nextBeatTime = this.audioContext.currentTime
@@ -289,6 +310,9 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public setTempo(bpm: number): void {
+    if (bpm <= 0) {
+      throw new Error("BPM must be greater than 0. Received: " + bpm)
+    }
     this.currentTempo = bpm
   }
 
@@ -324,14 +348,17 @@ export class BeatTrack extends Sampler {
     // - Inactive beats: sets currentTimeIsPlaying only (visual playhead on rests)
     beat.ifActivePlayIn(offset)
 
-    // Emit beat event at SCHEDULE time (lookahead), not play time
-    // This gives UI ~100ms advance notice for smooth animations
-    this.emit('beat', {
-      time,
-      beatIndex,
-      active: beat.active,
-      source: this
-    })
+    // Emit beat event at play time using AudioContext-aware timeout
+    // so consumers don't need to compensate for lookahead delay
+    const active = beat.active
+    const msOffset = offset * 1000
+    const emitBeat = () => this.emit('beat', { time, beatIndex, active, source: this })
+
+    if (msOffset <= 0) {
+      emitBeat()
+    } else {
+      this.acTimeout(emitBeat, msOffset)
+    }
   }
 
   /**

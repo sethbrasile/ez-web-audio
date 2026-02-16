@@ -66,7 +66,9 @@ export class Font {
   play(identifier: AcceptableNote): void {
     const note = this.getNote(identifier)
     if (!note) {
-      throw new Error(`EZ Web Audio: No note with identifier ${identifier} found.`)
+      const availableNotes = this.notes.map(n => n.identifier).slice(0, 10).join(', ')
+      const totalCount = this.notes.length > 10 ? ' (' + this.notes.length + ' total)' : ''
+      throw new Error("EZ Web Audio: No note with identifier '" + identifier + "' found. Available notes: " + availableNotes + (this.notes.length > 10 ? '...' : '') + totalCount)
     }
     note.play()
   }

@@ -1,3 +1,5 @@
+import { AudioLoadError } from './errors'
+
 /**
  * Preload cache for audio URLs.
  * Shared with src/index.ts load() function for automatic cache hits.
@@ -25,7 +27,7 @@ export async function preload(urls: string | string[]): Promise<void> {
     uncachedUrls.map(async (url) => {
       const response = await fetch(url)
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status} loading ${url}`)
+        throw new AudioLoadError('Failed to preload audio: HTTP ' + response.status + '. URL: ' + url, url)
       }
       return { url, response }
     }),

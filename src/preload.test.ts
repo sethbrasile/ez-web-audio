@@ -86,7 +86,7 @@ describe('preload', () => {
 
       await expect(preload('/audio/notfound.mp3'))
         .rejects
-        .toThrow('HTTP 404 loading /audio/notfound.mp3')
+        .toThrow('Failed to preload audio: HTTP 404. URL: /audio/notfound.mp3')
     })
 
     it('handles network errors', async () => {

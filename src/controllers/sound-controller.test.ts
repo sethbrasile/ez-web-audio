@@ -95,12 +95,12 @@ describe('SoundController', () => {
     it('throws for unsupported control type in applyValues', () => {
       // Use onPlaySet for pan which is not supported in SoundController
       controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: pan')
+      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for SoundController: 'gain', 'detune'.")
     })
 
     it('throws for unsupported control type in applyRampValues', () => {
       controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow('ControlType of pan not supported')
+      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for SoundController: 'gain', 'detune'.")
     })
   })
 

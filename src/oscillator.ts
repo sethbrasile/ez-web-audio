@@ -150,6 +150,10 @@ export class Oscillator extends BaseSound {
     this.type = options?.type || 'sine'
     this.freq = options?.frequency || 440
 
+    if (this.freq <= 0) {
+      throw new Error("Oscillator frequency must be greater than 0. Received: " + this.freq)
+    }
+
     // This is just to keep the null checks down, this oscillator instance will never be used
     // Because it's created again when connections are established in wireConnections
     this.audioSourceNode = audioContext.createOscillator()

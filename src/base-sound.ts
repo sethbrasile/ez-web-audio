@@ -209,6 +209,19 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   // ===== Effect Chain System =====
 
   /**
+   * Safely disconnect an AudioNode, ignoring errors if already disconnected.
+   * @private
+   */
+  private safeDisconnect(node: AudioNode): void {
+    try {
+      node.disconnect()
+    }
+    catch {
+      // Already disconnected, ignore
+    }
+  }
+
+  /**
    * Wires the effect chain from effectChainInput through all non-bypassed effects
    * to gainNode -> pannerNode -> [analyzer] -> destination.
    *
@@ -224,46 +237,20 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     const { effectChainInput, effects, gainNode, pannerNode, _destination, _analyzer } = this
 
     // Disconnect existing chain safely
-    // Use try/catch because nodes may not be connected
-    try {
-      effectChainInput.disconnect()
-    }
-    catch {
-      // Already disconnected, ignore
-    }
+    this.safeDisconnect(effectChainInput)
 
     // Disconnect effects
     for (const effect of effects) {
-      try {
-        effect.output.disconnect()
-      }
-      catch {
-        // Already disconnected, ignore
-      }
+      this.safeDisconnect(effect.output)
     }
 
     // Disconnect gain -> panner chain
-    try {
-      gainNode.disconnect()
-    }
-    catch {
-      // Already disconnected, ignore
-    }
-    try {
-      pannerNode.disconnect()
-    }
-    catch {
-      // Already disconnected, ignore
-    }
+    this.safeDisconnect(gainNode)
+    this.safeDisconnect(pannerNode)
 
     // Disconnect analyzer if it exists
     if (_analyzer) {
-      try {
-        _analyzer.input.disconnect()
-      }
-      catch {
-        // Already disconnected, ignore
-      }
+      this.safeDisconnect(_analyzer.input)
     }
 
     // Build the new chain
@@ -683,6 +670,12 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * ```
    */
   public changeGainTo(value: number): this {
+    if (value < 0) {
+      throw new Error("Gain must be >= 0. Received: " + value)
+    }
+    if (value > 1) {
+      console.warn("ez-web-audio: Gain value " + value + " exceeds 1.0. Values above 1 amplify the signal and may cause distortion.")
+    }
     this.controller.update('gain').to(value).from('ratio')
     return this
   }

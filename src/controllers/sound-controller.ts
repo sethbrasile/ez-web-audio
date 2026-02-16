@@ -30,7 +30,7 @@ export class SoundController extends BaseParamController implements ParamControl
           this.gainNode.gain.setValueAtTime(item.value, currentTime)
           break
         default:
-          throw new Error(`Unsupported control type: ${item.type}`)
+          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for SoundController: 'gain', 'detune'.")
       }
     })
   }
@@ -40,31 +40,13 @@ export class SoundController extends BaseParamController implements ParamControl
       const time = currentTime + item.time
       switch (item.type) {
         case 'detune':
-          switch (rampType) {
-            case 'exponential':
-              this.bufferSourceNode.detune.exponentialRampToValueAtTime(item.value, time)
-              break
-            case 'linear':
-              this.bufferSourceNode.detune.linearRampToValueAtTime(item.value, time)
-              break
-            default:
-              throw new Error(`Unsupported ramp type: ${rampType}`)
-          }
+          this.applyRampToParam(this.bufferSourceNode.detune, item.value, time, rampType)
           break
         case 'gain':
-          switch (rampType) {
-            case 'exponential':
-              this.gainNode.gain.exponentialRampToValueAtTime(item.value, time)
-              break
-            case 'linear':
-              this.gainNode.gain.linearRampToValueAtTime(item.value, time)
-              break
-            default:
-              throw new Error(`Unsupported ramp type: ${rampType}`)
-          }
+          this.applyRampToParam(this.gainNode.gain, item.value, time, rampType)
           break
         default:
-          throw new Error(`ControlType of ${item.type} not supported`)
+          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for SoundController: 'gain', 'detune'.")
       }
     })
   }
