@@ -1,5 +1,6 @@
 ---
-title: Getting Started
+title: Getting Started with EZ Web Audio - JavaScript Audio Library
+description: Learn how to install and use EZ Web Audio to play sounds, create synthesizers, and build audio applications in JavaScript and TypeScript. Quick setup guide with code examples.
 ---
 
 # Getting Started

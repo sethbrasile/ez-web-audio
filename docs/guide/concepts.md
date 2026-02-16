@@ -1,5 +1,6 @@
 ---
-title: Core Concepts
+title: Core Concepts - Sound, Track, Oscillator, Effects, and More
+description: Understand the core building blocks of EZ Web Audio — Sound for one-shot playback, Track for music with seeking, Oscillator for synthesis, effects chains, and beat sequencing.
 ---
 
 # Core Concepts
