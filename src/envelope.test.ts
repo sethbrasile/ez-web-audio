@@ -473,4 +473,80 @@ describe('Envelope', () => {
       })
     })
   })
+
+  describe('edge cases - negative and extreme values', () => {
+    it('negative attackTime is accepted as-is (not clamped)', () => {
+      // Document current behavior: negative values are allowed
+      const envelope = new Envelope({ attackTime: -0.1 })
+      expect(envelope.attackTime).toBe(-0.1)
+      // Note: Web Audio API will handle negative times in its own way
+    })
+
+    it('negative decayTime is accepted as-is (not clamped)', () => {
+      const envelope = new Envelope({ decayTime: -0.1 })
+      expect(envelope.decayTime).toBe(-0.1)
+      // Note: Current implementation does not validate/clamp time values
+    })
+
+    it('negative releaseTime is accepted as-is (not clamped)', () => {
+      const envelope = new Envelope({ releaseTime: -0.3 })
+      expect(envelope.releaseTime).toBe(-0.3)
+      // Note: Negative release times are not prevented at construction
+    })
+
+    it('all zero times (attack, decay, release) does not error', () => {
+      const envelope = new Envelope({
+        attackTime: 0,
+        decayTime: 0,
+        releaseTime: 0,
+        sustainLevel: 0.5,
+      })
+      const gainNode = audioContext.createGain()
+
+      // Should schedule automation without division-by-zero or other errors
+      expect(() => envelope.applyTo(gainNode.gain, 0)).not.toThrow()
+      expect(() => envelope.release(gainNode.gain, 0)).not.toThrow()
+    })
+
+    it('very large attackTime (9999 seconds) is accepted', () => {
+      const envelope = new Envelope({ attackTime: 9999 })
+      expect(envelope.attackTime).toBe(9999)
+      const gainNode = audioContext.createGain()
+      // Should not cause scheduling errors
+      expect(() => envelope.applyTo(gainNode.gain, 0)).not.toThrow()
+    })
+
+    it('very large decayTime (9999 seconds) is accepted', () => {
+      const envelope = new Envelope({ decayTime: 9999 })
+      expect(envelope.decayTime).toBe(9999)
+      const gainNode = audioContext.createGain()
+      expect(() => envelope.applyTo(gainNode.gain, 0)).not.toThrow()
+    })
+
+    it('very large releaseTime (9999 seconds) is accepted', () => {
+      const envelope = new Envelope({ releaseTime: 9999 })
+      expect(envelope.releaseTime).toBe(9999)
+      const gainNode = audioContext.createGain()
+      expect(() => envelope.release(gainNode.gain, 0)).not.toThrow()
+    })
+
+    it('all zero times produces instant envelope', () => {
+      const envelope = new Envelope({
+        attackTime: 0,
+        decayTime: 0,
+        releaseTime: 0,
+        sustainLevel: 0.5,
+      })
+      const gainNode = audioContext.createGain()
+      const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+      envelope.applyTo(gainNode.gain, 1.0)
+
+      // All ramps happen at the same time (startTime + 0)
+      expect(setValueSpy).toHaveBeenCalledWith(0, 1.0)
+      expect(linearRampSpy).toHaveBeenCalledWith(1, 1.0) // Attack
+      expect(linearRampSpy).toHaveBeenCalledWith(0.5, 1.0) // Decay to sustain
+    })
+  })
 })

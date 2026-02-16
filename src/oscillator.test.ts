@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { Oscillator } from '@/oscillator'
 
@@ -226,6 +226,52 @@ describe('oscillator with ADSR envelope', () => {
         },
       })
       await osc.play()
+      expect(osc.isPlaying).toBe(true)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('oscillator with frequency 0 plays without error', async () => {
+      const osc = new Oscillator(audioContext, { frequency: 0 })
+      await osc.play()
+      expect(osc.isPlaying).toBe(true)
+      // Note: 0 Hz oscillator produces silence but is valid Web Audio API behavior
+    })
+
+    it('oscillator with very high frequency (20000 Hz) plays without error', async () => {
+      const osc = new Oscillator(audioContext, { frequency: 20000 })
+      await osc.play()
+      expect(osc.isPlaying).toBe(true)
+    })
+
+    it('calling play() immediately after play() does not error', async () => {
+      const osc = new Oscillator(audioContext, { frequency: 440 })
+      await osc.play()
+      expect(osc.isPlaying).toBe(true)
+      // Immediate retrigger
+      await expect(osc.play()).resolves.not.toThrow()
+      expect(osc.isPlaying).toBe(true)
+    })
+
+    it('envelope automation is scheduled on play', async () => {
+      const osc = new Oscillator(audioContext, {
+        envelope: {
+          attackTime: 0.1,
+          decayTime: 0.2,
+          sustainLevel: 0.7,
+          releaseTime: 0.3,
+        },
+      })
+
+      // Spy on gain automation methods
+      const setValueSpy = vi.spyOn(osc.gainNode.gain, 'setValueAtTime')
+      const linearRampSpy = vi.spyOn(osc.gainNode.gain, 'linearRampToValueAtTime')
+
+      await osc.play()
+
+      // Verify envelope was scheduled (not just isPlaying === true)
+      expect(setValueSpy).toHaveBeenCalled()
+      expect(linearRampSpy).toHaveBeenCalled()
       expect(osc.isPlaying).toBe(true)
     })
   })

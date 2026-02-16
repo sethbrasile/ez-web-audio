@@ -287,12 +287,12 @@ describe('Sampler', () => {
   })
 
   describe('Edge cases', () => {
-    it('handles empty sounds array gracefully (no crash on getNextSound)', () => {
+    it('throws when playing empty sounds array', () => {
       const sampler = new Sampler([])
       // Empty array iterator returns done=true immediately
       // This will throw because nextSound.value will be undefined
       // The Sampler class currently does not guard against empty arrays
-      // This test documents the current behavior
+      // This test documents the current behavior - consider adding validation
       expect(() => sampler.play()).toThrow()
     })
 

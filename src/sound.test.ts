@@ -160,15 +160,16 @@ describe('Sound', () => {
         expect(await settle(() => sound.isPlaying)).toBe(true)
       })
 
-      it('plays for specified duration', async () => {
+      it('schedules stop after duration', async () => {
         const sound = createSound(audioContext)
-        const stopSpy = vi.spyOn(sound, 'stop')
-        // The playFor method schedules a stop
+        const playAtSpy = vi.spyOn(sound, 'playAt')
+
         sound.playFor(0.5)
+
+        // Verify playAt was called (playFor calls playAt internally)
+        expect(playAtSpy).toHaveBeenCalled()
+        // Verify sound started playing
         expect(await settle(() => sound.isPlaying)).toBe(true)
-        // stop() will be called via setTimeout after duration
-        // We can't easily test the timing without fake timers, but we can verify the setup
-        expect(true).toBe(true)
       })
     })
 
@@ -316,8 +317,8 @@ describe('Sound', () => {
       it('update("pan").to(-0.5).from("ratio") sets pan', () => {
         const sound = createSound(audioContext)
         sound.update('pan').to(-0.5).from('ratio')
-        // Should not throw
-        expect(true).toBe(true)
+        // Verify pan value was actually set
+        expect(sound.pannerNode.pan.value).toBeCloseTo(-0.5)
       })
     })
 
@@ -340,8 +341,8 @@ describe('Sound', () => {
       it('sets pan value', () => {
         const sound = createSound(audioContext)
         sound.changePanTo(-0.3)
-        // Should not throw and return this
-        expect(true).toBe(true)
+        // Verify pan value was actually set
+        expect(sound.pannerNode.pan.value).toBeCloseTo(-0.3)
       })
 
       it('returns this for chaining', () => {
@@ -354,8 +355,20 @@ describe('Sound', () => {
     describe('percentGain', () => {
       it('returns gain as percentage', () => {
         const sound = createSound(audioContext)
-        const percent = sound.percentGain
-        expect(typeof percent).toBe('number')
+        // Default gain is 1, so percentGain should be 100
+        expect(sound.percentGain).toBe(100)
+      })
+
+      it('calculates percentage correctly for different gain values', () => {
+        const sound = createSound(audioContext)
+        sound.changeGainTo(0.5)
+        expect(sound.percentGain).toBe(50)
+
+        sound.changeGainTo(0.75)
+        expect(sound.percentGain).toBe(75)
+
+        sound.changeGainTo(0)
+        expect(sound.percentGain).toBe(0)
       })
     })
 

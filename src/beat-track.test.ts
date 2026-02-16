@@ -99,16 +99,42 @@ it(`remembers beats' 'active' state when numBeats changes`, () => {
   expect(beat3.active).toBe(true)
 })
 
-it('playActiveBeats method calls callPlayMethodOnBeats with "playIn" as first param', () => {
+it('playBeats starts the scheduler and emits beat events', () => {
   const result = createBeatTrack()
-  result.callPlayMethodOnBeats = arg1 => assert.strictEqual(arg1, 'playIn')
+  const sound = createSound()
+  result.addSound(sound)
+
+  const beatEvents: any[] = []
+  result.addEventListener('beat', (e: any) => beatEvents.push(e.detail))
+
   result.playBeats(120, 1/4)
+
+  // Scheduler should emit beat events (at least one within lookahead window)
+  expect(beatEvents.length).toBeGreaterThan(0)
+
+  result.stop()
 })
 
-it('playActiveBeats method calls callPlayMethodOnBeats with "ifActivePlayIn" as first param', () => {
+it('playActiveBeats starts the scheduler for active beats', () => {
   const result = createBeatTrack()
-  result.callPlayMethodOnBeats = arg1 => assert.strictEqual(arg1, 'ifActivePlayIn')
+  const sound = createSound()
+  result.addSound(sound)
+
+  const beatEvents: any[] = []
+  result.addEventListener('beat', (e: any) => beatEvents.push(e.detail))
+
+  // Set pattern with some inactive beats
+  result.beats[0].active = true
+  result.beats[1].active = false
+  result.beats[2].active = true
+  result.beats[3].active = false
+
   result.playActiveBeats(120, 1/4)
+
+  // Should emit events (scheduler is running)
+  expect(beatEvents.length).toBeGreaterThan(0)
+
+  result.stop()
 })
 
 it('callPlayMethodOnBeats method calls "method" arg on all beats in beats array', () => {
