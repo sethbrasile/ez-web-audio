@@ -12,11 +12,11 @@
 ## Current Position
 
 Phase: 15 of 16 (Test Coverage)
-Plan: 01 of 04 complete
-Status: In Progress - Adding test coverage for untested core modules
-Last activity: 2026-02-16 — Added 93 tests covering 6 untested modules: createTimeObject, frequency-map, prop-access, Note, Font, and all error classes (15-01)
+Plan: 02 of 04 complete
+Status: In Progress - Improving test quality and edge case coverage
+Last activity: 2026-02-16 — Fixed 6 false positive tests and added 30+ edge case tests covering boundary conditions, rapid state changes, and input validation (15-02)
 
-**Progress:** [███████████░░] 87%
+**Progress:** [███████████░░] 88%
 
 ## Roadmap Summary
 
@@ -70,6 +70,10 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 14-06]: Use separate Canvas instances for frequency and waveform visualization (clearer visual separation)
 - [Phase 14-06]: Remove API links from documentation pages (TypeDoc paths cause dead links; use plain text references)
 - [Phase 14-06]: Place creative demos in dedicated section after Effects & Routing (groups advanced examples separately)
+- [Phase 15-02]: Edge case tests document current behavior without adding validation (Web Audio API handles clamping)
+- [Phase 15-02]: False positive test fixes verify actual values (pan, gain, percentages) not just truthiness
+- [Phase 15-02]: Modern Vitest doesn't require expect count assertions - removed all placeholders
+- [Phase 15-02]: BeatTrack tempo validation already exists and works correctly (tests verify throw behavior)
 - [Phase 15-01]: frequency-map has 100 entries (12 notes × 8 octaves + 4 notes in octave 8, not 84)
 - [Phase 15-01]: Only test flat accidentals (sharps commented out in frequency-map)
 - [Phase 15-01]: Use mock SampledNote objects for Font tests (avoid AudioContext setup complexity)
@@ -81,7 +85,7 @@ None active.
 
 ### Test Coverage Summary
 
-**844 tests across 35 test files** (added 93 tests in Phase 15-01 for createTimeObject, frequency-map, prop-access, Note, Font, error classes)
+**873 tests across 36 test files** (Phase 15-01 added 93 tests for untested modules; Phase 15-02 added 30+ edge case tests and fixed 6 false positives)
 
 ---
 
