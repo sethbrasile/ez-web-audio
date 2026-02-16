@@ -68,7 +68,7 @@ console.log(song.percentPlayed)   // 0.35 (35% complete)
 // Control playback
 song.pause()
 song.resume()
-song.seek(60) // Jump to 1 minute
+song.seek(60).from('seconds') // Jump to 1 minute
 ```
 
 Track limitations:
@@ -377,6 +377,72 @@ const sprite = await createSprite('sounds.mp3', {
   }
 })
 sprite.play('laser')
+```
+
+### White Noise
+
+Generate white noise procedurally:
+
+```typescript
+const noise = await createWhiteNoise()
+noise.play()
+
+// Combine with filters for sound design
+const wind = await createWhiteNoise()
+const lowpass = createFilterEffect(await getAudioContext(), 'lowpass', {
+  frequency: 400
+})
+wind.addEffect(lowpass)
+wind.play()
+```
+
+## Utility Functions
+
+### Collection Control
+
+Control multiple sounds at once:
+
+```typescript
+import { stopAll, pauseAll, playAll } from 'ez-web-audio'
+
+const sounds = [sound1, sound2, sound3]
+
+playAll(sounds)  // Play all sounds
+pauseAll(sounds) // Pause all tracks (no effect on non-track sounds)
+stopAll(sounds)  // Stop all sounds
+```
+
+### Crossfade
+
+Smoothly transition between two tracks:
+
+```typescript
+import { crossfade } from 'ez-web-audio'
+
+const trackA = await createTrack('/music/intro.mp3')
+const trackB = await createTrack('/music/main.mp3')
+
+trackA.play()
+
+// Crossfade from A to B over 2 seconds
+crossfade(trackA, trackB, 2)
+// trackA fades out while trackB fades in, using equal-power curve
+```
+
+### Debug Mode
+
+Enable debug logging for troubleshooting:
+
+```typescript
+import { setDebugMode, setDebugHandler } from 'ez-web-audio'
+
+// Enable debug mode with default console logging
+setDebugMode(true)
+
+// Or provide a custom handler
+setDebugHandler((message) => {
+  console.log(`[Audio Debug] ${message.type}: ${message.message}`)
+})
 ```
 
 ## Next Steps

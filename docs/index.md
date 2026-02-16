@@ -21,5 +21,5 @@ features:
   - title: Zero Dependencies
     details: Just the Web Audio API wrapped in a friendly interface. No bloat.
   - title: Battle Tested
-    details: 711 tests ensure reliability. Built on proven patterns from ember-audio.
+    details: 714 tests ensure reliability. Built on proven patterns from ember-audio.
 ---
