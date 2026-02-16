@@ -116,6 +116,30 @@ Route audio through effects with control over bypass, wet/dry mix, and signal ch
 - Creating custom effects with native Web Audio nodes
 - Signal chain visualization
 
+## Creative
+
+### [Ambient Generator](/examples/ambient-generator)
+
+Create layered ambient soundscapes by combining oscillators and filtered white noise. Build evolving textures from simple synthesis building blocks.
+
+**You'll learn:**
+- Layering multiple sounds for rich textures
+- Using white noise with filters for atmospheric effects
+- ADSR envelopes for smooth, organic sounds
+- Real-time parameter modulation
+- Mixing multiple audio sources
+
+### [Visualization](/examples/visualization)
+
+Visualize audio in real-time using the Analyzer API. See both frequency spectrum (FFT) and time-domain waveform visualization.
+
+**You'll learn:**
+- Using the Analyzer API for audio visualization
+- Frequency spectrum analysis with FFT
+- Time-domain waveform display
+- Canvas rendering with requestAnimationFrame
+- Understanding different waveform shapes
+
 ## Running Examples Locally
 
 Clone the repository and run the development server:

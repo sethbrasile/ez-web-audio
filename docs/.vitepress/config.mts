@@ -79,6 +79,13 @@ export default defineConfig({
             { text: 'Effects', link: '/examples/effects' },
             { text: 'Audio Routing', link: '/examples/audio-routing' },
           ]
+        },
+        {
+          text: 'Creative',
+          items: [
+            { text: 'Ambient Generator', link: '/examples/ambient-generator' },
+            { text: 'Visualization', link: '/examples/visualization' },
+          ]
         }
       ],
       '/api/': typedocSidebar
