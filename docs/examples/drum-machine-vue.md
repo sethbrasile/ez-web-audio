@@ -1,5 +1,6 @@
 ---
-title: "Drum Machine: Vue Reactive Pattern"
+title: Vue.js Audio Integration - Reactive Drum Machine with Web Audio
+description: Build a reactive drum machine using Vue.js and EZ Web Audio. Demonstrates automatic UI sync with reactive beat properties — no manual event listeners needed.
 ---
 
 <script setup>

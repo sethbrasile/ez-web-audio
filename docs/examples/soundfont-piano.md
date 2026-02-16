@@ -1,3 +1,8 @@
+---
+title: Soundfont Piano - Play Piano Samples in the Browser
+description: Play realistic piano sounds using soundfont samples loaded from base64-encoded audio. Multi-octave keyboard with velocity-sensitive playback.
+---
+
 # Soundfont Piano
 
 Play a realistic piano with real instrument samples loaded from a soundfont.
@@ -27,10 +32,6 @@ A soundfont is a collection of pre-recorded instrument samples mapped to differe
 - Larger file size (the piano soundfont is 1.4MB)
 - Loading time on slower connections
 - Fixed timbre (can't drastically change the sound like synthesis)
-
-## Loading Note
-
-The piano soundfont is **1.4MB** and may take a moment to load on slower connections. The loading indicator shows progress while the soundfont is being fetched and decoded.
 
 ## How It Works
 

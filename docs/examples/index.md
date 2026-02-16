@@ -1,5 +1,6 @@
 ---
-title: Interactive Examples
+title: Interactive Examples - Web Audio Demos with Source Code
+description: "Try interactive web audio demos: drum machines, synthesizers, piano keyboards, XY pads, audio visualization, and more. Each example includes source code using EZ Web Audio."
 ---
 
 # Interactive Examples

@@ -1,5 +1,6 @@
 ---
-title: Drum Machine
+title: JavaScript Drum Machine - Step Sequencer with Web Audio
+description: Build a drum machine step sequencer with the Web Audio API. Interactive demo with kick, snare, and hi-hat patterns at configurable BPM.
 ---
 
 <script setup>

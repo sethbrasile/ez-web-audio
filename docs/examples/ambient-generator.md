@@ -1,5 +1,6 @@
 ---
-title: Ambient Sound Generator
+title: Ambient Sound Generator - Generative Audio in JavaScript
+description: Create ambient soundscapes with layered oscillators and randomized parameters. Demonstrates generative audio techniques with the Web Audio API.
 ---
 
 # Ambient Sound Generator

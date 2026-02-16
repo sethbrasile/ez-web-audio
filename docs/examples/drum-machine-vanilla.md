@@ -1,5 +1,6 @@
 ---
-title: "Drum Machine: Vanilla TS Event Pattern"
+title: Vanilla TypeScript Audio - Event-Based Drum Machine
+description: Build a drum machine with vanilla TypeScript and DOM events. Demonstrates event-based UI sync pattern for framework-free Web Audio applications.
 ---
 
 # Drum Machine: Vanilla TS Event Pattern

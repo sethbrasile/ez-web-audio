@@ -1,5 +1,6 @@
 ---
-title: Synth Keyboard
+title: JavaScript Synth Keyboard - Polyphonic Web Audio Synthesizer
+description: Play a polyphonic synthesizer keyboard in the browser. Choose waveforms, adjust ADSR envelopes, and play chords with mouse or keyboard input.
 ---
 
 <script setup>

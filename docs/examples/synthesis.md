@@ -1,5 +1,6 @@
 ---
-title: Synthesis
+title: Web Audio Synthesis - Oscillators and Filters in JavaScript
+description: Create synthesized sounds using oscillators with waveform types, frequency control, and audio filters. Interactive demo with lowpass, highpass, and bandpass filters.
 ---
 
 # Synthesis

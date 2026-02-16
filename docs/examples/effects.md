@@ -1,5 +1,6 @@
 ---
-title: Effects
+title: Audio Effects - Filters and Distortion in JavaScript
+description: Add audio effects to sounds using the Web Audio API. Interactive filter demo with lowpass, highpass, bandpass, and distortion with custom waveshaper curves.
 ---
 
 # Effects

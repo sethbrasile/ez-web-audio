@@ -1,5 +1,6 @@
 ---
-title: XY Pad
+title: XY Pad Synthesizer - Real-time Frequency and Gain Control
+description: Control synthesizer frequency and gain in real-time with an interactive XY pad. Demonstrates continuous Web Audio parameter modulation.
 ---
 
 # XY Pad

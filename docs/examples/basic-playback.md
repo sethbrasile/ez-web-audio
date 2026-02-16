@@ -1,5 +1,6 @@
 ---
-title: Basic Playback
+title: Basic Audio Playback - Play Sounds in JavaScript
+description: Learn how to load and play audio files in the browser using JavaScript. Simple one-shot playback, music tracks with pause/resume/seek, and oscillator synthesis.
 ---
 
 # Basic Playback

@@ -1,3 +1,8 @@
+---
+title: Audio Routing and Effects Chain - Custom Signal Processing
+description: Route audio through custom effect chains with gain, filters, and distortion. Visualize the signal path from source through effects to output.
+---
+
 # Audio Routing & Custom Effects
 
 Learn how to integrate custom Web Audio effects into your signal chain using the adapter pattern.

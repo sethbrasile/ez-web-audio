@@ -1,5 +1,6 @@
 ---
-title: Synth Drum Kit
+title: Synthesized Drum Kit - Create Drum Sounds with Oscillators
+description: Generate drum sounds purely from synthesis — kick drums from sine waves, snares from noise, hi-hats from square waves. No audio files needed.
 ---
 
 # Synth Drum Kit

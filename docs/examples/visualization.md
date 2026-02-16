@@ -1,5 +1,6 @@
 ---
-title: Audio Visualization
+title: Audio Visualization - Frequency and Waveform Display
+description: Visualize audio in real-time with frequency spectrum and waveform displays using the Web Audio AnalyserNode. Canvas-based rendering with customizable FFT size.
 ---
 
 # Audio Visualization

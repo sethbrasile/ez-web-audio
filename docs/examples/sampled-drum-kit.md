@@ -1,3 +1,8 @@
+---
+title: Sampled Drum Kit - Play Real Drum Samples in JavaScript
+description: Trigger realistic drum sounds from audio samples with round-robin variation. Interactive pads for kick, snare, hi-hat, and more.
+---
+
 # Sampled Drum Kit
 
 Play realistic drum sounds with round-robin sample variations for more natural playback.
