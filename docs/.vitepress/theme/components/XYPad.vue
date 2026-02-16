@@ -1,8 +1,15 @@
 <template>
   <div class="xy-pad-demo">
+    <div class="volume-warning">
+      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+    </div>
+
     <div class="canvas-container">
       <canvas
         ref="canvas"
+        aria-label="XY Pad - Press and drag to control frequency (horizontal) and gain (vertical). Use mouse or touch."
+        role="application"
+        tabindex="0"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
         @mouseup="handleMouseUp"
@@ -11,6 +18,9 @@
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
       />
+      <div class="keyboard-hint">
+        Press and drag to play. X-axis controls frequency (100-2000 Hz), Y-axis controls volume.
+      </div>
     </div>
 
     <div class="controls">
@@ -315,6 +325,23 @@ onUnmounted(() => {
   background: var(--vp-c-bg-soft);
 }
 
+.volume-warning {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-warning-soft);
+  border: 1px solid var(--vp-c-warning);
+  border-radius: 4px;
+  color: var(--vp-c-warning-text);
+  font-size: 0.85rem;
+}
+
+.keyboard-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--vp-c-text-2);
+  text-align: center;
+}
+
 .canvas-container {
   width: 100%;
   max-width: 400px;
@@ -329,6 +356,11 @@ canvas {
   border: 2px solid var(--vp-c-divider);
   border-radius: 4px;
   touch-action: none;
+}
+
+canvas:focus {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
 }
 
 .controls {

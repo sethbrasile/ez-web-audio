@@ -9,6 +9,10 @@
         :key="key.note"
         :class="['key', key.type, { active: activeKeys?.has(key.note) }]"
         :style="key.style"
+        role="button"
+        :aria-label="`Play ${key.note}`"
+        :aria-pressed="activeKeys?.has(key.note)"
+        tabindex="0"
         @mousedown="handleMouseDown(key.note)"
         @mouseup="handleMouseUp(key.note)"
         @mouseleave="handleMouseLeave(key.note)"
@@ -193,12 +197,20 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
+.key:focus {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: -2px;
+  z-index: 3;
+}
+
 .key.white {
   width: 40px;
   height: 150px;
   background: var(--vp-c-bg);
   z-index: 1;
   border-radius: 0 0 4px 4px;
+  min-width: 40px;
+  touch-action: none;
 }
 
 .key.white:hover {
@@ -216,6 +228,8 @@ onUnmounted(() => {
   background: var(--vp-c-text-1);
   z-index: 2;
   border-radius: 0 0 3px 3px;
+  min-width: 28px;
+  touch-action: none;
 }
 
 .key.black .key-label {

@@ -32,6 +32,8 @@
                 [`track-${track.name.toLowerCase()}`]: beat.active
               }
             ]"
+            :aria-label="`Toggle ${track.name} beat ${i + 1}`"
+            :aria-pressed="beat.active"
           >
             <span class="beat-number">{{ i + 1 }}</span>
           </button>
@@ -165,6 +167,10 @@ onUnmounted(() => {
   background: var(--vp-c-brand-dark);
 }
 
+.play-btn:active {
+  transform: translateY(1px);
+}
+
 .bpm-control label {
   display: flex;
   align-items: center;
@@ -210,8 +216,8 @@ onUnmounted(() => {
 
 .beat-cell {
   aspect-ratio: 1;
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 32px;
+  min-height: 32px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
   background: var(--vp-c-bg-mute);
@@ -293,8 +299,8 @@ onUnmounted(() => {
     padding-bottom: 0.5rem;
   }
   .beat-cell {
-    min-width: 24px;
-    min-height: 24px;
+    min-width: 28px;
+    min-height: 28px;
   }
   .track-header {
     flex-wrap: wrap;
@@ -303,8 +309,8 @@ onUnmounted(() => {
 
 @media (max-width: 480px) {
   .beat-cell {
-    min-width: 20px;
-    min-height: 20px;
+    min-width: 24px;
+    min-height: 24px;
     font-size: 0.55rem;
   }
 }

@@ -2,6 +2,10 @@
   <div class="synth-keyboard">
     <div v-if="error" class="error">{{ error }}</div>
 
+    <div class="volume-warning">
+      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+    </div>
+
     <div class="controls-section">
       <div class="control-row">
         <label>
@@ -22,10 +26,10 @@
 
       <div class="preset-row">
         <span class="preset-label">ADSR Presets:</span>
-        <button @click="applyPreset('piano')" class="preset-btn">Piano</button>
-        <button @click="applyPreset('pad')" class="preset-btn">Pad</button>
-        <button @click="applyPreset('pluck')" class="preset-btn">Pluck</button>
-        <button @click="applyPreset('lead')" class="preset-btn">Lead</button>
+        <button @click="applyPreset('piano')" class="preset-btn" aria-label="Apply piano preset">Piano</button>
+        <button @click="applyPreset('pad')" class="preset-btn" aria-label="Apply pad preset">Pad</button>
+        <button @click="applyPreset('pluck')" class="preset-btn" aria-label="Apply pluck preset">Pluck</button>
+        <button @click="applyPreset('lead')" class="preset-btn" aria-label="Apply lead preset">Lead</button>
       </div>
 
       <div class="adsr-row">
@@ -51,17 +55,11 @@
       </div>
     </div>
 
-    <div class="current-note">
-      {{ currentNote || '&nbsp;' }}
-    </div>
-
     <PianoKeyboard
       :activeKeys="activeNotes"
       @note-on="handleNoteOn"
       @note-off="handleNoteOff"
     />
-
-    <div v-if="loading" class="loading">Initializing audio...</div>
   </div>
 </template>
 
@@ -87,9 +85,6 @@ const envelope = ref<EnvelopeConfig>({
 })
 const masterGain = ref(0.3)
 const activeNotes = ref(new Set<string>())
-const currentNote = ref('')
-const initialized = ref(false)
-const loading = ref(false)
 const error = ref('')
 
 // Track active oscillators by note name
@@ -113,13 +108,6 @@ function applyPreset(presetName: string) {
 async function handleNoteOn(note: string) {
   try {
     error.value = ''
-
-    // Initialize audio on first interaction
-    if (!initialized.value) {
-      loading.value = true
-      initialized.value = true
-      loading.value = false
-    }
 
     // Import frequencyMap and createOscillator
     const { createOscillator, frequencyMap } = await import('ez-web-audio')
@@ -150,7 +138,6 @@ async function handleNoteOn(note: string) {
 
     oscillators.set(note, oscillator)
     activeNotes.value.add(note)
-    currentNote.value = note
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play note'
     console.error('Error playing note:', e)
@@ -169,9 +156,6 @@ function handleNoteOff(note: string) {
   }
 
   activeNotes.value.delete(note)
-  if (currentNote.value === note) {
-    currentNote.value = ''
-  }
 }
 
 onUnmounted(() => {
@@ -200,6 +184,16 @@ onUnmounted(() => {
   color: var(--vp-c-danger);
   border-radius: 6px;
   font-size: 0.9rem;
+}
+
+.volume-warning {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-warning-soft);
+  border: 1px solid var(--vp-c-warning);
+  border-radius: 4px;
+  color: var(--vp-c-warning-text);
+  font-size: 0.85rem;
 }
 
 .controls-section {
@@ -263,6 +257,10 @@ onUnmounted(() => {
   border-color: var(--vp-c-brand);
 }
 
+.preset-btn:active {
+  transform: translateY(1px);
+}
+
 .adsr-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -278,21 +276,5 @@ onUnmounted(() => {
 
 .adsr-row input[type="range"] {
   width: 100%;
-}
-
-.current-note {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--vp-c-brand);
-  text-align: center;
-  margin-bottom: 1rem;
-  min-height: 2.5rem;
-}
-
-.loading {
-  text-align: center;
-  color: var(--vp-c-text-2);
-  font-size: 0.9rem;
-  margin-top: 1rem;
 }
 </style>
