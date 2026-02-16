@@ -11,10 +11,10 @@
 
 ## Current Position
 
-Phase: 12 of 16 (Comprehensive Audit)
-Plan: Complete (all 5 plans)
-Status: Phase complete - ready for Phase 13
-Last activity: 2026-02-15 — Completed DX audit (12-02), all phase 12 audits complete
+Phase: 13 of 16 (Code Quality Implementation)
+Plan: 02 of 04 complete
+Status: In progress - error messages and type safety complete
+Last activity: 2026-02-15 — Completed error messages & type safety (13-02)
 
 **Progress:** [██████████] 98%
 
@@ -23,7 +23,7 @@ Last activity: 2026-02-15 — Completed DX audit (12-02), all phase 12 audits co
 | Phase | Name | Requirements | Status |
 |-------|------|-------------|--------|
 | 12 | Comprehensive Audit | QUAL-01, QUAL-03, DX-01-04, MAINT-01-03, TEST-03 | Complete (5/5) |
-| 13 | Code Quality | QUAL-02, QUAL-04 | Not started |
+| 13 | Code Quality Implementation | QUAL-02, QUAL-04 | In progress (2/4) |
 | 14 | Docs & Examples Polish | DOCS-01-05 | Not started |
 | 15 | Test Coverage | TEST-01, TEST-02 | Not started |
 | 16 | SEO & Discoverability | SEO-01-03 | Not started |
@@ -47,6 +47,9 @@ Carried forward from v1 — see previous STATE.md commits for full history.
 - [Phase 12 DX]: .from() method name confusing in fluent APIs - recommend .as() or .using()
 - [Phase 12 DX]: Factory functions show perfect consistency (13/13 use create* pattern)
 - [Phase 12 DX]: Happy paths are 1-2 steps for all common tasks (excellent beginner DX)
+- [Phase 13]: Use string concatenation for error messages instead of template literals (consistency)
+- [Phase 13]: Keep deprecated type aliases for backwards compatibility (OscillatorOpts, OscillatorOptsFilterValues)
+- [Phase 13]: Add console.warn for gain > 1 instead of error (non-fatal but alerts to potential distortion)
 
 ### Known Blockers
 
