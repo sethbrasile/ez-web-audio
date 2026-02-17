@@ -1,52 +1,59 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-02-16
-**Current Focus:** Milestone v1.0 — First Stable Release
+**Current Focus:** Milestone v1.0 Stable — First Stable Release (npm 1.0.0)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Defining requirements for v1.0
+**Current focus:** Phase 17 — Dependency Security Upgrades
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-16 — Milestone v1.0 started
+Phase: 17 of 22 (Dependency Security Upgrades)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-16 — v1.0 stable milestone roadmap created (phases 17-22)
 
-**Progress:** [░░░░░░░░░░] 0%
+**Progress:** [░░░░░░░░░░] 0% (this milestone)
+
+## Performance Metrics
+
+**Velocity (prior milestones):**
+- Total plans completed: 48 (v1.0 MVP) + 20 (v1.1) = 68 total
+- Prior milestone avg: ~4 plans/phase
+
+**By Phase (v1.0 Stable):**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| TBD | TBD | TBD | TBD |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
-### Decisions Made
+### Decisions
 
 See .planning/PROJECT.md Key Decisions table for full history.
 
-### Known Blockers
+Recent decisions affecting current work:
+- Pre-1.0: Breaking changes are free — no backwards compatibility required
+- Phase 13: String concat for error messages (consistency across codebase)
+- Phase 16: E2E tests focus on error-detection, not element checks (VitePress SPA timing)
 
-None active.
+### Pending Todos
 
-### Open Items for This Milestone
+None.
 
-- ControlType union should be extensible via mapped type
-- SampledNote.name shadowed by BaseSound.name — architectural decision needed
-- Rename `.from()` → `.as()` across fluent APIs (breaking, free pre-1.0)
-- Remove deprecated `connections` API entirely (no backwards compat needed pre-1.0)
-- Remove deprecated type aliases (OscillatorOpts, OscillatorOptsFilterValues)
+### Blockers/Concerns
 
-### Deferred to v2
+None active. Dependency upgrades (Phase 17) may reveal test failures — plan for triage.
 
-- Single global AudioContext blocks spatial audio — needs opt-in multi-context mode
-- Framework bindings (React/Vue) — external packages only
+## Session Continuity
 
-### Test Coverage Summary
-
-**913 unit tests across 36 test files**
-**20 E2E tests via Playwright**
-
----
-
-*STATE.md updated: 2026-02-16*
+Last session: 2026-02-16
+Stopped at: Roadmap created for v1.0 stable milestone (phases 17-22). Ready to plan Phase 17.
+Resume file: None

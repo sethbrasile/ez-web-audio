@@ -98,16 +98,49 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| SEC-01 | Phase 17 | Pending |
+| SEC-02 | Phase 17 | Pending |
+| SEC-03 | Phase 17 | Pending |
+| SEC-04 | Phase 17 | Pending |
+| SEC-05 | Phase 17 | Pending |
+| SEC-06 | Phase 17 | Pending |
+| API-01 | Phase 18 | Pending |
+| API-02 | Phase 18 | Pending |
+| API-03 | Phase 18 | Pending |
+| API-04 | Phase 18 | Pending |
+| API-05 | Phase 18 | Pending |
+| API-06 | Phase 18 | Pending |
+| API-07 | Phase 18 | Pending |
+| DOC-01 | Phase 18 | Pending |
+| DX-01 | Phase 19 | Pending |
+| DX-02 | Phase 19 | Pending |
+| DX-03 | Phase 19 | Pending |
+| DX-04 | Phase 19 | Pending |
+| DX-05 | Phase 19 | Pending |
+| DX-06 | Phase 19 | Pending |
+| DX-07 | Phase 19 | Pending |
+| DX-08 | Phase 19 | Pending |
+| DOC-03 | Phase 19 | Pending |
+| DEF-05 | Phase 19 | Pending |
+| DEF-01 | Phase 20 | Pending |
+| DEF-02 | Phase 20 | Pending |
+| DEF-03 | Phase 20 | Pending |
+| DEF-04 | Phase 20 | Pending |
+| TEST-01 | Phase 21 | Pending |
+| TEST-02 | Phase 21 | Pending |
+| TEST-03 | Phase 21 | Pending |
+| DOC-02 | Phase 22 | Pending |
+| DOC-04 | Phase 22 | Pending |
 
 **Coverage:**
-- v1.0 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30
+- v1.0 requirements: 33 total
+- Mapped to phases: 33
+- Unmapped: 0
+
+Note: REQUIREMENTS.md header stated "30 total" but enumeration yields 33 (API-07 + DEF-05 + DOC-01 through DOC-04 account for the difference). All 33 listed requirements are mapped.
 
 ---
 *Requirements defined: 2026-02-16*
-*Last updated: 2026-02-16 after initial definition*
+*Last updated: 2026-02-16 after roadmap creation (phases 17-22)*
