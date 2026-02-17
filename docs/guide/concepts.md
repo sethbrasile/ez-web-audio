@@ -232,9 +232,9 @@ Source → [Effects] → Gain → Panner → Destination
 ```typescript
 const sound = await createSound('/audio/guitar.mp3')
 
-// Add effects
-const reverb = createFilterEffect(ctx, 'lowpass', { frequency: 2000 })
-sound.addEffect(reverb)
+// Add effects (no AudioContext needed)
+const filter = createFilterEffect('lowpass', { frequency: 2000 })
+sound.addEffect(filter)
 
 // Control gain and pan
 sound.changeGainTo(0.8)
@@ -254,6 +254,42 @@ sound.addEffect(reverb) // Second in chain
 sound.addEffect(eq) // Third in chain
 
 // Signal: source → compressor → reverb → eq → gain → pan → out
+```
+
+### Batch Effect Addition
+
+Add multiple effects in a single call:
+
+```typescript
+const filter = createFilterEffect('lowpass', { frequency: 800 })
+const boost = createGainEffect(1.5)
+sound.addEffects([filter, boost])
+```
+
+### Effect Bypass
+
+Toggle effects without removing them from the chain:
+
+```typescript
+const filter = createFilterEffect('lowpass', { frequency: 800 })
+sound.addEffect(filter)
+
+// Toggle bypass — chain rewires automatically
+filter.bypass = true  // Signal skips this effect
+filter.bypass = false // Signal flows through effect again
+```
+
+### Generic Effect Wrapping
+
+Wrap any Web Audio API node as an effect:
+
+```typescript
+import { createEffect } from 'ez-web-audio'
+
+const distortion = audioContext.createWaveShaper()
+distortion.curve = makeDistortionCurve(400)
+const effect = createEffect(distortion)
+sound.addEffect(effect)
 ```
 
 ## Parameter Control
@@ -296,6 +332,22 @@ sound.onPlaySet('gain').to(0).endingAt(sound.duration.raw, 'linear')
 
 // Pitch bend
 osc.onPlayRamp('frequency').from(440).to(880).in(1)
+```
+
+### Extending ControlType
+
+The parameter system can be extended for custom control types via module augmentation:
+
+```typescript
+// In your project's type declarations (e.g., global.d.ts)
+declare module 'ez-web-audio' {
+  interface ControlTypeMap {
+    playbackRate: 'playbackRate'
+  }
+}
+
+// Now 'playbackRate' is accepted by update(), onPlaySet(), etc.
+// Note: You must provide custom controller logic to handle the new type.
 ```
 
 ## Events
@@ -390,9 +442,7 @@ noise.play()
 
 // Combine with filters for sound design
 const wind = await createWhiteNoise()
-const lowpass = createFilterEffect(await getAudioContext(), 'lowpass', {
-  frequency: 400
-})
+const lowpass = createFilterEffect('lowpass', { frequency: 400 })
 wind.addEffect(lowpass)
 wind.play()
 ```
@@ -411,6 +461,34 @@ const sounds = [sound1, sound2, sound3]
 playAll(sounds) // Play all sounds
 pauseAll(sounds) // Pause all tracks (no effect on non-track sounds)
 stopAll(sounds) // Stop all sounds
+```
+
+### Synchronized Playback
+
+Play multiple sounds at the exact same time:
+
+```typescript
+import { createSound, playTogether } from 'ez-web-audio'
+
+const kick = await createSound('kick.mp3')
+const snare = await createSound('snare.mp3')
+const hihat = await createSound('hihat.mp3')
+
+await playTogether([kick, snare, hihat])
+// All three start at the exact same AudioContext time
+```
+
+### Batch Loading
+
+Load multiple sounds at once with progress tracking:
+
+```typescript
+import { createSounds } from 'ez-web-audio'
+
+const sounds = await createSounds(
+  ['click.mp3', 'whoosh.mp3', 'ding.mp3'],
+  (loaded, total) => console.log(`${loaded}/${total}`)
+)
 ```
 
 ### Crossfade

@@ -167,15 +167,14 @@ sound.play() // Starts silent, fades in
 Apply effects like filters to shape your sound:
 
 ```typescript
-import { createFilterEffect, createSound, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createSound } from 'ez-web-audio'
 
 const sound = await createSound('/sounds/vocal.mp3')
-const ctx = await getAudioContext()
 
-// Create a lowpass filter
-const filter = createFilterEffect(ctx, 'lowpass', {
+// Create a lowpass filter (no AudioContext needed)
+const filter = createFilterEffect('lowpass', {
   frequency: 800, // Cut frequencies above 800Hz
-  Q: 1.0 // Resonance
+  q: 1.0 // Resonance
 })
 
 sound.addEffect(filter)
@@ -197,6 +196,19 @@ if (isPreloaded('/sounds/click.mp3')) {
   const sound = await createSound('/sounds/click.mp3') // Uses cached data
   sound.play()
 }
+```
+
+### Batch Loading
+
+Load multiple sounds at once with progress tracking:
+
+```typescript
+import { createSounds } from 'ez-web-audio'
+
+const sounds = await createSounds(
+  ['/sounds/click.mp3', '/sounds/whoosh.mp3', '/sounds/ding.mp3'],
+  (loaded, total) => console.log(`Loaded ${loaded}/${total}`)
+)
 ```
 
 ## Complete Example
