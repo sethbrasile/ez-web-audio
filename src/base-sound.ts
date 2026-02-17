@@ -187,7 +187,71 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     }
   }
 
+  /**
+   * Tracks the original bypass property descriptors for effects that have been
+   * intercepted with auto-rewire behavior. Used to restore original behavior
+   * when effects are removed.
+   * @private
+   */
+  private bypassInterceptions = new WeakMap<Effect, PropertyDescriptor | undefined>()
+
   // ===== Effect Chain System =====
+
+  /**
+   * Intercept an effect's bypass setter to auto-rewire the chain when toggled.
+   * Saves the original descriptor so removeEffect can restore it.
+   * @private
+   */
+  private interceptBypass(effect: Effect): void {
+    // Get the existing bypass descriptor from the prototype chain or instance
+    const proto = Object.getPrototypeOf(effect)
+    const existingDesc = Object.getOwnPropertyDescriptor(effect, 'bypass')
+      ?? Object.getOwnPropertyDescriptor(proto, 'bypass')
+
+    this.bypassInterceptions.set(effect, existingDesc)
+
+    const sound = this
+    Object.defineProperty(effect, 'bypass', {
+      get(): boolean {
+        if (existingDesc?.get) {
+          return existingDesc.get.call(effect)
+        }
+        return (effect as any)._bypass ?? false
+      },
+      set(v: boolean) {
+        if (existingDesc?.set) {
+          existingDesc.set.call(effect, v)
+        }
+        else {
+          (effect as any)._bypass = v
+        }
+        sound.wireEffectChain()
+      },
+      configurable: true,
+      enumerable: true,
+    })
+  }
+
+  /**
+   * Restore original bypass behavior on an effect.
+   * @private
+   */
+  private restoreBypass(effect: Effect): void {
+    const original = this.bypassInterceptions.get(effect)
+    if (original) {
+      // Delete instance override to expose prototype descriptor again
+      delete (effect as any).bypass
+      // If original was an own property (not prototype), restore it
+      if (Object.getOwnPropertyDescriptor(Object.getPrototypeOf(effect), 'bypass') !== original) {
+        Object.defineProperty(effect, 'bypass', original)
+      }
+    }
+    else {
+      // No original found, just delete instance override
+      delete (effect as any).bypass
+    }
+    this.bypassInterceptions.delete(effect)
+  }
 
   /**
    * Safely disconnect an AudioNode, ignoring errors if already disconnected.
@@ -281,6 +345,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     else {
       this.effects.push(effect)
     }
+    this.interceptBypass(effect)
     this.wireEffectChain()
     // Debug log for effect chain change
     debugConnection(
@@ -307,6 +372,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   public removeEffect(effect: Effect): this {
     const index = this.effects.indexOf(effect)
     if (index > -1) {
+      this.restoreBypass(effect)
       this.effects.splice(index, 1)
       this.wireEffectChain()
       // Debug log for effect chain change
@@ -320,6 +386,55 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
         },
       )
     }
+    return this
+  }
+
+  /**
+   * Add multiple effects to the effect chain in one call.
+   * The chain is rewired only once after all effects are added, which is more
+   * efficient than calling addEffect() multiple times.
+   *
+   * @param effects - Array of Effect instances to add
+   * @param position - Optional index to insert at (defaults to end of chain)
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * const filter = createFilterEffect('lowpass', { frequency: 800 })
+   * const boost = createGainEffect(1.5)
+   * sound.addEffects([filter, boost])
+   * ```
+   */
+  public addEffects(effects: Effect[], position?: number): this {
+    if (effects.length === 0) return this
+
+    if (position !== undefined && position >= 0 && position <= this.effects.length) {
+      // Insert all at position, preserving order
+      this.effects.splice(position, 0, ...effects)
+    }
+    else {
+      this.effects.push(...effects)
+    }
+
+    // Intercept bypass on all added effects
+    for (const effect of effects) {
+      this.interceptBypass(effect)
+    }
+
+    // Wire chain once for all effects
+    this.wireEffectChain()
+
+    // Debug log
+    debugConnection(
+      this,
+      `${effects.length} effects added${position !== undefined ? ` at position ${position}` : ''}`,
+      this.audioContext.currentTime,
+      {
+        effectCount: this.effects.length,
+        effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`),
+      },
+    )
+
     return this
   }
 

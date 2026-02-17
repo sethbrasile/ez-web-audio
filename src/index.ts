@@ -39,37 +39,7 @@ import frequencyMap from './utils/frequency-map'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 // @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
 import unmuteIosAudio from './utils/unmute'
-
-let _audioContext: AudioContext | null = null
-
-function getOrCreateAudioContext(): AudioContext {
-  if (!_audioContext) {
-    _audioContext = new AudioContext()
-  }
-  return _audioContext
-}
-
-async function unlockAudioContext(audioContext: AudioContext): Promise<void> {
-  if (audioContext.state !== 'suspended')
-    return
-
-  const b = document.body
-  const events = ['touchstart', 'touchend', 'mousedown', 'keydown']
-
-  async function unlock(): Promise<void> {
-    await audioContext.resume().then(clean)
-  }
-
-  function clean(): void {
-    events.forEach(e => b.removeEventListener(e, unlock))
-  }
-
-  events.forEach(e => b.addEventListener(e, unlock, false))
-
-  await audioContext.resume()
-}
-
-let iosWorkaroundPerformed = false
+import { getOrCreateAudioContext, iosWorkaroundPerformed, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 
 /**
  * Optionally initialize the audio system explicitly.
@@ -116,7 +86,7 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
   // only run this workaround code once
   if (useIosMuteWorkaround && !iosWorkaroundPerformed) {
     unmuteIosAudio(audioContext)
-    iosWorkaroundPerformed = true
+    markIosWorkaroundPerformed()
   }
   // unlockAudioContext handles Safari/iOS where AudioContext starts suspended and requires
   // a user gesture to resume. Without this, the first synth note may hang because the context never resumes.
