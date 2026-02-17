@@ -79,7 +79,10 @@
   4. The entire `connections` API (`addConnection`, `removeConnection`, `getConnection`, `getNodeFrom`, `connections`) is gone with no trace
   5. `OscillatorOpts` and `OscillatorOptsFilterValues` type aliases are removed; only `OscillatorOptions` and `OscillatorFilterOptions` remain
   6. All JSDoc comments reflect the renamed methods and removed APIs
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 18-01-PLAN.md — Rename .from() to .as() on fluent chains, rename ifActivePlayIn to playInIfActive
+- [ ] 18-02-PLAN.md — Make internal properties protected, remove connections API, deprecated aliases, dead code
+- [ ] 18-03-PLAN.md — Standardize JSDoc on all public methods, create CHANGELOG.md, update guide pages
 
 ### Phase 19: DX Improvements
 **Goal**: Developers can accomplish common audio tasks with less boilerplate, and the documentation reflects all new capabilities
