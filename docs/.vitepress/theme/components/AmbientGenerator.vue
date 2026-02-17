@@ -169,7 +169,7 @@ function updateTextureFilter() {
   if (!isPlaying.value || !textureFilter)
     return
 
-  textureFilter.frequency.value = textureFilterCutoff.value
+  textureFilter.frequency = textureFilterCutoff.value
 }
 
 function updateShimmerFrequency() {
