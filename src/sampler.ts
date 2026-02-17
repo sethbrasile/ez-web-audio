@@ -110,6 +110,25 @@ export class Sampler {
   }
 
   /**
+   * Get a readonly snapshot of the sampler's sounds.
+   *
+   * Returns a shallow copy as an array so callers can inspect which sounds
+   * are loaded without mutating the internal Set.
+   *
+   * @returns Readonly array of sounds in the sampler
+   *
+   * @example
+   * ```typescript
+   * const sampler = await createSampler(['kick-1.mp3', 'kick-2.mp3'])
+   * const sounds = sampler.getSounds()
+   * console.log(sounds.length) // 2
+   * ```
+   */
+  public getSounds(): readonly (Playable & Connectable)[] {
+    return [...this.sounds]
+  }
+
+  /**
    * Get the next sound from the round-robin rotation.
    * When the iterator reaches the end, it automatically restarts.
    * @internal

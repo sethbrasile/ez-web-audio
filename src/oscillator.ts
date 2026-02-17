@@ -18,7 +18,6 @@ export interface OscillatorFilterOptions {
   q?: number
 }
 
-
 /**
  * Configuration options for creating an Oscillator.
  *
@@ -71,7 +70,6 @@ export interface OscillatorOptions extends BaseSoundOptions {
   /** ADSR envelope for amplitude shaping. */
   envelope?: EnvelopeOptions
 }
-
 
 const FILTERS = [
   'highpass',
@@ -279,6 +277,30 @@ export class Oscillator extends BaseSound {
       nodes[i].connect(nodes[i + 1])
     }
     // Effect chain is already wired (gain -> panner -> destination) in BaseSound
+  }
+
+  /**
+   * Get a readonly snapshot of the oscillator's filter nodes.
+   *
+   * Returns a shallow copy of the internal filters array so callers can
+   * inspect filter state (type, frequency, Q) without mutating the chain.
+   *
+   * @returns Readonly array of BiquadFilterNode instances
+   *
+   * @example
+   * ```typescript
+   * const osc = await createOscillator({
+   *   frequency: 440,
+   *   lowpass: { frequency: 800, q: 1 },
+   *   highpass: { frequency: 200 }
+   * })
+   * const filters = osc.getFilters()
+   * console.log(filters.length) // 2
+   * console.log(filters[0].type) // 'highpass'
+   * ```
+   */
+  public getFilters(): readonly BiquadFilterNode[] {
+    return [...this.filters]
   }
 
   /**

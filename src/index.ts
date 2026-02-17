@@ -1,5 +1,6 @@
 import type { AnalyzerOptions } from './analyzer'
 import type { BeatTrackOptions } from './beat-track'
+import type { ControlType, ControlTypeMap } from './controllers/base-param-controller'
 import type { DebugMessage } from './debug'
 import type { Effect, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
 import type { EnvelopeOptions } from './envelope'
@@ -16,6 +17,7 @@ import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Analyzer, createAnalyzer } from './analyzer'
+import { getOrCreateAudioContext, iosWorkaroundPerformed, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
@@ -34,14 +36,13 @@ import { clearPreloadCache, isPreloaded, preload, responseCache } from './preloa
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
 import { pauseAll, playAll, stopAll } from './utils/collections'
-import { playTogether } from './utils/play-together'
 import { crossfade } from './utils/crossfade'
 import { mungeSoundFont } from './utils/decode-base64'
 import frequencyMap from './utils/frequency-map'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
+import { playTogether } from './utils/play-together'
 // @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
 import unmuteIosAudio from './utils/unmute'
-import { getOrCreateAudioContext, iosWorkaroundPerformed, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 
 /**
  * Optionally initialize the audio system explicitly.
@@ -711,6 +712,9 @@ export type {
   // Analyzer types
   AnalyzerOptions,
   Connectable,
+  // Controller types
+  ControlType,
+  ControlTypeMap,
   DebugMessage,
   // Effect types
   Effect,
@@ -725,4 +729,3 @@ export type {
   SpriteManifest,
   SpritePlayOptions,
 }
-

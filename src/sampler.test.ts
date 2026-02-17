@@ -352,4 +352,27 @@ describe('sampler', () => {
       expect(customPlayable.play).toHaveBeenCalled()
     })
   })
+
+  describe('getSounds', () => {
+    it('returns all sounds in the sampler', () => {
+      const sounds = [createMockSound(), createMockSound(), createMockSound()]
+      const sampler = new Sampler(sounds)
+      expect(sampler.getSounds()).toHaveLength(3)
+    })
+
+    it('returns an array, not a Set', () => {
+      const sounds = [createMockSound()]
+      const sampler = new Sampler(sounds)
+      expect(Array.isArray(sampler.getSounds())).toBe(true)
+    })
+
+    it('returns a copy that does not mutate internal state', () => {
+      const sounds = [createMockSound(), createMockSound()]
+      const sampler = new Sampler(sounds)
+      const result = sampler.getSounds()
+      expect(result).toHaveLength(2)
+      ;(result as any[]).length = 0
+      expect(sampler.getSounds()).toHaveLength(2)
+    })
+  })
 })

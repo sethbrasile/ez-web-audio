@@ -270,3 +270,38 @@ describe('oscillator with ADSR envelope', () => {
     })
   })
 })
+
+describe('oscillator getFilters', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('returns empty array when no filters configured', () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    expect(osc.getFilters()).toEqual([])
+  })
+
+  it('returns filters matching configured filter types', () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 800, q: 1 },
+      highpass: { frequency: 200 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(2)
+  })
+
+  it('returns a copy that does not mutate internal state', () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 800 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(1)
+    // Mutating the returned array should not affect the oscillator
+    ;(filters as BiquadFilterNode[]).length = 0
+    expect(osc.getFilters()).toHaveLength(1)
+  })
+})

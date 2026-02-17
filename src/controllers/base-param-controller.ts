@@ -1,4 +1,35 @@
-export type ControlType = 'frequency' | 'gain' | 'detune' | 'pan'
+/**
+ * Map of built-in control type names.
+ *
+ * Downstream users can extend the set of valid control types via module
+ * augmentation. The {@link ControlType} union is derived from this map and
+ * automatically includes any new entries.
+ *
+ * @example
+ * ```typescript
+ * // In your project's type declarations (e.g., global.d.ts):
+ * declare module 'ez-web-audio' {
+ *   interface ControlTypeMap {
+ *     customParam: 'customParam'
+ *   }
+ * }
+ *
+ * // Now ControlType includes 'customParam'
+ * sound.update('customParam').to(0.5).as('ratio')
+ * ```
+ *
+ * Note: The runtime _update() switch-case does not handle custom types.
+ * Users extending ControlType must also provide custom controller logic.
+ */
+export interface ControlTypeMap {
+  frequency: 'frequency'
+  gain: 'gain'
+  detune: 'detune'
+  pan: 'pan'
+}
+
+/** Union of all registered control type names, extensible via {@link ControlTypeMap}. */
+export type ControlType = ControlTypeMap[keyof ControlTypeMap]
 export type RatioType = 'ratio' | 'inverseRatio' | 'percent'
 export type RampType = 'linear' | 'exponential'
 export type SeekType = RatioType | 'seconds'
