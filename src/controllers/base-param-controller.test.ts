@@ -60,69 +60,69 @@ describe('baseParamController', () => {
     })
 
     it('setting gain via update updates gainNode', () => {
-      controller.update('gain').to(0.5).from('ratio')
+      controller.update('gain').to(0.5).as('ratio')
       expect(gainNode.gain.value).toBe(0.5)
     })
 
     it('setting pan via update updates pannerNode', () => {
-      controller.update('pan').to(-1).from('ratio')
+      controller.update('pan').to(-1).as('ratio')
       expect(pannerNode.pan.value).toBe(-1)
     })
   })
 
   describe('update() fluent API', () => {
     it('update("gain").to(0.5).from("ratio") sets gain to 0.5', () => {
-      controller.update('gain').to(0.5).from('ratio')
+      controller.update('gain').to(0.5).as('ratio')
       expect(controller.gain).toBe(0.5)
     })
 
     it('update("gain").to(50).from("percent") sets gain to 0.5', () => {
-      controller.update('gain').to(50).from('percent')
+      controller.update('gain').to(50).as('percent')
       expect(controller.gain).toBe(0.5)
     })
 
     it('update("gain").to(0.3).from("inverseRatio") sets gain to 0.7', () => {
-      controller.update('gain').to(0.3).from('inverseRatio')
+      controller.update('gain').to(0.3).as('inverseRatio')
       expect(controller.gain).toBe(0.7)
     })
 
     it('update("pan").to(-1).from("ratio") sets pan to -1', () => {
-      controller.update('pan').to(-1).from('ratio')
+      controller.update('pan').to(-1).as('ratio')
       expect(controller.pan).toBe(-1)
     })
 
     it('update("pan").to(1).from("ratio") sets pan to 1', () => {
-      controller.update('pan').to(1).from('ratio')
+      controller.update('pan').to(1).as('ratio')
       expect(controller.pan).toBe(1)
     })
 
     it('update("detune").to(100).from("ratio") sets audioSource.detune.value', () => {
-      controller.update('detune').to(100).from('ratio')
+      controller.update('detune').to(100).as('ratio')
       expect(audioSource.detune.value).toBe(100)
     })
 
     it('update("detune").to(50).from("percent") sets audioSource.detune to 0.5', () => {
-      controller.update('detune').to(50).from('percent')
+      controller.update('detune').to(50).as('percent')
       expect(audioSource.detune.value).toBe(0.5)
     })
 
     it('throws for unsupported control type', () => {
       expect(() => {
         // @ts-expect-error - testing invalid type
-        controller.update('invalid').to(1).from('ratio')
+        controller.update('invalid').to(1).as('ratio')
       }).toThrow('Unsupported control type: \'invalid\'. Supported types: \'gain\', \'pan\', \'detune\', \'frequency\' (Oscillator only).')
     })
 
     it('throws for unsupported method type', () => {
       expect(() => {
         // @ts-expect-error - testing invalid method
-        controller.update('gain').to(0.5).from('invalid')
+        controller.update('gain').to(0.5).as('invalid')
       }).toThrow('Unsupported ratio type: \'invalid\'. Supported types: \'ratio\', \'inverseRatio\', \'percent\'.')
     })
 
     it('supports method chaining for multiple updates', () => {
-      controller.update('gain').to(0.8).from('ratio')
-      controller.update('pan').to(0.5).from('ratio')
+      controller.update('gain').to(0.8).as('ratio')
+      controller.update('pan').to(0.5).as('ratio')
       expect(controller.gain).toBe(0.8)
       expect(controller.pan).toBe(0.5)
     })
@@ -243,7 +243,7 @@ describe('baseParamController', () => {
       controller.updateGainNode(newGainNode)
       expect(newGainNode.gain.value).toBe(0.75)
       // Verify the controller now uses the new node
-      controller.update('gain').to(0.5).from('ratio')
+      controller.update('gain').to(0.5).as('ratio')
       expect(newGainNode.gain.value).toBe(0.5)
     })
 
@@ -253,7 +253,7 @@ describe('baseParamController', () => {
       controller.updatePannerNode(newPannerNode)
       expect(newPannerNode.pan.value).toBe(-0.5)
       // Verify the controller now uses the new node
-      controller.update('pan').to(0.8).from('ratio')
+      controller.update('pan').to(0.8).as('ratio')
       expect(newPannerNode.pan.value).toBe(0.8)
     })
 
@@ -276,33 +276,33 @@ describe('baseParamController', () => {
 
   describe('edge cases', () => {
     it('handles extreme gain values', () => {
-      controller.update('gain').to(0).from('ratio')
+      controller.update('gain').to(0).as('ratio')
       expect(controller.gain).toBe(0)
-      controller.update('gain').to(2).from('ratio')
+      controller.update('gain').to(2).as('ratio')
       expect(controller.gain).toBe(2)
     })
 
     it('handles extreme pan values', () => {
-      controller.update('pan').to(-1).from('ratio')
+      controller.update('pan').to(-1).as('ratio')
       expect(controller.pan).toBe(-1)
-      controller.update('pan').to(1).from('ratio')
+      controller.update('pan').to(1).as('ratio')
       expect(controller.pan).toBe(1)
     })
 
     it('handles zero percent', () => {
-      controller.update('gain').to(0).from('percent')
+      controller.update('gain').to(0).as('percent')
       expect(controller.gain).toBe(0)
     })
 
     it('handles 100 percent', () => {
-      controller.update('gain').to(100).from('percent')
+      controller.update('gain').to(100).as('percent')
       expect(controller.gain).toBe(1)
     })
 
     it('handles inverseRatio at boundaries', () => {
-      controller.update('gain').to(0).from('inverseRatio')
+      controller.update('gain').to(0).as('inverseRatio')
       expect(controller.gain).toBe(1)
-      controller.update('gain').to(1).from('inverseRatio')
+      controller.update('gain').to(1).as('inverseRatio')
       expect(controller.gain).toBe(0)
     })
 
@@ -314,7 +314,7 @@ describe('baseParamController', () => {
         pannerNode,
       )
       expect(() => {
-        controllerNoDetune.update('detune').to(100).from('ratio')
+        controllerNoDetune.update('detune').to(100).as('ratio')
       }).toThrow('Audio source does not support detune')
     })
   })

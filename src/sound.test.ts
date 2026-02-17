@@ -303,20 +303,20 @@ describe('sound', () => {
     describe('update()', () => {
       it('update("gain").to(0.5).from("ratio") sets gain', () => {
         const sound = createSound(audioContext)
-        sound.update('gain').to(0.5).from('ratio')
+        sound.update('gain').to(0.5).as('ratio')
         // Gain should be updated (exact value depends on controller implementation)
         expect(sound.gainNode.gain.value).toBeDefined()
       })
 
       it('update("gain").to(50).from("percent") sets gain', () => {
         const sound = createSound(audioContext)
-        sound.update('gain').to(50).from('percent')
+        sound.update('gain').to(50).as('percent')
         expect(sound.gainNode.gain.value).toBeDefined()
       })
 
       it('update("pan").to(-0.5).from("ratio") sets pan', () => {
         const sound = createSound(audioContext)
-        sound.update('pan').to(-0.5).from('ratio')
+        sound.update('pan').to(-0.5).as('ratio')
         // Verify pan value was actually set
         expect(sound.pannerNode.pan.value).toBeCloseTo(-0.5)
       })

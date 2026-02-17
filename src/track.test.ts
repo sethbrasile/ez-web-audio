@@ -319,20 +319,20 @@ describe('track', () => {
   describe('seek with ratio', () => {
     it('seek(0.5).from("ratio") moves to 50% of duration', () => {
       const track = createTrack(audioContext, 10) // 10 seconds
-      track.seek(0.5).from('ratio')
+      track.seek(0.5).as('ratio')
       expect(track.startOffset).toBeCloseTo(5, 0)
     })
 
     it('seek(0).from("ratio") moves to beginning', () => {
       const track = createTrack(audioContext, 10)
       track.startOffset = 5
-      track.seek(0).from('ratio')
+      track.seek(0).as('ratio')
       expect(track.startOffset).toBe(0)
     })
 
     it('seek(1).from("ratio") moves to end', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(1).from('ratio')
+      track.seek(1).as('ratio')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
   })
@@ -340,20 +340,20 @@ describe('track', () => {
   describe('seek with percent', () => {
     it('seek(50).from("percent") moves to 50% of duration', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(50).from('percent')
+      track.seek(50).as('percent')
       expect(track.startOffset).toBeCloseTo(5, 0)
     })
 
     it('seek(0).from("percent") moves to beginning', () => {
       const track = createTrack(audioContext, 10)
       track.startOffset = 5
-      track.seek(0).from('percent')
+      track.seek(0).as('percent')
       expect(track.startOffset).toBe(0)
     })
 
     it('seek(100).from("percent") moves to end', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(100).from('percent')
+      track.seek(100).as('percent')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
   })
@@ -361,20 +361,20 @@ describe('track', () => {
   describe('seek with seconds', () => {
     it('seek(5).from("seconds") moves to 5 seconds', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(track.startOffset).toBe(5)
     })
 
     it('seek(0).from("seconds") moves to beginning', () => {
       const track = createTrack(audioContext, 10)
       track.startOffset = 3
-      track.seek(0).from('seconds')
+      track.seek(0).as('seconds')
       expect(track.startOffset).toBe(0)
     })
 
     it('seek to duration moves to end', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(10).from('seconds')
+      track.seek(10).as('seconds')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
   })
@@ -382,20 +382,20 @@ describe('track', () => {
   describe('seek with inverseRatio', () => {
     it('seek(0.25).from("inverseRatio") moves to 75% of duration', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(0.25).from('inverseRatio')
+      track.seek(0.25).as('inverseRatio')
       // inverseRatio: duration - (amount * duration) = 10 - (0.25 * 10) = 7.5
       expect(track.startOffset).toBeCloseTo(7.5, 0)
     })
 
     it('seek(0).from("inverseRatio") moves to end', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(0).from('inverseRatio')
+      track.seek(0).as('inverseRatio')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
 
     it('seek(1).from("inverseRatio") moves to beginning', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(1).from('inverseRatio')
+      track.seek(1).as('inverseRatio')
       expect(track.startOffset).toBe(0)
     })
   })
@@ -405,7 +405,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       const handler = vi.fn()
       track.on('seek', handler)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(handler).toHaveBeenCalledTimes(1)
     })
 
@@ -413,7 +413,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       const handler = vi.fn()
       track.on('seek', handler)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
@@ -428,7 +428,7 @@ describe('track', () => {
       track.startOffset = 2
       const handler = vi.fn()
       track.on('seek', handler)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
@@ -442,7 +442,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       const handler = vi.fn()
       track.on('seek', handler)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
@@ -460,7 +460,7 @@ describe('track', () => {
       await track.play()
       expect(track.isPlaying).toBe(true)
       const stopSpy = vi.spyOn(track, 'stop')
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       // Seek while playing calls stop then schedules play via later()
       expect(stopSpy).toHaveBeenCalled()
       expect(track.startOffset).toBe(5)
@@ -470,7 +470,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       track.startOffset = 2
       await track.play()
-      track.seek(7).from('seconds')
+      track.seek(7).as('seconds')
       // Position should be updated to new value
       expect(track.startOffset).toBe(7)
     })
@@ -483,7 +483,7 @@ describe('track', () => {
       await track.play()
       track.pause()
       expect(track.isPlaying).toBe(false)
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       // Should update position but not play
       expect(track.startOffset).toBe(5)
       expect(track.isPlaying).toBe(false)
@@ -493,25 +493,25 @@ describe('track', () => {
   describe('seek clamping', () => {
     it('seek clamps to 0 (minimum)', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(-5).from('seconds')
+      track.seek(-5).as('seconds')
       expect(track.startOffset).toBe(0)
     })
 
     it('seek clamps to duration (maximum)', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(20).from('seconds')
+      track.seek(20).as('seconds')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
 
     it('seek with negative ratio clamps to 0', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(-0.5).from('ratio')
+      track.seek(-0.5).as('ratio')
       expect(track.startOffset).toBe(0)
     })
 
     it('seek with ratio > 1 clamps to duration', () => {
       const track = createTrack(audioContext, 10)
-      track.seek(1.5).from('ratio')
+      track.seek(1.5).as('ratio')
       expect(track.startOffset).toBeCloseTo(10, 0)
     })
   })
@@ -555,7 +555,7 @@ describe('track', () => {
         eventPayload = e.detail
       })
       track.startOffset = 2
-      track.seek(5).from('seconds')
+      track.seek(5).as('seconds')
       expect(eventPayload).toHaveProperty('time')
       expect(eventPayload).toHaveProperty('source')
       expect(eventPayload).toHaveProperty('position')
@@ -602,20 +602,20 @@ describe('track', () => {
   })
 
   describe('seek fluent API', () => {
-    it('seek() returns object with from method', () => {
+    it('seek() returns object with as method', () => {
       const track = createTrack(audioContext, 10)
       const result = track.seek(5)
-      expect(result).toHaveProperty('from')
-      expect(typeof result.from).toBe('function')
+      expect(result).toHaveProperty('as')
+      expect(typeof result.as).toBe('function')
     })
 
     it('from() accepts SeekType', () => {
       const track = createTrack(audioContext, 10)
       // These should all work without throwing
-      expect(() => track.seek(0.5).from('ratio')).not.toThrow()
-      expect(() => track.seek(50).from('percent')).not.toThrow()
-      expect(() => track.seek(5).from('seconds')).not.toThrow()
-      expect(() => track.seek(0.25).from('inverseRatio')).not.toThrow()
+      expect(() => track.seek(0.5).as('ratio')).not.toThrow()
+      expect(() => track.seek(50).as('percent')).not.toThrow()
+      expect(() => track.seek(5).as('seconds')).not.toThrow()
+      expect(() => track.seek(0.25).as('inverseRatio')).not.toThrow()
     })
   })
 
@@ -656,11 +656,11 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
 
       // First seek
-      track.seek(0.5).from('ratio') // 5 seconds
+      track.seek(0.5).as('ratio') // 5 seconds
       expect(track.startOffset).toBeCloseTo(5, 0)
 
       // Immediate second seek (no async gap)
-      track.seek(0.8).from('ratio') // 8 seconds
+      track.seek(0.8).as('ratio') // 8 seconds
       expect(track.startOffset).toBeCloseTo(8, 0)
     })
 
@@ -668,7 +668,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       const duration = track.duration.raw
 
-      track.seek(duration).from('seconds')
+      track.seek(duration).as('seconds')
 
       // Should be at or very close to duration
       expect(track.startOffset).toBeCloseTo(duration, 0)
@@ -678,7 +678,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       const duration = track.duration.raw
 
-      track.seek(1.0).from('ratio')
+      track.seek(1.0).as('ratio')
 
       expect(track.startOffset).toBeCloseTo(duration, 0)
     })
@@ -691,9 +691,9 @@ describe('track', () => {
         positions.push(e.detail.position)
       })
 
-      track.seek(3).from('seconds')
-      track.seek(7).from('seconds')
-      track.seek(2).from('seconds')
+      track.seek(3).as('seconds')
+      track.seek(7).as('seconds')
+      track.seek(2).as('seconds')
 
       expect(positions).toEqual([3, 7, 2])
     })

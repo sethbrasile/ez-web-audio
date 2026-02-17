@@ -26,7 +26,7 @@ export interface Connectable {
   changeGainTo: (value: number) => this
   update: (type: ControlType, value: number) => {
     to: (value: number) => {
-      from: (method: RatioType) => void
+      as: (method: RatioType) => void
     }
   }
 }

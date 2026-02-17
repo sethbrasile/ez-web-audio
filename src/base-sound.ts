@@ -49,7 +49,7 @@ export interface BaseSoundOptions {
  * const sound = await createSound('click.mp3')
  *
  * // Immediate parameter update
- * sound.update('gain').to(0.5).from('ratio')
+ * sound.update('gain').to(0.5).as('ratio')
  *
  * // Schedule parameter for next play
  * sound.onPlaySet('gain').to(0).endingAt(1, 'exponential') // fade in
@@ -652,7 +652,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * Update an audio parameter immediately.
    *
    * Returns a fluent builder for setting the parameter value. Use `.to(value)`
-   * to set the value, then `.from(unit)` for unit interpretation.
+   * to set the value, then `.as(unit)` for unit interpretation.
    *
    * @param type - The parameter to update ('gain' or 'pan')
    * @returns Fluent builder for setting the value
@@ -660,15 +660,15 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * @example
    * ```typescript
    * // Set gain to 50%
-   * sound.update('gain').to(0.5).from('ratio')
+   * sound.update('gain').to(0.5).as('ratio')
    *
    * // Set pan to left
-   * sound.update('pan').to(-1).from('ratio')
+   * sound.update('pan').to(-1).as('ratio')
    * ```
    */
   public update(type: ControlType): {
     to: (value: number) => {
-      from: (method: RatioType) => void
+      as: (method: RatioType) => void
     }
   } {
     return this.controller.update(type)
@@ -677,7 +677,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   /**
    * Set the pan position immediately.
    *
-   * Convenience method for `update('pan').to(value).from('ratio')`.
+   * Convenience method for `update('pan').to(value).as('ratio')`.
    *
    * @param value - Pan position from -1 (left) to 1 (right), 0 is center
    * @returns this for chaining
@@ -690,14 +690,14 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * ```
    */
   public changePanTo(value: number): this {
-    this.controller.update('pan').to(value).from('ratio')
+    this.controller.update('pan').to(value).as('ratio')
     return this
   }
 
   /**
    * Set the gain (volume) immediately.
    *
-   * Convenience method for `update('gain').to(value).from('ratio')`.
+   * Convenience method for `update('gain').to(value).as('ratio')`.
    *
    * @param value - Gain from 0 (silent) to 1 (full volume)
    * @returns this for chaining
@@ -716,7 +716,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     if (value > 1) {
       console.warn(`ez-web-audio: Gain value ${value} exceeds 1.0. Values above 1 amplify the signal and may cause distortion.`)
     }
-    this.controller.update('gain').to(value).from('ratio')
+    this.controller.update('gain').to(value).as('ratio')
     return this
   }
 

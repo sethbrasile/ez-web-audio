@@ -138,7 +138,7 @@ function seekAction(e: MouseEvent): void {
   // @ts-expect-error typescript is wrong
   const width = e.target?.offsetParent.offsetWidth as number
   const newPosition = e.offsetX / width
-  selectedSong.trackInstance?.seek(newPosition).from('ratio')
+  selectedSong.trackInstance?.seek(newPosition).as('ratio')
 }
 
 function volAction(e: MouseEvent): void {
@@ -156,7 +156,7 @@ function volAction(e: MouseEvent): void {
   if (newGain > 1)
     newGain = 1
 
-  selectedSong.trackInstance?.update('gain').to(newGain).from('inverseRatio')
+  selectedSong.trackInstance?.update('gain').to(newGain).as('inverseRatio')
   volDisplay.style.height = `${selectedSong.trackInstance?.percentGain}%`
 }
 

@@ -54,8 +54,8 @@ the github repo for this project and take a look at ${inlineCode('src/app/pages/
   <Mp3Player
     v-if="!loading && track"
     :track="track"
-    @change-gain="(newGain) => track?.changeGainTo(newGain).from('inverseRatio')"
-    @seek="(newPosition) => track?.seek(newPosition).from('ratio')"
+    @change-gain="(newGain) => track?.changeGainTo(newGain).as('inverseRatio')"
+    @seek="(newPosition) => track?.seek(newPosition).as('ratio')"
     @toggle-play="track.isPlaying ? track.pause() : track.play()"
   />
 

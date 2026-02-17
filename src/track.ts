@@ -23,7 +23,7 @@ import withinRange from './utils/within-range'
  * track.resume()
  *
  * // Seek to 30 seconds
- * track.seek(30).from('seconds')
+ * track.seek(30).as('seconds')
  *
  * // Get current position
  * console.log(track.position)
@@ -226,7 +226,7 @@ export class Track extends Sound {
   /**
    * Seek to a specific position in the track.
    *
-   * Returns a fluent builder with `.from(type)` to specify the unit of the value:
+   * Returns a fluent builder with `.as(type)` to specify the unit of the value:
    * - `'seconds'`: Absolute position in seconds
    * - `'percent'`: Percentage of total duration (0-100)
    * - `'ratio'`: Ratio of total duration (0-1)
@@ -234,18 +234,18 @@ export class Track extends Sound {
    *
    * Emits a 'seek' event with the new and previous positions.
    *
-   * @param amount - The position value (meaning depends on the `.from()` type)
-   * @returns Fluent builder with `.from(type)` method
+   * @param amount - The position value (meaning depends on the `.as()` type)
+   * @returns Fluent builder with `.as(type)` method
    *
    * @example
    * ```typescript
    * const track = await createTrack('song.mp3')
    *
    * // For a track with 100 second duration, all of these seek to 90 seconds:
-   * track.seek(90).from('seconds')
-   * track.seek(90).from('percent')
-   * track.seek(0.9).from('ratio')
-   * track.seek(0.1).from('inverseRatio')
+   * track.seek(90).as('seconds')
+   * track.seek(90).as('percent')
+   * track.seek(0.9).as('ratio')
+   * track.seek(0.1).as('inverseRatio')
    *
    * // Listen for seek events
    * track.on('seek', (e) => {
@@ -253,7 +253,7 @@ export class Track extends Sound {
    * })
    * ```
    */
-  public seek(amount: number): { from: (type: SeekType) => void } {
+  public seek(amount: number): { as: (type: SeekType) => void } {
     const duration = this.duration.raw
     const previousPosition = this.startOffset
 
@@ -280,7 +280,7 @@ export class Track extends Sound {
     }
 
     return {
-      from: (type: SeekType) => {
+      as: (type: SeekType) => {
         switch (type) {
           case 'ratio':
             moveToOffset(amount * duration)

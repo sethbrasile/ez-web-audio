@@ -24,7 +24,7 @@ export interface ParamController {
   updatePannerNode: (pannerNode: StereoPannerNode) => void
   update: (type: ControlType) => {
     to: (value: number) => {
-      from: (method: RatioType) => void
+      as: (method: RatioType) => void
     }
   }
   onPlaySet: (type: ControlType) => {
@@ -122,15 +122,11 @@ export class BaseParamController {
     }
   }
 
-  /**
-   * Note: The .from() method name in the fluent API is a known DX concern —
-   * deferred to v2 as a breaking change.
-   */
-  public update(type: ControlType): { to: (value: number) => { from: (method: RatioType) => void } } {
+  public update(type: ControlType): { to: (value: number) => { as: (method: RatioType) => void } } {
     return {
       to: (value: number) => {
         return {
-          from: (method: RatioType) => {
+          as: (method: RatioType) => {
             switch (method) {
               case 'ratio':
                 this._update(type, value)

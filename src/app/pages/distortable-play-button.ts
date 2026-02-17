@@ -27,7 +27,7 @@ function addDistortion(sound: Sound): void {
   distortionEnabled = true
 
   // lower note's gain because distorted signal has much more apparent volume
-  sound.update('gain').to(0.1).from('ratio')
+  sound.update('gain').to(0.1).as('ratio')
 
   // Set distortionNode's curve to enable distortion
   const node = sound.getNodeFrom<WaveShaperNode>(NAME)
@@ -40,7 +40,7 @@ function removeDistortion(sound: Sound): void {
   distortionEnabled = false
 
   // raise note's gain because clean signal has much less apparent volume
-  sound.update('gain').to(1).from('ratio')
+  sound.update('gain').to(1).as('ratio')
 
   // Set distortionNode's curve to an empty Float32Array to disable distortion
   const node = sound.getNodeFrom<WaveShaperNode>(NAME)

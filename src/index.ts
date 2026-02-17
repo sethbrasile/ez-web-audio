@@ -232,7 +232,7 @@ export function createSound(url: string): Promise<Sound> {
  * song.resume()
  *
  * // Seek to 30 seconds
- * song.seek(30).from('seconds')
+ * song.seek(30).as('seconds')
  *
  * // Get current position
  * console.log(song.position.string) // '0:30'

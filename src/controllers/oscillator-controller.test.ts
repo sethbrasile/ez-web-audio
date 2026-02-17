@@ -48,27 +48,27 @@ describe('oscillatorController', () => {
 
   describe('frequency control (override of _update)', () => {
     it('update("frequency").to(880).from("ratio") sets oscillator.frequency.value', () => {
-      controller.update('frequency').to(880).from('ratio')
+      controller.update('frequency').to(880).as('ratio')
       expect(oscillatorNode.frequency.value).toBe(880)
     })
 
     it('update("frequency").to(50).from("percent") sets frequency to 0.5', () => {
-      controller.update('frequency').to(50).from('percent')
+      controller.update('frequency').to(50).as('percent')
       expect(oscillatorNode.frequency.value).toBe(0.5)
     })
 
     it('other control types delegate to base class - gain', () => {
-      controller.update('gain').to(0.5).from('ratio')
+      controller.update('gain').to(0.5).as('ratio')
       expect(controller.gain).toBe(0.5)
     })
 
     it('other control types delegate to base class - pan', () => {
-      controller.update('pan').to(-1).from('ratio')
+      controller.update('pan').to(-1).as('ratio')
       expect(controller.pan).toBe(-1)
     })
 
     it('other control types delegate to base class - detune', () => {
-      controller.update('detune').to(100).from('ratio')
+      controller.update('detune').to(100).as('ratio')
       expect(oscillatorNode.detune.value).toBe(100)
     })
   })
@@ -189,7 +189,7 @@ describe('oscillatorController', () => {
     it('update("frequency") uses new oscillator after updateAudioSource', () => {
       const newOscillator = audioContext.createOscillator()
       controller.updateAudioSource(newOscillator)
-      controller.update('frequency').to(880).from('ratio')
+      controller.update('frequency').to(880).as('ratio')
       expect(newOscillator.frequency.value).toBe(880)
     })
   })
@@ -281,7 +281,7 @@ describe('oscillatorController', () => {
     })
 
     it('handles negative detune', () => {
-      controller.update('detune').to(-100).from('ratio')
+      controller.update('detune').to(-100).as('ratio')
       expect(oscillatorNode.detune.value).toBe(-100)
     })
 
