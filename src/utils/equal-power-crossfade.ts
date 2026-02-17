@@ -25,13 +25,14 @@ export function applyEqualPowerCrossfade(
   dryGain: GainNode,
   wetGain: GainNode,
   mix: number,
-  bypass: boolean
+  bypass: boolean,
 ): void {
   if (bypass) {
     // Full dry when bypassed
     dryGain.gain.value = 1
     wetGain.gain.value = 0
-  } else {
+  }
+  else {
     // Equal-power crossfade
     const angle = mix * 0.5 * Math.PI // 0 to PI/2
     dryGain.gain.value = Math.cos(angle) // 1 -> 0

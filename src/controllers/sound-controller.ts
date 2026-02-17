@@ -1,5 +1,5 @@
-import { BaseParamController } from './base-param-controller'
 import type { ParamController, ParamValue, ValueAtTime } from './base-param-controller'
+import { BaseParamController } from './base-param-controller'
 
 export class SoundController extends BaseParamController implements ParamController {
   constructor(private bufferSourceNode: AudioBufferSourceNode, protected gainNode: GainNode, protected pannerNode: StereoPannerNode) {
@@ -30,7 +30,7 @@ export class SoundController extends BaseParamController implements ParamControl
           this.gainNode.gain.setValueAtTime(item.value, currentTime)
           break
         default:
-          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for SoundController: 'gain', 'detune'.")
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune'.`)
       }
     })
   }
@@ -46,7 +46,7 @@ export class SoundController extends BaseParamController implements ParamControl
           this.applyRampToParam(this.gainNode.gain, item.value, time, rampType)
           break
         default:
-          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for SoundController: 'gain', 'detune'.")
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune'.`)
       }
     })
   }

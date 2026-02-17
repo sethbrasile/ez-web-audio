@@ -1,6 +1,6 @@
+import type { AcceptableNote, IMusicallyAware } from '@/musical-identity'
 import { arraySwap, unique } from '@utils/array-methods'
 import { base64ToUint8 } from '@utils/decode-base64'
-import type { AcceptableNote, IMusicallyAware } from '@/musical-identity'
 import { SampledNote } from '@/sampled-note'
 
 type NotesTuple = [IMusicallyAware[], string[]]
@@ -63,7 +63,6 @@ export function octaveShift(octaves: IMusicallyAware[][]): IMusicallyAware[][] {
   // Get the index of the occurence of the last note from the first
   // octave, in the second octave
   const indexToShiftAt = secondOctaveNames.lastIndexOf(lastNote) + 1
-  console.log(secondOctaveNames)
   // Split the octave array at that point, and move the first chunk to the end
   const result = octaves.map(octave => arraySwap(octave, indexToShiftAt))
   // Put first octave back at the beginning of the array

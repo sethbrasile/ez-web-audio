@@ -1,67 +1,5 @@
-<template>
-  <div class="oscillator-demo">
-    <div class="warning">
-      <strong>Note:</strong> Oscillators can be loud. Start with low volume.
-    </div>
-
-    <div class="controls">
-      <button @click="toggle" :class="{ active: playing }" :disabled="loading" class="play-btn">
-        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
-      </button>
-
-      <div class="params">
-        <label for="waveform-select">
-          Waveform:
-          <select id="waveform-select" v-model="waveType" :disabled="loading">
-            <option value="sine">Sine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-            <option value="triangle">Triangle</option>
-          </select>
-        </label>
-
-        <label for="frequency-slider">
-          Frequency: {{ frequency }}Hz
-          <input
-            id="frequency-slider"
-            type="range"
-            v-model.number="frequency"
-            min="100"
-            max="1000"
-            step="10"
-            :aria-label="`Frequency: ${frequency} Hz`"
-          />
-        </label>
-
-        <label for="volume-slider">
-          Volume: {{ Math.round(gain * 100) }}%
-          <input
-            id="volume-slider"
-            type="range"
-            v-model.number="gain"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
-          />
-        </label>
-      </div>
-    </div>
-
-    <div class="note-display">
-      {{ noteName }}
-    </div>
-
-    <slot></slot>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 const loading = ref(false)
 const playing = ref(false)
@@ -85,7 +23,8 @@ const noteName = computed(() => {
 async function toggle() {
   if (playing.value) {
     stop()
-  } else {
+  }
+  else {
     await play()
   }
 }
@@ -99,21 +38,24 @@ async function play() {
 
     oscillator = await createOscillator({
       frequency: frequency.value,
-      type: waveType.value
+      type: waveType.value,
     })
     oscillator.changeGainTo(gain.value)
     oscillator.play()
     playing.value = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play oscillator'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
 
 function stop() {
   if (oscillator) {
-    try { oscillator.stop() } catch {}
+    try { oscillator.stop() }
+    catch {}
     oscillator = null
   }
   playing.value = false
@@ -131,6 +73,70 @@ onUnmounted(() => {
   stop()
 })
 </script>
+
+<template>
+  <div class="oscillator-demo">
+    <div class="warning">
+      <strong>Note:</strong> Oscillators can be loud. Start with low volume.
+    </div>
+
+    <div class="controls">
+      <button :class="{ active: playing }" :disabled="loading" class="play-btn" @click="toggle">
+        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
+      </button>
+
+      <div class="params">
+        <label for="waveform-select">
+          Waveform:
+          <select id="waveform-select" v-model="waveType" :disabled="loading">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+          </select>
+        </label>
+
+        <label for="frequency-slider">
+          Frequency: {{ frequency }}Hz
+          <input
+            id="frequency-slider"
+            v-model.number="frequency"
+            type="range"
+            min="100"
+            max="1000"
+            step="10"
+            :aria-label="`Frequency: ${frequency} Hz`"
+          >
+        </label>
+
+        <label for="volume-slider">
+          Volume: {{ Math.round(gain * 100) }}%
+          <input
+            id="volume-slider"
+            v-model.number="gain"
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          >
+        </label>
+      </div>
+    </div>
+
+    <div class="note-display">
+      {{ noteName }}
+    </div>
+
+    <slot />
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .oscillator-demo {

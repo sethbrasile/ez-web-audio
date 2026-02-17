@@ -1,7 +1,7 @@
 import type { TimeObject } from '@utils/create-time-object'
 import createTimeObject from '@utils/create-time-object'
-import { SoundController } from './controllers/sound-controller'
 import { BaseSound } from './base-sound'
+import { SoundController } from './controllers/sound-controller'
 
 /**
  * One-shot audio playback from an AudioBuffer.

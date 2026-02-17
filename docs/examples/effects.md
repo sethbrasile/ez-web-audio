@@ -47,15 +47,15 @@ Filters modify the frequency content of audio. The FilterEffect wraps the Web Au
 ### Creating Filters
 
 ```typescript
-import { createSound, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createSound, getAudioContext } from 'ez-web-audio'
 
 const sound = await createSound('/audio/music.mp3')
 const ctx = await getAudioContext()
 
 // Lowpass filter - remove high frequencies
 const lowpass = createFilterEffect(ctx, 'lowpass', {
-  frequency: 1000,  // Cutoff frequency in Hz
-  q: 1              // Resonance (default: 1)
+  frequency: 1000, // Cutoff frequency in Hz
+  q: 1 // Resonance (default: 1)
 })
 
 sound.addEffect(lowpass)
@@ -68,13 +68,13 @@ sound.play()
 const filter = createFilterEffect(ctx, 'lowpass', { frequency: 800 })
 
 // Adjust parameters in real-time
-filter.frequency = 1200  // Move cutoff higher
-filter.q = 4             // Increase resonance
+filter.frequency = 1200 // Move cutoff higher
+filter.q = 4 // Increase resonance
 
 // For shelf and peaking filters
 const shelf = createFilterEffect(ctx, 'highshelf', {
   frequency: 3000,
-  gain: 6  // Boost by 6dB
+  gain: 6 // Boost by 6dB
 })
 ```
 
@@ -84,7 +84,7 @@ const shelf = createFilterEffect(ctx, 'highshelf', {
 ```typescript
 const bassBoost = createFilterEffect(ctx, 'lowshelf', {
   frequency: 200,
-  gain: 8  // +8dB boost below 200Hz
+  gain: 8 // +8dB boost below 200Hz
 })
 ```
 
@@ -92,7 +92,7 @@ const bassBoost = createFilterEffect(ctx, 'lowshelf', {
 ```typescript
 const deHarsh = createFilterEffect(ctx, 'lowpass', {
   frequency: 8000,
-  q: 0.7  // Gentle rolloff
+  q: 0.7 // Gentle rolloff
 })
 ```
 
@@ -114,8 +114,8 @@ sound.addEffect(lowpass)
 #### Notch Filter (Remove Hum)
 ```typescript
 const removeHum = createFilterEffect(ctx, 'notch', {
-  frequency: 60,   // 60Hz power line hum
-  q: 30            // Narrow notch
+  frequency: 60, // 60Hz power line hum
+  q: 30 // Narrow notch
 })
 ```
 
@@ -127,11 +127,11 @@ GainEffect provides volume control within the effect chain. Unlike the sound's b
 import { createGainEffect, getAudioContext } from 'ez-web-audio'
 
 const ctx = await getAudioContext()
-const gainEffect = createGainEffect(ctx, 0.5)  // 50% volume
+const gainEffect = createGainEffect(ctx, 0.5) // 50% volume
 
 // Adjust volume
-gainEffect.value = 0.8  // 80% volume
-gainEffect.value = 1.5  // 150% (boost)
+gainEffect.value = 0.8 // 80% volume
+gainEffect.value = 1.5 // 150% (boost)
 ```
 
 ### Gain Before vs After Filter
@@ -141,8 +141,8 @@ gainEffect.value = 1.5  // 150% (boost)
 const preGain = createGainEffect(ctx, 2.0)
 const filter = createFilterEffect(ctx, 'lowpass', { frequency: 1000 })
 
-sound.addEffect(preGain)   // First: boost signal
-sound.addEffect(filter)     // Second: filter boosted signal
+sound.addEffect(preGain) // First: boost signal
+sound.addEffect(filter) // Second: filter boosted signal
 
 // Gain AFTER filter: affects final output
 const postGain = createGainEffect(ctx, 0.5)
@@ -189,7 +189,7 @@ sound.removeEffect(lowpass)
 
 // Insert effect at specific position
 const newEffect = createFilterEffect(ctx, 'peaking', { frequency: 1000 })
-sound.addEffect(newEffect, 0)  // Insert at beginning
+sound.addEffect(newEffect, 0) // Insert at beginning
 ```
 
 ## Bypass and Mix Controls
@@ -200,13 +200,13 @@ Every effect supports bypass (on/off) and mix (wet/dry blend):
 const filter = createFilterEffect(ctx, 'lowpass', { frequency: 800 })
 
 // Bypass: temporarily disable the effect
-filter.bypass = true   // Effect is bypassed (100% dry signal)
-filter.bypass = false  // Effect is active
+filter.bypass = true // Effect is bypassed (100% dry signal)
+filter.bypass = false // Effect is active
 
 // Mix: blend between dry (original) and wet (processed) signal
-filter.mix = 0    // 0% wet = original signal only
-filter.mix = 0.5  // 50% wet = equal blend
-filter.mix = 1    // 100% wet = fully processed (default)
+filter.mix = 0 // 0% wet = original signal only
+filter.mix = 0.5 // 50% wet = equal blend
+filter.mix = 1 // 100% wet = fully processed (default)
 ```
 
 ::: tip Wet/Dry Mixing
@@ -234,7 +234,7 @@ Use `wrapEffect` to integrate effects from external libraries (like Tuna.js) or 
 ### Wrapping a WaveShaper (Distortion)
 
 ```typescript
-import { wrapEffect, getAudioContext } from 'ez-web-audio'
+import { getAudioContext, wrapEffect } from 'ez-web-audio'
 
 const ctx = await getAudioContext()
 
@@ -245,7 +245,7 @@ distortion.oversample = '4x'
 
 // Wrap it to get bypass/mix controls
 const wrapped = wrapEffect(ctx, distortion)
-wrapped.mix = 0.7  // 70% distortion
+wrapped.mix = 0.7 // 70% distortion
 
 sound.addEffect(wrapped)
 ```
@@ -255,8 +255,8 @@ sound.addEffect(wrapped)
 [Tuna.js](https://github.com/Theodeus/tuna) provides additional effects like chorus, phaser, and tremolo.
 
 ```typescript
+import { getAudioContext, wrapEffect } from 'ez-web-audio'
 import Tuna from 'tunajs'
-import { wrapEffect, getAudioContext } from 'ez-web-audio'
 
 const ctx = await getAudioContext()
 const tuna = new Tuna(ctx)
@@ -271,12 +271,12 @@ const chorus = new tuna.Chorus({
 
 // Wrap it for standard Effect interface
 const wrapped = wrapEffect(ctx, chorus)
-wrapped.mix = 0.5  // 50% chorus blend
+wrapped.mix = 0.5 // 50% chorus blend
 
 sound.addEffect(wrapped)
 
 // Access original effect parameters
-wrapped.effect.rate = 2.0  // Adjust Tuna's parameters
+wrapped.effect.rate = 2.0 // Adjust Tuna's parameters
 ```
 
 ### The ExternalEffect Interface
@@ -285,7 +285,7 @@ Any object with a `connect()` method can be wrapped:
 
 ```typescript
 interface ExternalEffect {
-  connect(destination: AudioNode): void
+  connect: (destination: AudioNode) => void
 }
 ```
 
@@ -300,7 +300,7 @@ This includes:
 Attach an Analyzer to visualize the processed audio signal:
 
 ```typescript
-import { createSound, createFilterEffect, createAnalyzer, getAudioContext } from 'ez-web-audio'
+import { createAnalyzer, createFilterEffect, createSound, getAudioContext } from 'ez-web-audio'
 
 const sound = await createSound('/audio/music.mp3')
 const ctx = await getAudioContext()
@@ -336,7 +336,7 @@ The analyzer is always at the end of the signal chain (after all effects, gain, 
 ## Complete Example: DJ-Style EQ
 
 ```typescript
-import { createTrack, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createTrack, getAudioContext } from 'ez-web-audio'
 
 const track = await createTrack('/audio/song.mp3')
 const ctx = await getAudioContext()
@@ -344,7 +344,7 @@ const ctx = await getAudioContext()
 // Three-band EQ
 const lowEQ = createFilterEffect(ctx, 'lowshelf', {
   frequency: 320,
-  gain: 0  // Will be adjusted by user
+  gain: 0 // Will be adjusted by user
 })
 
 const midEQ = createFilterEffect(ctx, 'peaking', {

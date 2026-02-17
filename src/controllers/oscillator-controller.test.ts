@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { OscillatorController } from './oscillator-controller'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Envelope } from '../envelope'
+import { OscillatorController } from './oscillator-controller'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('OscillatorController', () => {
+describe('oscillatorController', () => {
   let audioContext: AudioContext
   let gainNode: GainNode
   let pannerNode: StereoPannerNode
@@ -155,12 +155,12 @@ describe('OscillatorController', () => {
 
     it('throws for unsupported control type in applyValues', () => {
       controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for OscillatorController: 'gain', 'frequency'.")
+      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for OscillatorController: \'gain\', \'frequency\'.')
     })
 
     it('throws for unsupported control type in applyRampValues', () => {
       controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for OscillatorController: 'gain', 'frequency'.")
+      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for OscillatorController: \'gain\', \'frequency\'.')
     })
   })
 

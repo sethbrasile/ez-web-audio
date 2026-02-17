@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { settle } from './test/helpers'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Track } from '@/track'
+import { settle } from './test/helpers'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -16,7 +16,7 @@ function createTrack(context: AudioContext, durationSeconds: number = 10) {
   return new Track(context, audioBuffer)
 }
 
-describe('Track', () => {
+describe('track', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {

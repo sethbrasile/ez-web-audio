@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { Analyzer, createAnalyzer } from './analyzer'
 import type { AnalyzerOptions } from './analyzer'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Analyzer, createAnalyzer } from './analyzer'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -11,7 +11,7 @@ function createMockContext() {
  * The standardized-audio-context-mock doesn't fully implement AnalyserNode.
  * We test structure where possible and mock methods where needed.
  */
-describe('Analyzer', () => {
+describe('analyzer', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -25,14 +25,14 @@ describe('Analyzer', () => {
       expect(analyzer).toBeInstanceOf(Analyzer)
       expect(analyzer.fftSize).toBe(2048) // Default FFT size
       // frequencyBinCount may be undefined in mock, but the array should be correct size
-      expect(analyzer['_frequencyData'].length).toBe(1024)
+      expect(analyzer._frequencyData.length).toBe(1024)
     })
 
     it('creates analyzer with custom fftSize', () => {
       const analyzer = new Analyzer(audioContext, { fftSize: 512 })
 
       expect(analyzer.fftSize).toBe(512)
-      expect(analyzer['_frequencyData'].length).toBe(256)
+      expect(analyzer._frequencyData.length).toBe(256)
     })
 
     it('creates analyzer with all custom options', () => {
@@ -40,7 +40,7 @@ describe('Analyzer', () => {
         fftSize: 1024,
         minDecibels: -90,
         maxDecibels: -20,
-        smoothingTimeConstant: 0.5
+        smoothingTimeConstant: 0.5,
       }
       const analyzer = new Analyzer(audioContext, options)
 
@@ -68,13 +68,13 @@ describe('Analyzer', () => {
     it('accepts minimum valid fftSize (32)', () => {
       const analyzer = new Analyzer(audioContext, { fftSize: 32 })
       expect(analyzer.fftSize).toBe(32)
-      expect(analyzer['_frequencyData'].length).toBe(16)
+      expect(analyzer._frequencyData.length).toBe(16)
     })
 
     it('accepts maximum valid fftSize (32768)', () => {
       const analyzer = new Analyzer(audioContext, { fftSize: 32768 })
       expect(analyzer.fftSize).toBe(32768)
-      expect(analyzer['_frequencyData'].length).toBe(16384)
+      expect(analyzer._frequencyData.length).toBe(16384)
     })
   })
 
@@ -100,10 +100,10 @@ describe('Analyzer', () => {
   describe('frequencyBinCount', () => {
     it('internal arrays are fftSize / 2', () => {
       const analyzer1 = new Analyzer(audioContext, { fftSize: 256 })
-      expect(analyzer1['_frequencyData'].length).toBe(128)
+      expect(analyzer1._frequencyData.length).toBe(128)
 
       const analyzer2 = new Analyzer(audioContext, { fftSize: 4096 })
-      expect(analyzer2['_frequencyData'].length).toBe(2048)
+      expect(analyzer2._frequencyData.length).toBe(2048)
     })
   })
 
@@ -118,23 +118,25 @@ describe('Analyzer', () => {
       analyzer.fftSize = 512
       expect(analyzer.fftSize).toBe(512)
       // Arrays should be reallocated
-      expect(analyzer['_frequencyData'].length).toBe(256)
+      expect(analyzer._frequencyData.length).toBe(256)
     })
 
     it('throws when setting invalid fftSize', () => {
       const analyzer = new Analyzer(audioContext)
-      expect(() => { analyzer.fftSize = 999 })
+      expect(() => {
+        analyzer.fftSize = 999
+      })
         .toThrow('fftSize must be a power of 2 between 32 and 32768')
     })
 
     it('reallocates arrays when fftSize changes', () => {
       const analyzer = new Analyzer(audioContext, { fftSize: 256 })
-      expect(analyzer['_frequencyData'].length).toBe(128)
+      expect(analyzer._frequencyData.length).toBe(128)
 
       analyzer.fftSize = 1024
-      expect(analyzer['_frequencyData'].length).toBe(512)
-      expect(analyzer['_timeDomainData'].length).toBe(512)
-      expect(analyzer['_floatFrequencyData'].length).toBe(512)
+      expect(analyzer._frequencyData.length).toBe(512)
+      expect(analyzer._timeDomainData.length).toBe(512)
+      expect(analyzer._floatFrequencyData.length).toBe(512)
     })
   })
 
@@ -210,7 +212,7 @@ describe('Analyzer', () => {
       analyzer.input.getByteFrequencyData = mockFn
 
       analyzer.getFrequencyData()
-      expect(mockFn).toHaveBeenCalledWith(analyzer['_frequencyData'])
+      expect(mockFn).toHaveBeenCalledWith(analyzer._frequencyData)
     })
   })
 
@@ -246,7 +248,7 @@ describe('Analyzer', () => {
       analyzer.input.getByteTimeDomainData = mockFn
 
       analyzer.getTimeDomainData()
-      expect(mockFn).toHaveBeenCalledWith(analyzer['_timeDomainData'])
+      expect(mockFn).toHaveBeenCalledWith(analyzer._timeDomainData)
     })
   })
 
@@ -282,7 +284,7 @@ describe('Analyzer', () => {
       analyzer.input.getFloatFrequencyData = mockFn
 
       analyzer.getFloatFrequencyData()
-      expect(mockFn).toHaveBeenCalledWith(analyzer['_floatFrequencyData'])
+      expect(mockFn).toHaveBeenCalledWith(analyzer._floatFrequencyData)
     })
   })
 })
@@ -310,6 +312,6 @@ describe('createAnalyzer factory', () => {
     const analyzer = createAnalyzer(audioContext)
 
     expect(analyzer.fftSize).toBe(2048)
-    expect(analyzer['_frequencyData'].length).toBe(1024)
+    expect(analyzer._frequencyData.length).toBe(1024)
   })
 })

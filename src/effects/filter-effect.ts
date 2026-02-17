@@ -4,15 +4,15 @@ import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 /**
  * All available BiquadFilter types.
  */
-export type FilterType =
-  | 'lowpass'
-  | 'highpass'
-  | 'bandpass'
-  | 'lowshelf'
-  | 'highshelf'
-  | 'peaking'
-  | 'notch'
-  | 'allpass'
+export type FilterType
+  = | 'lowpass'
+    | 'highpass'
+    | 'bandpass'
+    | 'lowshelf'
+    | 'highshelf'
+    | 'peaking'
+    | 'notch'
+    | 'allpass'
 
 /**
  * Options for creating a FilterEffect.
@@ -55,7 +55,7 @@ export class FilterEffect implements Effect {
   constructor(
     audioContext: AudioContext,
     type: FilterType,
-    options: FilterEffectOptions = {}
+    options: FilterEffectOptions = {},
   ) {
     // Create nodes
     this.filterNode = audioContext.createBiquadFilter()
@@ -191,7 +191,7 @@ export class FilterEffect implements Effect {
 export function createFilterEffect(
   audioContext: AudioContext,
   type: FilterType,
-  options: FilterEffectOptions = {}
+  options: FilterEffectOptions = {},
 ): FilterEffect {
   return new FilterEffect(audioContext, type, options)
 }

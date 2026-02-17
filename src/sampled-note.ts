@@ -1,5 +1,5 @@
-import { Sound } from './sound'
 import { MusicallyAware } from './musical-identity'
+import { Sound } from './sound'
 
 /**
  * A Sound with musical identity.

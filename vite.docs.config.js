@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import prismjs from 'vite-plugin-prismjs'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   base: '/ez-web-audio',

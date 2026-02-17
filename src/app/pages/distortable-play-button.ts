@@ -1,6 +1,6 @@
+import type { Sound } from '@/sound'
 import { observable, observe, unobserve } from '@nx-js/observer-util'
 import { createSound, getAudioContext } from '@/index'
-import type { Sound } from '@/sound'
 
 const NAME = 'distortion'
 let distortionEnabled = false

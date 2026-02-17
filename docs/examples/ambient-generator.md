@@ -43,9 +43,9 @@ Here's how to build an ambient generator from scratch:
 
 ```typescript
 import {
+  createFilterEffect,
   createOscillator,
   createWhiteNoise,
-  createFilterEffect,
   getAudioContext
 } from 'ez-web-audio'
 

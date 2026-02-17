@@ -64,7 +64,8 @@ export class GainEffect implements Effect {
     if (v) {
       // Bypass: set gain to 1.0 (passthrough)
       this.gainNode.gain.value = 1.0
-    } else {
+    }
+    else {
       // Restore effect
       this.applyEffectiveGain()
     }

@@ -1,16 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { DebugMessage } from './index'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  setDebugMode,
-  setDebugHandler,
-  debugLog,
-  debugEvent,
   debugConnection,
+  debugEvent,
+  debugLog,
+
   debugWarning,
   formatDebugMessage,
-  type DebugMessage
+  setDebugHandler,
+  setDebugMode,
 } from './index'
 
-describe('Debug Module', () => {
+describe('debug Module', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
@@ -55,7 +56,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [1.234] mySound: play',
-        ''
+        '',
       )
     })
 
@@ -94,7 +95,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [0.000] unknown: test',
-        ''
+        '',
       )
     })
 
@@ -106,12 +107,12 @@ describe('Debug Module', () => {
         type: 'event',
         message: 'test',
         timestamp: 0,
-        source: 'customSource'
+        source: 'customSource',
       })
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [0.000] customSource: test',
-        ''
+        '',
       )
     })
 
@@ -124,7 +125,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [0.000] test: test',
-        details
+        details,
       )
     })
   })
@@ -133,7 +134,7 @@ describe('Debug Module', () => {
     it('routes messages to custom handler', () => {
       setDebugMode(true)
       const messages: DebugMessage[] = []
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       const source = { name: 'test' }
       debugLog(source, { type: 'event', message: 'play', timestamp: 1.5 })
@@ -143,7 +144,7 @@ describe('Debug Module', () => {
         type: 'event',
         source: 'test',
         message: 'play',
-        timestamp: 1.5
+        timestamp: 1.5,
       })
       expect(consoleSpy).not.toHaveBeenCalled()
     })
@@ -151,7 +152,7 @@ describe('Debug Module', () => {
     it('restores default console handler when set to null', () => {
       setDebugMode(true)
       const messages: DebugMessage[] = []
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       // First message goes to custom handler
       debugLog({ name: 'test' }, { type: 'event', message: 'first', timestamp: 0 })
@@ -170,14 +171,16 @@ describe('Debug Module', () => {
     it('custom handler receives correct DebugMessage structure', () => {
       setDebugMode(true)
       let receivedMsg: DebugMessage | null = null
-      setDebugHandler((msg) => { receivedMsg = msg })
+      setDebugHandler((msg) => {
+        receivedMsg = msg
+      })
 
       const details = { startOffset: 0.5 }
       debugLog({ name: 'mySound' }, {
         type: 'warning',
         message: 'AudioContext suspended',
         timestamp: 2.345,
-        details
+        details,
       })
 
       expect(receivedMsg).not.toBeNull()
@@ -199,7 +202,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [1.000] sound1: play',
-        { startOffset: 0 }
+        { startOffset: 0 },
       )
     })
 
@@ -208,7 +211,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:connection] [2.500] sound2: Effect chain wired',
-        { count: 3 }
+        { count: 3 },
       )
     })
 
@@ -217,7 +220,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:warning] [0.000] sound3: AudioContext suspended',
-        { state: 'suspended' }
+        { state: 'suspended' },
       )
     })
 
@@ -226,7 +229,7 @@ describe('Debug Module', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[ez-audio:event] [5.000] test: stop',
-        ''
+        '',
       )
     })
   })
@@ -237,7 +240,7 @@ describe('Debug Module', () => {
         type: 'event',
         source: 'mySound',
         message: 'play',
-        timestamp: 1.234
+        timestamp: 1.234,
       }
 
       const formatted = formatDebugMessage(msg)
@@ -250,14 +253,14 @@ describe('Debug Module', () => {
         type: 'warning',
         source: 'test',
         message: 'warn',
-        timestamp: 0
+        timestamp: 0,
       })).toBe('[ez-audio:warning] [0.000] test: warn')
 
       expect(formatDebugMessage({
         type: 'connection',
         source: 'test',
         message: 'connected',
-        timestamp: 10.5
+        timestamp: 10.5,
       })).toBe('[ez-audio:connection] [10.500] test: connected')
     })
 
@@ -266,7 +269,7 @@ describe('Debug Module', () => {
         type: 'event',
         source: 'test',
         message: 'test',
-        timestamp: 123.456789
+        timestamp: 123.456789,
       }
 
       const formatted = formatDebugMessage(msg)

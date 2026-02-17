@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AudioError } from './audio-error'
 import { AudioContextError } from './context-error'
-import { AudioLoadError } from './load-error'
 import { InvalidNoteError } from './invalid-note-error'
+import { AudioLoadError } from './load-error'
 
-describe('Error Classes', () => {
-  describe('AudioError', () => {
+describe('error Classes', () => {
+  describe('audioError', () => {
     it('is an instance of Error', () => {
       const error = new AudioError('Test error')
       expect(error).toBeInstanceOf(Error)
@@ -38,7 +38,7 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('AudioContextError', () => {
+  describe('audioContextError', () => {
     it('is an instance of Error', () => {
       const error = new AudioContextError('Context error', 'suspended')
       expect(error).toBeInstanceOf(Error)
@@ -87,7 +87,7 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('AudioLoadError', () => {
+  describe('audioLoadError', () => {
     it('is an instance of Error', () => {
       const error = new AudioLoadError('Load failed', 'https://example.com/audio.mp3')
       expect(error).toBeInstanceOf(Error)
@@ -136,7 +136,7 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('InvalidNoteError', () => {
+  describe('invalidNoteError', () => {
     it('is an instance of Error', () => {
       const error = new InvalidNoteError('Invalid note', 'H4')
       expect(error).toBeInstanceOf(Error)
@@ -185,18 +185,18 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('Error instanceof chain', () => {
-    it('AudioContextError instanceof AudioError', () => {
+  describe('error instanceof chain', () => {
+    it('audioContextError instanceof AudioError', () => {
       const error = new AudioContextError('Test', 'suspended')
       expect(error instanceof AudioError).toBe(true)
     })
 
-    it('AudioLoadError instanceof AudioError', () => {
+    it('audioLoadError instanceof AudioError', () => {
       const error = new AudioLoadError('Test', 'http://test.com')
       expect(error instanceof AudioError).toBe(true)
     })
 
-    it('InvalidNoteError instanceof AudioError', () => {
+    it('invalidNoteError instanceof AudioError', () => {
       const error = new InvalidNoteError('Test', 'H4')
       expect(error instanceof AudioError).toBe(true)
     })

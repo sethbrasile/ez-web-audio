@@ -1,5 +1,5 @@
-import type { TimeObject } from '@utils/create-time-object'
 import type { ControlType, RampType } from '@controllers/base-param-controller'
+import type { TimeObject } from '@utils/create-time-object'
 
 export interface Playable {
   play: () => void

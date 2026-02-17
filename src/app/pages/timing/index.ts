@@ -1,6 +1,6 @@
+import { createSound, getAudioContext } from '@/index'
 import { codeBlock, htmlBlock, inlineCode } from '../../utils'
 import nav from './nav'
-import { createSound, getAudioContext } from '@/index'
 
 const Content = {
   async setup() {

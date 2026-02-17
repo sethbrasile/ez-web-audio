@@ -10,7 +10,7 @@ export interface ExternalEffect {
    * Connect the effect's output to a destination node.
    * This is the minimum requirement for wrapping an external effect.
    */
-  connect(destination: AudioNode): void
+  connect: (destination: AudioNode) => void
 }
 
 /**
@@ -82,7 +82,8 @@ export class EffectWrapper implements Effect {
     const effectWithInput = externalEffect as { input?: { connect?: (dest: AudioNode) => void } }
     if (effectWithInput.input && typeof effectWithInput.input.connect === 'function') {
       this.inputNode.connect(effectWithInput.input as AudioNode)
-    } else if (typeof (externalEffect as { connect: (dest: AudioNode) => void }).connect === 'function' && 'disconnect' in externalEffect) {
+    }
+    else if (typeof (externalEffect as { connect: (dest: AudioNode) => void }).connect === 'function' && 'disconnect' in externalEffect) {
       // Branch 2: Effects that ARE AudioNodes (e.g., WaveShaperNode, ConvolverNode)
       // Native AudioNodes have both connect() and disconnect() methods.
       // We detect this by checking for both methods (duck-typing).
@@ -174,7 +175,7 @@ export class EffectWrapper implements Effect {
  */
 export function wrapEffect(
   audioContext: AudioContext,
-  externalEffect: ExternalEffect
+  externalEffect: ExternalEffect,
 ): EffectWrapper {
   return new EffectWrapper(audioContext, externalEffect)
 }

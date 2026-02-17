@@ -20,8 +20,8 @@ import { createOscillator } from 'ez-web-audio'
 
 async function playSynth() {
   const synth = await createOscillator({
-    frequency: 440,  // A4 note
-    type: 'sine'     // Waveform type
+    frequency: 440, // A4 note
+    type: 'sine' // Waveform type
   })
 
   synth.play()
@@ -87,10 +87,10 @@ const piano = await createOscillator({
   frequency: 440,
   type: 'triangle',
   envelope: {
-    attack: 0.01,   // 10ms - almost instant
-    decay: 0.3,     // 300ms decay
-    sustain: 0.4,   // 40% sustain level
-    release: 0.5    // 500ms release
+    attack: 0.01, // 10ms - almost instant
+    decay: 0.3, // 300ms decay
+    sustain: 0.4, // 40% sustain level
+    release: 0.5 // 500ms release
   }
 })
 
@@ -108,10 +108,10 @@ const piano = await createOscillator({
   frequency: 440,
   type: 'triangle',
   envelope: {
-    attack: 0.005,  // Near-instant attack
-    decay: 0.4,     // Medium decay
-    sustain: 0.2,   // Low sustain (sound fades)
-    release: 0.8    // Long release for resonance
+    attack: 0.005, // Near-instant attack
+    decay: 0.4, // Medium decay
+    sustain: 0.2, // Low sustain (sound fades)
+    release: 0.8 // Long release for resonance
   }
 })
 ```
@@ -122,10 +122,10 @@ const strings = await createOscillator({
   frequency: 440,
   type: 'sawtooth',
   envelope: {
-    attack: 0.5,    // Slow swell
-    decay: 0.3,     // Gentle decay
-    sustain: 0.8,   // High sustain
-    release: 1.0    // Long, smooth release
+    attack: 0.5, // Slow swell
+    decay: 0.3, // Gentle decay
+    sustain: 0.8, // High sustain
+    release: 1.0 // Long, smooth release
   }
 })
 ```
@@ -136,10 +136,10 @@ const lead = await createOscillator({
   frequency: 440,
   type: 'square',
   envelope: {
-    attack: 0.05,   // Quick but not instant
-    decay: 0.1,     // Short decay
-    sustain: 0.7,   // Strong sustain
-    release: 0.2    // Quick release
+    attack: 0.05, // Quick but not instant
+    decay: 0.1, // Short decay
+    sustain: 0.7, // Strong sustain
+    release: 0.2 // Quick release
   }
 })
 ```
@@ -150,10 +150,10 @@ const pluck = await createOscillator({
   frequency: 440,
   type: 'triangle',
   envelope: {
-    attack: 0.001,  // Instant attack
-    decay: 0.2,     // Quick decay
-    sustain: 0.0,   // No sustain
-    release: 0.1    // Short release
+    attack: 0.001, // Instant attack
+    decay: 0.2, // Quick decay
+    sustain: 0.0, // No sustain
+    release: 0.1 // Short release
   }
 })
 ```
@@ -178,9 +178,9 @@ EZ Web Audio includes a complete frequency map for all standard notes:
 import { frequencyMap } from 'ez-web-audio'
 
 // Access frequencies by note name
-console.log(frequencyMap.A4)  // 440
-console.log(frequencyMap.C4)  // 261.63
-console.log(frequencyMap['C#4'])  // 277.18
+console.log(frequencyMap.A4) // 440
+console.log(frequencyMap.C4) // 261.63
+console.log(frequencyMap['C#4']) // 277.18
 
 // Play a C major chord
 const c4 = await createOscillator({ frequency: frequencyMap.C4 })
@@ -203,8 +203,8 @@ const notes = createNotes()
 
 // Find a specific note
 const a4 = notes.find(n => n.frequency === 440)
-console.log(a4.letter)     // 'A'
-console.log(a4.octave)     // 4
+console.log(a4.letter) // 'A'
+console.log(a4.octave) // 4
 console.log(a4.accidental) // ''
 
 // Find C#4
@@ -216,7 +216,7 @@ const cSharp4 = notes.find(n => n.letter === 'C' && n.accidental === '#' && n.oc
 Shape the oscillator tone with filters:
 
 ```typescript
-import { createOscillator, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createOscillator, getAudioContext } from 'ez-web-audio'
 
 const synth = await createOscillator({
   frequency: 200,
@@ -226,8 +226,8 @@ const synth = await createOscillator({
 // Add a lowpass filter to remove harsh high frequencies
 const ctx = await getAudioContext()
 const lowpass = createFilterEffect(ctx, 'lowpass', {
-  frequency: 800,  // Cutoff frequency
-  q: 2             // Resonance
+  frequency: 800, // Cutoff frequency
+  q: 2 // Resonance
 })
 
 synth.addEffect(lowpass)
@@ -244,7 +244,7 @@ synth.play()
 synth.update('frequency').to(880).from('value')
 
 // Or use the controller directly
-synth.changeFrequencyTo(523.25)  // C5
+synth.changeFrequencyTo(523.25) // C5
 ```
 
 ## Volume Control
@@ -255,7 +255,7 @@ Control oscillator volume just like Sound:
 const synth = await createOscillator({ frequency: 440 })
 
 // Set volume before playing
-synth.changeGainTo(0.3)  // 30% volume (recommended for oscillators)
+synth.changeGainTo(0.3) // 30% volume (recommended for oscillators)
 synth.play()
 
 // Fade out

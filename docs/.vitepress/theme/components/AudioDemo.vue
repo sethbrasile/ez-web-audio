@@ -1,46 +1,5 @@
-<template>
-  <div class="audio-demo">
-    <div class="controls">
-      <button @click="play" :disabled="loading" class="play-btn">
-        {{ loading ? 'Loading...' : 'Play Sound' }}
-      </button>
-      <div class="sliders">
-        <label for="audio-volume">
-          Volume: {{ Math.round(gain * 100) }}%
-          <input
-            id="audio-volume"
-            type="range"
-            v-model.number="gain"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
-          />
-        </label>
-        <label for="audio-pan">
-          Pan: {{ pan < 0 ? 'L' : pan > 0 ? 'R' : 'C' }} {{ Math.abs(Math.round(pan * 100)) }}
-          <input
-            id="audio-pan"
-            type="range"
-            v-model.number="pan"
-            min="-1"
-            max="1"
-            step="0.1"
-            :aria-label="`Pan: ${pan < 0 ? 'Left' : pan > 0 ? 'Right' : 'Center'} ${Math.abs(Math.round(pan * 100))}`"
-          />
-        </label>
-      </div>
-    </div>
-    <slot></slot>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{
   url?: string
@@ -65,7 +24,8 @@ async function ensureInit() {
 }
 
 async function play() {
-  if (loading.value) return
+  if (loading.value)
+    return
 
   try {
     error.value = ''
@@ -75,27 +35,75 @@ async function play() {
     sound.changeGainTo(gain.value)
     sound.changePanTo(pan.value)
     sound.play()
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
 
 watch(gain, (val) => {
-  if (sound) sound.changeGainTo(val)
+  if (sound)
+    sound.changeGainTo(val)
 })
 
 watch(pan, (val) => {
-  if (sound) sound.changePanTo(val)
+  if (sound)
+    sound.changePanTo(val)
 })
 
 onUnmounted(() => {
   if (sound) {
-    try { sound.stop() } catch {}
+    try { sound.stop() }
+    catch {}
   }
 })
 </script>
+
+<template>
+  <div class="audio-demo">
+    <div class="controls">
+      <button :disabled="loading" class="play-btn" @click="play">
+        {{ loading ? 'Loading...' : 'Play Sound' }}
+      </button>
+      <div class="sliders">
+        <label for="audio-volume">
+          Volume: {{ Math.round(gain * 100) }}%
+          <input
+            id="audio-volume"
+            v-model.number="gain"
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          >
+        </label>
+        <label for="audio-pan">
+          Pan: {{ pan < 0 ? 'L' : pan > 0 ? 'R' : 'C' }} {{ Math.abs(Math.round(pan * 100)) }}
+          <input
+            id="audio-pan"
+            v-model.number="pan"
+            type="range"
+            min="-1"
+            max="1"
+            step="0.1"
+            :aria-label="`Pan: ${pan < 0 ? 'Left' : pan > 0 ? 'Right' : 'Center'} ${Math.abs(Math.round(pan * 100))}`"
+          >
+        </label>
+      </div>
+    </div>
+    <slot />
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .audio-demo {

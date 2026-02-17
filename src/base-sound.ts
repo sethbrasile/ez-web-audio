@@ -1,12 +1,12 @@
-import type { TimeObject } from '@utils/create-time-object'
-import type { Playable } from '@interfaces/playable'
-import type { Connectable, Connection } from '@interfaces/connectable'
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
-import type { SoundEventMap } from './events/event-types'
-import type { Effect } from './effects'
+import type { Connectable, Connection } from '@interfaces/connectable'
+import type { Playable } from '@interfaces/playable'
+import type { TimeObject } from '@utils/create-time-object'
 import type { Analyzer } from './analyzer'
+import type { Effect } from './effects'
+import type { SoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
-import { debugEvent, debugConnection } from './debug'
+import { debugConnection, debugEvent } from './debug'
 
 /**
  * Configuration options for BaseSound and its subclasses.
@@ -318,8 +318,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       this.audioContext.currentTime,
       {
         effectCount: this.effects.length,
-        effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`)
-      }
+        effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`),
+      },
     )
     return this
   }
@@ -345,8 +345,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
         this.audioContext.currentTime,
         {
           effectCount: this.effects.length,
-          effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`)
-        }
+          effects: this.effects.map((e, i) => `[${i}] ${e.bypass ? '(bypassed)' : 'active'}`),
+        },
       )
     }
     return this
@@ -449,7 +449,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   override addEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void {
     super.addEventListener(type, listener as EventListener, options)
   }
@@ -476,7 +476,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   override removeEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void {
     super.removeEventListener(type, listener as EventListener, options)
   }
@@ -489,7 +489,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   protected emit<K extends keyof SoundEventMap>(
     type: K,
-    detail: SoundEventMap[K]['detail']
+    detail: SoundEventMap[K]['detail'],
   ): void {
     const event = new CustomEvent(type, { detail })
     this.dispatchEvent(event)
@@ -512,7 +512,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   on<K extends keyof SoundEventMap>(
     type: K | K[],
-    listener: (event: SoundEventMap[K]) => void
+    listener: (event: SoundEventMap[K]) => void,
   ): this {
     if (Array.isArray(type)) {
       type.forEach(t => this.addEventListener(t, listener as (event: SoundEventMap[typeof t]) => void))
@@ -537,7 +537,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   once<K extends keyof SoundEventMap>(
     type: K,
-    listener: (event: SoundEventMap[K]) => void
+    listener: (event: SoundEventMap[K]) => void,
   ): this {
     this.addEventListener(type, listener, { once: true })
     return this
@@ -564,7 +564,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   off<K extends keyof SoundEventMap>(
     type: K,
-    listener: (event: SoundEventMap[K]) => void
+    listener: (event: SoundEventMap[K]) => void,
   ): this {
     this.removeEventListener(type, listener)
     return this
@@ -588,8 +588,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       this.audioContext.currentTime,
       {
         connectionCount: this.connections.length,
-        connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`)
-      }
+        connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`),
+      },
     )
     return this
   }
@@ -616,8 +616,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
           this.audioContext.currentTime,
           {
             connectionCount: this.connections.length,
-            connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`)
-          }
+            connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`),
+          },
         )
       }
     }
@@ -711,10 +711,10 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public changeGainTo(value: number): this {
     if (value < 0) {
-      throw new Error("Gain must be >= 0. Received: " + value)
+      throw new Error(`Gain must be >= 0. Received: ${value}`)
     }
     if (value > 1) {
-      console.warn("ez-web-audio: Gain value " + value + " exceeds 1.0. Values above 1 amplify the signal and may cause distortion.")
+      console.warn(`ez-web-audio: Gain value ${value} exceeds 1.0. Values above 1 amplify the signal and may cause distortion.`)
     }
     this.controller.update('gain').to(value).from('ratio')
     return this
@@ -845,8 +845,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     // Warn if AudioContext remains suspended after resume attempt
     if (audioContext.state === 'suspended' && !BaseSound._hasWarnedAboutSuspended) {
       console.warn(
-        'ez-web-audio: AudioContext is suspended. Audio will not play until a user interaction (click, tap, keypress) occurs. ' +
-        'Call initAudio() from a user gesture handler, or ensure play() is called after user interaction.'
+        'ez-web-audio: AudioContext is suspended. Audio will not play until a user interaction (click, tap, keypress) occurs. '
+        + 'Call initAudio() from a user gesture handler, or ensure play() is called after user interaction.',
       )
       BaseSound._hasWarnedAboutSuspended = true
     }
@@ -856,7 +856,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     // Emit play event
     this.emit('play', {
       time: currentTime,
-      source: this
+      source: this,
     })
 
     // Debug log for play event
@@ -876,7 +876,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
         this.emit('end', {
           time: this.audioContext.currentTime,
           source: this,
-          duration: this.duration.raw
+          duration: this.duration.raw,
         })
         // Debug log for end event
         debugEvent(this, 'end', this.audioContext.currentTime, { duration: this.duration.raw })
@@ -958,7 +958,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
         // Emit stop event before actually stopping the node
         this.emit('stop', {
           time: this.audioContext.currentTime,
-          source: this
+          source: this,
         })
 
         // Debug log for stop event

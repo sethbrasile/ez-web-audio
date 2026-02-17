@@ -16,7 +16,7 @@ import type { Track } from '../track'
  */
 export function generateEqualPowerCurve(
   direction: 'in' | 'out',
-  length: number
+  length: number,
 ): Float32Array {
   const curve = new Float32Array(length)
 
@@ -58,7 +58,7 @@ export function generateEqualPowerCurve(
 export async function crossfade(
   fromTrack: Track,
   toTrack: Track,
-  duration: number
+  duration: number,
 ): Promise<void> {
   const isToTrackPlaying = toTrack.isPlaying
   const audioContext = fromTrack.audioContext

@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Track } from '../track'
 import { crossfade, generateEqualPowerCurve } from './crossfade'
 
@@ -134,7 +134,7 @@ describe('crossfade', () => {
     expect(setValueCurveAtTimeSpy).toHaveBeenCalledWith(
       expect.any(Float32Array),
       expect.any(Number),
-      0.01
+      0.01,
     )
 
     // Verify it's a fade-out curve (first > last)
@@ -159,7 +159,7 @@ describe('crossfade', () => {
     expect(setValueCurveAtTimeSpy).toHaveBeenCalledWith(
       expect.any(Float32Array),
       expect.any(Number),
-      0.01
+      0.01,
     )
 
     // Verify it's a fade-in curve (first < last)
@@ -207,7 +207,7 @@ describe('crossfade', () => {
     expect(setValueCurveAtTimeSpy).toHaveBeenCalledWith(
       expect.any(Float32Array),
       expect.any(Number),
-      0.01
+      0.01,
     )
 
     // Start fresh tracks with different duration
@@ -222,7 +222,7 @@ describe('crossfade', () => {
     expect(setValueCurveAtTimeSpy2).toHaveBeenCalledWith(
       expect.any(Float32Array),
       expect.any(Number),
-      0.05
+      0.05,
     )
   })
 

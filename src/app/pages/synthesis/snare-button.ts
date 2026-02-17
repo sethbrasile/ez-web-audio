@@ -1,7 +1,7 @@
-import { createOscillator, createWhiteNoise, getAudioContext } from '@/index'
-import { LayeredSound } from '@/layered-sound'
 import type { Oscillator } from '@/oscillator'
 import type { Sound } from '@/sound'
+import { createOscillator, createWhiteNoise, getAudioContext } from '@/index'
+import { LayeredSound } from '@/layered-sound'
 
 async function createSnareOscillator(): Promise<Oscillator> {
   const snare = await createOscillator()

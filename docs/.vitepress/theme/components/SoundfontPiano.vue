@@ -1,27 +1,5 @@
-<template>
-  <div class="soundfont-piano">
-    <div class="piano-container">
-      <PianoKeyboard
-        :activeKeys="activeNotes"
-        :disabled="loading"
-        @noteOn="playNote"
-        @noteOff="stopNote"
-      />
-
-      <div class="info-text">
-        Compare with <a href="/ez-web-audio/examples/synth-keyboard">Synth Keyboard</a> which uses oscillators instead of samples
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">Loading piano soundfont...</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
 const initialized = ref(false)
@@ -33,7 +11,8 @@ let font: any = null
 let lib: any = null
 
 async function initFont() {
-  if (initialized.value) return
+  if (initialized.value)
+    return
 
   loading.value = true
   try {
@@ -46,9 +25,11 @@ async function initFont() {
     font = await lib.createFont('/ez-web-audio/audio/piano.js')
 
     initialized.value = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load piano soundfont'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -57,7 +38,8 @@ async function playNote(note: string) {
   // Initialize on first interaction
   if (!initialized.value) {
     await initFont()
-    if (!initialized.value) return
+    if (!initialized.value)
+      return
   }
 
   try {
@@ -67,7 +49,8 @@ async function playNote(note: string) {
     font.play(note)
 
     activeNotes.value.add(note)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play note'
   }
 }
@@ -85,11 +68,38 @@ onUnmounted(() => {
       // Font doesn't have a global stop method, individual notes decay naturally
       font = null
     }
-  } catch (e) {
+  }
+  catch (e) {
     // Ignore cleanup errors
   }
 })
 </script>
+
+<template>
+  <div class="soundfont-piano">
+    <div class="piano-container">
+      <PianoKeyboard
+        :active-keys="activeNotes"
+        :disabled="loading"
+        @note-on="playNote"
+        @note-off="stopNote"
+      />
+
+      <div class="info-text">
+        Compare with <a href="/ez-web-audio/examples/synth-keyboard">Synth Keyboard</a> which uses oscillators instead of samples
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">
+        Loading piano soundfont...
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .soundfont-piano {

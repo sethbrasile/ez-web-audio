@@ -23,10 +23,10 @@
  * 4. Test with mute switch in both positions
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-describe('AudioContext Initialization', () => {
+describe('audioContext Initialization', () => {
   let mockAudioContext: AudioContext
   let mockUnmute: ReturnType<typeof vi.fn>
   let AudioContextConstructor: ReturnType<typeof vi.fn>
@@ -39,7 +39,10 @@ describe('AudioContext Initialization', () => {
     mockAudioContext = new MockAudioContext() as unknown as AudioContext
 
     // Create constructor spy (must use function syntax, not arrow, for vitest 4 constructor mocks)
-    AudioContextConstructor = vi.fn(function () { return mockAudioContext })
+    // eslint-disable-next-line prefer-arrow-callback
+    AudioContextConstructor = vi.fn(function _MockAudioContext() {
+      return mockAudioContext
+    })
 
     // Stub global AudioContext
     vi.stubGlobal('AudioContext', AudioContextConstructor)
@@ -188,7 +191,7 @@ describe('AudioContext Initialization', () => {
       })
     })
 
-    describe('AudioContext states', () => {
+    describe('audioContext states', () => {
       it('works when AudioContext state is "running"', async () => {
         Object.defineProperty(mockAudioContext, 'state', {
           get: () => 'running',

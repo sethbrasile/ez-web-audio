@@ -1,6 +1,6 @@
+import { createSound, initAudio } from '@/index'
 import { codeBlock } from '../../utils'
 import nav from './nav'
-import { createSound, initAudio } from '@/index'
 
 const url = 'https://raw.githubusercontent.com/mudcube/MIDI.js/master/examples/soundfont/acoustic_grand_piano-mp3/B5.mp3'
 

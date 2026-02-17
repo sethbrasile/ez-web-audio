@@ -1,74 +1,6 @@
-<template>
-  <div ref="rootEl" class="drum-machine-vanilla">
-    <div class="pattern-label">Event-Based</div>
-
-    <div class="controls">
-      <button @click="togglePlay" class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'">
-        {{ playing ? 'Stop' : 'Play' }}
-      </button>
-
-      <div class="bpm-control">
-        <label>
-          BPM: {{ bpm }}
-          <input type="range" v-model.number="bpm" min="60" max="200" step="1" aria-label="Tempo in beats per minute" />
-        </label>
-      </div>
-    </div>
-
-    <div class="sequencer">
-      <div v-for="track in tracks" :key="track.name" class="track-row">
-        <div class="track-header">
-          <span class="track-name">{{ track.name }}</span>
-          <div class="track-controls">
-            <button
-              @click="toggleMute(track)"
-              :class="['control-btn', { active: track.muted }]"
-              title="Mute"
-            >
-              M
-            </button>
-            <button
-              @click="toggleSolo(track)"
-              :class="['control-btn', { active: track.solo }]"
-              title="Solo"
-            >
-              S
-            </button>
-          </div>
-        </div>
-
-        <div class="beat-grid">
-          <button
-            v-for="(active, i) in track.activeStates"
-            :key="i"
-            @click="toggleBeat(track, i)"
-            :data-track="track.name"
-            :data-beat="i"
-            :class="[
-              'vanilla-beat-cell',
-              {
-                'active': active,
-                [`track-${track.name.toLowerCase()}`]: active
-              }
-            ]"
-            :aria-label="`${track.name} step ${i + 1}${active ? ' (active)' : ' (inactive)'}`"
-            :aria-pressed="active"
-          >
-            <span class="beat-number">{{ i + 1 }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted } from 'vue'
 import type { BeatTrack } from 'ez-web-audio'
+import { onUnmounted, ref, watch } from 'vue'
 
 const rootEl = ref<HTMLElement>()
 const playing = ref(false)
@@ -79,7 +11,7 @@ const NUM_BEATS = 16
 
 // Default patterns
 const defaultPatterns: Record<string, number[]> = {
-  KICK:  [0, 4, 8, 12],
+  KICK: [0, 4, 8, 12],
   SNARE: [4, 12],
   HIHAT: [0, 2, 4, 6, 8, 10, 12, 14],
 }
@@ -106,8 +38,7 @@ const tracks = ref<TrackState[]>(trackDefs.map(d => ({
   samples: d.samples,
   beatTrack: null,
   activeStates: Array.from({ length: NUM_BEATS }, (_, i) =>
-    (defaultPatterns[d.name] ?? []).includes(i)
-  ),
+    (defaultPatterns[d.name] ?? []).includes(i)),
   muted: false,
   solo: false,
   savedStates: null,
@@ -117,7 +48,8 @@ let initialized = false
 let beatHandler: ((e: CustomEvent) => void) | null = null
 
 async function init() {
-  if (initialized) return
+  if (initialized)
+    return
   try {
     const { createBeatTrack } = await import('ez-web-audio')
 
@@ -145,12 +77,12 @@ async function init() {
         if (rootEl.value) {
           // Clear previous playhead
           rootEl.value.querySelectorAll('.vanilla-beat-cell.current').forEach(
-            el => el.classList.remove('current')
+            el => el.classList.remove('current'),
           )
 
           // Highlight current step across all tracks
           rootEl.value.querySelectorAll(`.vanilla-beat-cell[data-beat="${beatIndex}"]`).forEach(
-            el => el.classList.add('current')
+            el => el.classList.add('current'),
           )
         }
       }
@@ -159,7 +91,8 @@ async function init() {
     }
 
     initialized = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to initialize'
   }
 }
@@ -174,14 +107,17 @@ function toggleBeat(track: TrackState, index: number) {
 }
 
 async function togglePlay() {
-  if (!initialized) await init()
-  if (!initialized) return
+  if (!initialized)
+    await init()
+  if (!initialized)
+    return
 
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack?.stop())
     playing.value = false
-  } else {
-    tracks.value.forEach(t => t.beatTrack?.playBeats(bpm.value, 1/16))
+  }
+  else {
+    tracks.value.forEach(t => t.beatTrack?.playBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }
@@ -189,7 +125,8 @@ async function togglePlay() {
 function toggleMute(track: TrackState) {
   track.muted = !track.muted
 
-  if (!track.beatTrack) return
+  if (!track.beatTrack)
+    return
 
   if (track.muted) {
     // Save current states and deactivate all beats
@@ -197,7 +134,8 @@ function toggleMute(track: TrackState) {
     track.activeStates.forEach((_, i) => {
       track.beatTrack!.beats[i].active = false
     })
-  } else {
+  }
+  else {
     // Restore saved states
     if (track.savedStates) {
       track.savedStates.forEach((active, i) => {
@@ -214,8 +152,9 @@ function toggleSolo(track: TrackState) {
 
   const hasSolo = tracks.value.some(t => t.solo)
 
-  tracks.value.forEach(t => {
-    if (!t.beatTrack) return
+  tracks.value.forEach((t) => {
+    if (!t.beatTrack)
+      return
 
     if (hasSolo) {
       // If any track is soloed, mute all non-solo tracks
@@ -226,14 +165,16 @@ function toggleSolo(track: TrackState) {
         t.activeStates.forEach((_, i) => {
           t.beatTrack!.beats[i].active = false
         })
-      } else if (!shouldBeMuted && t.savedStates) {
+      }
+      else if (!shouldBeMuted && t.savedStates) {
         t.savedStates.forEach((active, i) => {
           t.beatTrack!.beats[i].active = active
           t.activeStates[i] = active
         })
         t.savedStates = null
       }
-    } else {
+    }
+    else {
       // No solo — restore all tracks
       if (t.savedStates) {
         t.savedStates.forEach((active, i) => {
@@ -250,7 +191,7 @@ watch(bpm, (val) => {
   if (playing.value) {
     // BeatTrack doesn't support mid-playback tempo changes, so restart
     tracks.value.forEach(t => t.beatTrack?.stop())
-    tracks.value.forEach(t => t.beatTrack?.playBeats(val, 1/16))
+    tracks.value.forEach(t => t.beatTrack?.playBeats(val, 1 / 16))
   }
 })
 
@@ -260,13 +201,85 @@ onUnmounted(() => {
     tracks.value[0].beatTrack.off('beat', beatHandler)
   }
 
-  tracks.value.forEach(t => {
+  tracks.value.forEach((t) => {
     try {
       t.beatTrack?.stop()
-    } catch {}
+    }
+    catch {}
   })
 })
 </script>
+
+<template>
+  <div ref="rootEl" class="drum-machine-vanilla">
+    <div class="pattern-label">
+      Event-Based
+    </div>
+
+    <div class="controls">
+      <button class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay">
+        {{ playing ? 'Stop' : 'Play' }}
+      </button>
+
+      <div class="bpm-control">
+        <label>
+          BPM: {{ bpm }}
+          <input v-model.number="bpm" type="range" min="60" max="200" step="1" aria-label="Tempo in beats per minute">
+        </label>
+      </div>
+    </div>
+
+    <div class="sequencer">
+      <div v-for="track in tracks" :key="track.name" class="track-row">
+        <div class="track-header">
+          <span class="track-name">{{ track.name }}</span>
+          <div class="track-controls">
+            <button
+              class="control-btn" :class="[{ active: track.muted }]"
+              title="Mute"
+              @click="toggleMute(track)"
+            >
+              M
+            </button>
+            <button
+              class="control-btn" :class="[{ active: track.solo }]"
+              title="Solo"
+              @click="toggleSolo(track)"
+            >
+              S
+            </button>
+          </div>
+        </div>
+
+        <div class="beat-grid">
+          <button
+            v-for="(active, i) in track.activeStates"
+            :key="i"
+            :data-track="track.name"
+            :data-beat="i"
+            class="vanilla-beat-cell"
+            :class="[
+              {
+                active,
+                [`track-${track.name.toLowerCase()}`]: active,
+              },
+            ]" :aria-label="`${track.name} step ${i + 1}${active ? ' (active)' : ' (inactive)'}`"
+            :aria-pressed="active"
+            @click="toggleBeat(track, i)"
+          >
+            <span class="beat-number">{{ i + 1 }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .drum-machine-vanilla {

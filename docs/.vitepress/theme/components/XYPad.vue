@@ -1,63 +1,5 @@
-<template>
-  <div class="xy-pad-demo">
-    <div class="volume-warning">
-      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
-    </div>
-
-    <div class="canvas-container">
-      <canvas
-        ref="canvas"
-        aria-label="XY Pad - Press and drag to control frequency (horizontal) and gain (vertical). Use mouse or touch."
-        role="application"
-        tabindex="0"
-        @mousedown="handleMouseDown"
-        @mousemove="handleMouseMove"
-        @mouseup="handleMouseUp"
-        @mouseleave="handleMouseLeave"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
-      />
-      <div class="keyboard-hint">
-        Press and drag to play. X-axis controls frequency (100-2000 Hz), Y-axis controls volume.
-      </div>
-    </div>
-
-    <div class="controls">
-      <label>
-        Waveform:
-        <select v-model="waveType" :disabled="isPlaying">
-          <option value="sine">Sine</option>
-          <option value="square">Square</option>
-          <option value="sawtooth">Sawtooth</option>
-          <option value="triangle">Triangle</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="display">
-      <div class="value-display">
-        <span class="label">Frequency:</span>
-        <span class="value">{{ currentFreq.toFixed(0) }} Hz</span>
-      </div>
-      <div class="value-display">
-        <span class="label">Gain:</span>
-        <span class="value">{{ (currentGain * 100).toFixed(0) }}%</span>
-      </div>
-      <div class="value-display">
-        <span class="label">Note:</span>
-        <span class="value note">{{ currentNote }}</span>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const isPlaying = ref(false)
@@ -84,7 +26,7 @@ const notes = [
   { name: 'G#', freq: 25.96 },
   { name: 'A', freq: 27.50 },
   { name: 'A#', freq: 29.14 },
-  { name: 'B', freq: 30.87 }
+  { name: 'B', freq: 30.87 },
 ]
 
 function frequencyToNote(freq: number): string {
@@ -97,7 +39,8 @@ function frequencyToNote(freq: number): string {
 }
 
 function drawGrid(x?: number, y?: number) {
-  if (!ctx || !canvas.value) return
+  if (!ctx || !canvas.value)
+    return
 
   const width = canvas.value.width
   const height = canvas.value.height
@@ -112,7 +55,7 @@ function drawGrid(x?: number, y?: number) {
 
   // Vertical grid lines at octave boundaries (100, 200, 400, 800, 1600 Hz)
   const frequencies = [100, 200, 400, 800, 1600]
-  frequencies.forEach(freq => {
+  frequencies.forEach((freq) => {
     if (freq <= 2000) {
       const ratio = Math.log(freq / 100) / Math.log(20)
       const xPos = ratio * width
@@ -179,14 +122,15 @@ async function initIfNeeded() {
 }
 
 function updateFromPosition(x: number, y: number) {
-  if (!canvas.value) return
+  if (!canvas.value)
+    return
 
   const width = canvas.value.width
   const height = canvas.value.height
 
   // X-axis: frequency (100-2000 Hz, logarithmic)
   const ratio = x / width
-  const frequency = 100 * Math.pow(20, ratio)
+  const frequency = 100 * 20 ** ratio
 
   // Y-axis: gain (0-1, inverted - top is high, bottom is low)
   const gain = 1 - (y / height)
@@ -201,7 +145,8 @@ function updateFromPosition(x: number, y: number) {
     try {
       oscillator.update('frequency').to(frequency).from('ratio')
       oscillator.update('gain').to(currentGain.value).from('ratio')
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Error updating oscillator:', e)
     }
   }
@@ -218,14 +163,15 @@ async function startPlaying(x: number, y: number) {
     // Create new oscillator
     oscillator = await lib.createOscillator({
       frequency: currentFreq.value,
-      type: waveType.value
+      type: waveType.value,
     })
     oscillator.changeGainTo(currentGain.value)
     oscillator.play()
     isPlaying.value = true
 
     updateFromPosition(x, y)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to start oscillator'
     console.error('Error starting oscillator:', e)
   }
@@ -235,7 +181,8 @@ function stopPlaying() {
   if (oscillator) {
     try {
       oscillator.stop()
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Error stopping oscillator:', e)
     }
     oscillator = null
@@ -246,7 +193,8 @@ function stopPlaying() {
 
 function handleMouseDown(e: MouseEvent) {
   const rect = canvas.value?.getBoundingClientRect()
-  if (!rect) return
+  if (!rect)
+    return
 
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
@@ -254,10 +202,12 @@ function handleMouseDown(e: MouseEvent) {
 }
 
 function handleMouseMove(e: MouseEvent) {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   const rect = canvas.value?.getBoundingClientRect()
-  if (!rect) return
+  if (!rect)
+    return
 
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
@@ -275,7 +225,8 @@ function handleMouseLeave() {
 function handleTouchStart(e: TouchEvent) {
   e.preventDefault()
   const rect = canvas.value?.getBoundingClientRect()
-  if (!rect || e.touches.length === 0) return
+  if (!rect || e.touches.length === 0)
+    return
 
   const touch = e.touches[0]
   const x = touch.clientX - rect.left
@@ -285,10 +236,12 @@ function handleTouchStart(e: TouchEvent) {
 
 function handleTouchMove(e: TouchEvent) {
   e.preventDefault()
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   const rect = canvas.value?.getBoundingClientRect()
-  if (!rect || e.touches.length === 0) return
+  if (!rect || e.touches.length === 0)
+    return
 
   const touch = e.touches[0]
   const x = touch.clientX - rect.left
@@ -317,6 +270,66 @@ onUnmounted(() => {
   stopPlaying()
 })
 </script>
+
+<template>
+  <div class="xy-pad-demo">
+    <div class="volume-warning">
+      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+    </div>
+
+    <div class="canvas-container">
+      <canvas
+        ref="canvas"
+        aria-label="XY Pad - Press and drag to control frequency (horizontal) and gain (vertical). Use mouse or touch."
+        role="application"
+        tabindex="0"
+        @mousedown="handleMouseDown"
+        @mousemove="handleMouseMove"
+        @mouseup="handleMouseUp"
+        @mouseleave="handleMouseLeave"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
+      />
+      <div class="keyboard-hint">
+        Press and drag to play. X-axis controls frequency (100-2000 Hz), Y-axis controls volume.
+      </div>
+    </div>
+
+    <div class="controls">
+      <label>
+        Waveform:
+        <select v-model="waveType" :disabled="isPlaying">
+          <option value="sine">Sine</option>
+          <option value="square">Square</option>
+          <option value="sawtooth">Sawtooth</option>
+          <option value="triangle">Triangle</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="display">
+      <div class="value-display">
+        <span class="label">Frequency:</span>
+        <span class="value">{{ currentFreq.toFixed(0) }} Hz</span>
+      </div>
+      <div class="value-display">
+        <span class="label">Gain:</span>
+        <span class="value">{{ (currentGain * 100).toFixed(0) }}%</span>
+      </div>
+      <div class="value-display">
+        <span class="label">Note:</span>
+        <span class="value note">{{ currentNote }}</span>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .xy-pad-demo {

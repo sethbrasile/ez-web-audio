@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { pauseAll, playAll, stopAll } from './collections'
 import type { Playable } from '@interfaces/playable'
 import type { Track } from '@/track'
+import { describe, expect, it, vi } from 'vitest'
+import { pauseAll, playAll, stopAll } from './collections'
 
 /**
  * Creates a mock Playable object with vi.fn() for play/stop methods.

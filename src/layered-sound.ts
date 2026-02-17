@@ -1,6 +1,6 @@
-import type { Sound } from './sound'
-import type { Oscillator } from './oscillator'
 import type { LayeredSoundEventMap } from './events/event-types'
+import type { Oscillator } from './oscillator'
+import type { Sound } from './sound'
 import audioContextAwareTimeout from './utils/timeout'
 
 /**
@@ -34,14 +34,14 @@ export interface LayeredSoundOptions {
  */
 export class LayeredSound extends EventTarget {
   private layers: (Sound | Oscillator)[]
-  private failedLayers: { index: number; error: Error }[] = []
+  private failedLayers: { index: number, error: Error }[] = []
   private setTimeout: (fn: () => void, delayMillis: number) => number
   public name: string
 
   constructor(
     private audioContext: AudioContext,
     layers: (Sound | Oscillator | null | undefined)[],
-    opts?: LayeredSoundOptions
+    opts?: LayeredSoundOptions,
   ) {
     super()
     this.name = opts?.name || ''
@@ -52,7 +52,7 @@ export class LayeredSound extends EventTarget {
       if (!layer) {
         this.failedLayers.push({
           index,
-          error: new Error(`Layer ${index} is null/undefined`)
+          error: new Error(`Layer ${index} is null/undefined`),
         })
         return false
       }
@@ -63,8 +63,8 @@ export class LayeredSound extends EventTarget {
     const warnThreshold = opts?.warnLayerCount ?? 8
     if (this.layers.length >= warnThreshold) {
       console.warn(
-        `LayeredSound "${this.name}" has ${this.layers.length} layers. ` +
-        `High layer counts may impact performance on some devices.`
+        `LayeredSound "${this.name}" has ${this.layers.length} layers. `
+        + `High layer counts may impact performance on some devices.`,
       )
     }
 
@@ -72,7 +72,7 @@ export class LayeredSound extends EventTarget {
       this.emit('warning', {
         message: `${this.failedLayers.length} layer(s) failed to load`,
         failedLayers: this.failedLayers,
-        source: this
+        source: this,
       })
     }
   }
@@ -105,7 +105,7 @@ export class LayeredSound extends EventTarget {
 
     // All layers start at EXACTLY same time (exact sync)
     await Promise.all(
-      this.layers.map(layer => layer.playAt(startTime))
+      this.layers.map(layer => layer.playAt(startTime)),
     )
 
     this.emit('play', { time: startTime, source: this })
@@ -137,7 +137,7 @@ export class LayeredSound extends EventTarget {
     await Promise.all(this.layers.map(layer => layer.stop()))
     this.emit('stop', {
       time: this.audioContext.currentTime,
-      source: this
+      source: this,
     })
   }
 
@@ -168,7 +168,7 @@ export class LayeredSound extends EventTarget {
   private setupLayerEndTracking(): void {
     const endedLayers = new Set<Sound | Oscillator>()
 
-    const handleEnd = (layer: Sound | Oscillator) => {
+    const handleEnd = (layer: Sound | Oscillator): void => {
       endedLayers.add(layer)
 
       // Emit when last layer finishes
@@ -180,12 +180,12 @@ export class LayeredSound extends EventTarget {
         this.emit('end', {
           time: this.audioContext.currentTime,
           source: this,
-          duration: maxDuration
+          duration: maxDuration,
         })
       }
     }
 
-    this.layers.forEach(layer => {
+    this.layers.forEach((layer) => {
       layer.once('end', () => handleEnd(layer))
     })
   }
@@ -214,7 +214,7 @@ export class LayeredSound extends EventTarget {
   override addEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void {
     super.addEventListener(type, listener as EventListener, options)
   }
@@ -241,7 +241,7 @@ export class LayeredSound extends EventTarget {
   override removeEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void {
     super.removeEventListener(type, listener as EventListener, options)
   }
@@ -254,7 +254,7 @@ export class LayeredSound extends EventTarget {
    */
   protected emit<K extends keyof LayeredSoundEventMap>(
     type: K,
-    detail: LayeredSoundEventMap[K]['detail']
+    detail: LayeredSoundEventMap[K]['detail'],
   ): void {
     const event = new CustomEvent(type, { detail })
     this.dispatchEvent(event)
@@ -277,7 +277,7 @@ export class LayeredSound extends EventTarget {
    */
   on<K extends keyof LayeredSoundEventMap>(
     type: K | K[],
-    listener: (event: LayeredSoundEventMap[K]) => void
+    listener: (event: LayeredSoundEventMap[K]) => void,
   ): this {
     if (Array.isArray(type)) {
       type.forEach(t => this.addEventListener(t, listener as (event: LayeredSoundEventMap[typeof t]) => void))
@@ -302,7 +302,7 @@ export class LayeredSound extends EventTarget {
    */
   once<K extends keyof LayeredSoundEventMap>(
     type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void
+    listener: (event: LayeredSoundEventMap[K]) => void,
   ): this {
     this.addEventListener(type, listener, { once: true })
     return this
@@ -329,7 +329,7 @@ export class LayeredSound extends EventTarget {
    */
   off<K extends keyof LayeredSoundEventMap>(
     type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void
+    listener: (event: LayeredSoundEventMap[K]) => void,
   ): this {
     this.removeEventListener(type, listener)
     return this

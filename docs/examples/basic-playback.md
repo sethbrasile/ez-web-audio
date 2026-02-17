@@ -51,7 +51,7 @@ async function playMusic() {
 
   // Get current position
   console.log(song.position.string) // '0:30'
-  console.log(song.percentPlayed)   // 0.25 (25%)
+  console.log(song.percentPlayed) // 0.25 (25%)
 }
 ```
 
@@ -102,12 +102,12 @@ Both Sound and Track support volume (gain) and stereo position (pan):
 const sound = await createSound('click.mp3')
 
 // Volume: 0 (silent) to 1 (full volume), can exceed 1 for boost
-sound.changeGainTo(0.5)  // 50% volume
+sound.changeGainTo(0.5) // 50% volume
 
 // Pan: -1 (left) to 1 (right), 0 is center
-sound.changePanTo(-1)    // Full left
-sound.changePanTo(0)     // Center
-sound.changePanTo(1)     // Full right
+sound.changePanTo(-1) // Full left
+sound.changePanTo(0) // Center
+sound.changePanTo(1) // Full right
 
 sound.play()
 ```
@@ -120,16 +120,16 @@ Track provides detailed timing information:
 const track = await createTrack('song.mp3')
 
 // Duration (read-only)
-console.log(track.duration.raw)    // 180.5 (seconds)
+console.log(track.duration.raw) // 180.5 (seconds)
 console.log(track.duration.string) // '3:00'
-console.log(track.duration.pojo)   // { minutes: 3, seconds: 0 }
+console.log(track.duration.pojo) // { minutes: 3, seconds: 0 }
 
 // Current position (updates during playback)
-console.log(track.position.raw)    // 45.2 (seconds)
+console.log(track.position.raw) // 45.2 (seconds)
 console.log(track.position.string) // '0:45'
 
 // Progress percentage (0 to 1)
-console.log(track.percentPlayed)   // 0.25
+console.log(track.percentPlayed) // 0.25
 ```
 
 ## Track Events
@@ -197,7 +197,7 @@ progressBar.parentElement.addEventListener('click', (e) => {
 For better user experience, preload audio before it's needed:
 
 ```typescript
-import { preload, createSound, isPreloaded } from 'ez-web-audio'
+import { createSound, isPreloaded, preload } from 'ez-web-audio'
 
 // Preload during app initialization
 await preload([
@@ -220,15 +220,17 @@ if (isPreloaded('/audio/music.mp3')) {
 Handle loading and playback errors gracefully:
 
 ```typescript
-import { createSound, AudioLoadError, AudioContextError } from 'ez-web-audio'
+import { AudioContextError, AudioLoadError, createSound } from 'ez-web-audio'
 
 try {
   const sound = await createSound('/audio/missing.mp3')
   sound.play()
-} catch (error) {
+}
+catch (error) {
   if (error instanceof AudioLoadError) {
     console.error('Failed to load audio:', error.url)
-  } else if (error instanceof AudioContextError) {
+  }
+  else if (error instanceof AudioContextError) {
     console.error('Audio system error:', error.message)
   }
 }

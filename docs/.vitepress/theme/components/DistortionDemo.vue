@@ -1,101 +1,5 @@
-<template>
-  <div class="distortion-demo">
-    <!-- Signal Chain Visualization -->
-    <div class="signal-chain">
-      <div class="chain-node">
-        <div class="node-label">Source</div>
-        <div class="node-box source">Oscillator</div>
-      </div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-node">
-        <div class="node-label">Effect</div>
-        <div class="node-box effect" :class="{ active: distortionEnabled, bypassed }">
-          Distortion
-        </div>
-      </div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-node">
-        <div class="node-label">Control</div>
-        <div class="node-box">Gain</div>
-      </div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-node">
-        <div class="node-label">Control</div>
-        <div class="node-box">Pan</div>
-      </div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-node">
-        <div class="node-label">Output</div>
-        <div class="node-box output">Destination</div>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <div class="button-group">
-        <button @click="togglePlayback" class="demo-btn" :class="{ active: playing }">
-          {{ playing ? 'Stop' : 'Play' }} Oscillator
-        </button>
-        <button
-          @click="toggleDistortion"
-          :disabled="!playing"
-          class="demo-btn"
-          :class="{ active: distortionEnabled }"
-        >
-          {{ distortionEnabled ? 'Remove' : 'Add' }} Distortion
-        </button>
-      </div>
-
-      <div v-if="distortionEnabled" class="effect-controls">
-        <label class="slider-control" for="distortion-amount">
-          <span class="control-label">Distortion Amount:</span>
-          <input
-            id="distortion-amount"
-            type="range"
-            v-model.number="distortionAmount"
-            min="50"
-            max="1000"
-            step="50"
-            @input="updateDistortionCurve"
-            :aria-label="`Distortion amount: ${distortionAmount}`"
-          />
-          <span class="control-value">{{ distortionAmount }}</span>
-        </label>
-
-        <label class="slider-control" for="wet-dry-mix">
-          <span class="control-label">Wet/Dry Mix:</span>
-          <input
-            id="wet-dry-mix"
-            type="range"
-            v-model.number="wetDryMix"
-            min="0"
-            max="1"
-            step="0.1"
-            @input="updateMix"
-            :aria-label="`Wet/Dry mix: ${Math.round(wetDryMix * 100)}%`"
-          />
-          <span class="control-value">{{ Math.round(wetDryMix * 100) }}%</span>
-        </label>
-
-        <label class="checkbox-control">
-          <input type="checkbox" v-model="bypassed" @change="updateBypass" />
-          <span>Bypass Effect</span>
-        </label>
-      </div>
-    </div>
-
-    <div class="hint">
-      <strong>Tip:</strong> Try different distortion amounts and mix levels. The bypass toggle lets you A/B compare the processed vs unprocessed signal.
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
 const playing = ref(false)
@@ -140,24 +44,27 @@ async function togglePlayback() {
       }
       playing.value = false
       distortionEnabled.value = false
-    } else {
+    }
+    else {
       // Play
       await initIfNeeded()
       oscillator = await lib.createOscillator({
         frequency: 200,
-        type: 'sine'
+        type: 'sine',
       })
       oscillator.changeGainTo(0.3)
       oscillator.play()
       playing.value = true
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to toggle playback'
   }
 }
 
 async function toggleDistortion() {
-  if (!oscillator) return
+  if (!oscillator)
+    return
 
   try {
     error.value = ''
@@ -169,7 +76,8 @@ async function toggleDistortion() {
       oscillator.removeEffect(effect)
       effect = null
       distortionEnabled.value = false
-    } else {
+    }
+    else {
       // Create and add WaveShaper effect
       const distNode = ctx.createWaveShaper()
       distNode.curve = makeDistortionCurve(distortionAmount.value)
@@ -180,13 +88,15 @@ async function toggleDistortion() {
       oscillator.addEffect(effect)
       distortionEnabled.value = true
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to toggle distortion'
   }
 }
 
 async function updateDistortionCurve() {
-  if (!effect || !lib) return
+  if (!effect || !lib)
+    return
 
   try {
     error.value = ''
@@ -199,29 +109,157 @@ async function updateDistortionCurve() {
     if (effect.input && effect.input.curve !== undefined) {
       effect.input.curve = newCurve
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to update curve'
   }
 }
 
 function updateMix() {
-  if (!effect) return
+  if (!effect)
+    return
   effect.mix = wetDryMix.value
 }
 
 function updateBypass() {
-  if (!effect) return
+  if (!effect)
+    return
   effect.bypass = bypassed.value
 }
 
 onUnmounted(() => {
   if (oscillator) {
-    try { oscillator.stop() } catch {}
+    try { oscillator.stop() }
+    catch {}
     oscillator = null
   }
   effect = null
 })
 </script>
+
+<template>
+  <div class="distortion-demo">
+    <!-- Signal Chain Visualization -->
+    <div class="signal-chain">
+      <div class="chain-node">
+        <div class="node-label">
+          Source
+        </div>
+        <div class="node-box source">
+          Oscillator
+        </div>
+      </div>
+      <div class="chain-arrow">
+        →
+      </div>
+      <div class="chain-node">
+        <div class="node-label">
+          Effect
+        </div>
+        <div class="node-box effect" :class="{ active: distortionEnabled, bypassed }">
+          Distortion
+        </div>
+      </div>
+      <div class="chain-arrow">
+        →
+      </div>
+      <div class="chain-node">
+        <div class="node-label">
+          Control
+        </div>
+        <div class="node-box">
+          Gain
+        </div>
+      </div>
+      <div class="chain-arrow">
+        →
+      </div>
+      <div class="chain-node">
+        <div class="node-label">
+          Control
+        </div>
+        <div class="node-box">
+          Pan
+        </div>
+      </div>
+      <div class="chain-arrow">
+        →
+      </div>
+      <div class="chain-node">
+        <div class="node-label">
+          Output
+        </div>
+        <div class="node-box output">
+          Destination
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="button-group">
+        <button class="demo-btn" :class="{ active: playing }" @click="togglePlayback">
+          {{ playing ? 'Stop' : 'Play' }} Oscillator
+        </button>
+        <button
+          :disabled="!playing"
+          class="demo-btn"
+          :class="{ active: distortionEnabled }"
+          @click="toggleDistortion"
+        >
+          {{ distortionEnabled ? 'Remove' : 'Add' }} Distortion
+        </button>
+      </div>
+
+      <div v-if="distortionEnabled" class="effect-controls">
+        <label class="slider-control" for="distortion-amount">
+          <span class="control-label">Distortion Amount:</span>
+          <input
+            id="distortion-amount"
+            v-model.number="distortionAmount"
+            type="range"
+            min="50"
+            max="1000"
+            step="50"
+            :aria-label="`Distortion amount: ${distortionAmount}`"
+            @input="updateDistortionCurve"
+          >
+          <span class="control-value">{{ distortionAmount }}</span>
+        </label>
+
+        <label class="slider-control" for="wet-dry-mix">
+          <span class="control-label">Wet/Dry Mix:</span>
+          <input
+            id="wet-dry-mix"
+            v-model.number="wetDryMix"
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Wet/Dry mix: ${Math.round(wetDryMix * 100)}%`"
+            @input="updateMix"
+          >
+          <span class="control-value">{{ Math.round(wetDryMix * 100) }}%</span>
+        </label>
+
+        <label class="checkbox-control">
+          <input v-model="bypassed" type="checkbox" @change="updateBypass">
+          <span>Bypass Effect</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="hint">
+      <strong>Tip:</strong> Try different distortion amounts and mix levels. The bypass toggle lets you A/B compare the processed vs unprocessed signal.
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .distortion-demo {

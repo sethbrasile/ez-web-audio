@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import frequencyMap from './frequency-map'
 
 describe('frequency-map', () => {
@@ -69,7 +69,7 @@ describe('frequency-map', () => {
   })
 
   it('all frequencies are positive numbers', () => {
-    for (const [key, freq] of Object.entries(frequencyMap)) {
+    for (const [_key, freq] of Object.entries(frequencyMap)) {
       expect(freq).toBeGreaterThan(0)
       expect(typeof freq).toBe('number')
     }

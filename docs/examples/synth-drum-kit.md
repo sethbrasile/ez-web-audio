@@ -53,7 +53,7 @@ The snare is **two layers** playing simultaneously:
 Both layers are combined with `createLayeredSound()` to ensure they start at exactly the same AudioContext timestamp.
 
 ```typescript
-import { createOscillator, createWhiteNoise, createFilterEffect, createLayeredSound, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise, getAudioContext } from 'ez-web-audio'
 
 // Layer 1: Tonal body
 const body = await createOscillator({
@@ -89,7 +89,7 @@ snare.playFor(0.1)
 The hi-hat uses **multiple square oscillators** at harmonic ratios with highpass and bandpass filters. These create that characteristic metallic, shimmering sound.
 
 ```typescript
-import { createOscillator, createFilterEffect, createLayeredSound, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createLayeredSound, createOscillator, getAudioContext } from 'ez-web-audio'
 
 const ctx = await getAudioContext()
 const fundamentalFreq = 40
@@ -98,7 +98,7 @@ const fundamentalFreq = 40
 const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21]
 
 const oscillators = await Promise.all(
-  ratios.map(async ratio => {
+  ratios.map(async (ratio) => {
     const osc = await createOscillator({
       frequency: fundamentalFreq * ratio,
       type: 'square'

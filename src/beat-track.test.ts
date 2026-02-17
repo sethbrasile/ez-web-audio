@@ -1,9 +1,9 @@
-import { assert, describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import type { Playable } from './interfaces/playable'
 import type { Connectable } from './interfaces/connectable'
-import { Sound } from './sound'
+import type { Playable } from './interfaces/playable'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { assert, describe, expect, it } from 'vitest'
 import { BeatTrack as RealBeatTrack } from '@/beat-track'
+import { Sound } from './sound'
 
 /**
  * Extended BeatTrack class that exposes internal state for testing
@@ -107,7 +107,7 @@ it('playBeats starts the scheduler and emits beat events', () => {
   const beatEvents: any[] = []
   result.addEventListener('beat', (e: any) => beatEvents.push(e.detail))
 
-  result.playBeats(120, 1/4)
+  result.playBeats(120, 1 / 4)
 
   // Scheduler should emit beat events (at least one within lookahead window)
   expect(beatEvents.length).toBeGreaterThan(0)
@@ -129,7 +129,7 @@ it('playActiveBeats starts the scheduler for active beats', () => {
   result.beats[2].active = true
   result.beats[3].active = false
 
-  result.playActiveBeats(120, 1/4)
+  result.playActiveBeats(120, 1 / 4)
 
   // Should emit events (scheduler is running)
   expect(beatEvents.length).toBeGreaterThan(0)
@@ -161,7 +161,7 @@ describe('stop() behavior', () => {
     track.addSound(sound)
 
     // Start playing - scheduler will advance beat index
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     // Stop should reset position
     track.stop()
@@ -175,7 +175,7 @@ describe('stop() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     // Timer should be set after starting
     expect(track.getTimerID()).not.toBeNull()
 
@@ -189,7 +189,7 @@ describe('stop() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     track.pause()
     expect(track.getPausedBeatIndex()).not.toBeNull()
 
@@ -204,7 +204,7 @@ describe('pause() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     // Capture beat index before pause
     const beatIndexBeforePause = track.getCurrentBeatIndex()
 
@@ -219,7 +219,7 @@ describe('pause() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     expect(track.getTimerID()).not.toBeNull()
 
     track.pause()
@@ -233,7 +233,7 @@ describe('resume() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     const beatIndexBeforePause = track.getCurrentBeatIndex()
 
     track.pause()
@@ -248,7 +248,7 @@ describe('resume() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     track.pause()
     expect(track.getTimerID()).toBeNull()
 
@@ -265,7 +265,7 @@ describe('resume() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     track.pause()
     expect(track.getPausedBeatIndex()).not.toBeNull()
 
@@ -282,7 +282,7 @@ describe('setTempo() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
     expect(track.getCurrentTempo()).toBe(120)
 
     track.setTempo(140)
@@ -296,7 +296,7 @@ describe('setTempo() behavior', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    track.playActiveBeats(60, 1/4)
+    track.playActiveBeats(60, 1 / 4)
     expect(track.getCurrentTempo()).toBe(60)
 
     track.setTempo(120)
@@ -309,7 +309,7 @@ describe('setTempo() behavior', () => {
   })
 })
 
-describe('Beat event structure', () => {
+describe('beat event structure', () => {
   it('emits "beat" event for scheduled beats within lookahead', () => {
     const track = createBeatTrack()
     const sound = createSound()
@@ -320,7 +320,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     // Should emit at least one beat immediately (within 100ms lookahead)
     expect(beatEvents.length).toBeGreaterThan(0)
@@ -338,7 +338,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     expect(beatEvents[0]).toHaveProperty('beatIndex')
     expect(typeof beatEvents[0].beatIndex).toBe('number')
@@ -357,7 +357,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     expect(beatEvents[0]).toHaveProperty('active')
     expect(typeof beatEvents[0].active).toBe('boolean')
@@ -375,7 +375,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     expect(beatEvents[0]).toHaveProperty('time')
     expect(typeof beatEvents[0].time).toBe('number')
@@ -395,7 +395,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     expect(beatEvents[0]).toHaveProperty('source')
     expect(beatEvents[0].source).toBe(track)
@@ -419,7 +419,7 @@ describe('Beat event structure', () => {
       beatEvents.push(e.detail)
     })
 
-    track.playActiveBeats(120, 1/4)
+    track.playActiveBeats(120, 1 / 4)
 
     // First beat event should match first beat's active state
     expect(beatEvents[0].beatIndex).toBe(0)
@@ -439,7 +439,7 @@ it('emits pause event with beatIndex', () => {
     pauseEvent = e.detail
   })
 
-  track.playActiveBeats(120, 1/4)
+  track.playActiveBeats(120, 1 / 4)
   track.pause()
 
   expect(pauseEvent).not.toBeNull()
@@ -456,7 +456,7 @@ it('emits resume event with beatIndex', () => {
     resumeEvent = e.detail
   })
 
-  track.playActiveBeats(120, 1/4)
+  track.playActiveBeats(120, 1 / 4)
   track.pause()
   track.resume()
 
@@ -474,7 +474,7 @@ it('emits stop event', () => {
     stopEvent = e.detail
   })
 
-  track.playActiveBeats(120, 1/4)
+  track.playActiveBeats(120, 1 / 4)
   track.stop()
 
   expect(stopEvent).not.toBeNull()
@@ -491,7 +491,7 @@ it('supports multiple pause/resume cycles', () => {
   track.addEventListener('pause', () => pauseCount++)
   track.addEventListener('resume', () => resumeCount++)
 
-  track.playActiveBeats(120, 1/4)
+  track.playActiveBeats(120, 1 / 4)
 
   track.pause()
   track.resume()
@@ -509,7 +509,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      track.playActiveBeats(120, 1/4)
+      track.playActiveBeats(120, 1 / 4)
 
       // Current behavior: setTempo validates BPM > 0
       expect(() => track.setTempo(0)).toThrow('BPM must be greater than 0')
@@ -520,7 +520,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      track.playActiveBeats(120, 1/4)
+      track.playActiveBeats(120, 1 / 4)
 
       // Current behavior: negative BPM is rejected
       expect(() => track.setTempo(-120)).toThrow('BPM must be greater than 0')
@@ -531,7 +531,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      track.playActiveBeats(120, 1/4)
+      track.playActiveBeats(120, 1 / 4)
 
       // High BPM values should work without error
       expect(() => track.setTempo(999)).not.toThrow()
@@ -546,7 +546,7 @@ describe('edge cases', () => {
       track.addSound(sound)
 
       // Zero BPM is invalid
-      expect(() => track.playBeats(0, 1/4)).toThrow('BPM must be greater than 0')
+      expect(() => track.playBeats(0, 1 / 4)).toThrow('BPM must be greater than 0')
     })
 
     it('playBeats with negative BPM throws error', () => {
@@ -554,7 +554,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      expect(() => track.playBeats(-120, 1/4)).toThrow('BPM must be greater than 0')
+      expect(() => track.playBeats(-120, 1 / 4)).toThrow('BPM must be greater than 0')
     })
 
     it('playActiveBeats(0) throws error', () => {
@@ -562,7 +562,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      expect(() => track.playActiveBeats(0, 1/4)).toThrow('BPM must be greater than 0')
+      expect(() => track.playActiveBeats(0, 1 / 4)).toThrow('BPM must be greater than 0')
     })
 
     it('playActiveBeats with negative BPM throws error', () => {
@@ -570,7 +570,7 @@ describe('edge cases', () => {
       const sound = createSound()
       track.addSound(sound)
 
-      expect(() => track.playActiveBeats(-120, 1/4)).toThrow('BPM must be greater than 0')
+      expect(() => track.playActiveBeats(-120, 1 / 4)).toThrow('BPM must be greater than 0')
     })
   })
 

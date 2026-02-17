@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Note } from './note'
 
-describe('Note', () => {
+describe('note', () => {
   it('constructs with letter and octave', () => {
     const note = new Note({ letter: 'A', octave: '4' })
     expect(note.identifier).toBe('A4')

@@ -1,6 +1,7 @@
-import { observable, observe } from '@nx-js/observer-util'
 import type { BeatTrack } from '@/beat-track'
-import { type Beat, createBeatTrack } from '@/index'
+import type { Beat } from '@/index'
+import { observable, observe } from '@nx-js/observer-util'
+import { createBeatTrack } from '@/index'
 
 function loadBeatTrackFor(name: string): Promise<BeatTrack> {
   const urls = [1, 2, 3].map(num => `/ez-web-audio/drum-samples/${name}${num}.wav`)

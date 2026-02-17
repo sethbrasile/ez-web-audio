@@ -1,54 +1,5 @@
-<template>
-  <div class="drum-machine">
-    <div class="controls">
-      <button @click="togglePlay" class="play-btn">
-        {{ playing ? 'Stop' : 'Play' }}
-      </button>
-
-      <div class="bpm-control">
-        <label>
-          BPM: {{ bpm }}
-          <input type="range" v-model.number="bpm" min="60" max="200" step="1" />
-        </label>
-      </div>
-    </div>
-
-    <div class="sequencer">
-      <div v-for="track in tracks" :key="track.name" class="track-row">
-        <div class="track-header">
-          <span class="track-name">{{ track.name }}</span>
-        </div>
-
-        <div class="beat-grid">
-          <button
-            v-for="(beat, i) in track.beats"
-            :key="i"
-            @click="beat.active = !beat.active"
-            :class="[
-              'beat-cell',
-              {
-                'active': beat.active,
-                'current': beat.currentTimeIsPlaying && playing,
-                [`track-${track.name.toLowerCase()}`]: beat.active
-              }
-            ]"
-            :aria-label="`Toggle ${track.name} beat ${i + 1}`"
-            :aria-pressed="beat.active"
-          >
-            <span class="beat-number">{{ i + 1 }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { onUnmounted, reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -58,7 +9,7 @@ const NUM_BEATS = 16
 
 // Default patterns
 const defaultPatterns: Record<string, number[]> = {
-  KICK:  [0, 4, 8, 12],
+  KICK: [0, 4, 8, 12],
   SNARE: [4, 12],
   HIHAT: [0, 2, 4, 6, 8, 10, 12, 14],
 }
@@ -67,8 +18,7 @@ const defaultPatterns: Record<string, number[]> = {
 function makeBeats(name: string) {
   const activeSet = new Set(defaultPatterns[name] ?? [])
   return Array.from({ length: NUM_BEATS }, (_, i) =>
-    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false })
-  )
+    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false }))
 }
 
 const trackDefs = [
@@ -87,7 +37,8 @@ const tracks = ref(trackDefs.map(d => ({
 let initialized = false
 
 async function init() {
-  if (initialized) return
+  if (initialized)
+    return
   try {
     const { createBeatTrack } = await import('ez-web-audio')
 
@@ -107,20 +58,24 @@ async function init() {
     }
 
     initialized = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to initialize'
   }
 }
 
 async function togglePlay() {
-  if (!initialized) await init()
-  if (!initialized) return
+  if (!initialized)
+    await init()
+  if (!initialized)
+    return
 
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
-  } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
+  }
+  else {
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }
@@ -132,9 +87,62 @@ watch(bpm, (val) => {
 })
 
 onUnmounted(() => {
-  tracks.value.forEach(t => { try { t.beatTrack?.stop() } catch {} })
+  tracks.value.forEach((t) => {
+    try { t.beatTrack?.stop() }
+    catch {}
+  })
 })
 </script>
+
+<template>
+  <div class="drum-machine">
+    <div class="controls">
+      <button class="play-btn" @click="togglePlay">
+        {{ playing ? 'Stop' : 'Play' }}
+      </button>
+
+      <div class="bpm-control">
+        <label>
+          BPM: {{ bpm }}
+          <input v-model.number="bpm" type="range" min="60" max="200" step="1">
+        </label>
+      </div>
+    </div>
+
+    <div class="sequencer">
+      <div v-for="track in tracks" :key="track.name" class="track-row">
+        <div class="track-header">
+          <span class="track-name">{{ track.name }}</span>
+        </div>
+
+        <div class="beat-grid">
+          <button
+            v-for="(beat, i) in track.beats"
+            :key="i"
+            class="beat-cell" :class="[
+              {
+                active: beat.active,
+                current: beat.currentTimeIsPlaying && playing,
+                [`track-${track.name.toLowerCase()}`]: beat.active,
+              },
+            ]"
+            :aria-label="`Toggle ${track.name} beat ${i + 1}`"
+            :aria-pressed="beat.active"
+            @click="beat.active = !beat.active"
+          >
+            <span class="beat-number">{{ i + 1 }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .drum-machine {

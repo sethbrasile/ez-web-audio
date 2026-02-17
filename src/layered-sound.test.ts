@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LayeredSound } from './layered-sound'
-import { Sound } from './sound'
 import { Oscillator } from './oscillator'
+import { Sound } from './sound'
 
-describe('LayeredSound', () => {
+describe('layeredSound', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -15,7 +15,7 @@ describe('LayeredSound', () => {
     vi.clearAllMocks()
   })
 
-  describe('Construction', () => {
+  describe('construction', () => {
     it('creates LayeredSound with Sound and Oscillator layers', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)
@@ -56,10 +56,10 @@ describe('LayeredSound', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const layers = Array.from({ length: 8 }, () => new Sound(audioContext, buffer))
 
-      new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
+      const _ls = new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('8 layers')
+        expect.stringContaining('8 layers'),
       )
 
       consoleWarnSpy.mockRestore()
@@ -70,7 +70,7 @@ describe('LayeredSound', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const layers = Array.from({ length: 7 }, () => new Sound(audioContext, buffer))
 
-      new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
+      const _ls = new LayeredSound(audioContext, layers, { warnLayerCount: 8 })
 
       expect(consoleWarnSpy).not.toHaveBeenCalled()
 
@@ -78,7 +78,7 @@ describe('LayeredSound', () => {
     })
   })
 
-  describe('Playback Synchronization', () => {
+  describe('playback Synchronization', () => {
     it('calls playAt on all layers with same audioContext.currentTime', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound1 = new Sound(audioContext, buffer)
@@ -156,7 +156,7 @@ describe('LayeredSound', () => {
     })
   })
 
-  describe('Master Controls', () => {
+  describe('master Controls', () => {
     it('setGain affects all layers', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound1 = new Sound(audioContext, buffer)
@@ -190,7 +190,7 @@ describe('LayeredSound', () => {
     })
   })
 
-  describe('Layer Access', () => {
+  describe('layer Access', () => {
     it('getLayer returns correct layer by index', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)
@@ -222,7 +222,7 @@ describe('LayeredSound', () => {
     })
   })
 
-  describe('Events', () => {
+  describe('events', () => {
     it('emits play event when play() is called', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)
@@ -237,9 +237,9 @@ describe('LayeredSound', () => {
         expect.objectContaining({
           detail: expect.objectContaining({
             time: expect.any(Number),
-            source: layered
-          })
-        })
+            source: layered,
+          }),
+        }),
       )
     })
 
@@ -258,9 +258,9 @@ describe('LayeredSound', () => {
         expect.objectContaining({
           detail: expect.objectContaining({
             time: expect.any(Number),
-            source: layered
-          })
-        })
+            source: layered,
+          }),
+        }),
       )
     })
 
@@ -284,9 +284,9 @@ describe('LayeredSound', () => {
         expect.objectContaining({
           detail: expect.objectContaining({
             time: expect.any(Number),
-            source: layered
-          })
-        })
+            source: layered,
+          }),
+        }),
       )
     })
 
@@ -310,7 +310,7 @@ describe('LayeredSound', () => {
     })
   })
 
-  describe('Type Safety', () => {
+  describe('type Safety', () => {
     it('supports .on() method for chaining', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)

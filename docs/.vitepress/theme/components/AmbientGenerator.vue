@@ -1,106 +1,5 @@
-<template>
-  <div class="ambient-generator">
-    <div class="controls-section">
-      <div class="control-header">
-        <button
-          @click="togglePlayback"
-          class="play-btn"
-          :class="{ active: isPlaying }"
-        >
-          {{ isPlaying ? 'Stop' : 'Start' }}
-        </button>
-
-        <label class="master-volume">
-          Master Volume: {{ Math.round(masterVolume * 100) }}%
-          <input
-            type="range"
-            v-model.number="masterVolume"
-            min="0"
-            max="1"
-            step="0.01"
-            @input="updateMasterVolume"
-          />
-        </label>
-      </div>
-
-      <div class="layers">
-        <div class="layer" :class="{ disabled: !droneEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input type="checkbox" v-model="droneEnabled" @change="toggleDrone" />
-              <span class="layer-name">Drone</span>
-            </label>
-            <span class="layer-desc">Low-frequency sine wave</span>
-          </div>
-          <label class="layer-control">
-            Frequency: {{ droneFrequency }} Hz
-            <input
-              type="range"
-              v-model.number="droneFrequency"
-              min="60"
-              max="120"
-              step="1"
-              @input="updateDroneFrequency"
-              :disabled="!droneEnabled"
-            />
-          </label>
-        </div>
-
-        <div class="layer" :class="{ disabled: !textureEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input type="checkbox" v-model="textureEnabled" @change="toggleTexture" />
-              <span class="layer-name">Texture</span>
-            </label>
-            <span class="layer-desc">Filtered white noise</span>
-          </div>
-          <label class="layer-control">
-            Filter Cutoff: {{ textureFilterCutoff }} Hz
-            <input
-              type="range"
-              v-model.number="textureFilterCutoff"
-              min="200"
-              max="4000"
-              step="50"
-              @input="updateTextureFilter"
-              :disabled="!textureEnabled"
-            />
-          </label>
-        </div>
-
-        <div class="layer" :class="{ disabled: !shimmerEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input type="checkbox" v-model="shimmerEnabled" @change="toggleShimmer" />
-              <span class="layer-name">Shimmer</span>
-            </label>
-            <span class="layer-desc">High-frequency overtones</span>
-          </div>
-          <label class="layer-control">
-            Frequency: {{ shimmerFrequency }} Hz
-            <input
-              type="range"
-              v-model.number="shimmerFrequency"
-              min="400"
-              max="800"
-              step="10"
-              @input="updateShimmerFrequency"
-              :disabled="!shimmerEnabled"
-            />
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">Initializing audio...</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
 const loading = ref(false)
@@ -132,10 +31,12 @@ async function togglePlayback() {
 
     if (isPlaying.value) {
       stopAll()
-    } else {
+    }
+    else {
       await startAll()
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to control playback'
     console.error('Playback error:', e)
   }
@@ -157,8 +58,8 @@ async function startAll() {
         attack: 1.0,
         decay: 0.5,
         sustain: 0.8,
-        release: 2.0
-      }
+        release: 2.0,
+      },
     })
     droneOscillator.changeGainTo(droneEnabled.value ? 0.4 : 0)
 
@@ -166,7 +67,7 @@ async function startAll() {
     textureNoise = await createWhiteNoise()
     textureFilter = createFilterEffect(audioContext, 'lowpass', {
       frequency: textureFilterCutoff.value,
-      Q: 1.0
+      Q: 1.0,
     })
     textureNoise.addEffect(textureFilter)
     textureNoise.changeGainTo(textureEnabled.value ? 0.15 : 0)
@@ -179,8 +80,8 @@ async function startAll() {
         attack: 1.5,
         decay: 0.3,
         sustain: 0.9,
-        release: 2.5
-      }
+        release: 2.5,
+      },
     })
     shimmerOscillator.changeGainTo(shimmerEnabled.value ? 0.08 : 0)
 
@@ -190,7 +91,8 @@ async function startAll() {
     shimmerOscillator.play()
 
     isPlaying.value = true
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -209,7 +111,8 @@ function stopAll() {
       shimmerOscillator.stop()
       shimmerOscillator = null
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.error('Error stopping sounds:', e)
   }
 
@@ -217,7 +120,8 @@ function stopAll() {
 }
 
 function updateMasterVolume() {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   if (droneOscillator && droneEnabled.value) {
     droneOscillator.changeGainTo(0.4 * masterVolume.value)
@@ -231,7 +135,8 @@ function updateMasterVolume() {
 }
 
 function toggleDrone() {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   if (droneOscillator) {
     droneOscillator.changeGainTo(droneEnabled.value ? 0.4 * masterVolume.value : 0)
@@ -239,7 +144,8 @@ function toggleDrone() {
 }
 
 function toggleTexture() {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   if (textureNoise) {
     textureNoise.changeGainTo(textureEnabled.value ? 0.15 * masterVolume.value : 0)
@@ -247,7 +153,8 @@ function toggleTexture() {
 }
 
 function toggleShimmer() {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   if (shimmerOscillator) {
     shimmerOscillator.changeGainTo(shimmerEnabled.value ? 0.08 * masterVolume.value : 0)
@@ -255,19 +162,22 @@ function toggleShimmer() {
 }
 
 function updateDroneFrequency() {
-  if (!isPlaying.value || !droneOscillator) return
+  if (!isPlaying.value || !droneOscillator)
+    return
 
   droneOscillator.update('frequency').to(droneFrequency.value).from('number')
 }
 
 function updateTextureFilter() {
-  if (!isPlaying.value || !textureFilter) return
+  if (!isPlaying.value || !textureFilter)
+    return
 
   textureFilter.frequency.value = textureFilterCutoff.value
 }
 
 function updateShimmerFrequency() {
-  if (!isPlaying.value || !shimmerOscillator) return
+  if (!isPlaying.value || !shimmerOscillator)
+    return
 
   shimmerOscillator.update('frequency').to(shimmerFrequency.value).from('number')
 }
@@ -276,6 +186,111 @@ onUnmounted(() => {
   stopAll()
 })
 </script>
+
+<template>
+  <div class="ambient-generator">
+    <div class="controls-section">
+      <div class="control-header">
+        <button
+          class="play-btn"
+          :class="{ active: isPlaying }"
+          @click="togglePlayback"
+        >
+          {{ isPlaying ? 'Stop' : 'Start' }}
+        </button>
+
+        <label class="master-volume">
+          Master Volume: {{ Math.round(masterVolume * 100) }}%
+          <input
+            v-model.number="masterVolume"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            @input="updateMasterVolume"
+          >
+        </label>
+      </div>
+
+      <div class="layers">
+        <div class="layer" :class="{ disabled: !droneEnabled }">
+          <div class="layer-header">
+            <label class="layer-toggle">
+              <input v-model="droneEnabled" type="checkbox" @change="toggleDrone">
+              <span class="layer-name">Drone</span>
+            </label>
+            <span class="layer-desc">Low-frequency sine wave</span>
+          </div>
+          <label class="layer-control">
+            Frequency: {{ droneFrequency }} Hz
+            <input
+              v-model.number="droneFrequency"
+              type="range"
+              min="60"
+              max="120"
+              step="1"
+              :disabled="!droneEnabled"
+              @input="updateDroneFrequency"
+            >
+          </label>
+        </div>
+
+        <div class="layer" :class="{ disabled: !textureEnabled }">
+          <div class="layer-header">
+            <label class="layer-toggle">
+              <input v-model="textureEnabled" type="checkbox" @change="toggleTexture">
+              <span class="layer-name">Texture</span>
+            </label>
+            <span class="layer-desc">Filtered white noise</span>
+          </div>
+          <label class="layer-control">
+            Filter Cutoff: {{ textureFilterCutoff }} Hz
+            <input
+              v-model.number="textureFilterCutoff"
+              type="range"
+              min="200"
+              max="4000"
+              step="50"
+              :disabled="!textureEnabled"
+              @input="updateTextureFilter"
+            >
+          </label>
+        </div>
+
+        <div class="layer" :class="{ disabled: !shimmerEnabled }">
+          <div class="layer-header">
+            <label class="layer-toggle">
+              <input v-model="shimmerEnabled" type="checkbox" @change="toggleShimmer">
+              <span class="layer-name">Shimmer</span>
+            </label>
+            <span class="layer-desc">High-frequency overtones</span>
+          </div>
+          <label class="layer-control">
+            Frequency: {{ shimmerFrequency }} Hz
+            <input
+              v-model.number="shimmerFrequency"
+              type="range"
+              min="400"
+              max="800"
+              step="10"
+              :disabled="!shimmerEnabled"
+              @input="updateShimmerFrequency"
+            >
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">
+        Initializing audio...
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .ambient-generator {

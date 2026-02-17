@@ -79,8 +79,9 @@ function audioContextAwareTimeout(audioContext) {
     const now = audioContext.currentTime * 1000
 
     // Execute due tasks
-    tasks.forEach(task => {
-      if (task.due <= now) task.fn()
+    tasks.forEach((task) => {
+      if (task.due <= now)
+        task.fn()
     })
 
     // Remove completed tasks
@@ -120,7 +121,8 @@ function toggleMute(track) {
 
     // Deactivate all beats
     track.beats.forEach(b => b.active = false)
-  } else {
+  }
+  else {
     // Restore saved pattern
     track.savedStates.forEach((active, i) => {
       track.beats[i].active = active
@@ -137,7 +139,7 @@ Event listeners must be cleaned up manually to prevent memory leaks:
 
 ```typescript
 // Store reference for cleanup
-const beatHandler = (e) => {
+function beatHandler(e) {
   const { beatIndex } = e.detail
   // Update DOM...
 }

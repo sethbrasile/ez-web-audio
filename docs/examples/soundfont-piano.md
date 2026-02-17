@@ -43,14 +43,14 @@ import { createFont } from 'ez-web-audio'
 const piano = await createFont('/audio/piano.js')
 
 // Play notes by identifier (note name + octave)
-piano.play('C4')  // Middle C
-piano.play('E4')  // E above middle C
-piano.play('G4')  // G major chord with C4
+piano.play('C4') // Middle C
+piano.play('E4') // E above middle C
+piano.play('G4') // G major chord with C4
 
 // Get a specific note for advanced control
 const note = piano.getNote('A4')
 if (note) {
-  note.changeGainTo(0.5)  // Adjust volume
+  note.changeGainTo(0.5) // Adjust volume
   note.play()
 }
 ```

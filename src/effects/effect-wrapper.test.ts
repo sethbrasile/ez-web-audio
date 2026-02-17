@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { EffectWrapper, wrapEffect, ExternalEffect } from './effect-wrapper'
+import type { ExternalEffect } from './effect-wrapper'
 import type { Effect } from './index'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { EffectWrapper, wrapEffect } from './effect-wrapper'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -10,7 +11,7 @@ function createMockContext() {
 /**
  * Create a mock external effect with a connect() method.
  */
-function createMockExternalEffect(): ExternalEffect & { connectCalled: boolean; connectedTo: AudioNode | null } {
+function createMockExternalEffect(): ExternalEffect & { connectCalled: boolean, connectedTo: AudioNode | null } {
   return {
     connectCalled: false,
     connectedTo: null,
@@ -21,7 +22,7 @@ function createMockExternalEffect(): ExternalEffect & { connectCalled: boolean; 
   }
 }
 
-describe('EffectWrapper', () => {
+describe('effectWrapper', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -43,18 +44,18 @@ describe('EffectWrapper', () => {
 
     it('calls connect() on external effect during construction', () => {
       const externalEffect = createMockExternalEffect()
-      new EffectWrapper(audioContext, externalEffect)
+      const _wrapper = new EffectWrapper(audioContext, externalEffect)
       expect(externalEffect.connectCalled).toBe(true)
     })
 
     it('connects external effect to wetGain node', () => {
       const externalEffect = createMockExternalEffect()
-      new EffectWrapper(audioContext, externalEffect)
+      const _wrapper = new EffectWrapper(audioContext, externalEffect)
       expect(externalEffect.connectedTo).toBeTruthy()
     })
   })
 
-  describe('Effect interface implementation', () => {
+  describe('effect interface implementation', () => {
     it('has input property', () => {
       const externalEffect = createMockExternalEffect()
       const wrapper = new EffectWrapper(audioContext, externalEffect)

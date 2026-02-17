@@ -45,7 +45,7 @@ const kick = await createBeatTrack([
   '/audio/kick3.wav'
 ], {
   numBeats: 16,
-  wrapWith: (beat) => reactive(beat) // ← Makes beat properties reactive
+  wrapWith: beat => reactive(beat) // ← Makes beat properties reactive
 })
 
 // Set default pattern
@@ -82,14 +82,15 @@ function toggleMute(track) {
     track.beats.forEach((beat, i) => {
       if (beat.active) {
         track.activeStates.set(i, true)
-        beat.active = false  // ← Deactivate beat
+        beat.active = false // ← Deactivate beat
       }
     })
-  } else {
+  }
+  else {
     // Restore active states
     track.activeStates.forEach((active, i) => {
       if (active) {
-        track.beats[i].active = true  // ← Reactivate beat
+        track.beats[i].active = true // ← Reactivate beat
       }
     })
   }
@@ -105,9 +106,10 @@ function toggleSolo(track) {
   if (soloedTrack === track.name) {
     // Un-solo: restore all tracks
     tracks.forEach(restoreActiveStates)
-  } else {
+  }
+  else {
     // Solo: mute all other tracks
-    tracks.forEach(t => {
+    tracks.forEach((t) => {
       if (t.name !== track.name) {
         muteTrack(t)
       }
@@ -144,34 +146,8 @@ For frameworks without reactive proxies (React, vanilla JS, Svelte), use the eve
 Here's the full component implementation:
 
 ```vue
-<template>
-  <div class="drum-machine">
-    <button @click="toggle">{{ playing ? 'Stop' : 'Play' }}</button>
-
-    <label>BPM: {{ bpm }}
-      <input type="range" v-model.number="bpm" min="60" max="200" />
-    </label>
-
-    <div v-for="track in tracks" :key="track.name">
-      <span>{{ track.name }}</span>
-
-      <button
-        v-for="(beat, i) in track.beatTrack.beats"
-        :key="i"
-        @click="beat.active = !beat.active"
-        :class="{
-          active: beat.active,
-          current: beat.currentTimeIsPlaying && playing
-        }"
-      >
-        {{ i + 1 }}
-      </button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -182,11 +158,11 @@ async function init() {
 
   const kick = await createBeatTrack(['/audio/kick1.wav'], {
     numBeats: 16,
-    wrapWith: (beat) => reactive(beat),
+    wrapWith: beat => reactive(beat),
   })
   const snare = await createBeatTrack(['/audio/snare1.wav'], {
     numBeats: 16,
-    wrapWith: (beat) => reactive(beat),
+    wrapWith: beat => reactive(beat),
   })
 
   // Default pattern
@@ -200,13 +176,15 @@ async function init() {
 }
 
 async function toggle() {
-  if (!tracks.value.length) await init()
+  if (!tracks.value.length)
+    await init()
 
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
-  } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
+  }
+  else {
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }
@@ -216,11 +194,39 @@ watch(bpm, (val) => {
     // Restart playback with new tempo
     tracks.value.forEach(t => t.beatTrack.stop())
     setTimeout(() => {
-      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1/16))
+      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1 / 16))
     }, 50)
   }
 })
 </script>
+
+<template>
+  <div class="drum-machine">
+    <button @click="toggle">
+      {{ playing ? 'Stop' : 'Play' }}
+    </button>
+
+    <label>BPM: {{ bpm }}
+      <input v-model.number="bpm" type="range" min="60" max="200">
+    </label>
+
+    <div v-for="track in tracks" :key="track.name">
+      <span>{{ track.name }}</span>
+
+      <button
+        v-for="(beat, i) in track.beatTrack.beats"
+        :key="i"
+        :class="{
+          active: beat.active,
+          current: beat.currentTimeIsPlaying && playing,
+        }"
+        @click="beat.active = !beat.active"
+      >
+        {{ i + 1 }}
+      </button>
+    </div>
+  </div>
+</template>
 ```
 
 ## Key Takeaways

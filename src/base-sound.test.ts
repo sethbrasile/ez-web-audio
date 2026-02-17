@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { settle } from './test/helpers'
-import { Sound } from '@/sound'
-import { Oscillator } from '@/oscillator'
-import { setDebugMode, setDebugHandler, type DebugMessage } from './debug'
+import type { DebugMessage } from './debug'
 import type { Effect } from './effects'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Oscillator } from '@/oscillator'
+import { Sound } from '@/sound'
+import { setDebugHandler, setDebugMode } from './debug'
+import { settle } from './test/helpers'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -15,7 +16,7 @@ function createSound(context: AudioContext) {
   return new Sound(context, audioBuffer)
 }
 
-describe('Event System', () => {
+describe('event System', () => {
   let audioContext: AudioContext
   let sound: Sound
 
@@ -136,7 +137,7 @@ describe('Event System', () => {
   })
 })
 
-describe('Debug Mode Integration', () => {
+describe('debug Mode Integration', () => {
   let audioContext: AudioContext
   let sound: Sound
   let messages: DebugMessage[]
@@ -158,7 +159,7 @@ describe('Debug Mode Integration', () => {
   describe('global debug mode', () => {
     it('setDebugMode(true) causes play() to log', async () => {
       setDebugMode(true)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.play()
       await settle(() => sound.isPlaying)
@@ -171,7 +172,7 @@ describe('Debug Mode Integration', () => {
 
     it('setDebugMode(false) stops logging', async () => {
       setDebugMode(false)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.play()
       await settle(() => sound.isPlaying)
@@ -183,7 +184,7 @@ describe('Debug Mode Integration', () => {
   describe('per-sound override', () => {
     it('sound.debug = true enables logging for that sound only', async () => {
       setDebugMode(false) // Global off
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.debug = true
       sound.play()
@@ -195,7 +196,7 @@ describe('Debug Mode Integration', () => {
 
     it('sound.debug = false disables logging even when global is on', async () => {
       setDebugMode(true) // Global on
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.debug = false
       sound.play()
@@ -209,7 +210,7 @@ describe('Debug Mode Integration', () => {
     it('setDebugHandler(fn) routes messages to custom function', async () => {
       setDebugMode(true)
       const customMessages: DebugMessage[] = []
-      setDebugHandler((msg) => customMessages.push(msg))
+      setDebugHandler(msg => customMessages.push(msg))
 
       sound.play()
       await settle(() => sound.isPlaying)
@@ -220,7 +221,7 @@ describe('Debug Mode Integration', () => {
 
     it('custom handler receives DebugMessage with correct structure', async () => {
       setDebugMode(true)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.play()
       await settle(() => sound.isPlaying)
@@ -240,7 +241,7 @@ describe('Debug Mode Integration', () => {
   describe('event logging', () => {
     it('play event logged with timestamp and details', async () => {
       setDebugMode(true)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.startOffset = 0.5
       sound.play()
@@ -253,7 +254,7 @@ describe('Debug Mode Integration', () => {
 
     it('stop event logged', async () => {
       setDebugMode(true)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.play()
       await settle(() => sound.isPlaying)
@@ -269,7 +270,7 @@ describe('Debug Mode Integration', () => {
   describe('connection logging', () => {
     it('addConnection logs debug message', () => {
       setDebugMode(true)
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       const gainNode = audioContext.createGain()
       sound.addConnection({ name: 'testGain', audioNode: gainNode })
@@ -288,7 +289,7 @@ describe('Debug Mode Integration', () => {
       sound.addConnection({ name: 'testGain', audioNode: gainNode })
 
       // Clear and start capturing
-      setDebugHandler((msg) => messages.push(msg))
+      setDebugHandler(msg => messages.push(msg))
 
       sound.removeConnection('testGain')
 
@@ -310,7 +311,7 @@ function createMockEffect(audioContext: AudioContext): Effect {
   }
 }
 
-describe('Effect System Integration', () => {
+describe('effect System Integration', () => {
   let audioContext: AudioContext
   let sound: Sound
 
@@ -557,7 +558,7 @@ describe('Effect System Integration', () => {
       expect(oscillator.getEffects()[0]).toBe(effect)
     })
 
-    it('Oscillator effects persist across play cycles', async () => {
+    it('oscillator effects persist across play cycles', async () => {
       const oscillator = new Oscillator(audioContext, { frequency: 440 })
       const effect = createMockEffect(audioContext)
 
@@ -579,7 +580,7 @@ describe('Effect System Integration', () => {
   })
 })
 
-describe('Analyzer Integration', () => {
+describe('analyzer Integration', () => {
   let audioContext: AudioContext
   let sound: Sound
 
@@ -682,7 +683,7 @@ describe('Analyzer Integration', () => {
       expect(oscillator.getAnalyzer()).toBe(analyzer)
     })
 
-    it('Oscillator plays with analyzer attached', async () => {
+    it('oscillator plays with analyzer attached', async () => {
       const oscillator = new Oscillator(audioContext, { frequency: 440 })
       const analyzer = createMockAnalyzer(audioContext)
 

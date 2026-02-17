@@ -116,11 +116,11 @@ const snare = await createSound('/audio/snare.mp3')
 const hihat = await createSound('/audio/hihat.mp3')
 
 // Schedule a drum pattern
-kick.playAt(now + 0.0)   // Beat 1
+kick.playAt(now + 0.0) // Beat 1
 hihat.playAt(now + 0.25) // 16th note later
-snare.playAt(now + 0.5)  // Beat 2
+snare.playAt(now + 0.5) // Beat 2
 hihat.playAt(now + 0.75) // Another 16th
-kick.playAt(now + 1.0)   // Beat 3
+kick.playAt(now + 1.0) // Beat 3
 ```
 
 All scheduling happens instantly in JavaScript. The sounds will play at their scheduled times with sample-accurate precision, even if your JavaScript code blocks or the tab loses focus.

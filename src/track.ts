@@ -1,7 +1,7 @@
 import type { TimeObject } from '@utils/create-time-object'
+import type { SeekType } from './controllers/base-param-controller'
 import createTimeObject from '@utils/create-time-object'
 import { Sound } from './sound'
-import type { SeekType } from './controllers/base-param-controller'
 import withinRange from './utils/within-range'
 
 /**

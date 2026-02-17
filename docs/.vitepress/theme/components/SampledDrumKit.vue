@@ -1,37 +1,5 @@
-<template>
-  <div class="sampled-drum-kit">
-    <div class="drum-pads">
-      <div
-        v-for="pad in pads"
-        :key="pad.name"
-        :class="['drum-pad', pad.color, { pressed: lastPlayed === pad.name, disabled: loading }]"
-        :role="loading ? undefined : 'button'"
-        :tabindex="loading ? -1 : 0"
-        :aria-label="`Play ${pad.label.toLowerCase()} drum`"
-        :aria-disabled="loading"
-        @mousedown="loading ? null : playPad(pad.name)"
-        @touchstart.prevent="loading ? null : playPad(pad.name)"
-        @keydown.enter="loading ? null : playPad(pad.name)"
-        @keydown.space.prevent="loading ? null : playPad(pad.name)"
-      >
-        <div class="pad-label">{{ pad.label }}</div>
-        <div class="sample-counter">Sample {{ playCount[pad.name] }}/3</div>
-      </div>
-    </div>
-
-    <div class="info-text">
-      Each pad cycles through 3 sample variations (round-robin)
-    </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">Loading drum samples...</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const loading = ref(false)
 const initialized = ref(false)
@@ -40,7 +8,7 @@ const lastPlayed = ref('')
 const playCount = ref({
   kick: 1,
   snare: 1,
-  hihat: 1
+  hihat: 1,
 })
 
 let kickSampler: any = null
@@ -51,11 +19,12 @@ let lib: any = null
 const pads = [
   { name: 'kick', label: 'KICK', color: 'blue' },
   { name: 'snare', label: 'SNARE', color: 'orange' },
-  { name: 'hihat', label: 'HI-HAT', color: 'yellow' }
+  { name: 'hihat', label: 'HI-HAT', color: 'yellow' },
 ]
 
 async function initSamplers() {
-  if (initialized.value) return
+  if (initialized.value)
+    return
 
   try {
     loading.value = true
@@ -68,25 +37,27 @@ async function initSamplers() {
     kickSampler = await lib.createSampler([
       '/ez-web-audio/audio/drum-samples/kick1.wav',
       '/ez-web-audio/audio/drum-samples/kick2.wav',
-      '/ez-web-audio/audio/drum-samples/kick3.wav'
+      '/ez-web-audio/audio/drum-samples/kick3.wav',
     ])
 
     snareSampler = await lib.createSampler([
       '/ez-web-audio/audio/drum-samples/snare1.wav',
       '/ez-web-audio/audio/drum-samples/snare2.wav',
-      '/ez-web-audio/audio/drum-samples/snare3.wav'
+      '/ez-web-audio/audio/drum-samples/snare3.wav',
     ])
 
     hihatSampler = await lib.createSampler([
       '/ez-web-audio/audio/drum-samples/hihat1.wav',
       '/ez-web-audio/audio/drum-samples/hihat2.wav',
-      '/ez-web-audio/audio/drum-samples/hihat3.wav'
+      '/ez-web-audio/audio/drum-samples/hihat3.wav',
     ])
 
     initialized.value = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load drum samples'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -94,7 +65,8 @@ async function initSamplers() {
 async function playPad(padName: string) {
   if (!initialized.value) {
     await initSamplers()
-    if (!initialized.value) return
+    if (!initialized.value)
+      return
   }
 
   try {
@@ -102,10 +74,12 @@ async function playPad(padName: string) {
     if (padName === 'kick' && kickSampler) {
       kickSampler.play()
       playCount.value.kick = (playCount.value.kick % 3) + 1
-    } else if (padName === 'snare' && snareSampler) {
+    }
+    else if (padName === 'snare' && snareSampler) {
       snareSampler.play()
       playCount.value.snare = (playCount.value.snare % 3) + 1
-    } else if (padName === 'hihat' && hihatSampler) {
+    }
+    else if (padName === 'hihat' && hihatSampler) {
       hihatSampler.play()
       playCount.value.hihat = (playCount.value.hihat % 3) + 1
     }
@@ -117,7 +91,8 @@ async function playPad(padName: string) {
         lastPlayed.value = ''
       }
     }, 100)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
   }
 }
@@ -125,14 +100,58 @@ async function playPad(padName: string) {
 onUnmounted(() => {
   // Cleanup samplers
   try {
-    if (kickSampler) kickSampler.stop()
-    if (snareSampler) snareSampler.stop()
-    if (hihatSampler) hihatSampler.stop()
-  } catch (e) {
+    if (kickSampler)
+      kickSampler.stop()
+    if (snareSampler)
+      snareSampler.stop()
+    if (hihatSampler)
+      hihatSampler.stop()
+  }
+  catch (e) {
     // Ignore cleanup errors
   }
 })
 </script>
+
+<template>
+  <div class="sampled-drum-kit">
+    <div class="drum-pads">
+      <div
+        v-for="pad in pads"
+        :key="pad.name"
+        class="drum-pad" :class="[pad.color, { pressed: lastPlayed === pad.name, disabled: loading }]"
+        :role="loading ? undefined : 'button'"
+        :tabindex="loading ? -1 : 0"
+        :aria-label="`Play ${pad.label.toLowerCase()} drum`"
+        :aria-disabled="loading"
+        @mousedown="loading ? null : playPad(pad.name)"
+        @touchstart.prevent="loading ? null : playPad(pad.name)"
+        @keydown.enter="loading ? null : playPad(pad.name)"
+        @keydown.space.prevent="loading ? null : playPad(pad.name)"
+      >
+        <div class="pad-label">
+          {{ pad.label }}
+        </div>
+        <div class="sample-counter">
+          Sample {{ playCount[pad.name] }}/3
+        </div>
+      </div>
+    </div>
+
+    <div class="info-text">
+      Each pad cycles through 3 sample variations (round-robin)
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">
+        Loading drum samples...
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .sampled-drum-kit {
@@ -221,7 +240,6 @@ onUnmounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
 
 .pad-label {
   font-size: 1.25rem;

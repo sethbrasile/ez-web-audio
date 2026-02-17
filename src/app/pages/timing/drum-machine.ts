@@ -1,9 +1,9 @@
-import nav from './nav'
+import DrumMachine from '@/app/components/drum-machine'
 import LoadingSpinner from '@/app/components/loading-spinner'
 import PermissionBanner from '@/app/components/permission-banner'
 
 import { codeBlock, htmlBlock } from '@/app/utils'
-import DrumMachine from '@/app/components/drum-machine'
+import nav from './nav'
 
 const Content = {
   async setup() {

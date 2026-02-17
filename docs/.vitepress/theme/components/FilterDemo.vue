@@ -1,115 +1,5 @@
-<template>
-  <div class="filter-demo">
-    <div class="warning">
-      <strong>Note:</strong> Audio sources can be loud. Start with caution.
-    </div>
-
-    <div class="controls">
-      <div class="control-group">
-        <div class="row">
-          <label>Source Type:</label>
-          <div class="button-group">
-            <button
-              :class="{ active: sourceType === 'oscillator' }"
-              @click="sourceType = 'oscillator'"
-              :disabled="playing"
-            >
-              Oscillator
-            </button>
-            <button
-              :class="{ active: sourceType === 'noise' }"
-              @click="sourceType = 'noise'"
-              :disabled="playing"
-            >
-              White Noise
-            </button>
-          </div>
-          <button
-            class="play-button"
-            @click="togglePlayback"
-            :disabled="loading"
-          >
-            {{ playing ? 'Stop' : 'Play' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="row">
-          <label for="filter-type">Filter Type:</label>
-          <select id="filter-type" v-model="filterType" :disabled="!playing">
-            <option value="lowpass">Lowpass</option>
-            <option value="highpass">Highpass</option>
-            <option value="bandpass">Bandpass</option>
-            <option value="notch">Notch</option>
-            <option value="lowshelf">Low Shelf</option>
-            <option value="highshelf">High Shelf</option>
-            <option value="peaking">Peaking</option>
-            <option value="allpass">Allpass</option>
-          </select>
-        </div>
-
-        <div class="row">
-          <label for="frequency">Frequency:</label>
-          <input
-            id="frequency"
-            type="range"
-            min="0"
-            max="100"
-            v-model.number="frequencySlider"
-            :disabled="!playing"
-            :aria-label="`Filter frequency: ${Math.round(frequency)} Hz`"
-          />
-          <span class="value">{{ Math.round(frequency) }} Hz</span>
-        </div>
-
-        <div class="row">
-          <label for="q">Resonance (Q):</label>
-          <input
-            id="q"
-            type="range"
-            min="0.1"
-            max="20"
-            step="0.1"
-            v-model.number="q"
-            :disabled="!playing"
-            :aria-label="`Resonance Q: ${q.toFixed(1)}`"
-          />
-          <span class="value">{{ q.toFixed(1) }}</span>
-        </div>
-
-        <div v-if="showGainControl" class="row">
-          <label for="filter-gain">Gain:</label>
-          <input
-            id="filter-gain"
-            type="range"
-            min="-24"
-            max="24"
-            step="0.5"
-            v-model.number="filterGain"
-            :disabled="!playing"
-            :aria-label="`Filter gain: ${filterGain > 0 ? '+' : ''}${filterGain.toFixed(1)} dB`"
-          />
-          <span class="value">{{ filterGain > 0 ? '+' : '' }}{{ filterGain.toFixed(1) }} dB</span>
-        </div>
-
-        <div class="row">
-          <label>
-            <input type="checkbox" v-model="bypassed" :disabled="!playing" />
-            Bypass filter
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 const initialized = ref(false)
 const playing = ref(false)
@@ -129,7 +19,7 @@ let filter: any = null
 
 // Logarithmic frequency mapping: 20 Hz to 20,000 Hz
 const frequency = computed(() => {
-  return 20 * Math.pow(1000, frequencySlider.value / 100)
+  return 20 * 1000 ** (frequencySlider.value / 100)
 })
 
 // Show gain control only for shelf and peaking filters
@@ -140,13 +30,15 @@ const showGainControl = computed(() => {
 async function togglePlayback() {
   if (playing.value) {
     stopSound()
-  } else {
+  }
+  else {
     await playSound()
   }
 }
 
 async function playSound() {
-  if (loading.value) return
+  if (loading.value)
+    return
 
   try {
     loading.value = true
@@ -164,7 +56,8 @@ async function playSound() {
     if (sourceType.value === 'oscillator') {
       source = await lib.createOscillator({ frequency: 200, type: 'sawtooth' })
       source.update('gain').to(0.3).from('ratio')
-    } else {
+    }
+    else {
       // White noise
       source = await lib.createWhiteNoise()
       source.changeGainTo(0.15)
@@ -174,7 +67,7 @@ async function playSound() {
     filter = lib.createFilterEffect(ctx, filterType.value, {
       frequency: frequency.value,
       q: q.value,
-      gain: filterGain.value
+      gain: filterGain.value,
     })
 
     // Add filter to source
@@ -183,9 +76,11 @@ async function playSound() {
     // Play source
     source.play()
     playing.value = true
-  } catch (err: any) {
+  }
+  catch (err: any) {
     error.value = err instanceof Error ? err.message : 'Failed to play audio'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -201,7 +96,8 @@ function stopSound() {
 
 // Watch filter parameters and update in real-time
 watch(filterType, async (newType) => {
-  if (!playing.value || !filter || !source) return
+  if (!playing.value || !filter || !source)
+    return
 
   try {
     const ctx = await lib.getAudioContext()
@@ -213,14 +109,15 @@ watch(filterType, async (newType) => {
     filter = lib.createFilterEffect(ctx, newType, {
       frequency: frequency.value,
       q: q.value,
-      gain: filterGain.value
+      gain: filterGain.value,
     })
     filter.bypass = bypassed.value
 
     // Add new filter
     source.addEffect(filter)
     source.rewireEffects()
-  } catch (err) {
+  }
+  catch (err) {
     error.value = err instanceof Error ? err.message : 'Error changing filter type'
   }
 })
@@ -254,6 +151,134 @@ onUnmounted(() => {
   stopSound()
 })
 </script>
+
+<template>
+  <div class="filter-demo">
+    <div class="warning">
+      <strong>Note:</strong> Audio sources can be loud. Start with caution.
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <div class="row">
+          <label>Source Type:</label>
+          <div class="button-group">
+            <button
+              :class="{ active: sourceType === 'oscillator' }"
+              :disabled="playing"
+              @click="sourceType = 'oscillator'"
+            >
+              Oscillator
+            </button>
+            <button
+              :class="{ active: sourceType === 'noise' }"
+              :disabled="playing"
+              @click="sourceType = 'noise'"
+            >
+              White Noise
+            </button>
+          </div>
+          <button
+            class="play-button"
+            :disabled="loading"
+            @click="togglePlayback"
+          >
+            {{ playing ? 'Stop' : 'Play' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="row">
+          <label for="filter-type">Filter Type:</label>
+          <select id="filter-type" v-model="filterType" :disabled="!playing">
+            <option value="lowpass">
+              Lowpass
+            </option>
+            <option value="highpass">
+              Highpass
+            </option>
+            <option value="bandpass">
+              Bandpass
+            </option>
+            <option value="notch">
+              Notch
+            </option>
+            <option value="lowshelf">
+              Low Shelf
+            </option>
+            <option value="highshelf">
+              High Shelf
+            </option>
+            <option value="peaking">
+              Peaking
+            </option>
+            <option value="allpass">
+              Allpass
+            </option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="frequency">Frequency:</label>
+          <input
+            id="frequency"
+            v-model.number="frequencySlider"
+            type="range"
+            min="0"
+            max="100"
+            :disabled="!playing"
+            :aria-label="`Filter frequency: ${Math.round(frequency)} Hz`"
+          >
+          <span class="value">{{ Math.round(frequency) }} Hz</span>
+        </div>
+
+        <div class="row">
+          <label for="q">Resonance (Q):</label>
+          <input
+            id="q"
+            v-model.number="q"
+            type="range"
+            min="0.1"
+            max="20"
+            step="0.1"
+            :disabled="!playing"
+            :aria-label="`Resonance Q: ${q.toFixed(1)}`"
+          >
+          <span class="value">{{ q.toFixed(1) }}</span>
+        </div>
+
+        <div v-if="showGainControl" class="row">
+          <label for="filter-gain">Gain:</label>
+          <input
+            id="filter-gain"
+            v-model.number="filterGain"
+            type="range"
+            min="-24"
+            max="24"
+            step="0.5"
+            :disabled="!playing"
+            :aria-label="`Filter gain: ${filterGain > 0 ? '+' : ''}${filterGain.toFixed(1)} dB`"
+          >
+          <span class="value">{{ filterGain > 0 ? '+' : '' }}{{ filterGain.toFixed(1) }} dB</span>
+        </div>
+
+        <div class="row">
+          <label>
+            <input v-model="bypassed" type="checkbox" :disabled="!playing">
+            Bypass filter
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .filter-demo {

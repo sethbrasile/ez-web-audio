@@ -1,72 +1,5 @@
-<template>
-  <div class="synth-keyboard">
-    <div class="volume-warning">
-      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
-    </div>
-
-    <div class="controls-section">
-      <div class="control-row">
-        <label>
-          Waveform:
-          <select v-model="waveType">
-            <option value="sine">Sine</option>
-            <option value="triangle">Triangle</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-          </select>
-        </label>
-
-        <label>
-          Volume: {{ Math.round(masterGain * 100) }}%
-          <input type="range" v-model.number="masterGain" min="0" max="1" step="0.01" />
-        </label>
-      </div>
-
-      <div class="preset-row">
-        <span class="preset-label">ADSR Presets:</span>
-        <button @click="applyPreset('piano')" class="preset-btn" aria-label="Apply piano preset">Piano</button>
-        <button @click="applyPreset('pad')" class="preset-btn" aria-label="Apply pad preset">Pad</button>
-        <button @click="applyPreset('pluck')" class="preset-btn" aria-label="Apply pluck preset">Pluck</button>
-        <button @click="applyPreset('lead')" class="preset-btn" aria-label="Apply lead preset">Lead</button>
-      </div>
-
-      <div class="adsr-row">
-        <label>
-          Attack: {{ envelope.attack.toFixed(2) }}s
-          <input type="range" v-model.number="envelope.attack" min="0" max="2" step="0.01" />
-        </label>
-
-        <label>
-          Decay: {{ envelope.decay.toFixed(2) }}s
-          <input type="range" v-model.number="envelope.decay" min="0" max="2" step="0.01" />
-        </label>
-
-        <label>
-          Sustain: {{ envelope.sustain.toFixed(2) }}
-          <input type="range" v-model.number="envelope.sustain" min="0" max="1" step="0.01" />
-        </label>
-
-        <label>
-          Release: {{ envelope.release.toFixed(2) }}s
-          <input type="range" v-model.number="envelope.release" min="0" max="3" step="0.01" />
-        </label>
-      </div>
-    </div>
-
-    <PianoKeyboard
-      :activeKeys="activeNotes"
-      @note-on="handleNoteOn"
-      @note-off="handleNoteOff"
-    />
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
@@ -83,7 +16,7 @@ const envelope = ref<EnvelopeConfig>({
   attack: 0.01,
   decay: 0.3,
   sustain: 0.4,
-  release: 0.5
+  release: 0.5,
 })
 const masterGain = ref(0.3)
 const activeNotes = ref(new Set<string>())
@@ -97,7 +30,7 @@ const presets: Record<string, EnvelopeConfig> = {
   piano: { attack: 0.005, decay: 0.4, sustain: 0.2, release: 0.8 },
   pad: { attack: 0.5, decay: 0.3, sustain: 0.8, release: 1.0 },
   pluck: { attack: 0.001, decay: 0.2, sustain: 0.0, release: 0.1 },
-  lead: { attack: 0.05, decay: 0.1, sustain: 0.7, release: 0.2 }
+  lead: { attack: 0.05, decay: 0.1, sustain: 0.7, release: 0.2 },
 }
 
 function applyPreset(presetName: string) {
@@ -124,7 +57,8 @@ async function handleNoteOn(note: string) {
     // Stop existing oscillator for this note if playing
     if (oscillators.has(note)) {
       const existing = oscillators.get(note)
-      try { existing.stop() } catch {}
+      try { existing.stop() }
+      catch {}
       oscillators.delete(note)
     }
 
@@ -132,7 +66,7 @@ async function handleNoteOn(note: string) {
     const oscillator = await createOscillator({
       frequency,
       type: waveType.value,
-      envelope: { ...envelope.value }
+      envelope: { ...envelope.value },
     })
 
     oscillator.changeGainTo(masterGain.value)
@@ -140,7 +74,8 @@ async function handleNoteOn(note: string) {
 
     oscillators.set(note, oscillator)
     activeNotes.value.add(note)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play note'
     console.error('Error playing note:', e)
   }
@@ -151,7 +86,8 @@ function handleNoteOff(note: string) {
   if (oscillator) {
     try {
       oscillator.stop()
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Error stopping oscillator:', e)
     }
     oscillators.delete(note)
@@ -163,12 +99,90 @@ function handleNoteOff(note: string) {
 onUnmounted(() => {
   // Stop all active oscillators
   for (const oscillator of oscillators.values()) {
-    try { oscillator.stop() } catch {}
+    try { oscillator.stop() }
+    catch {}
   }
   oscillators.clear()
   activeNotes.value.clear()
 })
 </script>
+
+<template>
+  <div class="synth-keyboard">
+    <div class="volume-warning">
+      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+    </div>
+
+    <div class="controls-section">
+      <div class="control-row">
+        <label>
+          Waveform:
+          <select v-model="waveType">
+            <option value="sine">Sine</option>
+            <option value="triangle">Triangle</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+          </select>
+        </label>
+
+        <label>
+          Volume: {{ Math.round(masterGain * 100) }}%
+          <input v-model.number="masterGain" type="range" min="0" max="1" step="0.01">
+        </label>
+      </div>
+
+      <div class="preset-row">
+        <span class="preset-label">ADSR Presets:</span>
+        <button class="preset-btn" aria-label="Apply piano preset" @click="applyPreset('piano')">
+          Piano
+        </button>
+        <button class="preset-btn" aria-label="Apply pad preset" @click="applyPreset('pad')">
+          Pad
+        </button>
+        <button class="preset-btn" aria-label="Apply pluck preset" @click="applyPreset('pluck')">
+          Pluck
+        </button>
+        <button class="preset-btn" aria-label="Apply lead preset" @click="applyPreset('lead')">
+          Lead
+        </button>
+      </div>
+
+      <div class="adsr-row">
+        <label>
+          Attack: {{ envelope.attack.toFixed(2) }}s
+          <input v-model.number="envelope.attack" type="range" min="0" max="2" step="0.01">
+        </label>
+
+        <label>
+          Decay: {{ envelope.decay.toFixed(2) }}s
+          <input v-model.number="envelope.decay" type="range" min="0" max="2" step="0.01">
+        </label>
+
+        <label>
+          Sustain: {{ envelope.sustain.toFixed(2) }}
+          <input v-model.number="envelope.sustain" type="range" min="0" max="1" step="0.01">
+        </label>
+
+        <label>
+          Release: {{ envelope.release.toFixed(2) }}s
+          <input v-model.number="envelope.release" type="range" min="0" max="3" step="0.01">
+        </label>
+      </div>
+    </div>
+
+    <PianoKeyboard
+      :active-keys="activeNotes"
+      @note-on="handleNoteOn"
+      @note-off="handleNoteOff"
+    />
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .synth-keyboard {

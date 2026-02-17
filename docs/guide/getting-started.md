@@ -54,7 +54,7 @@ If you need explicit control over initialization timing (e.g., iOS mute switch
 workaround, pre-warming the context), you can still call `initAudio()`:
 
 ```typescript
-import { initAudio, createSound } from 'ez-web-audio'
+import { createSound, initAudio } from 'ez-web-audio'
 
 button.addEventListener('click', async () => {
   await initAudio() // Optional — for explicit control
@@ -102,7 +102,7 @@ import { createOscillator } from 'ez-web-audio'
 button.addEventListener('click', async () => {
   const synth = await createOscillator({
     frequency: 440, // A4 note
-    type: 'sine'    // sine, square, sawtooth, or triangle
+    type: 'sine' // sine, square, sawtooth, or triangle
   })
 
   synth.play()
@@ -121,10 +121,10 @@ const piano = await createOscillator({
   frequency: 440,
   type: 'triangle',
   envelope: {
-    attack: 0.01,   // Quick attack
-    decay: 0.3,     // Decay over 0.3 seconds
-    sustain: 0.4,   // Sustain at 40% volume
-    release: 0.5    // Fade out over 0.5 seconds
+    attack: 0.01, // Quick attack
+    decay: 0.3, // Decay over 0.3 seconds
+    sustain: 0.4, // Sustain at 40% volume
+    release: 0.5 // Fade out over 0.5 seconds
   }
 })
 
@@ -167,15 +167,15 @@ sound.play() // Starts silent, fades in
 Apply effects like filters to shape your sound:
 
 ```typescript
-import { createSound, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createSound, getAudioContext } from 'ez-web-audio'
 
 const sound = await createSound('/sounds/vocal.mp3')
 const ctx = await getAudioContext()
 
 // Create a lowpass filter
 const filter = createFilterEffect(ctx, 'lowpass', {
-  frequency: 800,  // Cut frequencies above 800Hz
-  Q: 1.0           // Resonance
+  frequency: 800, // Cut frequencies above 800Hz
+  Q: 1.0 // Resonance
 })
 
 sound.addEffect(filter)
@@ -187,7 +187,7 @@ sound.play() // Sound plays through the filter
 For responsive applications, preload audio files before they're needed:
 
 ```typescript
-import { preload, isPreloaded, createSound } from 'ez-web-audio'
+import { createSound, isPreloaded, preload } from 'ez-web-audio'
 
 // Preload during app initialization
 await preload(['/sounds/click.mp3', '/sounds/whoosh.mp3'])
@@ -204,7 +204,7 @@ if (isPreloaded('/sounds/click.mp3')) {
 Here's a complete example combining multiple features:
 
 ```typescript
-import { createSound, createTrack, createOscillator } from 'ez-web-audio'
+import { createOscillator, createSound, createTrack } from 'ez-web-audio'
 
 // Wait for user interaction
 document.getElementById('start')?.addEventListener('click', async () => {
@@ -225,7 +225,7 @@ document.getElementById('start')?.addEventListener('click', async () => {
   })
 
   // Wire up UI
-  document.querySelectorAll('button').forEach(btn => {
+  document.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', () => click.play())
   })
 

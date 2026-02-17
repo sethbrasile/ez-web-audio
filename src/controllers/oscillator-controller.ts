@@ -1,6 +1,6 @@
+import type { Envelope } from '../envelope'
 import type { ControlType, ParamController, ParamValue, ValueAtTime } from './base-param-controller'
 import { BaseParamController } from './base-param-controller'
-import type { Envelope } from '../envelope'
 
 export class OscillatorController extends BaseParamController implements ParamController {
   private envelope?: Envelope
@@ -67,7 +67,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
           gainNode.gain.setValueAtTime(item.value, currentTime)
           break
         default:
-          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for OscillatorController: 'gain', 'frequency'.")
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency'.`)
       }
     })
   }
@@ -84,7 +84,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
           this.applyRampToParam(gainNode.gain, item.value, time, rampType)
           break
         default:
-          throw new Error("Unsupported control type: '" + item.type + "'. Supported types for OscillatorController: 'gain', 'frequency'.")
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency'.`)
       }
     })
   }

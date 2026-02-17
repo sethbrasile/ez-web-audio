@@ -33,7 +33,8 @@ export class AudioError extends Error {
     this.name = 'AudioError'
     // Maintains proper stack trace in V8 environments (Node.js, Chrome)
     if ('captureStackTrace' in Error) {
-      (Error as { captureStackTrace?: (err: Error, constructor: Function) => void }).captureStackTrace?.(this, this.constructor)
+      // eslint-disable-next-line ts/no-unsafe-function-type
+      ;(Error as { captureStackTrace?: (err: Error, constructor: Function) => void }).captureStackTrace?.(this, this.constructor)
     }
   }
 }

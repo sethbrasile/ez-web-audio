@@ -1,7 +1,7 @@
+import { createSound } from '@/index'
 import DrumMachine from '../components/drum-machine'
 import PermissionBanner from '../components/permission-banner'
 import { codeBlock } from '../utils'
-import { createSound } from '@/index'
 
 const Content = {
   async setup() {

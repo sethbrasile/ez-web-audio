@@ -27,7 +27,7 @@ export async function preload(urls: string | string[]): Promise<void> {
     uncachedUrls.map(async (url) => {
       const response = await fetch(url)
       if (!response.ok) {
-        throw new AudioLoadError('Failed to preload audio: HTTP ' + response.status + '. URL: ' + url, url)
+        throw new AudioLoadError(`Failed to preload audio: HTTP ${response.status}. URL: ${url}`, url)
       }
       return { url, response }
     }),

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { BaseParamController } from './base-param-controller'
 
 function createMockContext() {
@@ -12,26 +12,30 @@ class TestableParamController extends BaseParamController {
   getStartingValues() {
     return this.startingValues
   }
+
   getValuesAtTime() {
     return this.valuesAtTime
   }
+
   getExponentialValues() {
     return this.exponentialValues
   }
+
   getLinearValues() {
     return this.linearValues
   }
+
   // Expose protected audioSource for testing
   getAudioSource() {
     return this.audioSource
   }
 }
 
-describe('BaseParamController', () => {
+describe('baseParamController', () => {
   let audioContext: AudioContext
   let gainNode: GainNode
   let pannerNode: StereoPannerNode
-  let audioSource: { detune: { value: number }; frequency?: { value: number } }
+  let audioSource: { detune: { value: number }, frequency?: { value: number } }
   let controller: TestableParamController
 
   beforeEach(() => {
@@ -106,14 +110,14 @@ describe('BaseParamController', () => {
       expect(() => {
         // @ts-expect-error - testing invalid type
         controller.update('invalid').to(1).from('ratio')
-      }).toThrow("Unsupported control type: 'invalid'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).")
+      }).toThrow('Unsupported control type: \'invalid\'. Supported types: \'gain\', \'pan\', \'detune\', \'frequency\' (Oscillator only).')
     })
 
     it('throws for unsupported method type', () => {
       expect(() => {
         // @ts-expect-error - testing invalid method
         controller.update('gain').to(0.5).from('invalid')
-      }).toThrow("Unsupported ratio type: 'invalid'. Supported types: 'ratio', 'inverseRatio', 'percent'.")
+      }).toThrow('Unsupported ratio type: \'invalid\'. Supported types: \'ratio\', \'inverseRatio\', \'percent\'.')
     })
 
     it('supports method chaining for multiple updates', () => {
@@ -307,7 +311,7 @@ describe('BaseParamController', () => {
       const controllerNoDetune = new TestableParamController(
         sourceWithoutDetune,
         gainNode,
-        pannerNode
+        pannerNode,
       )
       expect(() => {
         controllerNoDetune.update('detune').to(100).from('ratio')

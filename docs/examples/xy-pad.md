@@ -38,8 +38,8 @@ const synth = await createOscillator({
 synth.play()
 
 // Update parameters while playing (no clicks!)
-synth.update('frequency').to(880).from('value')  // Change to 880 Hz
-synth.update('gain').to(0.5).from('ratio')       // Change to 50% volume
+synth.update('frequency').to(880).from('value') // Change to 880 Hz
+synth.update('gain').to(0.5).from('ratio') // Change to 50% volume
 ```
 
 ### Why update() Instead of Recreating?
@@ -73,10 +73,10 @@ The XY pad uses logarithmic frequency scaling so equal horizontal distances soun
 const linearFreq = minFreq + (maxFreq - minFreq) * ratio
 
 // Logarithmic scaling (sounds musical - equal steps = equal intervals)
-const logFreq = minFreq * Math.pow(maxFreq / minFreq, ratio)
+const logFreq = minFreq * (maxFreq / minFreq) ** ratio
 
 // For 100-2000 Hz range:
-const frequency = 100 * Math.pow(20, ratio)  // where ratio is 0-1
+const frequency = 100 * 20 ** ratio // where ratio is 0-1
 ```
 
 This is why piano keys are evenly spaced even though the frequencies double each octave (100 Hz → 200 Hz → 400 Hz → 800 Hz).
@@ -98,7 +98,7 @@ async function handleMouseDown(e: MouseEvent) {
 
   // Calculate frequency (logarithmic)
   const xRatio = x / canvas.width
-  const frequency = 100 * Math.pow(20, xRatio)  // 100-2000 Hz
+  const frequency = 100 * 20 ** xRatio // 100-2000 Hz
 
   // Calculate gain (inverted - top is high, bottom is low)
   const gain = 1 - (y / canvas.height)
@@ -114,14 +114,15 @@ async function handleMouseDown(e: MouseEvent) {
 }
 
 function handleMouseMove(e: MouseEvent) {
-  if (!isPlaying) return
+  if (!isPlaying)
+    return
 
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
 
   // Update parameters in real-time
-  const frequency = 100 * Math.pow(20, x / canvas.width)
+  const frequency = 100 * 20 ** (x / canvas.width)
   const gain = 1 - (y / canvas.height)
 
   oscillator.update('frequency').to(frequency).from('value')

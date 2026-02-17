@@ -173,7 +173,8 @@ export class Envelope {
         // Chrome/Edge: cancelAndHoldAtTime preserves current value
         paramWithCancelAndHold.cancelAndHoldAtTime(startTime)
         startValue = this.estimateCurrentValue(startTime)
-      } else {
+      }
+      else {
         // Fallback: estimate current value manually
         startValue = this.estimateCurrentValue(startTime)
         gainParam.cancelScheduledValues(startTime)

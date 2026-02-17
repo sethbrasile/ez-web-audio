@@ -1,5 +1,5 @@
-import { setupRouter } from '@app/router'
 import type { Component } from '@app/utils'
+import { setupRouter } from '@app/router'
 
 export interface Link {
   subPath?: string

@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { GainEffect, createGainEffect } from './gain-effect'
 import type { Effect } from './index'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createGainEffect, GainEffect } from './gain-effect'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('GainEffect', () => {
+describe('gainEffect', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -39,7 +39,7 @@ describe('GainEffect', () => {
     })
   })
 
-  describe('Effect interface implementation', () => {
+  describe('effect interface implementation', () => {
     it('has input property that is a GainNode', () => {
       const effect = new GainEffect(audioContext)
       expect(effect.input).toBeTruthy()

@@ -1,44 +1,44 @@
-import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
-import { Envelope } from './envelope'
+import type { AnalyzerOptions } from './analyzer'
+import type { BeatTrackOptions } from './beat-track'
+import type { DebugMessage } from './debug'
+import type { Effect, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
 import type { EnvelopeOptions } from './envelope'
-import { stopAll, pauseAll, playAll } from './utils/collections'
-import { SampledNote } from './sampled-note'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
-import { Font } from './font'
-import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
-import { mungeSoundFont } from './utils/decode-base64'
-import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
-import frequencyMap from './utils/frequency-map'
-import type { BeatTrackOptions } from './beat-track'
-import { BeatTrack } from './beat-track'
-// @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
-import unmuteIosAudio from './utils/unmute'
+import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
+import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import type { SamplerOptions } from '@/sampler'
 import { Beat } from '@/beat'
 import { MusicallyAware } from '@/musical-identity'
-import type { SamplerOptions } from '@/sampler'
-import { Sampler } from '@/sampler'
+import { Note } from '@/note'
 import { Oscillator } from '@/oscillator'
+import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
-import { Note } from '@/note'
-import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
-import { AudioSprite } from './sprite'
-import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
-import { crossfade } from './utils/crossfade'
-import { setDebugMode, setDebugHandler } from './debug'
-import type { DebugMessage } from './debug'
 import { Analyzer, createAnalyzer } from './analyzer'
-import type { AnalyzerOptions } from './analyzer'
+import { BeatTrack } from './beat-track'
+import { setDebugHandler, setDebugMode } from './debug'
 import {
-  createGainEffect,
   createFilterEffect,
-  wrapEffect,
-  GainEffect,
-  FilterEffect,
+  createGainEffect,
   EffectWrapper,
+  FilterEffect,
+  GainEffect,
+  wrapEffect,
 } from './effects'
-import type { Effect, FilterType, FilterEffectOptions, ExternalEffect } from './effects'
+import { Envelope } from './envelope'
+import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
+import { Font } from './font'
+import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
+import { SampledNote } from './sampled-note'
+import { AudioSprite } from './sprite'
+import { pauseAll, playAll, stopAll } from './utils/collections'
+import { crossfade } from './utils/crossfade'
+import { mungeSoundFont } from './utils/decode-base64'
+import frequencyMap from './utils/frequency-map'
+import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
+// @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
+import unmuteIosAudio from './utils/unmute'
 
 let _audioContext: AudioContext | null = null
 
@@ -360,7 +360,7 @@ export async function createOscillator(options?: OscillatorOptions): Promise<Osc
  */
 export async function createLayeredSound(
   layers: (Sound | Oscillator)[],
-  opts?: import('./layered-sound').LayeredSoundOptions
+  opts?: import('./layered-sound').LayeredSoundOptions,
 ): Promise<import('./layered-sound').LayeredSound> {
   await initAudio()
   const { LayeredSound } = await import('./layered-sound')
@@ -643,73 +643,73 @@ export async function useInteractionMethods(key: HTMLElement, player: Player): P
 }
 
 export {
-  Font,
-  Note,
-  Sound,
-  Sampler,
-  SampledNote,
-  Oscillator,
-  Track,
-  MusicallyAware,
-  frequencyMap,
-  Beat,
-  BeatTrack,
-  // Envelope
-  Envelope,
-  // Audio Sprites
-  AudioSprite,
-  // Preload utilities
-  preload,
-  isPreloaded,
-  clearPreloadCache,
-  // Collection utilities
-  stopAll,
-  pauseAll,
-  playAll,
-  // Crossfade utility
-  crossfade,
-  // Debug utilities
-  setDebugMode,
-  setDebugHandler,
-  // Effects
-  createGainEffect,
-  createFilterEffect,
-  wrapEffect,
-  GainEffect,
-  FilterEffect,
-  EffectWrapper,
   // Analyzer
   Analyzer,
-  createAnalyzer,
+  AudioContextError,
   // Errors
   AudioError,
-  AudioContextError,
   AudioLoadError,
+  // Audio Sprites
+  AudioSprite,
+  Beat,
+  BeatTrack,
+  clearPreloadCache,
+  createAnalyzer,
+  createFilterEffect,
+  // Effects
+  createGainEffect,
+  // Crossfade utility
+  crossfade,
+  EffectWrapper,
+  // Envelope
+  Envelope,
+  FilterEffect,
+  Font,
+  frequencyMap,
+  GainEffect,
   InvalidNoteError,
+  isPreloaded,
+  MusicallyAware,
+  Note,
+  Oscillator,
+  pauseAll,
+  playAll,
+  // Preload utilities
+  preload,
+  SampledNote,
+  Sampler,
+  setDebugHandler,
+  // Debug utilities
+  setDebugMode,
+  Sound,
+  // Collection utilities
+  stopAll,
+  Track,
+  wrapEffect,
 }
 
+export type { LayeredSoundEventMap, WarningEventDetail } from './events/event-types'
 // Re-export LayeredSound types
 export { LayeredSound } from './layered-sound'
 export type { LayeredSoundOptions } from './layered-sound'
-export type { LayeredSoundEventMap, WarningEventDetail } from './events/event-types'
 
 export type {
+  // Analyzer types
+  AnalyzerOptions,
   Connectable,
-  Playable,
-  OscillatorOptions,
-  OscillatorFilterOptions,
-  EnvelopeOptions,
-  SpriteDefinition,
-  SpriteManifest,
-  SpritePlayOptions,
   DebugMessage,
   // Effect types
   Effect,
-  FilterType,
-  FilterEffectOptions,
+  EnvelopeOptions,
   ExternalEffect,
-  // Analyzer types
-  AnalyzerOptions,
+  FilterEffectOptions,
+  FilterType,
+  OscillatorFilterOptions,
+  OscillatorOptions,
+  Playable,
+  SpriteDefinition,
+  SpriteManifest,
+  SpritePlayOptions,
 }
 
 // Deprecated type aliases for backwards compatibility

@@ -1,4 +1,5 @@
-import { assert, expect, it } from 'vitest'
+import type { Octave } from '@/musical-identity'
+import type { Note } from '@/note'
 import noteFactory from '@test/helpers/note-factory'
 import {
   createOctavesWithNotes,
@@ -9,8 +10,7 @@ import {
   sortNotes,
   stripDuplicateOctaves,
 } from '@utils/note-methods'
-import type { Octave } from '@/musical-identity'
-import type { Note } from '@/note'
+import { assert, expect, it } from 'vitest'
 
 const A0 = noteFactory('A', '', '0')
 const Bb0 = noteFactory('B', 'b', '0')

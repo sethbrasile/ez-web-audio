@@ -1,5 +1,5 @@
-import { createFont } from '@/index'
 import type { Note } from '@/note'
+import { createFont } from '@/index'
 
 export async function setupPiano(element: HTMLOListElement): Promise<void> {
   // piano.js is a soundfont created with MIDI.js' Ruby-based soundfont converter

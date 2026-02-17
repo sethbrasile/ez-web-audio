@@ -1,81 +1,5 @@
-<template>
-  <div class="drum-machine-vue">
-    <div class="controls">
-      <button @click="togglePlay" class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'">
-        {{ playing ? 'Stop' : 'Play' }}
-      </button>
-
-      <div class="bpm-control">
-        <label>
-          BPM: {{ bpm }}
-          <input type="range" v-model.number="bpm" min="60" max="200" step="1" aria-label="Tempo in beats per minute" />
-        </label>
-      </div>
-
-      <div class="step-counter">
-        Step: {{ currentStep + 1 }}/16
-      </div>
-    </div>
-
-    <div class="sequencer">
-      <div
-        v-for="track in tracks"
-        :key="track.name"
-        class="track-row"
-        :class="{ 'muted': track.muted, 'soloed': soloedTrack === track.name }"
-      >
-        <div class="track-header">
-          <span class="track-name">{{ track.name }}</span>
-          <div class="track-controls">
-            <button
-              @click="toggleMute(track)"
-              class="mute-btn"
-              :class="{ 'active': track.muted }"
-              title="Mute track"
-            >
-              M
-            </button>
-            <button
-              @click="toggleSolo(track)"
-              class="solo-btn"
-              :class="{ 'active': soloedTrack === track.name }"
-              title="Solo track"
-            >
-              S
-            </button>
-          </div>
-        </div>
-
-        <div class="beat-grid">
-          <button
-            v-for="(beat, i) in track.beats"
-            :key="i"
-            @click="beat.active = !beat.active"
-            :class="[
-              'beat-cell',
-              {
-                'active': beat.active,
-                'current': beat.currentTimeIsPlaying && playing,
-                [`track-${track.name.toLowerCase()}`]: beat.active
-              }
-            ]"
-            :aria-label="`${track.name} step ${i + 1}${beat.active ? ' (active)' : ' (inactive)'}`"
-            :aria-pressed="beat.active"
-          >
-            <span class="beat-number">{{ i + 1 }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted, computed } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -86,7 +10,7 @@ const NUM_BEATS = 16
 
 // Default patterns
 const defaultPatterns: Record<string, number[]> = {
-  KICK:  [0, 4, 8, 12],
+  KICK: [0, 4, 8, 12],
   SNARE: [4, 12],
   HIHAT: [0, 2, 4, 6, 8, 10, 12, 14],
 }
@@ -95,8 +19,7 @@ const defaultPatterns: Record<string, number[]> = {
 function makeBeats(name: string) {
   const activeSet = new Set(defaultPatterns[name] ?? [])
   return Array.from({ length: NUM_BEATS }, (_, i) =>
-    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false })
-  )
+    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false }))
 }
 
 const trackDefs = [
@@ -118,7 +41,8 @@ let initialized = false
 
 // Compute current step from beat states
 const currentStep = computed(() => {
-  if (!initialized || !playing.value) return 0
+  if (!initialized || !playing.value)
+    return 0
 
   for (const track of tracks.value) {
     for (let i = 0; i < track.beats.length; i++) {
@@ -131,7 +55,8 @@ const currentStep = computed(() => {
 })
 
 async function init() {
-  if (initialized) return
+  if (initialized)
+    return
   try {
     const { createBeatTrack } = await import('ez-web-audio')
 
@@ -151,7 +76,8 @@ async function init() {
     }
 
     initialized = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to initialize'
   }
 }
@@ -173,7 +99,8 @@ function toggleMute(track: any) {
         beat.active = false
       }
     })
-  } else {
+  }
+  else {
     // Restore active states
     track.activeStates.forEach((active: boolean, i: number) => {
       if (active) {
@@ -188,7 +115,7 @@ function toggleSolo(track: any) {
   if (soloedTrack.value === track.name) {
     // Un-solo: restore all tracks
     soloedTrack.value = null
-    tracks.value.forEach(t => {
+    tracks.value.forEach((t) => {
       if (t.muted) {
         // Restore active states
         t.activeStates.forEach((active: boolean, i: number) => {
@@ -200,10 +127,11 @@ function toggleSolo(track: any) {
         t.muted = false
       }
     })
-  } else {
+  }
+  else {
     // Solo this track: mute all others
     soloedTrack.value = track.name
-    tracks.value.forEach(t => {
+    tracks.value.forEach((t) => {
       if (t.name !== track.name && !t.muted) {
         // Mute other tracks
         t.activeStates.clear()
@@ -220,14 +148,17 @@ function toggleSolo(track: any) {
 }
 
 async function togglePlay() {
-  if (!initialized) await init()
-  if (!initialized) return
+  if (!initialized)
+    await init()
+  if (!initialized)
+    return
 
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
-  } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
+  }
+  else {
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }
@@ -237,15 +168,95 @@ watch(bpm, (val) => {
     // BPM changes require restart
     tracks.value.forEach(t => t.beatTrack.stop())
     setTimeout(() => {
-      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1/16))
+      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1 / 16))
     }, 50)
   }
 })
 
 onUnmounted(() => {
-  tracks.value.forEach(t => { try { t.beatTrack?.stop() } catch {} })
+  tracks.value.forEach((t) => {
+    try { t.beatTrack?.stop() }
+    catch {}
+  })
 })
 </script>
+
+<template>
+  <div class="drum-machine-vue">
+    <div class="controls">
+      <button class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay">
+        {{ playing ? 'Stop' : 'Play' }}
+      </button>
+
+      <div class="bpm-control">
+        <label>
+          BPM: {{ bpm }}
+          <input v-model.number="bpm" type="range" min="60" max="200" step="1" aria-label="Tempo in beats per minute">
+        </label>
+      </div>
+
+      <div class="step-counter">
+        Step: {{ currentStep + 1 }}/16
+      </div>
+    </div>
+
+    <div class="sequencer">
+      <div
+        v-for="track in tracks"
+        :key="track.name"
+        class="track-row"
+        :class="{ muted: track.muted, soloed: soloedTrack === track.name }"
+      >
+        <div class="track-header">
+          <span class="track-name">{{ track.name }}</span>
+          <div class="track-controls">
+            <button
+              class="mute-btn"
+              :class="{ active: track.muted }"
+              title="Mute track"
+              @click="toggleMute(track)"
+            >
+              M
+            </button>
+            <button
+              class="solo-btn"
+              :class="{ active: soloedTrack === track.name }"
+              title="Solo track"
+              @click="toggleSolo(track)"
+            >
+              S
+            </button>
+          </div>
+        </div>
+
+        <div class="beat-grid">
+          <button
+            v-for="(beat, i) in track.beats"
+            :key="i"
+            class="beat-cell" :class="[
+              {
+                active: beat.active,
+                current: beat.currentTimeIsPlaying && playing,
+                [`track-${track.name.toLowerCase()}`]: beat.active,
+              },
+            ]"
+            :aria-label="`${track.name} step ${i + 1}${beat.active ? ' (active)' : ' (inactive)'}`"
+            :aria-pressed="beat.active"
+            @click="beat.active = !beat.active"
+          >
+            <span class="beat-number">{{ i + 1 }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .drum-machine-vue {

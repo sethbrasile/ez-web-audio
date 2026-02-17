@@ -1,58 +1,5 @@
-<template>
-  <div class="track-demo">
-    <div class="controls">
-      <div class="transport">
-        <button @click="playPause" :disabled="loading" class="play-btn">
-          {{ loading ? 'Loading...' : (isPlaying ? 'Pause' : 'Play') }}
-        </button>
-        <button @click="stop" :disabled="!loaded" class="stop-btn">Stop</button>
-      </div>
-
-      <div class="time-display">
-        <span class="current">{{ positionString }}</span>
-        <span class="separator">/</span>
-        <span class="total">{{ durationString }}</span>
-      </div>
-
-      <div class="seek-bar">
-        <input
-          id="track-seek"
-          type="range"
-          v-model.number="seekPosition"
-          :max="duration"
-          step="0.1"
-          @change="seek"
-          :disabled="!loaded"
-          :aria-label="`Seek position: ${positionString}`"
-        />
-      </div>
-
-      <div class="volume">
-        <label for="track-volume">
-          Vol: {{ Math.round(gain * 100) }}%
-          <input
-            id="track-volume"
-            type="range"
-            v-model.number="gain"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
-          />
-        </label>
-      </div>
-    </div>
-
-    <slot></slot>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{
   url?: string
@@ -72,7 +19,8 @@ let track: any = null
 let animationFrame: number | null = null
 
 async function loadTrack() {
-  if (loaded.value) return
+  if (loaded.value)
+    return
 
   try {
     error.value = ''
@@ -97,9 +45,11 @@ async function loadTrack() {
     })
 
     loaded.value = true
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load track'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -115,7 +65,8 @@ function updatePosition() {
 async function playPause() {
   if (!loaded.value) {
     await loadTrack()
-    if (!loaded.value) return
+    if (!loaded.value)
+      return
   }
 
   if (isPlaying.value) {
@@ -125,11 +76,13 @@ async function playPause() {
       cancelAnimationFrame(animationFrame)
       animationFrame = null
     }
-  } else {
+  }
+  else {
     track.changeGainTo(gain.value)
     if (track.position.raw > 0) {
       track.resume()
-    } else {
+    }
+    else {
       track.play()
     }
     isPlaying.value = true
@@ -139,7 +92,8 @@ async function playPause() {
 
 function stop() {
   if (track) {
-    try { track.stop() } catch {}
+    try { track.stop() }
+    catch {}
   }
   isPlaying.value = false
   seekPosition.value = 0
@@ -158,16 +112,76 @@ function seek() {
 }
 
 watch(gain, (val) => {
-  if (track) track.changeGainTo(val)
+  if (track)
+    track.changeGainTo(val)
 })
 
 onUnmounted(() => {
-  if (animationFrame) cancelAnimationFrame(animationFrame)
+  if (animationFrame)
+    cancelAnimationFrame(animationFrame)
   if (track) {
-    try { track.stop() } catch {}
+    try { track.stop() }
+    catch {}
   }
 })
 </script>
+
+<template>
+  <div class="track-demo">
+    <div class="controls">
+      <div class="transport">
+        <button :disabled="loading" class="play-btn" @click="playPause">
+          {{ loading ? 'Loading...' : (isPlaying ? 'Pause' : 'Play') }}
+        </button>
+        <button :disabled="!loaded" class="stop-btn" @click="stop">
+          Stop
+        </button>
+      </div>
+
+      <div class="time-display">
+        <span class="current">{{ positionString }}</span>
+        <span class="separator">/</span>
+        <span class="total">{{ durationString }}</span>
+      </div>
+
+      <div class="seek-bar">
+        <input
+          id="track-seek"
+          v-model.number="seekPosition"
+          type="range"
+          :max="duration"
+          step="0.1"
+          :disabled="!loaded"
+          :aria-label="`Seek position: ${positionString}`"
+          @change="seek"
+        >
+      </div>
+
+      <div class="volume">
+        <label for="track-volume">
+          Vol: {{ Math.round(gain * 100) }}%
+          <input
+            id="track-volume"
+            v-model.number="gain"
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
+          >
+        </label>
+      </div>
+    </div>
+
+    <slot />
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .track-demo {

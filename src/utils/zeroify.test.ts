@@ -1,5 +1,5 @@
-import { assert, it } from 'vitest'
 import zeroify from '@utils/zeroify'
+import { assert, it } from 'vitest'
 
 it('exists', () => {
   const result = zeroify(0)

@@ -47,6 +47,7 @@ export function getHandler(): ((msg: DebugMessage) => void) | null {
  * Default handler that logs to console.
  */
 function defaultHandler(msg: DebugMessage): void {
+  // eslint-disable-next-line no-console
   console.log(formatDebugMessage(msg), msg.details ?? '')
 }
 

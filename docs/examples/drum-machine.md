@@ -33,7 +33,7 @@ kick.beats[4].active = true
 kick.beats[8].active = true
 kick.beats[12].active = true
 
-kick.playBeats(120, 1/16) // 120 BPM, sixteenth notes
+kick.playBeats(120, 1 / 16) // 120 BPM, sixteenth notes
 ```
 
 ## Visual Sync
@@ -52,7 +52,7 @@ In frameworks with reactive proxies (Vue, Solid, etc.), wrap beats to make these
 ```typescript
 const kick = await createBeatTrack(['/audio/kick1.wav'], {
   numBeats: 16,
-  wrapWith: (beat) => reactive(beat)  // Vue's reactive()
+  wrapWith: beat => reactive(beat) // Vue's reactive()
 })
 ```
 
@@ -73,47 +73,23 @@ BeatTrack also emits `beat` events for framework-agnostic use (vanilla JS, React
 Here's a complete drum machine — the Beat objects ARE the state:
 
 ```vue
-<template>
-  <div class="drum-machine">
-    <button @click="toggle">{{ playing ? 'Stop' : 'Play' }}</button>
-
-    <label>BPM: {{ bpm }}
-      <input type="range" v-model.number="bpm" min="60" max="200" />
-    </label>
-
-    <div v-for="track in tracks" :key="track.name" class="track-row">
-      <span>{{ track.name }}</span>
-
-      <button
-        v-for="(beat, i) in track.beatTrack.beats"
-        :key="i"
-        @click="beat.active = !beat.active"
-        :class="{
-          active: beat.active,
-          current: beat.currentTimeIsPlaying
-        }"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { onUnmounted, reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
 const bpm = ref(120)
-const tracks = ref<{ name: string; beatTrack: any }[]>([])
+const tracks = ref<{ name: string, beatTrack: any }[]>([])
 
 async function init() {
   const { createBeatTrack } = await import('ez-web-audio')
 
   const kick = await createBeatTrack(['/audio/kick1.wav'], {
     numBeats: 16,
-    wrapWith: (beat) => reactive(beat),
+    wrapWith: beat => reactive(beat),
   })
   const snare = await createBeatTrack(['/audio/snare1.wav'], {
     numBeats: 16,
-    wrapWith: (beat) => reactive(beat),
+    wrapWith: beat => reactive(beat),
   })
 
   // Default pattern
@@ -127,13 +103,15 @@ async function init() {
 }
 
 async function toggle() {
-  if (!tracks.value.length) await init()
+  if (!tracks.value.length)
+    await init()
 
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack.stop())
     playing.value = false
-  } else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1/16))
+  }
+  else {
+    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }
@@ -143,9 +121,38 @@ watch(bpm, (val) => {
 })
 
 onUnmounted(() => {
-  tracks.value.forEach(t => { try { t.beatTrack.stop() } catch {} })
+  tracks.value.forEach((t) => {
+    try { t.beatTrack.stop() }
+    catch {}
+  })
 })
 </script>
+
+<template>
+  <div class="drum-machine">
+    <button @click="toggle">
+      {{ playing ? 'Stop' : 'Play' }}
+    </button>
+
+    <label>BPM: {{ bpm }}
+      <input v-model.number="bpm" type="range" min="60" max="200">
+    </label>
+
+    <div v-for="track in tracks" :key="track.name" class="track-row">
+      <span>{{ track.name }}</span>
+
+      <button
+        v-for="(beat, i) in track.beatTrack.beats"
+        :key="i"
+        :class="{
+          active: beat.active,
+          current: beat.currentTimeIsPlaying,
+        }"
+        @click="beat.active = !beat.active"
+      />
+    </div>
+  </div>
+</template>
 ```
 
 ## Advanced: Event-Based Sync
@@ -156,7 +163,8 @@ For frameworks without reactive proxies (vanilla JS, React), use `beat` events i
 kick.on('beat', (e) => {
   const { beatIndex, active } = e.detail
   highlightStep(beatIndex)
-  if (active) flashPad(beatIndex)
+  if (active)
+    flashPad(beatIndex)
 })
 ```
 
@@ -172,10 +180,10 @@ const kick = await createBeatTrack([
 ], { numBeats: 16 })
 
 // Each active beat cycles through samples automatically
-kick.play()  // kick1.wav
-kick.play()  // kick2.wav
-kick.play()  // kick3.wav
-kick.play()  // kick1.wav (wraps around)
+kick.play() // kick1.wav
+kick.play() // kick2.wav
+kick.play() // kick3.wav
+kick.play() // kick1.wav (wraps around)
 ```
 
 ## Integration Pattern Examples

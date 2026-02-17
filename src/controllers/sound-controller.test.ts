@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SoundController } from './sound-controller'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('SoundController', () => {
+describe('soundController', () => {
   let audioContext: AudioContext
   let gainNode: GainNode
   let pannerNode: StereoPannerNode
@@ -95,16 +95,16 @@ describe('SoundController', () => {
     it('throws for unsupported control type in applyValues', () => {
       // Use onPlaySet for pan which is not supported in SoundController
       controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for SoundController: 'gain', 'detune'.")
+      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for SoundController: \'gain\', \'detune\'.')
     })
 
     it('throws for unsupported control type in applyRampValues', () => {
       controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow("Unsupported control type: 'pan'. Supported types for SoundController: 'gain', 'detune'.")
+      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for SoundController: \'gain\', \'detune\'.')
     })
   })
 
-  describe('AudioParam scheduling verification', () => {
+  describe('audioParam scheduling verification', () => {
     it('calls gain.setValueAtTime with correct arguments', () => {
       controller.onPlaySet('gain').to(0.75)
       const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')

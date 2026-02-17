@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { Oscillator } from '@/oscillator'
 
 function createMockContext() {

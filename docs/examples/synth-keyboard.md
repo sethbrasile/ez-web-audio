@@ -46,13 +46,13 @@ import { createOscillator, frequencyMap } from 'ez-web-audio'
 
 // Create oscillator with ADSR envelope
 const synth = await createOscillator({
-  frequency: frequencyMap['A4'], // 440 Hz
+  frequency: frequencyMap.A4, // 440 Hz
   type: 'triangle',
   envelope: {
-    attack: 0.01,   // 10ms to full volume
-    decay: 0.3,     // 300ms decay to sustain
-    sustain: 0.4,   // Hold at 40% volume
-    release: 0.5    // 500ms fade out
+    attack: 0.01, // 10ms to full volume
+    decay: 0.3, // 300ms decay to sustain
+    sustain: 0.4, // Hold at 40% volume
+    release: 0.5 // 500ms fade out
   }
 })
 

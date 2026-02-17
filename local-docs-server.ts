@@ -1,8 +1,8 @@
-import http from 'node:http'
-import url from 'node:url'
 import { access, constants, readFile, statSync } from 'node:fs'
+import http from 'node:http'
 import path from 'node:path'
 import process from 'node:process'
+import url from 'node:url'
 
 // you can pass the parameter in the command line. e.g. node static_server.js 3000
 const port = process.argv[2] || '8000'

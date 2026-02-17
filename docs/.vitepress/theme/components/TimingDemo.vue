@@ -1,75 +1,5 @@
-<template>
-  <div class="timing-demo">
-    <!-- Section 1: Play Now -->
-    <section class="demo-section">
-      <h3>1. Play Now</h3>
-      <p>Immediate playback with <code>play()</code></p>
-      <button @click="playNow" class="demo-btn">Play Click</button>
-    </section>
-
-    <hr class="section-divider" />
-
-    <!-- Section 2: Play In 1 Second -->
-    <section class="demo-section">
-      <h3>2. Play In 1 Second</h3>
-      <p>Delayed playback with <code>playIn(seconds)</code></p>
-      <button @click="playDelayed" :disabled="countdownActive" class="demo-btn">
-        Play in 1 Second
-      </button>
-      <div v-if="countdownActive" class="countdown">
-        <div class="countdown-timer">{{ countdownValue.toFixed(2) }}s</div>
-        <div class="countdown-bar">
-          <div class="countdown-progress" :style="{ width: `${countdownValue * 100}%` }"></div>
-        </div>
-      </div>
-    </section>
-
-    <hr class="section-divider" />
-
-    <!-- Section 3: Play 3 Notes -->
-    <section class="demo-section">
-      <h3>3. Schedule 3 Notes</h3>
-      <p>Precise timing with <code>playAt(audioContext.currentTime + offset)</code></p>
-      <button @click="playSequence" :disabled="sequencePlaying" class="demo-btn">
-        Play Sequence
-      </button>
-      <div class="timeline">
-        <div
-          v-for="(active, i) in timelineNotes"
-          :key="i"
-          class="timeline-marker"
-          :class="{ active }"
-        >
-          <div class="marker-circle"></div>
-          <div class="marker-label">{{ i * 0.5 }}s</div>
-        </div>
-      </div>
-    </section>
-
-    <hr class="section-divider" />
-
-    <!-- Section 4: Play a Chord -->
-    <section class="demo-section">
-      <h3>4. Perfect Sync</h3>
-      <p>Multiple sounds starting at exact same time with <code>playAt()</code></p>
-      <button @click="playChord" :disabled="chordPlaying" class="demo-btn">
-        Play C Major Chord
-      </button>
-      <div v-if="chordPlaying" class="chord-visual">
-        <div class="note-indicator">C</div>
-        <div class="note-indicator">E</div>
-        <div class="note-indicator">G</div>
-      </div>
-    </section>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
 const countdownActive = ref(false)
@@ -94,7 +24,8 @@ async function playNow() {
     await initIfNeeded()
     const sound = await lib.createSound('/ez-web-audio/audio/click.mp3')
     sound.play()
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
   }
 }
@@ -124,7 +55,8 @@ async function playDelayed() {
       rafId = requestAnimationFrame(updateCountdown)
     }
     rafId = requestAnimationFrame(updateCountdown)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
     countdownActive.value = false
   }
@@ -164,7 +96,8 @@ async function playSequence() {
       sequencePlaying.value = false
     }, 1500)
     timeouts.push(t3)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sequence'
     sequencePlaying.value = false
   }
@@ -184,19 +117,21 @@ async function playChord() {
     const g = await lib.createOscillator({ frequency: 392.00, type: 'triangle' })
 
     const oscillators = [c, e, g]
-    oscillators.forEach(osc => {
+    oscillators.forEach((osc) => {
       osc.changeGainTo(0.2)
       osc.playAt(now)
     })
 
     const t = window.setTimeout(() => {
-      oscillators.forEach(osc => {
-        try { osc.stop() } catch {}
+      oscillators.forEach((osc) => {
+        try { osc.stop() }
+        catch {}
       })
       chordPlaying.value = false
     }, 1000)
     timeouts.push(t)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play chord'
     chordPlaying.value = false
   }
@@ -212,6 +147,90 @@ onUnmounted(() => {
   timeouts = []
 })
 </script>
+
+<template>
+  <div class="timing-demo">
+    <!-- Section 1: Play Now -->
+    <section class="demo-section">
+      <h3>1. Play Now</h3>
+      <p>Immediate playback with <code>play()</code></p>
+      <button class="demo-btn" @click="playNow">
+        Play Click
+      </button>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- Section 2: Play In 1 Second -->
+    <section class="demo-section">
+      <h3>2. Play In 1 Second</h3>
+      <p>Delayed playback with <code>playIn(seconds)</code></p>
+      <button :disabled="countdownActive" class="demo-btn" @click="playDelayed">
+        Play in 1 Second
+      </button>
+      <div v-if="countdownActive" class="countdown">
+        <div class="countdown-timer">
+          {{ countdownValue.toFixed(2) }}s
+        </div>
+        <div class="countdown-bar">
+          <div class="countdown-progress" :style="{ width: `${countdownValue * 100}%` }" />
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- Section 3: Play 3 Notes -->
+    <section class="demo-section">
+      <h3>3. Schedule 3 Notes</h3>
+      <p>Precise timing with <code>playAt(audioContext.currentTime + offset)</code></p>
+      <button :disabled="sequencePlaying" class="demo-btn" @click="playSequence">
+        Play Sequence
+      </button>
+      <div class="timeline">
+        <div
+          v-for="(active, i) in timelineNotes"
+          :key="i"
+          class="timeline-marker"
+          :class="{ active }"
+        >
+          <div class="marker-circle" />
+          <div class="marker-label">
+            {{ i * 0.5 }}s
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- Section 4: Play a Chord -->
+    <section class="demo-section">
+      <h3>4. Perfect Sync</h3>
+      <p>Multiple sounds starting at exact same time with <code>playAt()</code></p>
+      <button :disabled="chordPlaying" class="demo-btn" @click="playChord">
+        Play C Major Chord
+      </button>
+      <div v-if="chordPlaying" class="chord-visual">
+        <div class="note-indicator">
+          C
+        </div>
+        <div class="note-indicator">
+          E
+        </div>
+        <div class="note-indicator">
+          G
+        </div>
+      </div>
+    </section>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .timing-demo {

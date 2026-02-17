@@ -1,4 +1,5 @@
-import { type Link, createNav } from '@app/utils/nav'
+import type { Link } from '@app/utils/nav'
+import { createNav } from '@app/utils/nav'
 import { handleLocation } from './router'
 
 // <a href="/ez-web-audio/#/" id="index">Home</a>

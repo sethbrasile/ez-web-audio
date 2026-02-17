@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import type { SpriteManifest } from './sprite'
+import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioSprite } from './sprite'
 
-describe('AudioSprite', () => {
+describe('audioSprite', () => {
   let audioContext: AudioContext
   let audioBuffer: AudioBuffer
   let mockSourceNode: AudioBufferSourceNode

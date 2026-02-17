@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { Font } from './font'
 import type { SampledNote } from './sampled-note'
+import { describe, expect, it, vi } from 'vitest'
+import { Font } from './font'
 
 // Create mock SampledNote instances for testing
 function createMockNote(identifier: string): SampledNote {
@@ -10,7 +10,7 @@ function createMockNote(identifier: string): SampledNote {
   } as unknown as SampledNote
 }
 
-describe('Font', () => {
+describe('font', () => {
   describe('getNote', () => {
     it('returns matching note from notes array', () => {
       const noteA4 = createMockNote('A4')
@@ -62,7 +62,7 @@ describe('Font', () => {
       const font = new Font([noteA4])
 
       expect(() => font.play('Z9')).toThrow(
-        "EZ Web Audio: No note with identifier 'Z9' found. Available notes: A4"
+        'EZ Web Audio: No note with identifier \'Z9\' found. Available notes: A4',
       )
     })
 
@@ -75,7 +75,7 @@ describe('Font', () => {
       const font = new Font(notes)
 
       expect(() => font.play('D4')).toThrow(
-        "EZ Web Audio: No note with identifier 'D4' found. Available notes: A4, B4, C4"
+        'EZ Web Audio: No note with identifier \'D4\' found. Available notes: A4, B4, C4',
       )
     })
 
@@ -86,7 +86,8 @@ describe('Font', () => {
       const error = (() => {
         try {
           font.play('Missing')
-        } catch (e: any) {
+        }
+        catch (e: any) {
           return e.message
         }
       })()
@@ -99,7 +100,7 @@ describe('Font', () => {
       const font = new Font([])
 
       expect(() => font.play('A4')).toThrow(
-        "EZ Web Audio: No note with identifier 'A4' found. Available notes:"
+        'EZ Web Audio: No note with identifier \'A4\' found. Available notes:',
       )
     })
 

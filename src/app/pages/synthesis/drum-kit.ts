@@ -1,11 +1,11 @@
 import { codeBlock, htmlBlock } from '@app/utils'
 import PermissionBanner from '@components/permission-banner'
-import { setupSnareButton, setupSnareCrackButton, setupSnareMeatButton } from './snare-button'
-import { setupHihatButton } from './hihat-button'
+import { initAudio } from '@/index'
 import { setupBassDropButton } from './bass-drop-button'
+import { setupHihatButton } from './hihat-button'
 import { setupKickButton } from './kick-button'
 import nav from './nav'
-import { initAudio } from '@/index'
+import { setupSnareButton, setupSnareCrackButton, setupSnareMeatButton } from './snare-button'
 
 const playKick = `
 import { initAudio, createOscillator, createWhiteNoise, LayeredSound } from 'ez-web-audio'

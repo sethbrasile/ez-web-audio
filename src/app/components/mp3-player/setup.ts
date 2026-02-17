@@ -1,6 +1,6 @@
+import type { Track } from '@/track'
 import { observable, observe, unobserve } from '@nx-js/observer-util'
 import { createTrack, initAudio } from '@/index'
-import type { Track } from '@/track'
 
 type SongName = 'do-wah-diddy' | 'barely-there'
 

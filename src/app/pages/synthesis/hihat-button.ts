@@ -1,6 +1,6 @@
+import type { Oscillator } from '@/oscillator'
 import { createOscillator, getAudioContext } from '@/index'
 import { LayeredSound } from '@/layered-sound'
-import type { Oscillator } from '@/oscillator'
 
 async function createHihatOscillator(ratio: number): Promise<Oscillator> {
   const fundamental = 40

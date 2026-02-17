@@ -59,8 +59,8 @@ Sampler          - Round-robin playback of multiple Sounds
 sound.update('gain').to(0.5).from('ratio')
 
 // Schedule on next play
-sound.onPlaySet('gain').to(0).endingAt(1, 'exponential')  // fade in over 1 sec
-sound.onPlayRamp('gain').from(0).to(1).in(0.5)            // ramp 0→1 in 0.5 sec
+sound.onPlaySet('gain').to(0).endingAt(1, 'exponential') // fade in over 1 sec
+sound.onPlayRamp('gain').from(0).to(1).in(0.5) // ramp 0→1 in 0.5 sec
 ```
 
 **Connection Chain**: Audio flows through: `audioSourceNode → [filters] → [connections] → gainNode → pannerNode → destination`. Custom effects can be added via the `connections` array.

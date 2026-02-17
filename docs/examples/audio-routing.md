@@ -25,10 +25,10 @@ Web Audio nodes have `input` and `output` points. The `wrapEffect()` function wr
 
 ```typescript
 interface Effect {
-  input: AudioNode   // Connect audio to this
-  output: AudioNode  // Connect this to next node
-  bypass: boolean    // true = route around effect
-  mix: number        // 0-1, wet/dry balance
+  input: AudioNode // Connect audio to this
+  output: AudioNode // Connect this to next node
+  bypass: boolean // true = route around effect
+  mix: number // 0-1, wet/dry balance
 }
 ```
 
@@ -90,7 +90,7 @@ Every wrapped effect has built-in wet/dry mixing and bypass:
 
 ```typescript
 // Adjust wet/dry balance (0 = dry only, 1 = wet only)
-effect.mix = 0.5  // 50/50 blend
+effect.mix = 0.5 // 50/50 blend
 
 // Bypass the effect entirely (routes audio around it)
 effect.bypass = true

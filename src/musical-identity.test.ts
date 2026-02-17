@@ -1,5 +1,5 @@
-import { assert, expect, it } from 'vitest'
 import type { AcceptableNote, Accidental, IMusicallyAware, NoteLetter, Octave } from './musical-identity'
+import { assert, expect, it } from 'vitest'
 import { MusicallyAware } from './musical-identity'
 
 class Note extends MusicallyAware(class {}) implements IMusicallyAware {

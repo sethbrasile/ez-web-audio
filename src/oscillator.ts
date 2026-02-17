@@ -1,11 +1,12 @@
-import { get } from '@utils/prop-access'
-import type { TimeObject } from '@utils/create-time-object'
-import createTimeObject from '@utils/create-time-object'
 import type { ControlType, RampType } from '@controllers/base-param-controller'
-import { OscillatorController } from './controllers/oscillator-controller'
+import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
+import type { EnvelopeOptions } from './envelope'
+import createTimeObject from '@utils/create-time-object'
+import { get } from '@utils/prop-access'
 import { BaseSound } from './base-sound'
-import { Envelope, type EnvelopeOptions } from './envelope'
+import { OscillatorController } from './controllers/oscillator-controller'
+import { Envelope } from './envelope'
 
 /**
  * Filter configuration for oscillator frequency shaping.
@@ -157,7 +158,7 @@ export class Oscillator extends BaseSound {
     this.freq = options?.frequency || 440
 
     if (this.freq <= 0) {
-      throw new Error("Oscillator frequency must be greater than 0. Received: " + this.freq)
+      throw new Error(`Oscillator frequency must be greater than 0. Received: ${this.freq}`)
     }
 
     // This is just to keep the null checks down, this oscillator instance will never be used
@@ -344,7 +345,8 @@ export class Oscillator extends BaseSound {
       // Schedule actual stop after release completes
       const releaseEndTime = releaseTime + this.envelope.releaseTime
       await this.stopAt(releaseEndTime)
-    } else {
+    }
+    else {
       await super.stop()
     }
   }

@@ -1,12 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { EnvelopeOptions } from './envelope'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { Envelope, EnvelopeOptions } from './envelope'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Envelope } from './envelope'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('Envelope', () => {
+describe('envelope', () => {
   let audioContext: AudioContext
   let gainNode: GainNode
 
@@ -314,7 +315,7 @@ describe('Envelope', () => {
         const envelope = new Envelope({ attackTime: 0.1, decayTime: 0.1 })
         const spy = vi.spyOn(
           gainNode.gain as Parameters<typeof vi.spyOn>[0],
-          'cancelAndHoldAtTime' as never
+          'cancelAndHoldAtTime' as never,
         )
         envelope.applyTo(gainNode.gain, 0)
         envelope.applyTo(gainNode.gain, 0.05)
@@ -439,7 +440,7 @@ describe('Envelope', () => {
         const envelope = new Envelope()
         const spy = vi.spyOn(
           gainNode.gain as Parameters<typeof vi.spyOn>[0],
-          'cancelAndHoldAtTime' as never
+          'cancelAndHoldAtTime' as never,
         )
         envelope.applyTo(gainNode.gain, 0)
         envelope.applyTo(gainNode.gain, 0.05)

@@ -1,9 +1,9 @@
-import { Beat } from './beat'
+import type { BeatTrackEventMap } from './events/event-types'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
+import { Beat } from './beat'
 import { Sampler } from './sampler'
-import type { BeatTrackEventMap } from './events/event-types'
 import audioContextAwareTimeout from './utils/timeout'
 
 export interface BeatTrackOptions extends SamplerOptions {
@@ -54,13 +54,13 @@ export class BeatTrack extends Sampler {
   private eventTarget: EventTarget = new EventTarget()
 
   // Lookahead scheduler state
-  private scheduleAheadTime = 0.1  // 100ms lookahead
-  private schedulerInterval = 25   // 25ms check interval
+  private scheduleAheadTime = 0.1 // 100ms lookahead
+  private schedulerInterval = 25 // 25ms check interval
   private nextBeatTime = 0
   private currentBeatIndex = 0
   private timerID: number | null = null
   private currentTempo: number = 120
-  private noteType: number = 1/4
+  private noteType: number = 1 / 4
 
   // Pause state
   private pausedBeatIndex: number | null = null
@@ -86,7 +86,7 @@ export class BeatTrack extends Sampler {
       this.wrapWith = opts.wrapWith
     }
     if (this.numBeats <= 0) {
-      throw new Error("numBeats must be greater than 0. Received: " + this.numBeats)
+      throw new Error(`numBeats must be greater than 0. Received: ${this.numBeats}`)
     }
   }
 
@@ -164,10 +164,10 @@ export class BeatTrack extends Sampler {
    */
   public playBeats(bpm: number, noteType: number): void {
     if (bpm <= 0) {
-      throw new Error("BPM must be greater than 0. Received: " + bpm)
+      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
     if (noteType <= 0) {
-      throw new Error("noteType must be greater than 0. Received: " + noteType)
+      throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
     this.currentTempo = bpm
     this.noteType = noteType
@@ -195,10 +195,10 @@ export class BeatTrack extends Sampler {
    */
   public playActiveBeats(bpm: number, noteType: number): void {
     if (bpm <= 0) {
-      throw new Error("BPM must be greater than 0. Received: " + bpm)
+      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
     if (noteType <= 0) {
-      throw new Error("noteType must be greater than 0. Received: " + noteType)
+      throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
     this.currentTempo = bpm
     this.noteType = noteType
@@ -231,7 +231,7 @@ export class BeatTrack extends Sampler {
 
     this.emit('stop', {
       time: this.audioContext.currentTime,
-      source: this
+      source: this,
     })
   }
 
@@ -260,7 +260,7 @@ export class BeatTrack extends Sampler {
     this.emit('pause', {
       time: this.audioContext.currentTime,
       source: this,
-      beatIndex: this.currentBeatIndex
+      beatIndex: this.currentBeatIndex,
     })
   }
 
@@ -285,7 +285,7 @@ export class BeatTrack extends Sampler {
       this.emit('resume', {
         time: this.audioContext.currentTime,
         source: this,
-        beatIndex: this.currentBeatIndex
+        beatIndex: this.currentBeatIndex,
       })
 
       this.scheduler()
@@ -311,7 +311,7 @@ export class BeatTrack extends Sampler {
    */
   public setTempo(bpm: number): void {
     if (bpm <= 0) {
-      throw new Error("BPM must be greater than 0. Received: " + bpm)
+      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
     this.currentTempo = bpm
   }
@@ -336,7 +336,7 @@ export class BeatTrack extends Sampler {
 
     this.timerID = window.setTimeout(
       () => this.scheduler(),
-      this.schedulerInterval
+      this.schedulerInterval,
     )
   }
 
@@ -357,11 +357,12 @@ export class BeatTrack extends Sampler {
     // so consumers don't need to compensate for lookahead delay
     const active = beat.active
     const msOffset = offset * 1000
-    const emitBeat = () => this.emit('beat', { time, beatIndex, active, source: this })
+    const emitBeat = (): boolean => this.emit('beat', { time, beatIndex, active, source: this })
 
     if (msOffset <= 0) {
       emitBeat()
-    } else {
+    }
+    else {
       this.acTimeout(emitBeat, msOffset)
     }
   }
@@ -394,7 +395,7 @@ export class BeatTrack extends Sampler {
    */
   protected emit<K extends keyof BeatTrackEventMap>(
     type: K,
-    detail: BeatTrackEventMap[K]['detail']
+    detail: BeatTrackEventMap[K]['detail'],
   ): void {
     const event = new CustomEvent(type, { detail })
     this.eventTarget.dispatchEvent(event)
@@ -410,7 +411,7 @@ export class BeatTrack extends Sampler {
   addEventListener<K extends keyof BeatTrackEventMap>(
     type: K,
     listener: (event: BeatTrackEventMap[K]) => void,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void {
     this.eventTarget.addEventListener(type, listener as EventListener, options)
   }
@@ -425,7 +426,7 @@ export class BeatTrack extends Sampler {
   removeEventListener<K extends keyof BeatTrackEventMap>(
     type: K,
     listener: (event: BeatTrackEventMap[K]) => void,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void {
     this.eventTarget.removeEventListener(type, listener as EventListener, options)
   }
@@ -449,7 +450,7 @@ export class BeatTrack extends Sampler {
    */
   on<K extends keyof BeatTrackEventMap>(
     type: K,
-    listener: (event: BeatTrackEventMap[K]) => void
+    listener: (event: BeatTrackEventMap[K]) => void,
   ): this {
     this.addEventListener(type, listener)
     return this
@@ -464,7 +465,7 @@ export class BeatTrack extends Sampler {
    */
   off<K extends keyof BeatTrackEventMap>(
     type: K,
-    listener: (event: BeatTrackEventMap[K]) => void
+    listener: (event: BeatTrackEventMap[K]) => void,
   ): this {
     this.removeEventListener(type, listener)
     return this
@@ -486,7 +487,7 @@ export class BeatTrack extends Sampler {
    */
   once<K extends keyof BeatTrackEventMap>(
     type: K,
-    listener: (event: BeatTrackEventMap[K]) => void
+    listener: (event: BeatTrackEventMap[K]) => void,
   ): this {
     this.addEventListener(type, listener, { once: true })
     return this

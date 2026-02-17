@@ -1,8 +1,8 @@
-import { expect, it } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { mockSetTimeout, settle } from './test/helpers'
 import type { BeatOptions } from '@/beat'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { expect, it } from 'vitest'
 import { Beat } from '@/beat'
+import { mockSetTimeout, settle } from './test/helpers'
 
 class MockParentClass {
   playCalled = false

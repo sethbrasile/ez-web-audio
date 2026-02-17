@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { SampledNote } from './sampled-note'
 import { Sound } from './sound'
 
@@ -18,7 +18,7 @@ function createSampledNote(context: AudioContext, identifier?: string) {
   return note
 }
 
-describe('SampledNote', () => {
+describe('sampledNote', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe('SampledNote', () => {
     })
   })
 
-  describe('Sound capabilities (inherited)', () => {
+  describe('sound capabilities (inherited)', () => {
     it('has play() method', () => {
       const note = createSampledNote(audioContext)
       expect(typeof note.play).toBe('function')
@@ -89,7 +89,7 @@ describe('SampledNote', () => {
     })
   })
 
-  describe('MusicallyAware capabilities (from mixin)', () => {
+  describe('musicallyAware capabilities (from mixin)', () => {
     it('has letter property', () => {
       const note = createSampledNote(audioContext)
       expect(note.letter).toBeDefined()

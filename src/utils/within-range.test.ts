@@ -1,5 +1,5 @@
-import { assert, it } from 'vitest'
 import withinRange from '@utils/within-range'
+import { assert, it } from 'vitest'
 
 it('exists', () => {
   const result = withinRange(1, 0, 1)
@@ -22,7 +22,7 @@ it('returns max if value is greater than max', () => {
 })
 
 it('handles NaN by returning NaN', () => {
-  const result = withinRange(NaN, 0, 1)
+  const result = withinRange(Number.NaN, 0, 1)
   assert.ok(Number.isNaN(result))
 })
 

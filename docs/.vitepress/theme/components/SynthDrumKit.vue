@@ -1,71 +1,5 @@
-<template>
-  <div class="synth-drum-kit">
-    <div class="pads-container">
-      <button
-        class="drum-pad kick"
-        :class="{ playing: lastPlayed === 'kick' }"
-        :disabled="loading"
-        @mousedown="playKick"
-        @touchstart.prevent="playKick"
-        aria-label="Play kick drum"
-      >
-        KICK
-      </button>
-      <button
-        class="drum-pad snare"
-        :class="{ playing: lastPlayed === 'snare' }"
-        :disabled="loading"
-        @mousedown="playSnare"
-        @touchstart.prevent="playSnare"
-        aria-label="Play snare drum"
-      >
-        SNARE
-      </button>
-      <button
-        class="drum-pad hihat"
-        :class="{ playing: lastPlayed === 'hihat' }"
-        :disabled="loading"
-        @mousedown="playHiHat"
-        @touchstart.prevent="playHiHat"
-        aria-label="Play hi-hat"
-      >
-        HI-HAT
-      </button>
-    </div>
-
-    <button
-      class="bass-drop-btn"
-      :disabled="loading"
-      @click="playBassDrop"
-      aria-label="Play bass drop effect"
-    >
-      BASS DROP
-    </button>
-
-    <div class="breakdown-section">
-      <h4>Snare Breakdown</h4>
-      <div class="breakdown-buttons">
-        <button @click="playSnareMeat" class="breakdown-btn" :disabled="loading" aria-label="Play snare meat layer only">
-          Meat Only
-        </button>
-        <button @click="playSnareCrack" class="breakdown-btn" :disabled="loading" aria-label="Play snare crack layer only">
-          Crack Only
-        </button>
-        <button @click="playSnare" class="breakdown-btn" :disabled="loading" aria-label="Play full snare (both layers)">
-          Full Snare
-        </button>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">Loading synth...</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const initialized = ref(false)
 const loading = ref(false)
@@ -81,7 +15,8 @@ async function initIfNeeded() {
     try {
       lib = await import('ez-web-audio')
       initialized.value = true
-    } finally {
+    }
+    finally {
       loading.value = false
     }
   }
@@ -102,7 +37,7 @@ async function playKick() {
 
     const osc = await lib.createOscillator({
       frequency: 150,
-      type: 'triangle'
+      type: 'triangle',
     })
 
     // Frequency sweep: 150Hz down to near 0
@@ -117,10 +52,13 @@ async function playKick() {
       try {
         osc.stop()
         const idx = activeOscillators.indexOf(osc)
-        if (idx > -1) activeOscillators.splice(idx, 1)
-      } catch {}
+        if (idx > -1)
+          activeOscillators.splice(idx, 1)
+      }
+      catch {}
     }, 200)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play kick'
     console.warn('Kick error:', e)
   }
@@ -129,7 +67,7 @@ async function playKick() {
 async function createSnareMeat() {
   const osc = await lib.createOscillator({
     frequency: 100,
-    type: 'sine'
+    type: 'sine',
   })
 
   osc.onPlayRamp('frequency').from(100).to(60).in(0.1)
@@ -144,7 +82,7 @@ async function createSnareCrack() {
   // Apply highpass filter for the "crack"
   const highpass = lib.createFilterEffect(ctx, 'highpass', {
     frequency: 1000,
-    q: 1
+    q: 1,
   })
 
   noise.addEffect(highpass)
@@ -153,24 +91,28 @@ async function createSnareCrack() {
 }
 
 async function playSnareMeat() {
-  if (!lib) await initIfNeeded()
+  if (!lib)
+    await initIfNeeded()
   const osc = await createSnareMeat()
   activeOscillators.push(osc)
   osc.playFor(0.1)
   setTimeout(() => {
     const idx = activeOscillators.indexOf(osc)
-    if (idx > -1) activeOscillators.splice(idx, 1)
+    if (idx > -1)
+      activeOscillators.splice(idx, 1)
   }, 200)
 }
 
 async function playSnareCrack() {
-  if (!lib) await initIfNeeded()
+  if (!lib)
+    await initIfNeeded()
   const noise = await createSnareCrack()
   activeOscillators.push(noise)
   noise.playFor(0.1)
   setTimeout(() => {
     const idx = activeOscillators.indexOf(noise)
-    if (idx > -1) activeOscillators.splice(idx, 1)
+    if (idx > -1)
+      activeOscillators.splice(idx, 1)
   }, 200)
 }
 
@@ -189,9 +131,11 @@ async function playSnare() {
 
     setTimeout(() => {
       const idx = activeOscillators.indexOf(snare)
-      if (idx > -1) activeOscillators.splice(idx, 1)
+      if (idx > -1)
+        activeOscillators.splice(idx, 1)
     }, 200)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play snare'
     console.warn('Snare error:', e)
   }
@@ -211,20 +155,20 @@ async function playHiHat() {
     const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21]
 
     const oscillators = await Promise.all(
-      ratios.map(async ratio => {
+      ratios.map(async (ratio) => {
         const osc = await lib.createOscillator({
           frequency: fundamentalFreq * ratio,
-          type: 'square'
+          type: 'square',
         })
 
         // Highpass + bandpass filters for metallic character
         const highpass = lib.createFilterEffect(ctx, 'highpass', {
           frequency: 7000,
-          q: 1
+          q: 1,
         })
         const bandpass = lib.createFilterEffect(ctx, 'bandpass', {
           frequency: 10000,
-          q: 1
+          q: 1,
         })
 
         osc.addEffect(highpass)
@@ -235,7 +179,7 @@ async function playHiHat() {
         osc.onPlaySet('gain').to(0.3).endingAt(0.03)
         osc.onPlaySet('gain').to(0.00001).endingAt(0.3)
         return osc
-      })
+      }),
     )
 
     // Use LayeredSound for synchronized playback
@@ -245,9 +189,11 @@ async function playHiHat() {
 
     setTimeout(() => {
       const idx = activeOscillators.indexOf(hihat)
-      if (idx > -1) activeOscillators.splice(idx, 1)
+      if (idx > -1)
+        activeOscillators.splice(idx, 1)
     }, 400)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play hi-hat'
     console.warn('Hi-hat error:', e)
   }
@@ -260,7 +206,7 @@ async function playBassDrop() {
 
     const osc = await lib.createOscillator({
       frequency: 100,
-      type: 'sine'
+      type: 'sine',
     })
 
     // Linear frequency sweep (steady pitch drop) and exponential gain decay
@@ -272,9 +218,11 @@ async function playBassDrop() {
     // Clean up reference after sound completes
     setTimeout(() => {
       const idx = activeOscillators.indexOf(osc)
-      if (idx > -1) activeOscillators.splice(idx, 1)
+      if (idx > -1)
+        activeOscillators.splice(idx, 1)
     }, 10100)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play bass drop'
     console.warn('Bass drop error:', e)
   }
@@ -282,14 +230,85 @@ async function playBassDrop() {
 
 onUnmounted(() => {
   // Stop all active oscillators
-  activeOscillators.forEach(osc => {
+  activeOscillators.forEach((osc) => {
     try {
       osc.stop()
-    } catch {}
+    }
+    catch {}
   })
   activeOscillators = []
 })
 </script>
+
+<template>
+  <div class="synth-drum-kit">
+    <div class="pads-container">
+      <button
+        class="drum-pad kick"
+        :class="{ playing: lastPlayed === 'kick' }"
+        :disabled="loading"
+        aria-label="Play kick drum"
+        @mousedown="playKick"
+        @touchstart.prevent="playKick"
+      >
+        KICK
+      </button>
+      <button
+        class="drum-pad snare"
+        :class="{ playing: lastPlayed === 'snare' }"
+        :disabled="loading"
+        aria-label="Play snare drum"
+        @mousedown="playSnare"
+        @touchstart.prevent="playSnare"
+      >
+        SNARE
+      </button>
+      <button
+        class="drum-pad hihat"
+        :class="{ playing: lastPlayed === 'hihat' }"
+        :disabled="loading"
+        aria-label="Play hi-hat"
+        @mousedown="playHiHat"
+        @touchstart.prevent="playHiHat"
+      >
+        HI-HAT
+      </button>
+    </div>
+
+    <button
+      class="bass-drop-btn"
+      :disabled="loading"
+      aria-label="Play bass drop effect"
+      @click="playBassDrop"
+    >
+      BASS DROP
+    </button>
+
+    <div class="breakdown-section">
+      <h4>Snare Breakdown</h4>
+      <div class="breakdown-buttons">
+        <button class="breakdown-btn" :disabled="loading" aria-label="Play snare meat layer only" @click="playSnareMeat">
+          Meat Only
+        </button>
+        <button class="breakdown-btn" :disabled="loading" aria-label="Play snare crack layer only" @click="playSnareCrack">
+          Crack Only
+        </button>
+        <button class="breakdown-btn" :disabled="loading" aria-label="Play full snare (both layers)" @click="playSnare">
+          Full Snare
+        </button>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">
+        Loading synth...
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .synth-drum-kit {

@@ -1,8 +1,8 @@
-import PermissionBanner from '@components/permission-banner'
 import { getSamplesPaths } from '@app/utils'
+import PermissionBanner from '@components/permission-banner'
+import { createSampler } from '@/index'
 import { codeBlock, htmlBlock } from '../../utils'
 import nav from './nav'
-import { createSampler } from '@/index'
 
 const Content = {
   setup() {

@@ -114,11 +114,11 @@ export class BaseParamController {
         break
       case 'detune':
         if (!this.audioSource.detune)
-          throw new Error("Audio source does not support detune. Only Oscillator instances support the 'detune' control type.")
+          throw new Error('Audio source does not support detune. Only Oscillator instances support the \'detune\' control type.')
         this.audioSource.detune.value = value
         break
       default:
-        throw new Error("Unsupported control type: '" + type + "'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).")
+        throw new Error(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).`)
     }
   }
 
@@ -142,7 +142,7 @@ export class BaseParamController {
                 this._update(type, value / 100)
                 break
               default:
-                throw new Error("Unsupported ratio type: '" + method + "'. Supported types: 'ratio', 'inverseRatio', 'percent'.")
+                throw new Error(`Unsupported ratio type: '${method}'. Supported types: 'ratio', 'inverseRatio', 'percent'.`)
             }
           },
         }
@@ -199,7 +199,7 @@ export class BaseParamController {
         this.linearValues.push(valueAtTime)
         break
       default:
-        throw new Error("Unsupported ramp type: '" + rampType + "'. Supported types: 'linear', 'exponential'.")
+        throw new Error(`Unsupported ramp type: '${rampType}'. Supported types: 'linear', 'exponential'.`)
     }
   }
 
@@ -217,7 +217,7 @@ export class BaseParamController {
     param: AudioParam,
     value: number,
     time: number,
-    rampType: 'exponential' | 'linear'
+    rampType: 'exponential' | 'linear',
   ): void {
     switch (rampType) {
       case 'exponential':

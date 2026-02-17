@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { Sampler } from '@/sampler'
-import type { Playable } from './interfaces/playable'
 import type { Connectable } from './interfaces/connectable'
+import type { Playable } from './interfaces/playable'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Sampler } from '@/sampler'
 
 /**
  * Create a mock sound that satisfies Playable & Connectable interfaces
@@ -21,8 +21,8 @@ function createMockSound(): Playable & Connectable {
   }
 }
 
-describe('Sampler', () => {
-  describe('Creation', () => {
+describe('sampler', () => {
+  describe('creation', () => {
     it('creates Sampler from array of sounds', () => {
       const sounds = [createMockSound(), createMockSound()]
       const sampler = new Sampler(sounds)
@@ -54,7 +54,7 @@ describe('Sampler', () => {
     })
   })
 
-  describe('Round-robin behavior', () => {
+  describe('round-robin behavior', () => {
     let sounds: (Playable & Connectable)[]
     let sampler: Sampler
 
@@ -132,7 +132,7 @@ describe('Sampler', () => {
     })
   })
 
-  describe('Play methods', () => {
+  describe('play methods', () => {
     let sounds: (Playable & Connectable)[]
     let sampler: Sampler
 
@@ -171,10 +171,10 @@ describe('Sampler', () => {
     })
 
     it('mixed play methods all advance iterator correctly', () => {
-      sampler.play()     // sound 0
-      sampler.playIn(1)  // sound 1
-      sampler.playAt(2)  // sound 0 again
-      sampler.play()     // sound 1 again
+      sampler.play() // sound 0
+      sampler.playIn(1) // sound 1
+      sampler.playAt(2) // sound 0 again
+      sampler.play() // sound 1 again
 
       expect(sounds[0].play).toHaveBeenCalledTimes(1)
       expect(sounds[0].playAt).toHaveBeenCalledTimes(1)
@@ -183,7 +183,7 @@ describe('Sampler', () => {
     })
   })
 
-  describe('Gain and pan control', () => {
+  describe('gain and pan control', () => {
     let sounds: (Playable & Connectable)[]
     let sampler: Sampler
 
@@ -208,8 +208,12 @@ describe('Sampler', () => {
       const sound = createMockSound()
       const callOrder: string[] = []
 
-      sound.changeGainTo = vi.fn(() => { callOrder.push('gain') })
-      sound.play = vi.fn(() => { callOrder.push('play') })
+      sound.changeGainTo = vi.fn(() => {
+        callOrder.push('gain')
+      })
+      sound.play = vi.fn(() => {
+        callOrder.push('play')
+      })
 
       const s = new Sampler([sound])
       s.gain = 0.7
@@ -222,8 +226,12 @@ describe('Sampler', () => {
       const sound = createMockSound()
       const callOrder: string[] = []
 
-      sound.changePanTo = vi.fn(() => { callOrder.push('pan') })
-      sound.play = vi.fn(() => { callOrder.push('play') })
+      sound.changePanTo = vi.fn(() => {
+        callOrder.push('pan')
+      })
+      sound.play = vi.fn(() => {
+        callOrder.push('play')
+      })
 
       const s = new Sampler([sound])
       s.pan = 0.5
@@ -286,7 +294,7 @@ describe('Sampler', () => {
     })
   })
 
-  describe('Edge cases', () => {
+  describe('edge cases', () => {
     it('throws when playing empty sounds array', () => {
       const sampler = new Sampler([])
       // Empty array iterator returns done=true immediately
@@ -313,7 +321,9 @@ describe('Sampler', () => {
       const playOrder: number[] = []
 
       sounds.forEach((sound, index) => {
-        sound.play = vi.fn(() => { playOrder.push(index) })
+        sound.play = vi.fn(() => {
+          playOrder.push(index)
+        })
       })
 
       sampler.play()

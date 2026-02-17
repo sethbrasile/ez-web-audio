@@ -1,72 +1,5 @@
-<template>
-  <div class="visualization-demo">
-    <div class="controls-section">
-      <div class="control-row">
-        <button
-          @click="togglePlayback"
-          class="play-btn"
-          :class="{ active: isPlaying }"
-        >
-          {{ isPlaying ? 'Stop' : 'Play' }}
-        </button>
-
-        <label>
-          Waveform:
-          <select v-model="waveType" @change="updateWaveform">
-            <option value="sine">Sine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-            <option value="triangle">Triangle</option>
-          </select>
-        </label>
-
-        <label>
-          Frequency: {{ frequency }} Hz
-          <input
-            type="range"
-            v-model.number="frequency"
-            min="100"
-            max="2000"
-            step="10"
-            @input="updateFrequency"
-          />
-        </label>
-
-        <label>
-          FFT Size:
-          <select v-model.number="fftSize" @change="updateFFTSize">
-            <option :value="256">256</option>
-            <option :value="512">512</option>
-            <option :value="1024">1024</option>
-            <option :value="2048">2048</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="visualizations">
-      <div class="viz-container">
-        <h3>Frequency Spectrum</h3>
-        <canvas ref="frequencyCanvas" class="viz-canvas"></canvas>
-        <p class="viz-info">Shows frequency distribution (FFT analysis)</p>
-      </div>
-
-      <div class="viz-container">
-        <h3>Waveform</h3>
-        <canvas ref="waveformCanvas" class="viz-canvas"></canvas>
-        <p class="viz-info">Shows time-domain waveform</p>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">Initializing audio...</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
 
@@ -117,10 +50,12 @@ async function togglePlayback() {
 
     if (isPlaying.value) {
       stopVisualization()
-    } else {
+    }
+    else {
       await startVisualization()
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to control playback'
     console.error('Playback error:', e)
   }
@@ -135,7 +70,7 @@ async function startVisualization() {
     // Create oscillator
     oscillator = await createOscillator({
       frequency: frequency.value,
-      type: waveType.value
+      type: waveType.value,
     })
     oscillator.changeGainTo(0.3)
 
@@ -151,7 +86,8 @@ async function startVisualization() {
     // Start visualization loop
     isPlaying.value = true
     animate()
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -176,7 +112,8 @@ function stopVisualization() {
 }
 
 function animate() {
-  if (!isPlaying.value || !analyzer) return
+  if (!isPlaying.value || !analyzer)
+    return
 
   drawFrequencySpectrum()
   drawWaveform()
@@ -185,11 +122,13 @@ function animate() {
 }
 
 function drawFrequencySpectrum() {
-  if (!analyzer || !frequencyCanvas.value) return
+  if (!analyzer || !frequencyCanvas.value)
+    return
 
   const canvas = frequencyCanvas.value
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx)
+    return
 
   const frequencyData = analyzer.getFrequencyData()
   const width = canvas.width
@@ -214,11 +153,13 @@ function drawFrequencySpectrum() {
 }
 
 function drawWaveform() {
-  if (!analyzer || !waveformCanvas.value) return
+  if (!analyzer || !waveformCanvas.value)
+    return
 
   const canvas = waveformCanvas.value
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx)
+    return
 
   const waveformData = analyzer.getTimeDomainData()
   const width = canvas.width
@@ -242,7 +183,8 @@ function drawWaveform() {
 
     if (i === 0) {
       ctx.moveTo(x, y)
-    } else {
+    }
+    else {
       ctx.lineTo(x, y)
     }
 
@@ -253,16 +195,19 @@ function drawWaveform() {
 }
 
 function clearCanvas(canvas: HTMLCanvasElement | null) {
-  if (!canvas) return
+  if (!canvas)
+    return
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx)
+    return
 
   ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
 function updateWaveform() {
-  if (!isPlaying.value || !oscillator) return
+  if (!isPlaying.value || !oscillator)
+    return
 
   // Stop and recreate oscillator with new waveform
   const wasPlaying = isPlaying.value
@@ -274,13 +219,15 @@ function updateWaveform() {
 }
 
 function updateFrequency() {
-  if (!isPlaying.value || !oscillator) return
+  if (!isPlaying.value || !oscillator)
+    return
 
   oscillator.update('frequency').to(frequency.value).from('number')
 }
 
 function updateFFTSize() {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
 
   // Restart with new FFT size
   const wasPlaying = isPlaying.value
@@ -296,6 +243,81 @@ onUnmounted(() => {
   window.removeEventListener('resize', setupCanvases)
 })
 </script>
+
+<template>
+  <div class="visualization-demo">
+    <div class="controls-section">
+      <div class="control-row">
+        <button
+          class="play-btn"
+          :class="{ active: isPlaying }"
+          @click="togglePlayback"
+        >
+          {{ isPlaying ? 'Stop' : 'Play' }}
+        </button>
+
+        <label>
+          Waveform:
+          <select v-model="waveType" @change="updateWaveform">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+          </select>
+        </label>
+
+        <label>
+          Frequency: {{ frequency }} Hz
+          <input
+            v-model.number="frequency"
+            type="range"
+            min="100"
+            max="2000"
+            step="10"
+            @input="updateFrequency"
+          >
+        </label>
+
+        <label>
+          FFT Size:
+          <select v-model.number="fftSize" @change="updateFFTSize">
+            <option :value="256">256</option>
+            <option :value="512">512</option>
+            <option :value="1024">1024</option>
+            <option :value="2048">2048</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="visualizations">
+      <div class="viz-container">
+        <h3>Frequency Spectrum</h3>
+        <canvas ref="frequencyCanvas" class="viz-canvas" />
+        <p class="viz-info">
+          Shows frequency distribution (FFT analysis)
+        </p>
+      </div>
+
+      <div class="viz-container">
+        <h3>Waveform</h3>
+        <canvas ref="waveformCanvas" class="viz-canvas" />
+        <p class="viz-info">
+          Shows time-domain waveform
+        </p>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">
+        Initializing audio...
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .visualization-demo {

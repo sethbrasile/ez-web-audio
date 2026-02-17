@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { FilterEffect, createFilterEffect, FilterType } from './filter-effect'
+import type { FilterType } from './filter-effect'
 import type { Effect } from './index'
+import { AudioContext as Mock } from 'standardized-audio-context-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFilterEffect, FilterEffect } from './filter-effect'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-describe('FilterEffect', () => {
+describe('filterEffect', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -75,7 +76,7 @@ describe('FilterEffect', () => {
     })
   })
 
-  describe('Effect interface implementation', () => {
+  describe('effect interface implementation', () => {
     it('has input property', () => {
       const effect = new FilterEffect(audioContext, 'lowpass')
       expect(effect.input).toBeTruthy()

@@ -1,33 +1,5 @@
-<template>
-  <div class="piano-keyboard">
-    <div class="keyboard-hint">
-      Use keys A-K to play (W, E, T, Y, U for sharps)
-    </div>
-    <div class="keys-container">
-      <div
-        v-for="key in keys"
-        :key="key.note"
-        :class="['key', key.type, { active: activeKeys?.has(key.note) }]"
-        :style="key.style"
-        role="button"
-        :aria-label="`Play ${key.note}`"
-        :aria-pressed="activeKeys?.has(key.note)"
-        tabindex="0"
-        @mousedown="handleMouseDown(key.note)"
-        @mouseup="handleMouseUp(key.note)"
-        @mouseleave="handleMouseLeave(key.note)"
-        @mouseenter="handleMouseEnter(key.note)"
-        @touchstart.prevent="handleTouchStart($event, key.note)"
-        @touchend.prevent="handleTouchEnd(key.note)"
-      >
-        <span class="key-label">{{ key.label }}</span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 interface Props {
   startNote?: string
@@ -37,7 +9,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   startNote: 'C4',
-  endNote: 'C5'
+  endNote: 'C5',
 })
 
 const emit = defineEmits<{
@@ -47,19 +19,19 @@ const emit = defineEmits<{
 
 // Keyboard mapping for computer keyboard input
 const keyboardMap: Record<string, string> = {
-  'a': 'C4',
-  'w': 'Db4',
-  's': 'D4',
-  'e': 'Eb4',
-  'd': 'E4',
-  'f': 'F4',
-  't': 'Gb4',
-  'g': 'G4',
-  'y': 'Ab4',
-  'h': 'A4',
-  'u': 'Bb4',
-  'j': 'B4',
-  'k': 'C5'
+  a: 'C4',
+  w: 'Db4',
+  s: 'D4',
+  e: 'Eb4',
+  d: 'E4',
+  f: 'F4',
+  t: 'Gb4',
+  g: 'G4',
+  y: 'Ab4',
+  h: 'A4',
+  u: 'Bb4',
+  j: 'B4',
+  k: 'C5',
 }
 
 // Track which keys are currently pressed to prevent key repeat
@@ -80,7 +52,7 @@ const allNotes = [
   { note: 'A4', type: 'white', label: 'A' },
   { note: 'Bb4', type: 'black', label: 'A#' },
   { note: 'B4', type: 'white', label: 'B' },
-  { note: 'C5', type: 'white', label: 'C' }
+  { note: 'C5', type: 'white', label: 'C' },
 ]
 
 // Calculate white key positions for black key positioning
@@ -91,14 +63,15 @@ const keys = computed(() => {
   return allNotes.map((noteData) => {
     if (noteData.type === 'white') {
       const style = {
-        left: `${whiteKeyIndex * whiteKeyWidth}px`
+        left: `${whiteKeyIndex * whiteKeyWidth}px`,
       }
       whiteKeyIndex++
       return { ...noteData, style }
-    } else {
+    }
+    else {
       // Black keys are positioned between white keys
       const style = {
-        left: `${whiteKeyIndex * whiteKeyWidth - 14}px`
+        left: `${whiteKeyIndex * whiteKeyWidth - 14}px`,
       }
       return { ...noteData, style }
     }
@@ -165,6 +138,34 @@ onUnmounted(() => {
   window.removeEventListener('keyup', handleKeyUp)
 })
 </script>
+
+<template>
+  <div class="piano-keyboard">
+    <div class="keyboard-hint">
+      Use keys A-K to play (W, E, T, Y, U for sharps)
+    </div>
+    <div class="keys-container">
+      <div
+        v-for="key in keys"
+        :key="key.note"
+        class="key" :class="[key.type, { active: activeKeys?.has(key.note) }]"
+        :style="key.style"
+        role="button"
+        :aria-label="`Play ${key.note}`"
+        :aria-pressed="activeKeys?.has(key.note)"
+        tabindex="0"
+        @mousedown="handleMouseDown(key.note)"
+        @mouseup="handleMouseUp(key.note)"
+        @mouseleave="handleMouseLeave(key.note)"
+        @mouseenter="handleMouseEnter(key.note)"
+        @touchstart.prevent="handleTouchStart($event, key.note)"
+        @touchend.prevent="handleTouchEnd(key.note)"
+      >
+        <span class="key-label">{{ key.label }}</span>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .piano-keyboard {

@@ -64,7 +64,7 @@ song.play()
 
 // Track knows its position
 console.log(song.position.string) // "1:23"
-console.log(song.percentPlayed)   // 0.35 (35% complete)
+console.log(song.percentPlayed) // 0.35 (35% complete)
 
 // Control playback
 song.pause()
@@ -86,13 +86,13 @@ track.play()
 
 // Position as TimeObject
 const pos = track.position
-console.log(pos.raw)    // 83.5 (seconds)
+console.log(pos.raw) // 83.5 (seconds)
 console.log(pos.string) // "1:23"
-console.log(pos.pojo)   // { minutes: 1, seconds: 23 }
+console.log(pos.pojo) // { minutes: 1, seconds: 23 }
 
 // Duration information
-console.log(track.duration.string)  // "4:30"
-console.log(track.percentPlayed)    // 0.31 (31%)
+console.log(track.duration.string) // "4:30"
+console.log(track.percentPlayed) // 0.31 (31%)
 ```
 
 ## Oscillator: Sound Synthesis
@@ -101,9 +101,9 @@ console.log(track.percentPlayed)    // 0.31 (31%)
 
 ```typescript
 const synth = await createOscillator({
-  frequency: 440,     // Hz (A4 note)
-  type: 'sine',       // sine, square, sawtooth, triangle
-  envelope: {         // ADSR envelope (optional)
+  frequency: 440, // Hz (A4 note)
+  type: 'sine', // sine, square, sawtooth, triangle
+  envelope: { // ADSR envelope (optional)
     attack: 0.01,
     decay: 0.1,
     sustain: 0.7,
@@ -148,15 +148,15 @@ S = Sustain: Volume level while key held
 R = Release: Time to fade after key released
 ```
 
-```typescript
+```ts
 // Piano-like: fast attack, quick decay, no sustain
-{ attack: 0.01, decay: 0.5, sustain: 0, release: 0.3 }
+const piano = { attack: 0.01, decay: 0.5, sustain: 0, release: 0.3 }
 
 // Pad-like: slow attack, long sustain
-{ attack: 0.5, decay: 0.2, sustain: 0.8, release: 1.0 }
+const pad = { attack: 0.5, decay: 0.2, sustain: 0.8, release: 1.0 }
 
 // Pluck-like: instant attack, medium decay
-{ attack: 0.001, decay: 0.3, sustain: 0.2, release: 0.1 }
+const pluck = { attack: 0.001, decay: 0.3, sustain: 0.2, release: 0.1 }
 ```
 
 ## AudioContext Lifecycle
@@ -187,7 +187,7 @@ If you need explicit control (iOS mute workaround, pre-warming), you can call
 `initAudio()`:
 
 ```typescript
-import { initAudio, createSound } from 'ez-web-audio'
+import { createSound, initAudio } from 'ez-web-audio'
 
 button.onclick = async () => {
   await initAudio() // Optional — for explicit control
@@ -249,9 +249,9 @@ sound.play()
 Effects are processed in order:
 
 ```typescript
-sound.addEffect(compressor)  // First in chain
-sound.addEffect(reverb)      // Second in chain
-sound.addEffect(eq)          // Third in chain
+sound.addEffect(compressor) // First in chain
+sound.addEffect(reverb) // Second in chain
+sound.addEffect(eq) // Third in chain
 
 // Signal: source → compressor → reverb → eq → gain → pan → out
 ```
@@ -305,7 +305,7 @@ All playable sounds emit events:
 ```typescript
 const sound = await createSound('/audio/effect.mp3')
 
-sound.on('play', (e) => console.log('Started at', e.detail.time))
+sound.on('play', e => console.log('Started at', e.detail.time))
 sound.on('stop', () => console.log('Stopped'))
 sound.on('end', () => console.log('Finished naturally'))
 
@@ -315,9 +315,9 @@ sound.play()
 Track has additional events:
 
 ```typescript
-track.on('pause', (e) => console.log('Paused at', e.detail.position))
-track.on('resume', (e) => console.log('Resumed from', e.detail.position))
-track.on('seek', (e) => console.log('Seeked to', e.detail.position))
+track.on('pause', e => console.log('Paused at', e.detail.position))
+track.on('resume', e => console.log('Resumed from', e.detail.position))
+track.on('seek', e => console.log('Seeked to', e.detail.position))
 ```
 
 ### Event vs Method
@@ -352,8 +352,8 @@ Drum machine patterns:
 
 ```typescript
 const kick = await createBeatTrack(['kick.mp3'])
-kick.beats[0].active = true  // Beat 1
-kick.beats[4].active = true  // Beat 5
+kick.beats[0].active = true // Beat 1
+kick.beats[4].active = true // Beat 5
 ```
 
 ### LayeredSound
@@ -404,13 +404,13 @@ wind.play()
 Control multiple sounds at once:
 
 ```typescript
-import { stopAll, pauseAll, playAll } from 'ez-web-audio'
+import { pauseAll, playAll, stopAll } from 'ez-web-audio'
 
 const sounds = [sound1, sound2, sound3]
 
-playAll(sounds)  // Play all sounds
+playAll(sounds) // Play all sounds
 pauseAll(sounds) // Pause all tracks (no effect on non-track sounds)
-stopAll(sounds)  // Stop all sounds
+stopAll(sounds) // Stop all sounds
 ```
 
 ### Crossfade
@@ -435,7 +435,7 @@ crossfade(trackA, trackB, 2)
 Enable debug logging for troubleshooting:
 
 ```typescript
-import { setDebugMode, setDebugHandler } from 'ez-web-audio'
+import { setDebugHandler, setDebugMode } from 'ez-web-audio'
 
 // Enable debug mode with default console logging
 setDebugMode(true)

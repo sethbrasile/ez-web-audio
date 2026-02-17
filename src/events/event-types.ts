@@ -91,7 +91,7 @@ export interface SeekEventDetail {
  * });
  * ```
  */
-export type SoundEventMap = {
+export interface SoundEventMap {
   play: CustomEvent<PlayEventDetail>
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>
@@ -140,7 +140,7 @@ export interface BeatEventDetail {
 /**
  * Maps BeatTrack event names to their corresponding CustomEvent types.
  */
-export type BeatTrackEventMap = {
+export interface BeatTrackEventMap {
   beat: CustomEvent<BeatEventDetail>
   pause: CustomEvent<PauseEventDetail>
   resume: CustomEvent<ResumeEventDetail>
@@ -154,7 +154,7 @@ export interface WarningEventDetail {
   /** Human-readable warning message */
   message: string
   /** Array of layers that failed to load */
-  failedLayers: { index: number; error: Error }[]
+  failedLayers: { index: number, error: Error }[]
   /** The LayeredSound instance that emitted this event */
   source: unknown
 }
@@ -162,7 +162,7 @@ export interface WarningEventDetail {
 /**
  * Maps LayeredSound event names to their corresponding CustomEvent types.
  */
-export type LayeredSoundEventMap = {
+export interface LayeredSoundEventMap {
   play: CustomEvent<PlayEventDetail>
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>

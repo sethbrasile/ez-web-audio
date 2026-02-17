@@ -21,8 +21,8 @@
  * sound.debug = false // silences this sound even when global is on
  */
 
-import { setGlobalDebug, setHandler, isGlobalDebugEnabled, log } from './logger'
 import type { DebugMessage } from './messages'
+import { isGlobalDebugEnabled, log, setGlobalDebug, setHandler } from './logger'
 
 export type { DebugMessage }
 export { formatDebugMessage } from './messages'
@@ -83,17 +83,19 @@ export interface DebugSource {
  */
 export function debugLog(
   source: DebugSource,
-  message: Omit<DebugMessage, 'source'> & { source?: string }
+  message: Omit<DebugMessage, 'source'> & { source?: string },
 ): void {
   // Fast path: if neither global nor per-sound debug, return immediately
-  if (!isGlobalDebugEnabled() && !source.debug) return
+  if (!isGlobalDebugEnabled() && !source.debug)
+    return
 
   // Per-sound override: explicitly false disables even when global is on
-  if (source.debug === false) return
+  if (source.debug === false)
+    return
 
   log({
     ...message,
-    source: message.source ?? source.name ?? 'unknown'
+    source: message.source ?? source.name ?? 'unknown',
   })
 }
 
@@ -109,13 +111,13 @@ export function debugEvent(
   source: DebugSource,
   event: string,
   timestamp: number,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): void {
   debugLog(source, {
     type: 'event',
     message: event,
     timestamp,
-    details
+    details,
   })
 }
 
@@ -131,13 +133,13 @@ export function debugConnection(
   source: DebugSource,
   message: string,
   timestamp: number,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): void {
   debugLog(source, {
     type: 'connection',
     message,
     timestamp,
-    details
+    details,
   })
 }
 
@@ -153,12 +155,12 @@ export function debugWarning(
   source: DebugSource,
   message: string,
   timestamp: number,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): void {
   debugLog(source, {
     type: 'warning',
     message,
     timestamp,
-    details
+    details,
   })
 }
