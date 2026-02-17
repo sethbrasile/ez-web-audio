@@ -1,23 +1,23 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17 (22-03 completed: CI pipeline gates + version 1.0.0)
-**Current Focus:** Milestone v1.0 Stable — First Stable Release (npm 1.0.0)
+**Last Updated:** 2026-02-17 (23-01 completed: export audioContextAwareTimeout + fix critical demo API bugs)
+**Current Focus:** Phase 23 — Demo Example Bugfixes
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 22 — Demo App & Release
+**Current focus:** Phase 23 — Demo Example Bugfixes
 
 ## Current Position
 
-Phase: 22 of 22 (Demo App & Release)
-Plan: 3 of TBD in current phase
-Status: Awaiting human verification (checkpoint:human-verify at Task 2 of 22-03)
-Last activity: 2026-02-17 — Completed 22-03 Task 1 (CI pipeline + version 1.0.0); checkpoint pending human verification
+Phase: 23 of 23 (Demo Example Bugfixes)
+Plan: 1 of TBD in current phase
+Status: Active — 23-01 complete
+Last activity: 2026-02-17 — Completed 23-01 (audioContextAwareTimeout export + 5 critical API bug fixes in demo components)
 
-**Progress:** [████████████████████] 99%
+**Progress:** [████████████████████] 100%
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Last activity: 2026-02-17 — Completed 22-03 Task 1 (CI pipeline + version 1.0.
 | 22-01 | 1/TBD | 6min | 6min |
 | 22-02 | 2/TBD | 1min | 3.5min |
 | 22-03 | 3/TBD | 8min | 5min |
+| 23-01 | 1/TBD | 3min | 3min |
 
 *Updated after each plan completion*
 
@@ -79,22 +80,20 @@ Recent decisions affecting current work:
 - Phase 22-02: CHANGELOG.md fully rewritten covering all breaking changes (renames, visibility, removed APIs), migration guide, features from phases 17-21, and 0.1.0 MVP feature set
 - Phase 22-03: CI pipeline runs pnpm build (full: lib+typedoc+docs) before E2E — E2E tests need the built docs site
 - Phase 22-03: Playwright installs only chromium --with-deps matching playwright.config.ts targeting Chromium only
+- Phase 23-01: audioContextAwareTimeout exported as public API — consumers need audio-sync timers for beat UIs, not just library internals
+- Phase 23-01: wrapEffect() context-free overload preferred — consistent with createFilterEffect/createGainEffect pattern
+- Phase 23-01: .as('ratio') is correct for update().to().as() — 'number' was never a valid RatioType value
 
 ### Pending Todos
 
-Awaiting human verification of demo site and release artifacts before tagging v1.0.0.
+None active.
 
 ### Blockers/Concerns
 
-None active. Checkpoint at Task 2 of 22-03 awaiting human approval.
+None active.
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: 22-03 Task 1 complete (CI pipeline + version 1.0.0); awaiting human verify at Task 2 checkpoint.
-Resume file: .planning/phases/22-demo-app-release/22-03-SUMMARY.md
-
-### To resume after human verification
-
-When user approves, the release is ready. No further automated tasks remain in Phase 22.
-Publish via: `git tag v1.0.0 && git push origin v1.0.0`
+Stopped at: Completed 23-01-PLAN.md (audioContextAwareTimeout export + demo API bugfixes)
+Resume file: .planning/phases/23-demo-example-bugfixes/23-01-SUMMARY.md
