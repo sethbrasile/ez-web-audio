@@ -47,7 +47,7 @@ async function playMusic() {
   song.resume()
 
   // Seek to 30 seconds
-  song.seek(30).from('seconds')
+  song.seek(30).as('seconds')
 
   // Get current position
   console.log(song.position.string) // '0:30'
@@ -188,7 +188,7 @@ track.on('resume', updateProgress)
 progressBar.parentElement.addEventListener('click', (e) => {
   const rect = e.target.getBoundingClientRect()
   const percent = (e.clientX - rect.left) / rect.width
-  track.seek(percent).from('ratio')
+  track.seek(percent).as('ratio')
 })
 ```
 

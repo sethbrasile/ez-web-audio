@@ -241,7 +241,7 @@ const synth = await createOscillator({ frequency: 440 })
 synth.play()
 
 // Change frequency smoothly
-synth.update('frequency').to(880).from('value')
+synth.update('frequency').to(880).as('ratio')
 
 // Or use the controller directly
 synth.changeFrequencyTo(523.25) // C5

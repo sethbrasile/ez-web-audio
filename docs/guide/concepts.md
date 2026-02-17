@@ -69,7 +69,7 @@ console.log(song.percentPlayed) // 0.35 (35% complete)
 // Control playback
 song.pause()
 song.resume()
-song.seek(60).from('seconds') // Jump to 1 minute
+song.seek(60).as('seconds') // Jump to 1 minute
 ```
 
 Track limitations:
@@ -263,14 +263,14 @@ sound.addEffect(eq) // Third in chain
 Change parameters right now:
 
 ```typescript
-sound.update('gain').to(0.5).from('ratio')
-sound.update('pan').to(-1)
+sound.update('gain').to(0.5).as('ratio')
+sound.update('pan').to(-1).as('ratio')
 ```
 
-The `from()` method specifies the unit:
-- `'ratio'` - 0 to 1 for gain
-- `'dB'` - decibels for gain
-- Default assumes appropriate unit
+The `as()` method specifies the unit:
+- `'ratio'` - Direct value (0 to 1 for gain, -1 to 1 for pan)
+- `'percent'` - Percentage (0 to 100)
+- `'inverseRatio'` - Inverse (1 - value)
 
 ### Scheduled Updates
 

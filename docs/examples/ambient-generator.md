@@ -93,9 +93,9 @@ texture.play()
 shimmer.play()
 
 // Update parameters in real-time
-drone.update('frequency').to(100).from('number')
+drone.update('frequency').to(100).as('ratio')
 lowpass.frequency.value = 1200
-shimmer.update('frequency').to(700).from('number')
+shimmer.update('frequency').to(700).as('ratio')
 
 // Stop all layers
 drone.stop()
@@ -111,7 +111,7 @@ This example demonstrates:
 - `createWhiteNoise()` - Generate white noise for texture and atmosphere
 - `createFilterEffect()` - Create filters for tone shaping
 - `changeGainTo()` - Control volume levels for mixing
-- `update().to().from()` - Real-time parameter changes
+- `update().to().as()` - Real-time parameter changes
 - `addEffect()` - Route audio through effects
 
 ## Next Steps

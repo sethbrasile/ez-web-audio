@@ -38,8 +38,8 @@ const synth = await createOscillator({
 synth.play()
 
 // Update parameters while playing (no clicks!)
-synth.update('frequency').to(880).from('value') // Change to 880 Hz
-synth.update('gain').to(0.5).from('ratio') // Change to 50% volume
+synth.update('frequency').to(880).as('ratio') // Change to 880 Hz
+synth.update('gain').to(0.5).as('ratio') // Change to 50% volume
 ```
 
 ### Why update() Instead of Recreating?
@@ -60,7 +60,7 @@ This creates an audible click every time you change the frequency. The `update()
 ```typescript
 // GOOD: Smooth parameter changes
 function changeFrequency(newFreq: number) {
-  oscillator.update('frequency').to(newFreq).from('value')
+  oscillator.update('frequency').to(newFreq).as('ratio')
 }
 ```
 
@@ -125,8 +125,8 @@ function handleMouseMove(e: MouseEvent) {
   const frequency = 100 * 20 ** (x / canvas.width)
   const gain = 1 - (y / canvas.height)
 
-  oscillator.update('frequency').to(frequency).from('value')
-  oscillator.update('gain').to(gain).from('ratio')
+  oscillator.update('frequency').to(frequency).as('ratio')
+  oscillator.update('gain').to(gain).as('ratio')
 }
 
 function handleMouseUp() {

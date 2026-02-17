@@ -78,7 +78,7 @@ button.addEventListener('click', async () => {
   // Control playback
   pauseBtn.onclick = () => track.pause()
   resumeBtn.onclick = () => track.resume()
-  seekBtn.onclick = () => track.seek(30).from('seconds') // Jump to 30 seconds
+  seekBtn.onclick = () => track.seek(30).as('seconds') // Jump to 30 seconds
 })
 ```
 
