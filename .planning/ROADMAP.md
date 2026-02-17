@@ -97,7 +97,10 @@
   6. `getFilters()` on Oscillator and `getSounds()` on Sampler return readonly arrays
   7. `ControlType` is defined as a mapped type so downstream users can extend it without modifying library source
   8. Getting Started and Core Concepts guide pages reflect the renamed methods and all new convenience APIs
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 19-01-PLAN.md — Effect bypass auto-rewire, context-free factories, addEffects batch, generic createEffect
+- [ ] 19-02-PLAN.md — playTogether, createSounds batch loader, getFilters/getSounds accessors, extensible ControlType
+- [ ] 19-03-PLAN.md — Update Getting Started and Core Concepts guide pages
 
 ### Phase 20: Defensive Hardening
 **Goal**: The library handles bad inputs and edge cases gracefully with clear errors rather than silent crashes
@@ -153,7 +156,7 @@
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
 | 17. Dependency Security Upgrades | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
 | 18. Breaking API Cleanup | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
-| 19. DX Improvements | v1.0 Stable | 0/TBD | Not started | - |
+| 19. DX Improvements | v1.0 Stable | 0/3 | Not started | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
 | 21. Test Coverage | v1.0 Stable | 0/TBD | Not started | - |
 | 22. Demo App & Release | v1.0 Stable | 0/TBD | Not started | - |
