@@ -15,6 +15,9 @@ dist-ssr
 
 # Docs (generated content, but keep VitePress config and source)
 docs/api/
+docs/classes/
+docs/functions/
+docs/interfaces/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
 !docs/.vitepress/

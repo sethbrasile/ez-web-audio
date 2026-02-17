@@ -51,7 +51,7 @@ All notable changes to this project will be documented in this file.
   const node = sound.getNodeFrom<GainNode>('myGain')
 
   // After (effect API)
-  const gain = createGainEffect(audioContext, 0.5)
+  const gain = createGainEffect(0.5)
   sound.addEffect(gain)
   ```
 
