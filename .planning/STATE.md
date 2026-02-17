@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17 (23-01 completed: export audioContextAwareTimeout + fix critical demo API bugs)
-**Current Focus:** Phase 23 — Demo Example Bugfixes
+**Last Updated:** 2026-02-17 (23-02 completed: fix design issues in demo components)
+**Current Focus:** Phase 23 — Demo Example Bugfixes (Complete)
 
 ## Project Reference
 
@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 23 of 23 (Demo Example Bugfixes)
-Plan: 1 of TBD in current phase
-Status: Active — 23-01 complete
-Last activity: 2026-02-17 — Completed 23-01 (audioContextAwareTimeout export + 5 critical API bug fixes in demo components)
+Plan: 2 of 2 in current phase
+Status: Complete — Phase 23 done
+Last activity: 2026-02-17 — Completed 23-02 (real-time oscillator updates, XYPad document mouseup, audioContextAwareTimeout in TimingDemo, ADSR release confirmed in SynthKeyboard)
 
 **Progress:** [████████████████████] 100%
 
@@ -44,7 +44,8 @@ Last activity: 2026-02-17 — Completed 23-01 (audioContextAwareTimeout export +
 | 22-01 | 1/TBD | 6min | 6min |
 | 22-02 | 2/TBD | 1min | 3.5min |
 | 22-03 | 3/TBD | 8min | 5min |
-| 23-01 | 1/TBD | 3min | 3min |
+| 23-01 | 1/2 | 3min | 3min |
+| 23-02 | 2/2 | 2min | 2.5min |
 
 *Updated after each plan completion*
 
@@ -83,6 +84,10 @@ Recent decisions affecting current work:
 - Phase 23-01: audioContextAwareTimeout exported as public API — consumers need audio-sync timers for beat UIs, not just library internals
 - Phase 23-01: wrapEffect() context-free overload preferred — consistent with createFilterEffect/createGainEffect pattern
 - Phase 23-01: .as('ratio') is correct for update().to().as() — 'number' was never a valid RatioType value
+- Phase 23-02: waveType requires stop/recreate in OscillatorDemo — Web Audio API OscillatorNode.type immutable after start; freq/gain update in real-time
+- Phase 23-02: document-level mouseup for XYPad canvas drag interactions — canvas-only misses out-of-bounds releases
+- Phase 23-02: Oscillator.stop() already respects ADSR release — no additional scheduling needed in demo components
+- Phase 23-02: Remove oscillator from map before stop() in SynthKeyboard so re-press during release creates fresh oscillator
 
 ### Pending Todos
 
@@ -95,5 +100,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 23-01-PLAN.md (audioContextAwareTimeout export + demo API bugfixes)
-Resume file: .planning/phases/23-demo-example-bugfixes/23-01-SUMMARY.md
+Stopped at: Completed 23-02-PLAN.md (fix design issues in demo components — Phase 23 complete)
+Resume file: .planning/phases/23-demo-example-bugfixes/23-02-SUMMARY.md
