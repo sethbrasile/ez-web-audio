@@ -45,7 +45,7 @@
 
 **Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
 
-- [ ] **Phase 17: Dependency Security Upgrades** - Upgrade all vulnerable dependencies before any code changes
+- [x] **Phase 17: Dependency Security Upgrades** - Upgrade all vulnerable dependencies before any code changes (completed 2026-02-17)
 - [ ] **Phase 18: Breaking API Cleanup** - Rename fluent API methods, enforce encapsulation, remove deprecated APIs, update JSDoc
 - [ ] **Phase 19: DX Improvements** - Add convenience methods, auto-rewire effects, batch loaders, extensible ControlType, update guides
 - [ ] **Phase 20: Defensive Hardening** - Add null checks, input validation, memory management, and code clarity
@@ -148,7 +148,7 @@
 | 14. Docs & Examples Polish | v1.1 | 6/6 | Complete | 2026-02-16 |
 | 15. Test Coverage | v1.1 | 4/4 | Complete | 2026-02-16 |
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
-| 17. Dependency Security Upgrades | 2/3 | In Progress|  | - |
+| 17. Dependency Security Upgrades | 3/3 | Complete   | 2026-02-17 | - |
 | 18. Breaking API Cleanup | v1.0 Stable | 0/TBD | Not started | - |
 | 19. DX Improvements | v1.0 Stable | 0/TBD | Not started | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
