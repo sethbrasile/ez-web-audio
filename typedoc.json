@@ -14,7 +14,7 @@
     "src/test/**"
   ],
   "excludePrivate": true,
-  "excludeProtected": true,
+  "excludeProtected": false,
   "excludeInternal": true,
   "excludeExternals": true,
   "readme": "none",
