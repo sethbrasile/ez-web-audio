@@ -286,6 +286,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     // Disconnect effects
     for (const effect of effects) {
+      if (!effect) continue
       this.safeDisconnect(effect.output)
     }
 
@@ -304,6 +305,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     // Connect through non-bypassed effects in order
     for (const effect of effects) {
+      if (!effect) continue
       if (!effect.bypass) {
         currentNode.connect(effect.input)
         currentNode = effect.output
@@ -339,7 +341,10 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * sound.addEffect(filter)
    */
   public addEffect(effect: Effect, position?: number): this {
-    if (position !== undefined && position >= 0 && position <= this.effects.length) {
+    if (position !== undefined && position < 0) {
+      throw new Error('addEffect() position must be >= 0. Received: ' + position)
+    }
+    if (position !== undefined && position <= this.effects.length) {
       this.effects.splice(position, 0, effect)
     }
     else {
@@ -406,9 +411,14 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * ```
    */
   public addEffects(effects: Effect[], position?: number): this {
-    if (effects.length === 0) return this
+    if (effects.length === 0)
+      return this
 
-    if (position !== undefined && position >= 0 && position <= this.effects.length) {
+    if (position !== undefined && position < 0) {
+      throw new Error('addEffects() position must be >= 0. Received: ' + position)
+    }
+
+    if (position !== undefined && position <= this.effects.length) {
       // Insert all at position, preserving order
       this.effects.splice(position, 0, ...effects)
     }

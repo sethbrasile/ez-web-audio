@@ -134,6 +134,10 @@ export class Sampler {
    * @internal
    */
   private getNextSound(): Playable & Connectable {
+    if (this.sounds.size === 0) {
+      throw new Error('Sampler has no sounds. Add sounds before calling play().')
+    }
+
     let soundIterator = this.soundIterator
     let nextSound
 
