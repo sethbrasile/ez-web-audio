@@ -84,16 +84,22 @@ async function handleNoteOn(note: string) {
 function handleNoteOff(note: string) {
   const oscillator = oscillators.get(note)
   if (oscillator) {
+    // Remove from active UI immediately so key appears released
+    activeNotes.value.delete(note)
+    // Remove from map immediately so re-pressing the key creates a fresh oscillator
+    oscillators.delete(note)
     try {
+      // stop() respects the ADSR release phase — the release tail plays fully
+      // even though we've already removed the oscillator from the map
       oscillator.stop()
     }
     catch (e) {
       console.error('Error stopping oscillator:', e)
     }
-    oscillators.delete(note)
   }
-
-  activeNotes.value.delete(note)
+  else {
+    activeNotes.value.delete(note)
+  }
 }
 
 onUnmounted(() => {
