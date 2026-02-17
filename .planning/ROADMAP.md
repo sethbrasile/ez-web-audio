@@ -63,7 +63,10 @@
   2. All existing tests (893 unit + 20 E2E) pass after dependency upgrades
   3. The library builds successfully with the upgraded toolchain
   4. Unused dependencies are removed and package.json is clean
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 17-01-PLAN.md — Remove unused deps, upgrade vite/vitest/happy-dom
+- [ ] 17-02-PLAN.md — Upgrade ESLint and @antfu/eslint-config
+- [ ] 17-03-PLAN.md — Upgrade TypeScript 5.9, full stack verification
 
 ### Phase 18: Breaking API Cleanup
 **Goal**: The public API is clean, consistent, and correctly encapsulated — all breaking changes applied before 1.0 locks the API
@@ -145,7 +148,7 @@
 | 14. Docs & Examples Polish | v1.1 | 6/6 | Complete | 2026-02-16 |
 | 15. Test Coverage | v1.1 | 4/4 | Complete | 2026-02-16 |
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
-| 17. Dependency Security Upgrades | v1.0 Stable | 0/TBD | Not started | - |
+| 17. Dependency Security Upgrades | v1.0 Stable | 0/3 | Planned | - |
 | 18. Breaking API Cleanup | v1.0 Stable | 0/TBD | Not started | - |
 | 19. DX Improvements | v1.0 Stable | 0/TBD | Not started | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
