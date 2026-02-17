@@ -135,7 +135,10 @@
   1. All demo Vue components use the new API exclusively: `.as()`, `playInIfActive()`, no deprecated `connections` calls, new convenience methods where applicable
   2. The TypeDoc API reference shows `gainNode`, `pannerNode`, `effectChainInput`, `startOffset` as protected and omits all removed deprecated exports
   3. npm 1.0.0 is published with a clean changelog documenting all breaking changes
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 22-01-PLAN.md — Update Vue demo components for 1.0 API (.as(), context-free factories, addEffects)
+- [ ] 22-02-PLAN.md — TypeDoc config for protected members, comprehensive 1.0.0 CHANGELOG
+- [ ] 22-03-PLAN.md — CI pipeline gates, version bump to 1.0.0, final verification
 
 ## Progress
 
