@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 21 of 22 (Test Coverage)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 — Phase 20 complete, transitioned to Phase 21
+Plan: 2 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-17 — Plans 21-01 and 21-02 complete
 
 **Progress:** [██████████] 98%
 
@@ -39,6 +39,8 @@ Last activity: 2026-02-17 — Phase 20 complete, transitioned to Phase 21
 | 19-02 | 2/3 | 4min | 4min |
 | 19-03 | 3/3 | 3min | 3.7min |
 | 20-01 | 1/TBD | 5min | 5min |
+| 21-01 | 1/TBD | 8min | 8min |
+| 21-02 | 2/TBD | 7min | 7.5min |
 
 *Updated after each plan completion*
 
@@ -63,6 +65,9 @@ Recent decisions affecting current work:
 - Phase 19: 891 tests (6 new tests added)
 - Phase 20: 901 tests (10 new tests added in 20-01)
 - [Phase 20]: DEF-04 consume-once semantics: onPlaySet/onPlayRamp schedules cleared after each setValuesAtTimes() call — users re-schedule before each play() for repeated automation
+- Phase 21-02: Integration test assertion depth uses node presence checks (getEffects/getAnalyzer), not AnalyserNode data (impractical with mock)
+- Phase 21-02: Soundfont integration tests use mock SampledNote pattern (duck-typed identifier+play) — fetch/decode tested elsewhere
+- Phase 21-02: 937 tests (36 new tests added in 21-02: 16 integration + 20 concurrent)
 
 ### Pending Todos
 
@@ -75,5 +80,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 20 complete. Ready for Phase 21.
-Resume file: .planning/phases/20-defensive-hardening/20-01-SUMMARY.md
+Stopped at: Completed 21-02-PLAN.md (integration and concurrent tests).
+Resume file: .planning/phases/21-test-coverage/21-02-SUMMARY.md
