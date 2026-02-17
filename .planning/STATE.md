@@ -68,6 +68,7 @@ Recent decisions affecting current work:
 - Phase 21-02: Integration test assertion depth uses node presence checks (getEffects/getAnalyzer), not AnalyserNode data (impractical with mock)
 - Phase 21-02: Soundfont integration tests use mock SampledNote pattern (duck-typed identifier+play) — fetch/decode tested elsewhere
 - Phase 21-02: 937 tests (36 new tests added in 21-02: 16 integration + 20 concurrent)
+- Phase 21-01: base-sound.test.ts split into 4 focused files (events, effects, debug, analyzer) — 937 tests unchanged
 
 ### Pending Todos
 
@@ -80,5 +81,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 21-02-PLAN.md (integration and concurrent tests).
-Resume file: .planning/phases/21-test-coverage/21-02-SUMMARY.md
+Stopped at: Completed 21-01-PLAN.md (split base-sound.test.ts into 4 focused files).
+Resume file: .planning/phases/21-test-coverage/21-01-SUMMARY.md
