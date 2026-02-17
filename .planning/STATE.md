@@ -60,5 +60,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 17 verified complete. Ready to plan Phase 18.
-Resume file: None
+Stopped at: Phase 18 context gathered. Ready to plan Phase 18.
+Resume file: .planning/phases/18-breaking-api-cleanup/18-CONTEXT.md
