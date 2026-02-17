@@ -111,7 +111,8 @@
   2. Calling `addEffect()` with a negative position throws a descriptive error
   3. Calling `Sampler.play()` with an empty sounds set throws a clear error message
   4. Controller parameter arrays are cleared between plays, eliminating the memory accumulation over repeated playback
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 20-01-PLAN.md — Null guards, input validation, empty sampler guard, controller memory cleanup
 
 ### Phase 21: Test Coverage
 **Goal**: The test suite validates end-to-end audio chains, concurrent edge cases, and is organized by concern for maintainability
