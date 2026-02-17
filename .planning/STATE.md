@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 18 of 22 (Breaking API Cleanup)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 — Phase 17 complete (all dependency security upgrades verified)
+Plan: 2 of 3 in current phase
+Status: Executing Wave 2 (Plan 18-03)
+Last activity: 2026-02-17 — Plans 18-01, 18-02 complete (API renames + deprecated removal)
 
-**Progress:** [█░░░░░░░░░] 17% (this milestone)
+**Progress:** [██░░░░░░░░] 20% (this milestone)
 
 ## Performance Metrics
 
@@ -32,6 +32,8 @@ Last activity: 2026-02-17 — Phase 17 complete (all dependency security upgrade
 | 17-01 | 1/3 | 3min | 3min |
 | 17-02 | 2/3 | 10min | 6.5min |
 | 17-03 | 3/3 | 3min | 5.3min |
+| 18-01 | 1/3 | 4min | 4min |
+| 18-02 | 2/3 | 6min | 5min |
 
 *Updated after each plan completion*
 
@@ -60,5 +62,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 18 context gathered. Ready to plan Phase 18.
-Resume file: .planning/phases/18-breaking-api-cleanup/18-CONTEXT.md
+Stopped at: Plans 18-01 and 18-02 complete. Starting Plan 18-03 (Wave 2: JSDoc + CHANGELOG).
+Resume file: .planning/phases/18-breaking-api-cleanup/18-03-PLAN.md
