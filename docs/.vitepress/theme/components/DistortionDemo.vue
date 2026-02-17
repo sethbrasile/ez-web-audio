@@ -83,7 +83,7 @@ async function toggleDistortion() {
       distNode.curve = makeDistortionCurve(distortionAmount.value)
       distNode.oversample = '4x'
 
-      effect = lib.wrapEffect(ctx, distNode)
+      effect = lib.wrapEffect(distNode)
       effect.mix = wetDryMix.value
       oscillator.addEffect(effect)
       distortionEnabled.value = true
@@ -94,14 +94,13 @@ async function toggleDistortion() {
   }
 }
 
-async function updateDistortionCurve() {
+function updateDistortionCurve() {
   if (!effect || !lib)
     return
 
   try {
     error.value = ''
     // Update the WaveShaper curve
-    const ctx = await lib.getAudioContext()
     const newCurve = makeDistortionCurve(distortionAmount.value)
 
     // Access the underlying distortion node
