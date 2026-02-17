@@ -295,13 +295,19 @@ describe('sampler', () => {
   })
 
   describe('edge cases', () => {
-    it('throws when playing empty sounds array', () => {
+    it('throws descriptive error when play() called with empty sounds', () => {
       const sampler = new Sampler([])
-      // Empty array iterator returns done=true immediately
-      // This will throw because nextSound.value will be undefined
-      // The Sampler class currently does not guard against empty arrays
-      // This test documents the current behavior - consider adding validation
-      expect(() => sampler.play()).toThrow()
+      expect(() => sampler.play()).toThrow('Sampler has no sounds. Add sounds before calling play().')
+    })
+
+    it('throws descriptive error when playIn() called with empty sounds', () => {
+      const sampler = new Sampler([])
+      expect(() => sampler.playIn(1.0)).toThrow('Sampler has no sounds. Add sounds before calling play().')
+    })
+
+    it('throws descriptive error when playAt() called with empty sounds', () => {
+      const sampler = new Sampler([])
+      expect(() => sampler.playAt(5.0)).toThrow('Sampler has no sounds. Add sounds before calling play().')
     })
 
     it('single sound cycles correctly over many iterations', () => {

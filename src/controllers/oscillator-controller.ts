@@ -69,6 +69,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
     this.applyValues(this.valuesAtTime, currentTime)
     this.applyRampValues(this.exponentialValues, currentTime, 'exponential')
     this.applyRampValues(this.linearValues, currentTime, 'linear')
+    this.clearScheduledValues()
   }
 
   private applyValues(values: ParamValue[], currentTime: number): void {

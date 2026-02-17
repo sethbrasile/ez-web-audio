@@ -262,6 +262,21 @@ export class BaseParamController {
     }
   }
 
+  /**
+   * Clear all scheduled parameter arrays after they have been applied.
+   *
+   * Called at the end of setValuesAtTimes() in each controller subclass to ensure
+   * that parameter schedules set via onPlaySet() and onPlayRamp() are consumed once
+   * per play() call. If the same schedule is needed on every play, call onPlaySet()
+   * or onPlayRamp() before each play() call.
+   */
+  protected clearScheduledValues(): void {
+    this.startingValues = []
+    this.valuesAtTime = []
+    this.exponentialValues = []
+    this.linearValues = []
+  }
+
   private removeStartingValue(startValue: ParamValue): void {
     this.startingValues = this.startingValues.filter(item => item !== startValue)
   }

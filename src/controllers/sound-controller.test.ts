@@ -156,12 +156,14 @@ describe('soundController', () => {
       expect(spy).toHaveBeenCalledTimes(1)
     })
 
-    it('values persist for multiple setValuesAtTimes calls', () => {
+    it('values are consumed after setValuesAtTimes (cleared for next play)', () => {
       controller.onPlaySet('gain').to(0.5)
       const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')
       controller.setValuesAtTimes()
+      // After first setValuesAtTimes(), scheduled values are cleared
       controller.setValuesAtTimes()
-      expect(spy).toHaveBeenCalledTimes(2)
+      // Only called once — cleared after first play, not accumulated
+      expect(spy).toHaveBeenCalledTimes(1)
     })
 
     it('onPlayRamp schedules start and end values', () => {

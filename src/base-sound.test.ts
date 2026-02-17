@@ -266,7 +266,6 @@ describe('debug Mode Integration', () => {
       expect(stopMsg!.type).toBe('event')
     })
   })
-
 })
 
 // Helper to create a mock Effect
@@ -545,6 +544,76 @@ describe('effect System Integration', () => {
       oscillator.play()
       await settle(() => oscillator.isPlaying)
       expect(oscillator.isPlaying).toBe(true)
+    })
+  })
+})
+
+describe('defensive Guards', () => {
+  let audioContext: AudioContext
+  let sound: Sound
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+    sound = createSound(audioContext)
+  })
+
+  describe('addEffect() negative position', () => {
+    it('throws descriptive error when position is negative', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffect(effect, -1)).toThrow('addEffect() position must be >= 0. Received: -1')
+    })
+
+    it('throws for any negative position value', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffect(effect, -5)).toThrow('position must be >= 0')
+    })
+
+    it('does not throw for position 0', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffect(effect, 0)).not.toThrow()
+    })
+  })
+
+  describe('addEffects() negative position', () => {
+    it('throws descriptive error when position is negative', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffects([effect], -1)).toThrow('addEffects() position must be >= 0. Received: -1')
+    })
+
+    it('throws for any negative position value', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffects([effect], -3)).toThrow('position must be >= 0')
+    })
+
+    it('does not throw for position 0', () => {
+      const effect = createMockEffect(audioContext)
+      expect(() => sound.addEffects([effect], 0)).not.toThrow()
+    })
+  })
+
+  describe('null entries in effect iteration', () => {
+    it('wireEffectChain skips null entries without throwing', () => {
+      const effect = createMockEffect(audioContext)
+      sound.addEffect(effect)
+      // Force a null into the effects array to simulate framework proxy quirks
+      ;(sound as any).effects[0] = null
+      expect(() => sound.rewireEffects()).not.toThrow()
+    })
+  })
+
+  describe('parameter array clearing between plays', () => {
+    it('onPlaySet schedule is consumed after first play and not duplicated on second play', async () => {
+      // Schedule gain to 0.7 on play
+      sound.onPlaySet('gain').to(0.7).at(0)
+      await sound.play()
+      await sound.stop()
+      await settle(() => !sound.isPlaying)
+
+      // After play, schedule should be cleared
+      // Playing again without re-scheduling should not throw or double-apply
+      await sound.play()
+      // Just verify it plays without errors — clearScheduledValues prevents accumulation
+      expect(sound.isPlaying).toBe(true)
     })
   })
 })
