@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17 (22-01 re-executed: API migration complete)
+**Last Updated:** 2026-02-17 (22-03 completed: CI pipeline gates + version 1.0.0)
 **Current Focus:** Milestone v1.0 Stable — First Stable Release (npm 1.0.0)
 
 ## Project Reference
@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 22 of 22 (Demo App & Release)
-Plan: 2 of TBD in current phase
-Status: In progress
-Last activity: 2026-02-17 — Completed 22-02 (TypeDoc protected members + comprehensive CHANGELOG)
+Plan: 3 of TBD in current phase
+Status: Awaiting human verification (checkpoint:human-verify at Task 2 of 22-03)
+Last activity: 2026-02-17 — Completed 22-03 Task 1 (CI pipeline + version 1.0.0); checkpoint pending human verification
 
 **Progress:** [████████████████████] 99%
 
@@ -43,6 +43,7 @@ Last activity: 2026-02-17 — Completed 22-02 (TypeDoc protected members + compr
 | 21-02 | 2/TBD | 7min | 7.5min |
 | 22-01 | 1/TBD | 6min | 6min |
 | 22-02 | 2/TBD | 1min | 3.5min |
+| 22-03 | 3/TBD | 8min | 5min |
 
 *Updated after each plan completion*
 
@@ -76,17 +77,24 @@ Recent decisions affecting current work:
 - Phase 22-01: addEffects([]) batch replaces consecutive addEffect() calls (SynthDrumKit hi-hat)
 - Phase 22-02: excludeProtected=false in typedoc.json so protected members appear in API reference with visibility badges
 - Phase 22-02: CHANGELOG.md fully rewritten covering all breaking changes (renames, visibility, removed APIs), migration guide, features from phases 17-21, and 0.1.0 MVP feature set
+- Phase 22-03: CI pipeline runs pnpm build (full: lib+typedoc+docs) before E2E — E2E tests need the built docs site
+- Phase 22-03: Playwright installs only chromium --with-deps matching playwright.config.ts targeting Chromium only
 
 ### Pending Todos
 
-None.
+Awaiting human verification of demo site and release artifacts before tagging v1.0.0.
 
 ### Blockers/Concerns
 
-None active.
+None active. Checkpoint at Task 2 of 22-03 awaiting human approval.
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 22-01 (API migration: .as(), context-free factories, addEffects batch). Ready for 22-03.
-Resume file: .planning/phases/22-demo-app-release/22-01-SUMMARY.md
+Stopped at: 22-03 Task 1 complete (CI pipeline + version 1.0.0); awaiting human verify at Task 2 checkpoint.
+Resume file: .planning/phases/22-demo-app-release/22-03-SUMMARY.md
+
+### To resume after human verification
+
+When user approves, the release is ready. No further automated tasks remain in Phase 22.
+Publish via: `git tag v1.0.0 && git push origin v1.0.0`
