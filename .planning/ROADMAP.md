@@ -123,7 +123,9 @@
   2. An integration test runs the full soundfont workflow from font load through note playback
   3. `base-sound.test.ts` is split into focused files by concern (events, effects, debug, analyzer) with no file exceeding a manageable size
   4. Tests for concurrent operations exist: play-while-playing, rapid seek, and double-stop all produce predictable behavior
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 21-01-PLAN.md — Split base-sound.test.ts into focused files by concern
+- [ ] 21-02-PLAN.md — Integration tests and concurrent operation tests
 
 ### Phase 22: Demo App & Release
 **Goal**: The demo site reflects the final 1.0 API with no references to removed or renamed APIs, and npm 1.0.0 is published
