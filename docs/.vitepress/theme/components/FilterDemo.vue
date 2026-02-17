@@ -1,7 +1,5 @@
 <template>
   <div class="filter-demo">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="warning">
       <strong>Note:</strong> Audio sources can be loud. Start with caution.
     </div>
@@ -102,6 +100,10 @@
           </label>
         </div>
       </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
     </div>
   </div>
 </template>
@@ -261,9 +263,13 @@ onUnmounted(() => {
   margin: 1.5rem 0;
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   padding: 0.5rem;
-  margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   color: var(--vp-c-danger-1);
   border-radius: 4px;

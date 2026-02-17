@@ -1,7 +1,5 @@
 <template>
   <div class="ambient-generator">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="controls-section">
       <div class="control-header">
         <button
@@ -94,7 +92,10 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading">Initializing audio...</div>
+    <div class="status-bar">
+      <div v-if="loading" class="loading">Initializing audio...</div>
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -285,9 +286,13 @@ onUnmounted(() => {
   background: var(--vp-c-bg-soft);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   padding: 0.75rem;
-  margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   color: var(--vp-c-danger);
   border-radius: 6px;
@@ -411,6 +416,5 @@ onUnmounted(() => {
   text-align: center;
   color: var(--vp-c-text-2);
   font-size: 0.9rem;
-  margin-top: 1rem;
 }
 </style>

@@ -1,7 +1,5 @@
 <template>
   <div class="distortion-demo">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <!-- Signal Chain Visualization -->
     <div class="signal-chain">
       <div class="chain-node">
@@ -88,6 +86,10 @@
 
     <div class="hint">
       <strong>Tip:</strong> Try different distortion amounts and mix levels. The bypass toggle lets you A/B compare the processed vs unprocessed signal.
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
     </div>
   </div>
 </template>
@@ -404,9 +406,13 @@ onUnmounted(() => {
   color: var(--vp-c-brand);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   color: var(--vp-c-danger);
-  margin-bottom: 1rem;
   padding: 0.75rem;
   background: var(--vp-c-danger-soft);
   border-radius: 6px;

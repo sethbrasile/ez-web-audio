@@ -60,7 +60,9 @@
       </div>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -457,9 +459,13 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   color: var(--vp-c-danger);
-  margin-top: 1rem;
   font-size: 0.9rem;
 }
 

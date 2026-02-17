@@ -1,7 +1,5 @@
 <template>
   <div class="timing-demo">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <!-- Section 1: Play Now -->
     <section class="demo-section">
       <h3>1. Play Now</h3>
@@ -63,6 +61,10 @@
         <div class="note-indicator">G</div>
       </div>
     </section>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -374,9 +376,13 @@ onUnmounted(() => {
   50% { transform: scale(1.1); opacity: 0.8; }
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   color: var(--vp-c-danger);
-  margin-bottom: 1rem;
   padding: 0.75rem;
   background: var(--vp-c-danger-soft);
   border-radius: 6px;

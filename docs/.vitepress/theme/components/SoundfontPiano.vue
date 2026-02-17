@@ -1,8 +1,5 @@
 <template>
   <div class="soundfont-piano">
-    <div v-if="loading" class="loading">Loading piano soundfont...</div>
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="piano-container">
       <PianoKeyboard
         :activeKeys="activeNotes"
@@ -14,6 +11,11 @@
       <div class="info-text">
         Compare with <a href="/ez-web-audio/examples/synth-keyboard">Synth Keyboard</a> which uses oscillators instead of samples
       </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">Loading piano soundfont...</div>
+      <div v-if="error" class="error">{{ error }}</div>
     </div>
   </div>
 </template>
@@ -97,18 +99,21 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .loading {
-  padding: 1rem;
+  padding: 0.5rem;
   text-align: center;
   color: var(--vp-c-text-2);
   font-style: italic;
-  margin-bottom: 1rem;
 }
 
 .error {
   color: var(--vp-c-danger);
   padding: 0.5rem;
-  margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   border-radius: 4px;
 }

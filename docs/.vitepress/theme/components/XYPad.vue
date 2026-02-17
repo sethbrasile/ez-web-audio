@@ -50,7 +50,9 @@
       </div>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -419,8 +421,12 @@ canvas:focus {
   text-align: center;
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
-  margin-top: 1rem;
   padding: 0.75rem;
   background: var(--vp-c-danger-soft);
   border: 1px solid var(--vp-c-danger);

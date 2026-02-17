@@ -1,7 +1,5 @@
 <template>
   <div class="synth-drum-kit">
-    <div v-if="loading" class="loading">Loading synth...</div>
-
     <div class="pads-container">
       <button
         class="drum-pad kick"
@@ -59,7 +57,10 @@
       </div>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
+    <div class="status-bar">
+      <div v-if="loading" class="loading">Loading synth...</div>
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -125,33 +126,18 @@ async function playKick() {
   }
 }
 
-async function playSnareMeat() {
-  if (!lib) await initIfNeeded()
-
+async function createSnareMeat() {
   const osc = await lib.createOscillator({
     frequency: 100,
-    type: 'triangle'
+    type: 'sine'
   })
 
-  osc.onPlayRamp('frequency').from(100).to(60).in(0.15)
-  osc.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
-  activeOscillators.push(osc)
-  osc.play()
-
-  setTimeout(() => {
-    try {
-      osc.stop()
-      const idx = activeOscillators.indexOf(osc)
-      if (idx > -1) activeOscillators.splice(idx, 1)
-    } catch {}
-  }, 200)
-
+  osc.onPlayRamp('frequency').from(100).to(60).in(0.1)
+  osc.onPlayRamp('gain').from(1).to(0.01).in(0.1)
   return osc
 }
 
-async function playSnareCrack() {
-  if (!lib) await initIfNeeded()
-
+async function createSnareCrack() {
   const ctx = await lib.getAudioContext()
   const noise = await lib.createWhiteNoise()
 
@@ -162,19 +148,30 @@ async function playSnareCrack() {
   })
 
   noise.addEffect(highpass)
-  noise.onPlayRamp('gain', 'linear').from(1).to(0).in(0.15)
-  activeOscillators.push(noise)
-  noise.play()
-
-  setTimeout(() => {
-    try {
-      noise.stop()
-      const idx = activeOscillators.indexOf(noise)
-      if (idx > -1) activeOscillators.splice(idx, 1)
-    } catch {}
-  }, 200)
-
+  noise.onPlayRamp('gain').from(1).to(0.001).in(0.1)
   return noise
+}
+
+async function playSnareMeat() {
+  if (!lib) await initIfNeeded()
+  const osc = await createSnareMeat()
+  activeOscillators.push(osc)
+  osc.playFor(0.1)
+  setTimeout(() => {
+    const idx = activeOscillators.indexOf(osc)
+    if (idx > -1) activeOscillators.splice(idx, 1)
+  }, 200)
+}
+
+async function playSnareCrack() {
+  if (!lib) await initIfNeeded()
+  const noise = await createSnareCrack()
+  activeOscillators.push(noise)
+  noise.playFor(0.1)
+  setTimeout(() => {
+    const idx = activeOscillators.indexOf(noise)
+    if (idx > -1) activeOscillators.splice(idx, 1)
+  }, 200)
 }
 
 async function playSnare() {
@@ -183,11 +180,17 @@ async function playSnare() {
     await initIfNeeded()
     flashPad('snare')
 
-    // Play both layers simultaneously
-    await Promise.all([
-      playSnareMeat(),
-      playSnareCrack()
-    ])
+    // Use LayeredSound to synchronize both layers to the same AudioContext timestamp
+    const meat = await createSnareMeat()
+    const crack = await createSnareCrack()
+    const snare = await lib.createLayeredSound([meat, crack])
+    activeOscillators.push(snare)
+    snare.playFor(0.1)
+
+    setTimeout(() => {
+      const idx = activeOscillators.indexOf(snare)
+      if (idx > -1) activeOscillators.splice(idx, 1)
+    }, 200)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play snare'
     console.warn('Snare error:', e)
@@ -214,34 +217,36 @@ async function playHiHat() {
           type: 'square'
         })
 
-        // Apply highpass filter to make it "metallic"
+        // Highpass + bandpass filters for metallic character
         const highpass = lib.createFilterEffect(ctx, 'highpass', {
           frequency: 7000,
           q: 1
         })
+        const bandpass = lib.createFilterEffect(ctx, 'bandpass', {
+          frequency: 10000,
+          q: 1
+        })
 
         osc.addEffect(highpass)
-        osc.onPlayRamp('gain', 'linear').from(0.3).to(0).in(0.08)
+        osc.addEffect(bandpass)
+
+        // ADSR-style envelope matching ember-audio original
+        osc.onPlayRamp('gain').from(0.00001).to(1).in(0.02)
+        osc.onPlaySet('gain').to(0.3).endingAt(0.03)
+        osc.onPlaySet('gain').to(0.00001).endingAt(0.3)
         return osc
       })
     )
 
-    // Play all oscillators
-    oscillators.forEach(osc => {
-      activeOscillators.push(osc)
-      osc.play()
-    })
+    // Use LayeredSound for synchronized playback
+    const hihat = await lib.createLayeredSound(oscillators)
+    activeOscillators.push(hihat)
+    hihat.playFor(0.1)
 
-    // Stop after sound completes
     setTimeout(() => {
-      oscillators.forEach(osc => {
-        try {
-          osc.stop()
-          const idx = activeOscillators.indexOf(osc)
-          if (idx > -1) activeOscillators.splice(idx, 1)
-        } catch {}
-      })
-    }, 100)
+      const idx = activeOscillators.indexOf(hihat)
+      if (idx > -1) activeOscillators.splice(idx, 1)
+    }, 400)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play hi-hat'
     console.warn('Hi-hat error:', e)
@@ -255,22 +260,19 @@ async function playBassDrop() {
 
     const osc = await lib.createOscillator({
       frequency: 100,
-      type: 'triangle'
+      type: 'sine'
     })
 
-    // Long frequency sweep
-    osc.onPlayRamp('frequency').from(100).to(0.01).in(10)
-    osc.onPlayRamp('gain', 'linear').from(0.6).to(0).in(10)
+    // Linear frequency sweep (steady pitch drop) and exponential gain decay
+    osc.onPlayRamp('frequency', 'linear').from(100).to(0.01).in(10)
+    osc.onPlayRamp('gain').from(1).to(0.01).in(10)
     activeOscillators.push(osc)
-    osc.play()
+    osc.playFor(10)
 
-    // Auto-stop after 10 seconds
+    // Clean up reference after sound completes
     setTimeout(() => {
-      try {
-        osc.stop()
-        const idx = activeOscillators.indexOf(osc)
-        if (idx > -1) activeOscillators.splice(idx, 1)
-      } catch {}
+      const idx = activeOscillators.indexOf(osc)
+      if (idx > -1) activeOscillators.splice(idx, 1)
     }, 10100)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play bass drop'
@@ -444,8 +446,12 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
-  margin-top: 1rem;
   padding: 0.75rem;
   background: var(--vp-c-danger-soft);
   border: 1px solid var(--vp-c-danger);

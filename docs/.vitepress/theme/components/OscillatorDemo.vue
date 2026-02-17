@@ -1,7 +1,5 @@
 <template>
   <div class="oscillator-demo">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="warning">
       <strong>Note:</strong> Oscillators can be loud. Start with low volume.
     </div>
@@ -55,6 +53,10 @@
     </div>
 
     <slot></slot>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -196,9 +198,13 @@ onUnmounted(() => {
   color: var(--vp-c-brand);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   color: var(--vp-c-danger);
-  margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
 

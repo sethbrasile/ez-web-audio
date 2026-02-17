@@ -117,6 +117,30 @@ describe('LayeredSound', () => {
       expect(stopSpy2).toHaveBeenCalled()
     })
 
+    it('playFor() plays all layers and schedules stop after specified duration', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+
+      const playAtSpy1 = vi.spyOn(sound1, 'playAt')
+      const playAtSpy2 = vi.spyOn(sound2, 'playAt')
+      const stopSpy = vi.spyOn(LayeredSound.prototype, 'stop')
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+
+      await layered.playFor(0.1)
+
+      // Both layers should start at the same time
+      expect(playAtSpy1).toHaveBeenCalledWith(expect.any(Number))
+      expect(playAtSpy2).toHaveBeenCalledWith(expect.any(Number))
+      expect(playAtSpy1.mock.calls[0][0]).toBe(playAtSpy2.mock.calls[0][0])
+
+      // Stop is scheduled (via AudioContext-aware timeout), not called immediately
+      expect(stopSpy).not.toHaveBeenCalled()
+
+      stopSpy.mockRestore()
+    })
+
     it('supports multiple play() calls (reusable)', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound = new Sound(audioContext, buffer)

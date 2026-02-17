@@ -31,8 +31,6 @@ The reactive property pattern eliminates the need for event listeners:
 3. Vue detects the property change and re-renders the bound CSS class
 4. **No `.on('beat', ...)` event listener needed** — the Beat IS the state
 
-This is possible because of the WeakMap→instance property refactor. Previously, Beat objects were cached in a module-level `WeakMap`, which broke when Vue's `reactive()` wrapped the instance (proxy !== original object as Map key). Now beats use a private instance property `_beats` on the BeatTrack, so reactive proxies work correctly.
-
 ## Key Code
 
 ### Setup with wrapWith
@@ -117,35 +115,6 @@ function toggleSolo(track) {
   }
 }
 ```
-
-## Why This Works
-
-### The WeakMap Refactor
-
-Previously, BeatTrack used a module-level `WeakMap` to cache beats:
-
-```typescript
-// OLD (broken with reactive proxies)
-const beatBank = new WeakMap()
-```
-
-When Vue's `reactive()` wrapped a BeatTrack instance, the proxy object didn't match the original as a WeakMap key, breaking beat lookups.
-
-**The fix:** Replace the WeakMap with a private instance property:
-
-```typescript
-// NEW (works with reactive proxies)
-class BeatTrack {
-  private _beats: Beat[] = []
-
-  get beats() {
-    // Beats are stored on the instance, not in a separate WeakMap
-    return this._beats
-  }
-}
-```
-
-Now reactive proxies work correctly because the `_beats` array lives on the instance itself.
 
 ## When to Use This Pattern
 
@@ -260,7 +229,7 @@ watch(bpm, (val) => {
 2. **Direct property binding** eliminates event listener boilerplate
 3. **Beat objects are the state** — no separate UI state management needed
 4. **Mute/solo via `beat.active`** — pattern manipulation preserves user intent
-5. **WeakMap→instance property refactor** made this pattern possible
+5. **Works with any reactive proxy system** — Beat state lives on the instance
 
 ## See Also
 

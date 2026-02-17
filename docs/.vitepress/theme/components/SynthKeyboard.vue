@@ -1,7 +1,5 @@
 <template>
   <div class="synth-keyboard">
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="volume-warning">
       <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
     </div>
@@ -60,6 +58,10 @@
       @note-on="handleNoteOn"
       @note-off="handleNoteOff"
     />
+
+    <div class="status-bar">
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
   </div>
 </template>
 
@@ -177,9 +179,13 @@ onUnmounted(() => {
   background: var(--vp-c-bg-soft);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .error {
   padding: 0.75rem;
-  margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   color: var(--vp-c-danger);
   border-radius: 6px;

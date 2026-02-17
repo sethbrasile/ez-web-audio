@@ -47,21 +47,21 @@ setTimeout(() => kick.stop(), 200)
 
 The snare is **two layers** playing simultaneously:
 
-1. **Tonal body** ("meat") - Triangle oscillator with frequency sweep (100 → 60 Hz)
+1. **Tonal body** ("meat") - Sine oscillator with frequency sweep (100 → 60 Hz)
 2. **Snare crack** - White noise with highpass filter (1000 Hz cutoff)
 
+Both layers are combined with `createLayeredSound()` to ensure they start at exactly the same AudioContext timestamp.
+
 ```typescript
-import { createOscillator, createWhiteNoise, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createOscillator, createWhiteNoise, createFilterEffect, createLayeredSound, getAudioContext } from 'ez-web-audio'
 
 // Layer 1: Tonal body
 const body = await createOscillator({
   frequency: 100,
-  type: 'triangle'
+  type: 'sine'
 })
-body.onPlayRamp('frequency').from(100).to(60).in(0.15)
-body.onPlayRamp('gain').from(1).to(0).in(0.15)
-body.changeGainTo(0.6)
-body.play()
+body.onPlayRamp('frequency').from(100).to(60).in(0.1)
+body.onPlayRamp('gain').from(1).to(0.01).in(0.1)
 
 // Layer 2: Snare crack
 const ctx = await getAudioContext()
@@ -73,21 +73,23 @@ const highpass = createFilterEffect(ctx, 'highpass', {
 })
 
 noise.addEffect(highpass)
-noise.onPlayRamp('gain').from(1).to(0).in(0.15)
-noise.changeGainTo(0.4)
-noise.play()
+noise.onPlayRamp('gain').from(1).to(0.001).in(0.1)
+
+// Combine layers for synchronized playback
+const snare = await createLayeredSound([body, noise])
+snare.playFor(0.1)
 ```
 
-**Why layer?** Real snare drums have both a tonal component (the drum shell) and a bright, crackling component (the snare wires). Layering synthesis mimics this natural sound.
+**Why layer?** Real snare drums have both a tonal component (the drum shell) and a bright, crackling component (the snare wires). `createLayeredSound()` synchronizes them to the same start time for a tight, cohesive sound.
 
 **Try the breakdown buttons** above to hear each layer separately and understand how they combine.
 
 ### Hi-Hat
 
-The hi-hat uses **multiple square oscillators** at harmonic ratios with a highpass filter. These create that characteristic metallic, shimmering sound.
+The hi-hat uses **multiple square oscillators** at harmonic ratios with highpass and bandpass filters. These create that characteristic metallic, shimmering sound.
 
 ```typescript
-import { createOscillator, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createOscillator, createFilterEffect, createLayeredSound, getAudioContext } from 'ez-web-audio'
 
 const ctx = await getAudioContext()
 const fundamentalFreq = 40
@@ -102,26 +104,37 @@ const oscillators = await Promise.all(
       type: 'square'
     })
 
-    // Highpass filter for metallic character
+    // Highpass filter removes bass frequencies
     const highpass = createFilterEffect(ctx, 'highpass', {
       frequency: 7000,
       q: 1
     })
 
+    // Bandpass filter isolates the metallic shimmer around 10kHz
+    const bandpass = createFilterEffect(ctx, 'bandpass', {
+      frequency: 10000,
+      q: 1
+    })
+
     osc.addEffect(highpass)
-    osc.onPlayRamp('gain').from(0.3).to(0).in(0.08)
-    osc.changeGainTo(0.15) // Quiet - multiple oscillators add up
+    osc.addEffect(bandpass)
+
+    // ADSR-style envelope: quick attack, sustain, then decay
+    osc.onPlayRamp('gain').from(0.00001).to(1).in(0.02)
+    osc.onPlaySet('gain').to(0.3).endingAt(0.03)
+    osc.onPlaySet('gain').to(0.00001).endingAt(0.3)
     return osc
   })
 )
 
-// Play all simultaneously
-oscillators.forEach(osc => osc.play())
+// Use LayeredSound for synchronized playback
+const hihat = await createLayeredSound(oscillators)
+hihat.playFor(0.1)
 ```
 
 **Why multiple oscillators?** Real cymbals vibrate at many inharmonic frequencies simultaneously. Using multiple oscillators at slightly dissonant ratios creates that complex metallic timbre.
 
-**Why highpass filter?** Cymbals have very little low-frequency content. The highpass filter (7000 Hz) removes bass frequencies, leaving only the bright, shimmery highs.
+**Why highpass + bandpass filters?** Cymbals have very little low-frequency content. The highpass filter (7000 Hz) removes bass frequencies, while the bandpass filter (10000 Hz) isolates the bright, metallic shimmer that makes a hi-hat sound like a hi-hat.
 
 ### Bass Drop
 
@@ -130,20 +143,20 @@ A long, dramatic frequency sweep often used in electronic music:
 ```typescript
 const bassDrop = await createOscillator({
   frequency: 100,
-  type: 'triangle'
+  type: 'sine'
 })
 
-// 10-second sweep: 100Hz → 0.01Hz
-bassDrop.onPlayRamp('frequency').from(100).to(0.01).in(10)
-bassDrop.onPlayRamp('gain').from(0.6).to(0).in(10)
-bassDrop.play()
+// Linear frequency sweep (steady pitch drop) and exponential gain decay
+bassDrop.onPlayRamp('frequency', 'linear').from(100).to(0.01).in(10)
+bassDrop.onPlayRamp('gain').from(1).to(0.01).in(10)
+bassDrop.playFor(10)
 ```
 
 ## Try the Snare Breakdown
 
 Use the breakdown buttons above to hear the snare components separately:
 
-- **Meat Only** - Just the triangle oscillator (tonal body)
+- **Meat Only** - Just the sine oscillator (tonal body)
 - **Crack Only** - Just the filtered white noise (snare wires)
 - **Full Snare** - Both layers together
 
@@ -168,8 +181,11 @@ For electronic music and retro games, synthesis is often the better choice. For 
 
 - `createOscillator()` - Creates synthesizers with different waveforms
 - `createWhiteNoise()` - Generates white noise for percussion "crack"
-- `createFilterEffect()` - Shapes frequency content (highpass, lowpass, etc.)
-- `onPlayRamp()` - Schedules parameter changes during playback
+- `createFilterEffect()` - Shapes frequency content (highpass, bandpass, etc.)
+- `createLayeredSound()` - Synchronizes multiple sounds to the same start time
+- `onPlayRamp()` - Schedules smooth parameter transitions during playback
+- `onPlaySet()` - Schedules instant parameter changes at specific times
+- `playFor()` - Plays a sound for a specific duration then stops
 - `addEffect()` - Routes audio through effects
 
 ## Next Steps

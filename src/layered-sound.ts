@@ -1,6 +1,7 @@
 import type { Sound } from './sound'
 import type { Oscillator } from './oscillator'
 import type { LayeredSoundEventMap } from './events/event-types'
+import audioContextAwareTimeout from './utils/timeout'
 
 /**
  * Options for creating a LayeredSound.
@@ -34,6 +35,7 @@ export interface LayeredSoundOptions {
 export class LayeredSound extends EventTarget {
   private layers: (Sound | Oscillator)[]
   private failedLayers: { index: number; error: Error }[] = []
+  private setTimeout: (fn: () => void, delayMillis: number) => number
   public name: string
 
   constructor(
@@ -43,6 +45,7 @@ export class LayeredSound extends EventTarget {
   ) {
     super()
     this.name = opts?.name || ''
+    this.setTimeout = audioContextAwareTimeout(audioContext).setTimeout
 
     // Filter out null/undefined layers (graceful degradation)
     this.layers = layers.filter((layer, index) => {
@@ -109,6 +112,22 @@ export class LayeredSound extends EventTarget {
 
     // Track when each layer ends
     this.setupLayerEndTracking()
+  }
+
+  /**
+   * Play all layers simultaneously for a specified duration, then stop.
+   *
+   * @param duration - Duration in seconds before stopping all layers
+   *
+   * @example
+   * ```typescript
+   * const layered = await createLayeredSound([kick, snare])
+   * layered.playFor(0.1) // Play for 100ms then auto-stop
+   * ```
+   */
+  async playFor(duration: number): Promise<void> {
+    await this.play()
+    this.setTimeout(() => this.stop(), duration * 1000)
   }
 
   /**

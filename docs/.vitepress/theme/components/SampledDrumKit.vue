@@ -1,8 +1,5 @@
 <template>
   <div class="sampled-drum-kit">
-    <div v-if="loading" class="loading">Loading drum samples...</div>
-    <div v-if="error" class="error">{{ error }}</div>
-
     <div class="drum-pads">
       <div
         v-for="pad in pads"
@@ -24,6 +21,11 @@
 
     <div class="info-text">
       Each pad cycles through 3 sample variations (round-robin)
+    </div>
+
+    <div class="status-bar">
+      <div v-if="loading" class="loading">Loading drum samples...</div>
+      <div v-if="error" class="error">{{ error }}</div>
     </div>
   </div>
 </template>
@@ -140,18 +142,21 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
 .loading {
-  padding: 1rem;
+  padding: 0.5rem;
   text-align: center;
   color: var(--vp-c-text-2);
   font-style: italic;
-  margin-bottom: 1rem;
 }
 
 .error {
   color: var(--vp-c-danger);
   padding: 0.5rem;
-  margin-bottom: 1rem;
   background: var(--vp-c-danger-soft);
   border-radius: 4px;
 }
