@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17 (23-03 completed: HiDPI canvas polish, public API usage, final validation)
+**Last Updated:** 2026-02-17 (23-04 completed: XYPad HiDPI logical dimension fix — final gap closure)
 **Current Focus:** Phase 23 — Demo Example Bugfixes (Complete)
 
 ## Project Reference
@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 23 of 23 (Demo Example Bugfixes)
-Plan: 3 of 3 in current phase
+Plan: 4 of 4 in current phase
 Status: Complete — Phase 23 done
-Last activity: 2026-02-17 — Completed 23-03 (HiDPI canvas for XYPad and VisualizationDemo, FilterEffect public setter in AmbientGenerator, EffectWrapper.effect accessor in DistortionDemo, final validation passed)
+Last activity: 2026-02-17 — Completed 23-04 (XYPad drawGrid/updateFromPosition now use dataset.logicalWidth/logicalHeight for HiDPI correctness — final gap closed)
 
 **Progress:** [████████████████████] 100%
 
@@ -47,6 +47,7 @@ Last activity: 2026-02-17 — Completed 23-03 (HiDPI canvas for XYPad and Visual
 | 23-01 | 1/2 | 3min | 3min |
 | 23-02 | 2/2 | 2min | 2.5min |
 | 23-03 | 3/3 | 12min | 5.7min |
+| 23-04 | 4/4 | 2min | 4.8min |
 
 *Updated after each plan completion*
 
@@ -92,6 +93,7 @@ Recent decisions affecting current work:
 - Phase 23-03: HiDPI canvas pattern — store logical dims as data-logical-width/height attributes for drawing functions; context scaled by devicePixelRatio
 - Phase 23-03: EffectWrapper.effect is the accessor for the wrapped node; .input is the routing GainNode (not the effect node)
 - Phase 23-03: FilterEffect.frequency setter (not .frequency.value AudioParam) is the correct public API
+- Phase 23-04: XYPad canvas drawing functions read dataset.logicalWidth/logicalHeight (not canvas.width/height) — canvas.width is physical pixels after HiDPI setup
 
 ### Pending Todos
 
@@ -104,5 +106,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 23-03-PLAN.md (HiDPI canvas polish, public API usage, final validation — Phase 23 complete)
-Resume file: .planning/phases/23-demo-example-bugfixes/23-03-SUMMARY.md
+Stopped at: Completed 23-04-PLAN.md (XYPad HiDPI logical dimension fix — Phase 23 fully complete)
+Resume file: .planning/phases/23-demo-example-bugfixes/23-04-SUMMARY.md
