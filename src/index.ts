@@ -34,6 +34,7 @@ import { clearPreloadCache, isPreloaded, preload, responseCache } from './preloa
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
 import { pauseAll, playAll, stopAll } from './utils/collections'
+import { playTogether } from './utils/play-together'
 import { crossfade } from './utils/crossfade'
 import { mungeSoundFont } from './utils/decode-base64'
 import frequencyMap from './utils/frequency-map'
@@ -211,6 +212,45 @@ export function createSound(url: string): Promise<Sound> {
  */
 export async function createTrack(url: string): Promise<Track> {
   return load(url, 'track') as Promise<Track>
+}
+
+/**
+ * Load multiple sounds from an array of URLs with optional progress tracking.
+ *
+ * Loads all sounds in parallel for speed. Progress callback fires after each
+ * sound finishes loading, providing loaded count, total count, and the URL
+ * that just completed.
+ *
+ * @param urls - Array of audio file URLs to load
+ * @param onProgress - Optional callback fired after each sound loads
+ * @returns Promise resolving to array of Sound instances
+ * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createSounds } from 'ez-web-audio'
+ *
+ * const sounds = await createSounds(
+ *   ['click.mp3', 'whoosh.mp3', 'ding.mp3'],
+ *   (loaded, total, url) => console.log(`Loaded ${loaded}/${total}: ${url}`)
+ * )
+ * ```
+ */
+export async function createSounds(
+  urls: string[],
+  onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Sound[]> {
+  const total = urls.length
+  let loaded = 0
+
+  const promises = urls.map(async (url) => {
+    const sound = await load(url, 'sound') as Sound
+    loaded++
+    onProgress?.(loaded, total, url)
+    return sound
+  })
+
+  return Promise.all(promises)
 }
 
 /**
@@ -646,6 +686,8 @@ export {
   Oscillator,
   pauseAll,
   playAll,
+  // Synchronized playback
+  playTogether,
   // Preload utilities
   preload,
   SampledNote,
