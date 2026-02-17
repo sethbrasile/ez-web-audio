@@ -8,7 +8,7 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 20 — Defensive Hardening
+**Current focus:** Phase 21 — Test Coverage
 
 ## Current Position
 

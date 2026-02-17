@@ -30,6 +30,9 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ Test coverage expansion (913 tests: 893 unit + 20 E2E) — v1.1
 - ✓ SEO optimization (meta tags, structured data, homepage messaging) — v1.1
 - ✓ Dependency security upgrades (vite 7, vitest 4, happy-dom 20, ESLint 10, TS 5.9) — v1.0 stable Phase 17
+- ✓ Breaking API cleanup (.as(), playInIfActive, protected internals, removed deprecated APIs) — v1.0 stable Phase 18
+- ✓ DX improvements (auto-rewire bypass, context-free effect factories, batch APIs, extensible ControlType) — v1.0 stable Phase 19
+- ✓ Defensive hardening (null guards, input validation, memory management) — v1.0 stable Phase 20
 
 ### Active
 
@@ -67,7 +70,7 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. 9,988 LOC TypeScript library, 913 tests (893 unit + 20 E2E), published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data.
+**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 901 tests (881 unit + 20 E2E), published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data. Phases 17-20 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening).
 
 **Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
 
@@ -102,6 +105,10 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Vitest 4 constructor mocks need function syntax | Arrow functions can't be constructors; vi.fn(function(){}) required | ✓ Good |
 | ESLint per-directory rule overrides | Docs Vue components get relaxed rules until Phase 22 cleanup | ✓ Good |
 | TS 5.9 typed arrays need explicit ArrayBuffer generic | Web Audio API methods require Uint8Array<ArrayBuffer> not Uint8Array | ✓ Good |
+| onPlayRamp().from() NOT renamed | Different semantic ("from value X") vs update().to().from() ("from unit") | ✓ Good |
+| Bypass interception via Object.defineProperty | Simpler than Proxy, auto-rewires effect chain on toggle | ✓ Good |
+| ControlTypeMap interface for extensibility | Module augmentation lets downstream users add custom parameter types | ✓ Good |
+| DEF-04 consume-once semantics | onPlaySet/onPlayRamp schedules cleared after each play; re-schedule before each play() for repeated automation | ✓ Good |
 
 ---
-*Last updated: 2026-02-17 after Phase 17*
+*Last updated: 2026-02-17 after Phase 20*
