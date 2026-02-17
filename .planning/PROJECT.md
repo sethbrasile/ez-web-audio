@@ -32,7 +32,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 ### Active
 
-(No active requirements — next milestone not yet defined)
+Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for detailed REQ-IDs
 
 ### Out of Scope
 
@@ -45,15 +45,34 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - **MIDI support** — specialized, can be a separate package
 - **Audio worklets** — too low-level for "easy" API
 
+## Current Milestone: v1.0 First Stable Release
+
+**Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, and update all documentation. Ship as first stable npm 1.0.0 release.
+
+**Target features:**
+- Breaking API cleanup: rename `.from()` → `.as()`, `ifActivePlayIn` → `playInIfActive`, make internal nodes protected, remove deprecated `connections` API
+- Auto-rewire effect chain on bypass toggle (remove footgun)
+- Effect factories without AudioContext arg (reduce boilerplate)
+- Convenience APIs: `addEffects([])`, `playTogether([])`, `createSounds([])` with progress
+- Defensive code: null/bounds checks, controller array cleanup, ControlType extensibility
+- New accessors: `getFilters()`, `getSounds()`
+- Dependency security upgrades (happy-dom, vitest, vite, eslint)
+- Integration test suite and test file reorganization
+- All JSDoc and demo app documentation updated for every change
+
+**Vision:** Ship a stable, secure, well-documented 1.0.0 that developers can depend on without hitting API footguns or security warnings.
+
 ## Context
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** v1.1 shipped. 9,988 LOC TypeScript library, 913 tests (893 unit + 20 E2E), published to npm as `ez-web-audio`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data. All 93 requirements across 2 milestones satisfied.
+**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. 9,988 LOC TypeScript library, 913 tests (893 unit + 20 E2E), published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data.
 
 **Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
 
 **Bundle:** 125 kB (30.4 kB gzipped), tree-shakeable ESM-only.
+
+**Note:** npm 0.1.0 is the only public release. Internal planning milestones v1.0/v1.1 were project phases, not npm versions. This milestone ships the actual npm 1.0.0.
 
 ## Constraints
 
@@ -77,8 +96,8 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 | Single global AudioContext | Simpler for v1; blocks spatial audio — needs opt-in multi-context for v2 | ⚠️ Revisit for v2 |
 | Effects adapter pattern | ez-audio wraps, users bring own effect libs (Tuna, Tone.js) | ✓ Good |
 | String concat for error messages | Consistency across codebase (decided in Phase 13) | ✓ Good |
-| Keep deprecated type aliases | Backwards compat for OscillatorOpts → OscillatorOptions rename | ✓ Good |
+| Remove deprecated type aliases for 1.0 | No public 1.0 API exists — clean break, no aliases needed | ✓ Good |
 | E2E error-detection focus | VitePress SPA hydration timing too unreliable for element checks | ✓ Good |
 
 ---
-*Last updated: 2026-02-16 after v1.1 milestone*
+*Last updated: 2026-02-16 after v1.0 milestone start*

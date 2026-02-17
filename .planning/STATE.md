@@ -1,22 +1,23 @@
 # Project State: EZ Audio
 
 **Last Updated:** 2026-02-16
-**Current Focus:** Milestone complete — planning next milestone
+**Current Focus:** Milestone v1.0 — First Stable Release
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements for v1.0
 
 ## Current Position
 
-Phase: 16 of 16 (all complete)
-Status: v1.1 milestone shipped
-Last activity: 2026-02-16 — Completed v1.1 Quality & Polish milestone
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-16 — Milestone v1.0 started
 
-**Progress:** [██████████] 100% (v1.1 complete)
+**Progress:** [░░░░░░░░░░] 0%
 
 ## Accumulated Context
 
@@ -28,12 +29,18 @@ See .planning/PROJECT.md Key Decisions table for full history.
 
 None active.
 
-### Open Items for Next Milestone
+### Open Items for This Milestone
 
-- Single global AudioContext blocks v2 spatial audio — needs opt-in multi-context mode
-- ControlType union should be extensible via mapped type for v2 parameter additions
+- ControlType union should be extensible via mapped type
 - SampledNote.name shadowed by BaseSound.name — architectural decision needed
-- Framework bindings (React/Vue) require zero library changes — external packages only
+- Rename `.from()` → `.as()` across fluent APIs (breaking, free pre-1.0)
+- Remove deprecated `connections` API entirely (no backwards compat needed pre-1.0)
+- Remove deprecated type aliases (OscillatorOpts, OscillatorOptsFilterValues)
+
+### Deferred to v2
+
+- Single global AudioContext blocks spatial audio — needs opt-in multi-context mode
+- Framework bindings (React/Vue) — external packages only
 
 ### Test Coverage Summary
 
