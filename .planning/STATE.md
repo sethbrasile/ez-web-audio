@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-17 (22-01 re-executed: API migration complete)
 **Current Focus:** Milestone v1.0 Stable — First Stable Release (npm 1.0.0)
 
 ## Project Reference
@@ -71,6 +71,9 @@ Recent decisions affecting current work:
 - Phase 21-02: Soundfont integration tests use mock SampledNote pattern (duck-typed identifier+play) — fetch/decode tested elsewhere
 - Phase 21-02: 937 tests (36 new tests added in 21-02: 16 integration + 20 concurrent)
 - Phase 21-01: base-sound.test.ts split into 4 focused files (events, effects, debug, analyzer) — 937 tests unchanged
+- Phase 22-01: .as() is correct API for update/seek type hints — .from() is reserved for onPlayRamp value semantics
+- Phase 22-01: createFilterEffect/createGainEffect are context-free — AudioContext resolved internally
+- Phase 22-01: addEffects([]) batch replaces consecutive addEffect() calls (SynthDrumKit hi-hat)
 - Phase 22-02: excludeProtected=false in typedoc.json so protected members appear in API reference with visibility badges
 - Phase 22-02: CHANGELOG.md fully rewritten covering all breaking changes (renames, visibility, removed APIs), migration guide, features from phases 17-21, and 0.1.0 MVP feature set
 
@@ -85,5 +88,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 22-02 (TypeDoc config + CHANGELOG). Ready for 22-03.
-Resume file: .planning/phases/22-demo-app-release/22-02-SUMMARY.md
+Stopped at: Completed 22-01 (API migration: .as(), context-free factories, addEffects batch). Ready for 22-03.
+Resume file: .planning/phases/22-demo-app-release/22-01-SUMMARY.md
