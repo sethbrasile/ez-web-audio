@@ -218,10 +218,6 @@ function handleMouseUp() {
   stopPlaying()
 }
 
-function handleMouseLeave() {
-  stopPlaying()
-}
-
 function handleTouchStart(e: TouchEvent) {
   e.preventDefault()
   const rect = canvas.value?.getBoundingClientRect()
@@ -264,9 +260,12 @@ onMounted(() => {
     ctx = canvas.value.getContext('2d')
     drawGrid()
   }
+  // Catch mouseup anywhere on the page so dragging outside canvas still stops playback
+  document.addEventListener('mouseup', handleMouseUp)
 })
 
 onUnmounted(() => {
+  document.removeEventListener('mouseup', handleMouseUp)
   stopPlaying()
 })
 </script>
@@ -285,8 +284,6 @@ onUnmounted(() => {
         tabindex="0"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
-        @mouseup="handleMouseUp"
-        @mouseleave="handleMouseLeave"
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
