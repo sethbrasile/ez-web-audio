@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 22 of 22 (Demo App & Release)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 — Phase 21 complete, transitioned to Phase 22
+Plan: 2 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-17 — Completed 22-02 (TypeDoc protected members + comprehensive CHANGELOG)
 
 **Progress:** [████████████████████] 99%
 
@@ -41,6 +41,8 @@ Last activity: 2026-02-17 — Phase 21 complete, transitioned to Phase 22
 | 20-01 | 1/TBD | 5min | 5min |
 | 21-01 | 1/TBD | 8min | 8min |
 | 21-02 | 2/TBD | 7min | 7.5min |
+| 22-01 | 1/TBD | 6min | 6min |
+| 22-02 | 2/TBD | 1min | 3.5min |
 
 *Updated after each plan completion*
 
@@ -69,6 +71,8 @@ Recent decisions affecting current work:
 - Phase 21-02: Soundfont integration tests use mock SampledNote pattern (duck-typed identifier+play) — fetch/decode tested elsewhere
 - Phase 21-02: 937 tests (36 new tests added in 21-02: 16 integration + 20 concurrent)
 - Phase 21-01: base-sound.test.ts split into 4 focused files (events, effects, debug, analyzer) — 937 tests unchanged
+- Phase 22-02: excludeProtected=false in typedoc.json so protected members appear in API reference with visibility badges
+- Phase 22-02: CHANGELOG.md fully rewritten covering all breaking changes (renames, visibility, removed APIs), migration guide, features from phases 17-21, and 0.1.0 MVP feature set
 
 ### Pending Todos
 
@@ -81,5 +85,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 21 complete. Ready for Phase 22.
-Resume file: .planning/phases/21-test-coverage/21-01-SUMMARY.md
+Stopped at: Completed 22-02 (TypeDoc config + CHANGELOG). Ready for 22-03.
+Resume file: .planning/phases/22-demo-app-release/22-02-SUMMARY.md
