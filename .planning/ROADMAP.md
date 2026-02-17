@@ -156,7 +156,7 @@
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
 | 17. Dependency Security Upgrades | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
 | 18. Breaking API Cleanup | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
-| 19. DX Improvements | v1.0 Stable | 0/3 | Not started | - |
+| 19. DX Improvements | 1/3 | In Progress|  | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
 | 21. Test Coverage | v1.0 Stable | 0/TBD | Not started | - |
 | 22. Demo App & Release | v1.0 Stable | 0/TBD | Not started | - |
