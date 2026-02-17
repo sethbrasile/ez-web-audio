@@ -148,7 +148,7 @@
 | 14. Docs & Examples Polish | v1.1 | 6/6 | Complete | 2026-02-16 |
 | 15. Test Coverage | v1.1 | 4/4 | Complete | 2026-02-16 |
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
-| 17. Dependency Security Upgrades | 1/3 | In Progress|  | - |
+| 17. Dependency Security Upgrades | 2/3 | In Progress|  | - |
 | 18. Breaking API Cleanup | v1.0 Stable | 0/TBD | Not started | - |
 | 19. DX Improvements | v1.0 Stable | 0/TBD | Not started | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
