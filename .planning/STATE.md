@@ -8,16 +8,16 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 18 — Breaking API Cleanup
+**Current focus:** Phase 19 — DX Improvements
 
 ## Current Position
 
-Phase: 18 of 22 (Breaking API Cleanup)
-Plan: 2 of 3 in current phase
-Status: Executing Wave 2 (Plan 18-03)
-Last activity: 2026-02-17 — Plans 18-01, 18-02 complete (API renames + deprecated removal)
+Phase: 19 of 22 (DX Improvements)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-17 — Phase 18 complete, transitioned to Phase 19
 
-**Progress:** [██░░░░░░░░] 20% (this milestone)
+**Progress:** [████░░░░░░] 33% (this milestone)
 
 ## Performance Metrics
 
@@ -34,6 +34,7 @@ Last activity: 2026-02-17 — Plans 18-01, 18-02 complete (API renames + depreca
 | 17-03 | 3/3 | 3min | 5.3min |
 | 18-01 | 1/3 | 4min | 4min |
 | 18-02 | 2/3 | 6min | 5min |
+| 18-03 | 3/3 | 8min | 6min |
 
 *Updated after each plan completion*
 
@@ -50,6 +51,9 @@ Recent decisions affecting current work:
 - Phase 17-01: Vitest 4 constructor mocks require function syntax, not arrow functions
 - Phase 17-02: ESLint config uses per-directory overrides; docs Vue rules relaxed for Phase 22
 - Phase 17-03: TS 5.9 typed arrays require explicit ArrayBuffer generic for Web Audio API
+- Phase 18: onPlayRamp().from() NOT renamed (different semantic: "from value X")
+- Phase 18: debugConnection kept despite name (logs effect chain changes, not public API)
+- Phase 18: 885 tests (9 connection tests removed)
 
 ### Pending Todos
 
@@ -62,5 +66,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Plans 18-01 and 18-02 complete. Starting Plan 18-03 (Wave 2: JSDoc + CHANGELOG).
-Resume file: .planning/phases/18-breaking-api-cleanup/18-03-PLAN.md
+Stopped at: Phase 18 complete and transitioned. Phase 19 ready to plan.
+Resume file: .planning/ROADMAP.md (Phase 19 details)

@@ -46,7 +46,7 @@
 **Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
 
 - [x] **Phase 17: Dependency Security Upgrades** - Upgrade all vulnerable dependencies before any code changes (completed 2026-02-17)
-- [ ] **Phase 18: Breaking API Cleanup** - Rename fluent API methods, enforce encapsulation, remove deprecated APIs, update JSDoc
+- [x] **Phase 18: Breaking API Cleanup** - Rename fluent API methods, enforce encapsulation, remove deprecated APIs, update JSDoc (completed 2026-02-17)
 - [ ] **Phase 19: DX Improvements** - Add convenience methods, auto-rewire effects, batch loaders, extensible ControlType, update guides
 - [ ] **Phase 20: Defensive Hardening** - Add null checks, input validation, memory management, and code clarity
 - [ ] **Phase 21: Test Coverage** - Add integration tests, split test files by concern, add concurrent operation tests
@@ -80,9 +80,9 @@
   5. `OscillatorOpts` and `OscillatorOptsFilterValues` type aliases are removed; only `OscillatorOptions` and `OscillatorFilterOptions` remain
   6. All JSDoc comments reflect the renamed methods and removed APIs
 **Plans**: 3 plans
-- [ ] 18-01-PLAN.md — Rename .from() to .as() on fluent chains, rename ifActivePlayIn to playInIfActive
-- [ ] 18-02-PLAN.md — Make internal properties protected, remove connections API, deprecated aliases, dead code
-- [ ] 18-03-PLAN.md — Standardize JSDoc on all public methods, create CHANGELOG.md, update guide pages
+- [x] 18-01-PLAN.md — Rename .from() to .as() on fluent chains, rename ifActivePlayIn to playInIfActive
+- [x] 18-02-PLAN.md — Make internal properties protected, remove connections API, deprecated aliases, dead code
+- [x] 18-03-PLAN.md — Standardize JSDoc on all public methods, create CHANGELOG.md, update guide pages
 
 ### Phase 19: DX Improvements
 **Goal**: Developers can accomplish common audio tasks with less boilerplate, and the documentation reflects all new capabilities
@@ -151,8 +151,8 @@
 | 14. Docs & Examples Polish | v1.1 | 6/6 | Complete | 2026-02-16 |
 | 15. Test Coverage | v1.1 | 4/4 | Complete | 2026-02-16 |
 | 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
-| 17. Dependency Security Upgrades | 3/3 | Complete    | 2026-02-17 | - |
-| 18. Breaking API Cleanup | v1.0 Stable | 0/TBD | Not started | - |
+| 17. Dependency Security Upgrades | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
+| 18. Breaking API Cleanup | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
 | 19. DX Improvements | v1.0 Stable | 0/TBD | Not started | - |
 | 20. Defensive Hardening | v1.0 Stable | 0/TBD | Not started | - |
 | 21. Test Coverage | v1.0 Stable | 0/TBD | Not started | - |
@@ -164,4 +164,4 @@
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-16 after v1.0 stable milestone roadmap creation*
+*Last updated: 2026-02-17 after Phase 18 completion*
