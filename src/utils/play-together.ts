@@ -25,7 +25,8 @@ import { getOrCreateAudioContext } from '@/audio-context'
  * ```
  */
 export async function playTogether(playables: Playable[]): Promise<void> {
-  if (playables.length === 0) return
+  if (playables.length === 0)
+    return
 
   // Get audioContext from first playable that has it, or use shared context
   const firstWithCtx = playables.find(p => 'audioContext' in p && (p as any).audioContext)

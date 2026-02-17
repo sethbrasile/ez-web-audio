@@ -98,7 +98,10 @@ This gap closure plan addressed UI/UX issues found during human verification of 
 
 **Before:**
 ```vue
-<div v-if="loading" class="loading">Loading...</div>
+<div v-if="loading" class="loading">
+Loading...
+</div>
+
 <div v-else class="drum-pads">
   <!-- pads -->
 </div>
@@ -106,7 +109,10 @@ This gap closure plan addressed UI/UX issues found during human verification of 
 
 **After:**
 ```vue
-<div v-if="loading" class="loading">Loading...</div>
+<div v-if="loading" class="loading">
+Loading...
+</div>
+
 <div class="drum-pads">
   <!-- pads always visible -->
 </div>

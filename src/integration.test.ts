@@ -2,9 +2,9 @@ import type { SampledNote } from './sampled-note'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Analyzer } from './analyzer'
-import { Sound } from './sound'
-import { Font } from './font'
 import { EffectWrapper } from './effects/effect-wrapper'
+import { Font } from './font'
+import { Sound } from './sound'
 import { settle } from './test/helpers'
 
 function createMockContext() {
@@ -33,7 +33,7 @@ function createMockNote(identifier: string): SampledNote {
   } as unknown as SampledNote
 }
 
-describe('Sound -> Effect -> Analyzer chain', () => {
+describe('sound -> Effect -> Analyzer chain', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -181,8 +181,8 @@ describe('Sound -> Effect -> Analyzer chain', () => {
   })
 })
 
-describe('Soundfont workflow', () => {
-  it('Font.getNote() returns the correct SampledNote', () => {
+describe('soundfont workflow', () => {
+  it('font.getNote() returns the correct SampledNote', () => {
     const noteC4 = createMockNote('C4')
     const noteA4 = createMockNote('A4')
     const noteE3 = createMockNote('E3')
@@ -193,7 +193,7 @@ describe('Soundfont workflow', () => {
     expect(font.getNote('E3')).toBe(noteE3)
   })
 
-  it('Font.play() calls play() on the correct SampledNote', () => {
+  it('font.play() calls play() on the correct SampledNote', () => {
     const noteC4 = createMockNote('C4')
     const noteA4 = createMockNote('A4')
     const font = new Font([noteC4, noteA4])
@@ -204,7 +204,7 @@ describe('Soundfont workflow', () => {
     expect(noteA4.play).not.toHaveBeenCalled()
   })
 
-  it('Font.play() dispatches to the correct note among many', () => {
+  it('font.play() dispatches to the correct note among many', () => {
     const notes = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'].map(createMockNote)
     const font = new Font(notes)
 
@@ -219,7 +219,7 @@ describe('Soundfont workflow', () => {
     }
   })
 
-  it('Font.play() can play same note multiple times', () => {
+  it('font.play() can play same note multiple times', () => {
     const noteC4 = createMockNote('C4')
     const font = new Font([noteC4])
 
@@ -230,14 +230,14 @@ describe('Soundfont workflow', () => {
     expect(noteC4.play).toHaveBeenCalledTimes(3)
   })
 
-  it('Font.play() throws for missing note', () => {
+  it('font.play() throws for missing note', () => {
     const noteC4 = createMockNote('C4')
     const font = new Font([noteC4])
 
     expect(() => font.play('Z9')).toThrow('EZ Web Audio')
   })
 
-  it('Font.notes holds the full array passed to constructor', () => {
+  it('font.notes holds the full array passed to constructor', () => {
     const notes = ['C4', 'D4', 'E4'].map(createMockNote)
     const font = new Font(notes)
 

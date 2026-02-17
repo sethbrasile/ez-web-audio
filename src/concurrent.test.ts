@@ -1,8 +1,8 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Sound } from './sound'
-import { Track } from './track'
 import { settle } from './test/helpers'
+import { Track } from './track'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -174,9 +174,9 @@ describe('rapid seek (coalesces to last value)', () => {
   it('mixed seek types: last seek determines final position', () => {
     const track = createTrack(audioContext, 10)
 
-    track.seek(0.2).as('ratio')    // 2 seconds
-    track.seek(50).as('percent')   // 5 seconds
-    track.seek(8).as('seconds')    // 8 seconds
+    track.seek(0.2).as('ratio') // 2 seconds
+    track.seek(50).as('percent') // 5 seconds
+    track.seek(8).as('seconds') // 8 seconds
 
     // Last seek (8 seconds) wins
     expect(track.startOffset).toBe(8)
@@ -251,7 +251,7 @@ describe('double stop (no-op)', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it('Track: pause() then stop() then stop() — no error on second stop', async () => {
+  it('track: pause() then stop() then stop() — no error on second stop', async () => {
     const track = createTrack(audioContext)
 
     await track.play()
@@ -263,7 +263,7 @@ describe('double stop (no-op)', () => {
     expect(track.isPlaying).toBe(false)
   })
 
-  it('Track: double stop while playing resets state cleanly', async () => {
+  it('track: double stop while playing resets state cleanly', async () => {
     const track = createTrack(audioContext)
     const handler = vi.fn()
     track.on('stop', handler)

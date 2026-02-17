@@ -80,7 +80,7 @@ This plan (10-04) was written to update the example code snippets, but the work 
 
 ### Before (old API with explicit initAudio)
 ```typescript
-import { initAudio, createSound } from 'ez-web-audio'
+import { createSound, initAudio } from 'ez-web-audio'
 
 button.addEventListener('click', async () => {
   await initAudio()

@@ -17,7 +17,7 @@ import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Analyzer, createAnalyzer } from './analyzer'
-import { getOrCreateAudioContext, iosWorkaroundPerformed, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
+import { getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
@@ -88,7 +88,7 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
   }
 
   // only run this workaround code once
-  if (useIosMuteWorkaround && !iosWorkaroundPerformed) {
+  if (useIosMuteWorkaround && !iosWorkaround.performed) {
     unmuteIosAudio(audioContext)
     markIosWorkaroundPerformed()
   }

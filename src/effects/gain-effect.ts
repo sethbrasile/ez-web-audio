@@ -105,8 +105,7 @@ export class GainEffect implements Effect {
  * AudioContext is optional. If omitted, uses the shared library AudioContext
  * (created lazily on first use).
  *
- * @param audioContextOrValue - Either an AudioContext or the initial gain value
- * @param initialValue - Initial gain value when AudioContext is provided (default: 1.0)
+ * @param initialValue - Initial gain value (default: 1.0). Pass AudioContext as first arg for backwards compatibility.
  * @returns A new GainEffect instance
  *
  * @example

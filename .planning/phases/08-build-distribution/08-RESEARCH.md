@@ -103,19 +103,19 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   plugins: [
     dts({
-      rollupTypes: false,        // Keep per-file declarations for better IDE experience
-      declarationMap: true,      // Enable declaration source maps
-      insertTypesEntry: true,    // Add types entry to package.json
+      rollupTypes: false, // Keep per-file declarations for better IDE experience
+      declarationMap: true, // Enable declaration source maps
+      insertTypesEntry: true, // Add types entry to package.json
     })
   ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'EzWebAudio',       // Global name for IIFE (if adding later)
-      formats: ['es'],          // ESM-only per locked decision
-      fileName: 'index',        // Produces index.js
+      name: 'EzWebAudio', // Global name for IIFE (if adding later)
+      formats: ['es'], // ESM-only per locked decision
+      fileName: 'index', // Produces index.js
     },
-    sourcemap: true,            // External source maps (.js.map files)
+    sourcemap: true, // External source maps (.js.map files)
     rollupOptions: {
       // Externalize dependencies that shouldn't be bundled
       // For zero-dependency library, this is mainly for future-proofing
@@ -143,7 +143,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for OIDC
+      id-token: write # Required for OIDC
       contents: read
 
     steps:
@@ -287,29 +287,29 @@ Verified patterns from official sources:
 // vite.config.js
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import dts from 'vite-plugin-dts'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   plugins: [
-    tsconfigPaths(),  // Resolve @ paths from tsconfig
+    tsconfigPaths(), // Resolve @ paths from tsconfig
     dts({
-      rollupTypes: false,      // Per-file declarations (better IDE experience)
-      declarationMap: true,    // Enable .d.ts.map files
-      insertTypesEntry: true,  // Auto-add types to package.json exports
+      rollupTypes: false, // Per-file declarations (better IDE experience)
+      declarationMap: true, // Enable .d.ts.map files
+      insertTypesEntry: true, // Auto-add types to package.json exports
     }),
   ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'EzWebAudio',
-      formats: ['es'],         // ESM-only per decision
-      fileName: 'index',       // Output: index.js
+      formats: ['es'], // ESM-only per decision
+      fileName: 'index', // Output: index.js
     },
-    sourcemap: true,           // External source maps
-    minify: false,             // Don't minify (consumers handle this)
+    sourcemap: true, // External source maps
+    minify: false, // Don't minify (consumers handle this)
     rollupOptions: {
-      external: [],            // Zero dependencies, but externalize if added
+      external: [], // Zero dependencies, but externalize if added
     },
   },
 })

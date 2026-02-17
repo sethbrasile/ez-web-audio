@@ -170,8 +170,8 @@ await audioContext.resume()
 // Warn if AudioContext remains suspended after resume attempt
 if (audioContext.state === 'suspended' && !BaseSound._hasWarnedAboutSuspended) {
   console.warn(
-    'ez-web-audio: AudioContext is suspended. Audio will not play until a user interaction (click, tap, keypress) occurs. ' +
-    'Call initAudio() from a user gesture handler, or ensure play() is called after user interaction.'
+    'ez-web-audio: AudioContext is suspended. Audio will not play until a user interaction (click, tap, keypress) occurs. '
+    + 'Call initAudio() from a user gesture handler, or ensure play() is called after user interaction.'
   )
   BaseSound._hasWarnedAboutSuspended = true
 }

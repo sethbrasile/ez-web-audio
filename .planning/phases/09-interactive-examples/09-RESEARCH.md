@@ -136,15 +136,15 @@ onUnmounted(() => {
 // Source: src/beat-track.ts lines 341-346
 // BeatTrack emits 'beat' event at SCHEDULE time (lookahead), not play time
 this.emit('beat', {
-  time,           // audioContext.currentTime when beat will play
-  beatIndex,      // 0-15 (or numBeats-1)
-  active: beat.active,  // true if sound plays, false if rest
+  time, // audioContext.currentTime when beat will play
+  beatIndex, // 0-15 (or numBeats-1)
+  active: beat.active, // true if sound plays, false if rest
   source: this
 })
 
 // In Vue component:
 const currentBeat = ref(-1)
-let animationFrame: number | null = null
+const animationFrame: number | null = null
 
 function setupBeatListener(beatTrack: BeatTrack) {
   beatTrack.on('beat', (e) => {
@@ -172,9 +172,9 @@ function setupBeatListener(beatTrack: BeatTrack) {
 <!-- PianoKeyboard.vue -->
 <script setup lang="ts">
 const props = defineProps<{
-  startNote?: string  // default 'C4'
-  endNote?: string    // default 'C5'
-  activeKeys?: Set<string>  // currently pressed keys
+  startNote?: string // default 'C4'
+  endNote?: string // default 'C5'
+  activeKeys?: Set<string> // currently pressed keys
 }>()
 
 const emit = defineEmits<{
@@ -208,7 +208,7 @@ const emit = defineEmits<{
 const canvas = ref<HTMLCanvasElement | null>(null)
 const isPlaying = ref(false)
 let ctx: CanvasRenderingContext2D | null = null
-let oscillator: any = null
+const oscillator: any = null
 
 onMounted(() => {
   if (canvas.value) {
@@ -224,26 +224,29 @@ function handleMouseDown(e: MouseEvent) {
 }
 
 function handleMouseMove(e: MouseEvent) {
-  if (!isPlaying.value) return
+  if (!isPlaying.value)
+    return
   updateFromPosition(e.offsetX, e.offsetY)
 }
 
 function handleMouseUp() {
   isPlaying.value = false
-  if (oscillator) oscillator.stop()
+  if (oscillator)
+    oscillator.stop()
 }
 
 function updateFromPosition(x: number, y: number) {
-  if (!canvas.value) return
+  if (!canvas.value)
+    return
 
   // X-axis: frequency (100-2000 Hz, logarithmic)
   const width = canvas.value.width
   const ratio = x / width
-  const frequency = 100 * Math.pow(20, ratio)  // log scale
+  const frequency = 100 * 20 ** ratio // log scale
 
   // Y-axis: gain (0-1, inverted)
   const height = canvas.value.height
-  const gain = 1 - (y / height)  // inverted (top=1, bottom=0)
+  const gain = 1 - (y / height) // inverted (top=1, bottom=0)
 
   // Update oscillator in real-time
   if (oscillator) {
@@ -266,9 +269,9 @@ function updateFromPosition(x: number, y: number) {
 ```typescript
 // Source: src/controllers/base-param-controller.ts lines 103-125
 // Immediate update (takes effect instantly)
-oscillator.update('frequency').to(440).from('ratio')  // 440 Hz
-oscillator.update('gain').to(0.5).from('ratio')       // 50% volume
-oscillator.update('gain').to(50).from('percent')      // 50% volume
+oscillator.update('frequency').to(440).from('ratio') // 440 Hz
+oscillator.update('gain').to(0.5).from('ratio') // 50% volume
+oscillator.update('gain').to(50).from('percent') // 50% volume
 
 // Supported methods: 'ratio', 'inverseRatio', 'percent'
 // Supported types: 'frequency', 'gain', 'detune', 'pan'
@@ -346,7 +349,7 @@ async function loadAudio() {
 ```typescript
 // WRONG
 const canvas = ref<HTMLCanvasElement | null>(null)
-const ctx = canvas.value?.getContext('2d')  // null in setup()
+const ctx = canvas.value?.getContext('2d') // null in setup()
 
 // RIGHT
 const canvas = ref<HTMLCanvasElement | null>(null)
@@ -379,8 +382,10 @@ function updatePosition() {
 
 // RIGHT - cancel on unmount
 onUnmounted(() => {
-  if (animationFrame) cancelAnimationFrame(animationFrame)
-  if (track) track.stop()
+  if (animationFrame)
+    cancelAnimationFrame(animationFrame)
+  if (track)
+    track.stop()
 })
 ```
 
@@ -395,7 +400,7 @@ onUnmounted(() => {
 ```typescript
 // WRONG - highlights 100ms too early
 beatTrack.on('beat', (e) => {
-  highlightBeat(e.detail.beatIndex)  // fires at schedule time
+  highlightBeat(e.detail.beatIndex) // fires at schedule time
 })
 
 // RIGHT - calculate delay to match audio playback
@@ -419,11 +424,11 @@ beatTrack.on('beat', (e) => {
 ```typescript
 // WRONG
 const freq = 440
-font.play(freq)  // Error: No note with identifier 440 found
+font.play(freq) // Error: No note with identifier 440 found
 
 // RIGHT
-font.play('A4')  // plays 440 Hz
-font.play('C4')  // plays middle C
+font.play('A4') // plays 440 Hz
+font.play('C4') // plays middle C
 
 // Get note for advanced control
 const note = font.getNote('A4')
@@ -477,12 +482,12 @@ import { createBeatTrack } from 'ez-web-audio'
 const kick = await createBeatTrack(['kick.mp3'], { numBeats: 8 })
 
 // Set a basic 4-on-the-floor pattern
-kick.beats[0].active = true  // beat 1
-kick.beats[2].active = true  // beat 3
-kick.beats[4].active = true  // beat 5
-kick.beats[6].active = true  // beat 7
+kick.beats[0].active = true // beat 1
+kick.beats[2].active = true // beat 3
+kick.beats[4].active = true // beat 5
+kick.beats[6].active = true // beat 7
 
-kick.playActiveBeats(120, 1/4) // Play quarter notes at 120 BPM
+kick.playActiveBeats(120, 1 / 4) // Play quarter notes at 120 BPM
 
 // Listen for beat events (fires at schedule time, ~100ms before audio)
 kick.on('beat', (e) => {
@@ -500,9 +505,9 @@ import { createFont } from 'ez-web-audio'
 const piano = await createFont('piano.js')
 
 // Play notes by identifier
-piano.play('C4')  // Middle C
-piano.play('E4')  // E above middle C
-piano.play('G4')  // G above middle C
+piano.play('C4') // Middle C
+piano.play('E4') // E above middle C
+piano.play('G4') // G above middle C
 
 // Get a specific note for advanced control
 const note = piano.getNote('A4')
@@ -525,10 +530,10 @@ const piano = await createOscillator({
   frequency: 440,
   type: 'triangle',
   envelope: {
-    attack: 0.01,   // 10ms attack
-    decay: 0.3,     // 300ms decay
-    sustain: 0.4,   // sustain at 40% amplitude
-    release: 0.5    // 500ms release
+    attack: 0.01, // 10ms attack
+    decay: 0.3, // 300ms decay
+    sustain: 0.4, // sustain at 40% amplitude
+    release: 0.5 // 500ms release
   }
 })
 piano.play()
@@ -541,7 +546,9 @@ import { createSampler } from 'ez-web-audio'
 
 // Create a sampler with multiple gunshot variations
 const gunshot = await createSampler([
-  'shot1.mp3', 'shot2.mp3', 'shot3.mp3'
+  'shot1.mp3',
+  'shot2.mp3',
+  'shot3.mp3'
 ])
 
 // Each play uses the next sound in rotation
@@ -554,7 +561,7 @@ gunshot.play() // shot1 (wraps around)
 ### White Noise + Filter for Synthesized Drums
 ```typescript
 // Source: src/index.ts example lines 445-460
-import { createWhiteNoise, createFilterEffect, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createWhiteNoise, getAudioContext } from 'ez-web-audio'
 
 // Create white noise
 const noise = await createWhiteNoise()
@@ -585,7 +592,7 @@ layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
 ### Effect Routing with wrapEffect
 ```typescript
 // Source: src/effects/effect-wrapper.ts example lines 161-172
-import { wrapEffect, getAudioContext } from 'ez-web-audio'
+import { getAudioContext, wrapEffect } from 'ez-web-audio'
 
 // Wrap a WaveShaperNode
 const ctx = await getAudioContext()
@@ -594,8 +601,8 @@ distortion.curve = makeDistortionCurve(400)
 const wrapped = wrapEffect(ctx, distortion)
 
 // Use standard Effect interface
-wrapped.bypass = true  // Bypass the effect
-wrapped.mix = 0.5      // 50% wet/dry blend
+wrapped.bypass = true // Bypass the effect
+wrapped.mix = 0.5 // 50% wet/dry blend
 
 sound.addEffect(wrapped)
 ```
@@ -611,10 +618,10 @@ const filter = createFilterEffect(await getAudioContext(), 'lowpass', {
 })
 
 // Adjust parameters in real-time
-filter.frequency = 1000  // Adjust cutoff
-filter.q = 5             // Adjust resonance
-filter.mix = 0.5         // 50% wet/dry
-filter.bypass = true     // Bypass filter entirely
+filter.frequency = 1000 // Adjust cutoff
+filter.q = 5 // Adjust resonance
+filter.mix = 0.5 // 50% wet/dry
+filter.bypass = true // Bypass filter entirely
 ```
 
 ### Audio Scheduling with playIn/playAt

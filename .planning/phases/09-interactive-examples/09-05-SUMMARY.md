@@ -181,7 +181,7 @@ const playCount = ref({
 async function playPad(padName: string) {
   if (padName === 'kick' && kickSampler) {
     kickSampler.play()
-    playCount.value.kick = (playCount.value.kick % 3) + 1  // Cycle 1→2→3→1
+    playCount.value.kick = (playCount.value.kick % 3) + 1 // Cycle 1→2→3→1
   }
   // Display: "Sample {{ playCount[pad.name] }}/3"
 }
@@ -190,23 +190,23 @@ async function playPad(padName: string) {
 **PianoKeyboard reuse pattern:**
 ```vue
 <!-- SoundfontPiano.vue -->
-<template>
-  <PianoKeyboard
-    :activeKeys="activeNotes"
-    @noteOn="playNote"
-    @noteOff="stopNote"
-  />
-</template>
-
 <script setup lang="ts">
 import PianoKeyboard from './PianoKeyboard.vue'
 
 async function playNote(note: string) {
-  font.play(note)  // String identifier, not frequency
+  font.play(note) // String identifier, not frequency
   activeNotes.value.add(note)
   currentNote.value = note
 }
 </script>
+
+<template>
+  <PianoKeyboard
+    :active-keys="activeNotes"
+    @note-on="playNote"
+    @note-off="stopNote"
+  />
+</template>
 ```
 
 This demonstrates clean separation of UI (PianoKeyboard) and sound engine (Font vs. Oscillator).

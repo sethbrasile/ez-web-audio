@@ -74,12 +74,12 @@ Features to explicitly NOT build. Common mistakes in this domain.
 ```javascript
 // Fluent, musical, time-based
 const synth = new Tone.Synth().toDestination()
-synth.triggerAttackRelease("C4", "8n", Tone.now())
+synth.triggerAttackRelease('C4', '8n', Tone.now())
 
 // Transport scheduling
 Tone.Transport.scheduleRepeat((time) => {
-  synth.triggerAttackRelease("C4", "8n", time)
-}, "4n")
+  synth.triggerAttackRelease('C4', '8n', time)
+}, '4n')
 ```
 
 **Learning:** Complex but powerful. Users who need synthesis expect Tone.js-level features.
@@ -244,7 +244,7 @@ source.onended = callback
 const sound = new Howl({
   src: ['sounds.mp3'],
   sprite: {
-    blast: [0, 3000],      // offset ms, duration ms
+    blast: [0, 3000], // offset ms, duration ms
     laser: [4000, 1000],
     winner: [6000, 5000]
   }
@@ -270,10 +270,10 @@ const envelope = new Tone.AmplitudeEnvelope({
   release: 0.8
 })
 synth.connect(envelope)
-envelope.triggerAttackRelease("8n")
+envelope.triggerAttackRelease('8n')
 
 // Pizzicato.js (simpler)
-sound.attack = 0.04  // seconds to reach full volume
+sound.attack = 0.04 // seconds to reach full volume
 sound.release = 0.02 // seconds to reach zero volume
 ```
 

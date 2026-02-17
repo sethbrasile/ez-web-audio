@@ -136,7 +136,7 @@ export interface Effect {
 
 // External effects only have connect()
 interface ExternalEffect {
-  connect(destination: AudioNode): void
+  connect: (destination: AudioNode) => void
 }
 
 // EffectWrapper adds missing properties
@@ -181,7 +181,8 @@ class EffectWrapper implements Effect {
   get mix(): number { return this._mix }
   set mix(value: number) {
     this._mix = Math.max(0, Math.min(1, value))
-    if (!this._bypass) this.updateMix()
+    if (!this._bypass)
+      this.updateMix()
   }
 
   private updateMix(): void {
@@ -202,10 +203,10 @@ class EffectWrapper implements Effect {
 ```typescript
 // Source: MDN AnalyserNode documentation
 export interface AnalyzerOptions {
-  fftSize?: number  // Default 2048, valid: 32-32768 (power of 2)
-  minDecibels?: number  // Default -100
-  maxDecibels?: number  // Default -30
-  smoothingTimeConstant?: number  // Default 0.8 (0-1)
+  fftSize?: number // Default 2048, valid: 32-32768 (power of 2)
+  minDecibels?: number // Default -100
+  maxDecibels?: number // Default -30
+  smoothingTimeConstant?: number // Default 0.8 (0-1)
 }
 
 export class Analyzer {
@@ -288,14 +289,16 @@ function defaultHandler(msg: DebugMessage): void {
 
 // Short-circuit check at the start - zero overhead when disabled
 export function debugLog(
-  source: { name?: string; debug?: boolean },
+  source: { name?: string, debug?: boolean },
   message: DebugMessage
 ): void {
   // Fast path: if neither global nor per-sound debug, return immediately
-  if (!globalDebugEnabled && !source.debug) return
+  if (!globalDebugEnabled && !source.debug)
+    return
 
   // Per-sound override: explicitly false disables even when global is on
-  if (source.debug === false) return
+  if (source.debug === false)
+    return
 
   debugHandler(message)
 }
@@ -385,7 +388,7 @@ Verified patterns from official sources and research:
 
 // GainEffect - simple volume as effect
 const boost = createGainEffect()
-boost.value = 1.5  // +50% volume
+boost.value = 1.5 // +50% volume
 sound.addEffect(boost)
 
 // FilterEffect - all BiquadFilter types
@@ -402,7 +405,7 @@ sound.removeEffect(lowpass)
 lowpass.bypass = true
 
 // Wet/dry mix
-lowpass.mix = 0.5  // 50% filtered, 50% dry
+lowpass.mix = 0.5 // 50% filtered, 50% dry
 ```
 
 ### Using External Effects (Tuna.js)
@@ -465,18 +468,18 @@ draw()
 
 ```typescript
 // Source: CONTEXT.md decisions
-const compressor = createCompressorEffect()  // External or built-in
+const compressor = createCompressorEffect() // External or built-in
 const eq = createFilterEffect('peaking', { frequency: 1000, gain: 6 })
 const reverb = new tuna.Convolver({ impulse: 'hall.wav' })
 
 // Order matters: signal flows left to right
-sound.addEffect(compressor)  // Position 0
-sound.addEffect(eq)          // Position 1
-sound.addEffect(reverb)      // Position 2
+sound.addEffect(compressor) // Position 0
+sound.addEffect(eq) // Position 1
+sound.addEffect(reverb) // Position 2
 
 // Insert at specific position
 const boost = createGainEffect()
-sound.addEffect(boost, 0)  // Now first in chain
+sound.addEffect(boost, 0) // Now first in chain
 
 // Chain: source → boost → compressor → eq → reverb → gain → panner → destination
 ```
@@ -511,10 +514,10 @@ setDebugMode(true)
 sound.play()
 
 // Per-sound override
-sound.debug = false  // Silences this sound even with global debug on
+sound.debug = false // Silences this sound even with global debug on
 
 // Another sound
-otherSound.debug = true  // This one still logs
+otherSound.debug = true // This one still logs
 
 // Custom handler for production logging
 setDebugHandler((msg) => {

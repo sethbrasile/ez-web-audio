@@ -127,11 +127,12 @@ None - plan executed exactly as written.
 async function play() {
   try {
     const { initAudio, createOscillator } = await import('ez-web-audio')
-    await initAudio()  // ← Explicit initialization required
+    await initAudio() // ← Explicit initialization required
 
     oscillator = await createOscillator({ frequency: 440 })
     oscillator.play()
-  } catch (e) {
+  }
+  catch (e) {
     console.error('Failed:', e)
   }
 }
@@ -149,7 +150,8 @@ async function play() {
 
     oscillator = await createOscillator({ frequency: 440 })
     oscillator.play()
-  } catch (e) {
+  }
+  catch (e) {
     console.error('Failed:', e)
   }
 }

@@ -44,10 +44,10 @@ Test files are flat (no nested describe blocks) with simple `it()` statements.
 
 **Suite Organization:**
 ```typescript
-import { expect, it } from 'vitest'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { settle } from './test/helpers'
+import { expect, it } from 'vitest'
 import { Sound } from '@/sound'
+import { settle } from './test/helpers'
 
 // Factory function pattern
 function createSound() {
@@ -105,6 +105,7 @@ function createSound() {
     play() {
       this.playCalled = true
     }
+
     playIn(time: number) {
       this.playInCalled = true
       this.playInValue = time
@@ -138,7 +139,7 @@ const beat = createBeat({
   play: parent.play.bind(parent),
   playIn: parent.playIn.bind(parent),
   duration: 1,
-  setTimeout: mockSetTimeout,  // Use mock to control timing
+  setTimeout: mockSetTimeout, // Use mock to control timing
 })
 ```
 
@@ -183,12 +184,12 @@ const B0 = noteFactory('B', '', '0')
 **Test Helpers Available** in `src/test/helpers/index.ts`:
 ```typescript
 export function settle(valueFn: () => any, wait: number = 2): Promise<any>
-  // Wait for async state changes, then read value
-  // Default wait: 2ms
+// Wait for async state changes, then read value
+// Default wait: 2ms
 
 export function mockSetTimeout(fn: () => void, time: number = 1): number
-  // Mock setTimeout that still executes immediately
-  // Returns the time value
+// Mock setTimeout that still executes immediately
+// Returns the time value
 ```
 
 ## Coverage
@@ -254,7 +255,7 @@ Tests verify that appropriate properties are set, but explicit error throws are 
 ```typescript
 // From musical-identity.test.ts - testing property validation
 it('setting frequency properly calculates other props', () => {
-  expect(5)  // Assert we make 5 assertions
+  expect(5) // Assert we make 5 assertions
 
   const note = new Note({ frequency: 440 })
 

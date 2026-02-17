@@ -1,6 +1,6 @@
 import type { Effect } from './index'
-import { getOrCreateAudioContext } from '@/audio-context'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
+import { getOrCreateAudioContext } from '@/audio-context'
 
 /**
  * All available BiquadFilter types.
@@ -181,9 +181,8 @@ export class FilterEffect implements Effect {
  * AudioContext is optional. If omitted, uses the shared library AudioContext
  * (created lazily on first use).
  *
- * @param audioContextOrType - Either an AudioContext or the filter type string
- * @param typeOrOptions - The filter type (when AudioContext is provided) or filter options
- * @param options - Optional filter parameters (when AudioContext is provided)
+ * @param type - The BiquadFilterType string (or AudioContext as first arg for backwards compatibility)
+ * @param options - Optional filter parameters
  * @returns A new FilterEffect instance
  *
  * @example

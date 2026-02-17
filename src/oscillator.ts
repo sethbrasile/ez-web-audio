@@ -350,6 +350,27 @@ export class Oscillator extends BaseSound {
    * await piano.stop() // Fades out over 0.5 seconds
    * ```
    */
+  /**
+   * Stop the oscillator at a specific AudioContext time.
+   *
+   * Applies a quick 10ms gain fade-out before stopping to prevent click/pop
+   * artifacts from abrupt waveform cutoff. If an ADSR envelope is active,
+   * the fade-out is skipped since the envelope's release handles it.
+   *
+   * @param time - The AudioContext time when playback should stop
+   */
+  public async stopAt(time: number): Promise<void> {
+    // Apply anti-click fade-out unless envelope release is handling the ramp
+    if (this._isPlaying && !this.envelope) {
+      const now = this.audioContext.currentTime
+      const fadeTime = 0.01 // 10ms — fast enough to be inaudible, long enough to prevent clicks
+      const fadeEnd = Math.max(time, now + fadeTime)
+      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, fadeEnd - fadeTime)
+      this.gainNode.gain.linearRampToValueAtTime(0, fadeEnd)
+    }
+    await super.stopAt(time)
+  }
+
   public async stop(): Promise<void> {
     if (this.envelope && this._isPlaying) {
       const releaseTime = this.audioContext.currentTime

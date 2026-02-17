@@ -112,8 +112,8 @@ private setupLayerEndHandlers(): void {
 ```typescript
 // Pattern from Chris Wilson's "A Tale of Two Clocks"
 export class BeatTrack {
-  private scheduleAheadTime = 0.1  // 100ms lookahead
-  private schedulerInterval = 25   // 25ms check interval
+  private scheduleAheadTime = 0.1 // 100ms lookahead
+  private schedulerInterval = 25 // 25ms check interval
   private nextBeatTime = 0
   private timerID: number | null = null
 
@@ -123,7 +123,7 @@ export class BeatTrack {
     // Schedule all beats within lookahead window
     while (this.nextBeatTime < currentTime + this.scheduleAheadTime) {
       this.scheduleBeat(this.currentBeat, this.nextBeatTime)
-      this.advanceToNextBeat()  // Updates nextBeatTime based on current tempo
+      this.advanceToNextBeat() // Updates nextBeatTime based on current tempo
     }
 
     this.timerID = setTimeout(
@@ -172,7 +172,7 @@ export async function crossfade(
   // From track: fade out (1 → 0)
   fromGain.gain.setValueAtTime(1, startTime)
   fromGain.gain.setValueCurveAtTime(
-    generateEqualPowerCurve('out', 256),  // cos curve
+    generateEqualPowerCurve('out', 256), // cos curve
     startTime,
     duration
   )
@@ -180,7 +180,7 @@ export async function crossfade(
   // To track: fade in (0 → 1)
   toGain.gain.setValueAtTime(0, startTime)
   toGain.gain.setValueCurveAtTime(
-    generateEqualPowerCurve('in', 256),   // sin curve
+    generateEqualPowerCurve('in', 256), // sin curve
     startTime,
     duration
   )
@@ -205,8 +205,8 @@ function generateEqualPowerCurve(
     const percent = i / (length - 1)
     const angle = percent * 0.5 * Math.PI
     curve[i] = direction === 'in'
-      ? Math.sin(angle)   // fade in: 0 → 1
-      : Math.cos(angle)   // fade out: 1 → 0
+      ? Math.sin(angle) // fade in: 0 → 1
+      : Math.cos(angle) // fade out: 1 → 0
   }
   return curve
 }
@@ -249,7 +249,7 @@ export class BeatTrack {
 ```typescript
 export class LayeredSound extends EventTarget {
   private layers: (Sound | Oscillator)[]
-  private failedLayers: { index: number; error: Error }[] = []
+  private failedLayers: { index: number, error: Error }[] = []
 
   constructor(
     private audioContext: AudioContext,
@@ -491,12 +491,12 @@ Verified patterns from codebase and official sources:
 // src/layered-sound.ts
 export interface LayeredSoundOptions {
   name?: string
-  warnLayerCount?: number  // Default: 8
+  warnLayerCount?: number // Default: 8
 }
 
 export class LayeredSound extends EventTarget implements Playable {
   private layers: (Sound | Oscillator)[]
-  private failedLayers: { index: number; error: Error }[] = []
+  private failedLayers: { index: number, error: Error }[] = []
   public name: string
 
   constructor(
@@ -523,8 +523,8 @@ export class LayeredSound extends EventTarget implements Playable {
     const warnThreshold = opts?.warnLayerCount ?? 8
     if (this.layers.length >= warnThreshold) {
       console.warn(
-        `LayeredSound "${this.name}" has ${this.layers.length} layers. ` +
-        `High layer counts may impact performance on some devices.`
+        `LayeredSound "${this.name}" has ${this.layers.length} layers. `
+        + `High layer counts may impact performance on some devices.`
       )
     }
 
@@ -593,7 +593,7 @@ export class LayeredSound extends EventTarget implements Playable {
       }
     }
 
-    this.layers.forEach(layer => {
+    this.layers.forEach((layer) => {
       layer.once('end', () => handleEnd(layer))
     })
   }
@@ -650,7 +650,7 @@ export async function crossfade(
   const startTime = audioContext.currentTime
 
   // Generate equal-power curves
-  const curveLength = 256  // Standard curve resolution
+  const curveLength = 256 // Standard curve resolution
   const fadeOutCurve = generateEqualPowerCurve('out', curveLength)
   const fadeInCurve = generateEqualPowerCurve('in', curveLength)
 
@@ -666,7 +666,8 @@ export async function crossfade(
   if (isToTrackPlaying) {
     // Already playing - fade up from current volume
     toGain.setValueAtTime(toGain.value, startTime)
-  } else {
+  }
+  else {
     // Not playing - start from 0
     toGain.setValueAtTime(0, startTime)
     await toTrack.play()
@@ -689,12 +690,12 @@ function generateEqualPowerCurve(
 
   for (let i = 0; i < length; i++) {
     const percent = i / (length - 1)
-    const angle = percent * 0.5 * Math.PI  // 0 to π/2
+    const angle = percent * 0.5 * Math.PI // 0 to π/2
 
     // Equal-power: cos²(x) + sin²(x) = 1
     curve[i] = direction === 'in'
-      ? Math.sin(angle)   // 0 → 1
-      : Math.cos(angle)   // 1 → 0
+      ? Math.sin(angle) // 0 → 1
+      : Math.cos(angle) // 1 → 0
   }
 
   return curve
@@ -707,8 +708,8 @@ function generateEqualPowerCurve(
 // src/beat-track.ts (extend existing class)
 export class BeatTrack extends Sampler {
   // Lookahead scheduling state
-  private scheduleAheadTime = 0.1  // 100ms lookahead
-  private schedulerInterval = 25   // 25ms check interval
+  private scheduleAheadTime = 0.1 // 100ms lookahead
+  private schedulerInterval = 25 // 25ms check interval
   private nextBeatTime = 0
   private currentBeatIndex = 0
   private timerID: number | null = null

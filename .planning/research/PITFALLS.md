@@ -36,23 +36,23 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
 2. **Pick up from current value** when retriggering:
    ```typescript
    // BAD: Starts new attack from 0, creates discontinuity
-   gainParam.cancelScheduledValues(now);
-   gainParam.setValueAtTime(0, now);
-   gainParam.linearRampToValueAtTime(1, now + attackTime);
+   gainParam.cancelScheduledValues(now)
+   gainParam.setValueAtTime(0, now)
+   gainParam.linearRampToValueAtTime(1, now + attackTime)
 
    // GOOD: Picks up from current value
-   const currentGain = gainParam.value; // Get actual current value
-   gainParam.cancelScheduledValues(now);
-   gainParam.setValueAtTime(currentGain, now);
+   const currentGain = gainParam.value // Get actual current value
+   gainParam.cancelScheduledValues(now)
+   gainParam.setValueAtTime(currentGain, now)
    // Adjust attack duration based on distance to travel
-   const adjustedAttack = attackTime * (1 - currentGain);
-   gainParam.linearRampToValueAtTime(1, now + adjustedAttack);
+   const adjustedAttack = attackTime * (1 - currentGain)
+   gainParam.linearRampToValueAtTime(1, now + adjustedAttack)
    ```
 
 3. **Use setTargetAtTime for smooth transitions**:
    ```typescript
    // Eliminates clicks by gradually approaching target
-   gainParam.setTargetAtTime(targetValue, startTime, timeConstant);
+   gainParam.setTargetAtTime(targetValue, startTime, timeConstant)
    ```
 
 **Detection:** Listen for clicks/pops during rapid note retriggering, use oscilloscope visualization to see gain discontinuities
@@ -87,31 +87,31 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
    ```typescript
    // BAD: Will drift and stutter
    setInterval(() => {
-     playBeat();
-   }, 500); // Supposed to be every 500ms
+     playBeat()
+   }, 500) // Supposed to be every 500ms
 
    // GOOD: Schedule with AudioContext time
    function scheduleBeats(currentBeat: number) {
-     const beatTime = audioContext.currentTime + (currentBeat * 0.5);
-     scheduleSound(beatTime);
+     const beatTime = audioContext.currentTime + (currentBeat * 0.5)
+     scheduleSound(beatTime)
    }
    ```
 
 2. **Use lookahead scheduling pattern**:
    ```typescript
    // Schedule events 100ms ahead using AudioContext time
-   let nextNoteTime = audioContext.currentTime;
-   const scheduleAheadTime = 0.1; // 100ms lookahead
+   let nextNoteTime = audioContext.currentTime
+   const scheduleAheadTime = 0.1 // 100ms lookahead
 
    function scheduler() {
      while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
-       scheduleNote(nextNoteTime);
-       nextNoteTime += 60.0 / tempo; // Advance by note duration
+       scheduleNote(nextNoteTime)
+       nextNoteTime += 60.0 / tempo // Advance by note duration
      }
    }
 
    // Use JavaScript timer ONLY for checking/scheduling, not timing
-   setInterval(scheduler, 25); // Check every 25ms
+   setInterval(scheduler, 25) // Check every 25ms
    ```
 
 3. **Dispatch events based on audio time, not wall time**:
@@ -153,21 +153,21 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
 1. **Swap nodes periodically** to clear event lists:
    ```typescript
    class ADSREnvelope {
-     private eventCount = 0;
-     private readonly MAX_EVENTS = 1000;
+     private eventCount = 0
+     private readonly MAX_EVENTS = 1000
 
      trigger() {
-       this.eventCount++;
+       this.eventCount++
 
        // Recreate gain node every 1000 triggers
        if (this.eventCount > this.MAX_EVENTS) {
-         const oldGain = this.gainNode;
-         this.gainNode = audioContext.createGain();
-         this.gainNode.gain.value = oldGain.gain.value;
+         const oldGain = this.gainNode
+         this.gainNode = audioContext.createGain()
+         this.gainNode.gain.value = oldGain.gain.value
          // Reconnect in audio graph
-         this.reconnectGainNode();
-         oldGain.disconnect();
-         this.eventCount = 0;
+         this.reconnectGainNode()
+         oldGain.disconnect()
+         this.eventCount = 0
        }
 
        // Schedule envelope...
@@ -178,18 +178,18 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
 2. **Use cancelScheduledValues() aggressively**:
    ```typescript
    // Before scheduling new events, clear old ones
-   gainParam.cancelScheduledValues(audioContext.currentTime);
+   gainParam.cancelScheduledValues(audioContext.currentTime)
    ```
 
 3. **Prefer setTargetAtTime over long ramp chains**:
    ```typescript
    // BAD: Creates many automation events
    for (let i = 0; i < 100; i++) {
-     gainParam.linearRampToValueAtTime(values[i], times[i]);
+     gainParam.linearRampToValueAtTime(values[i], times[i])
    }
 
    // BETTER: Single event with time constant
-   gainParam.setTargetAtTime(targetValue, startTime, timeConstant);
+   gainParam.setTargetAtTime(targetValue, startTime, timeConstant)
    ```
 
 4. **Monitor node reuse in long-running applications**:
@@ -230,14 +230,14 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
 1. **ALWAYS create new source node per playback**:
    ```typescript
    class Sound {
-     private audioBuffer: AudioBuffer; // Reuse this
+     private audioBuffer: AudioBuffer // Reuse this
 
      play() {
        // Create NEW source for each play
-       const source = audioContext.createBufferSource();
-       source.buffer = this.audioBuffer; // Reuse buffer
-       source.connect(this.gainNode);
-       source.start();
+       const source = audioContext.createBufferSource()
+       source.buffer = this.audioBuffer // Reuse buffer
+       source.connect(this.gainNode)
+       source.start()
 
        // Don't keep reference - "fire and forget"
        // Will be garbage collected after playback
@@ -255,9 +255,9 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
      ) {}
 
      play() {
-       const source = this.createSourceNode(); // New every time
-       this.controller.updateAudioSource(source);
-       source.start();
+       const source = this.createSourceNode() // New every time
+       this.controller.updateAudioSource(source)
+       source.start()
      }
    }
    ```
@@ -299,13 +299,13 @@ Mistakes that cause audible artifacts, rewrites, or major performance issues.
 1. **NEVER mix direct assignment with automation**:
    ```typescript
    // BAD: Mixing styles
-   gainParam.value = 0.5; // Direct assignment
-   gainParam.linearRampToValueAtTime(1, time); // Automation - now .value is ignored!
+   gainParam.value = 0.5 // Direct assignment
+   gainParam.linearRampToValueAtTime(1, time) // Automation - now .value is ignored!
 
    // GOOD: Use only automation methods
-   gainParam.cancelScheduledValues(audioContext.currentTime);
-   gainParam.setValueAtTime(0.5, audioContext.currentTime);
-   gainParam.linearRampToValueAtTime(1, time);
+   gainParam.cancelScheduledValues(audioContext.currentTime)
+   gainParam.setValueAtTime(0.5, audioContext.currentTime)
+   gainParam.linearRampToValueAtTime(1, time)
    ```
 
 2. **In ez-audio's controller pattern, enforce consistency**:
@@ -385,16 +385,17 @@ Mistakes that cause delays, performance issues, or technical debt.
 1. **Use minimum FFT size for use case**:
    ```typescript
    class AudioVisualizer {
-     private analyser: AnalyserNode;
+     private analyser: AnalyserNode
 
      constructor(audioContext: AudioContext, mode: 'waveform' | 'spectrum') {
-       this.analyser = audioContext.createAnalyser();
+       this.analyser = audioContext.createAnalyser()
 
        // Match FFT size to visualization needs
        if (mode === 'waveform') {
-         this.analyser.fftSize = 256; // Minimal for waveform
-       } else {
-         this.analyser.fftSize = 1024; // Balance for spectrum
+         this.analyser.fftSize = 256 // Minimal for waveform
+       }
+       else {
+         this.analyser.fftSize = 1024 // Balance for spectrum
        }
      }
    }
@@ -438,7 +439,7 @@ Mistakes that cause delays, performance issues, or technical debt.
      performance: { fftSize: 256, smoothing: 0.5 },
      balanced: { fftSize: 1024, smoothing: 0.7 },
      quality: { fftSize: 2048, smoothing: 0.8 },
-   };
+   }
    ```
 
 **Detection:**
@@ -475,16 +476,16 @@ Mistakes that cause delays, performance issues, or technical debt.
    ```typescript
    class Sound {
      play() {
-       const source = audioContext.createBufferSource();
-       source.buffer = this.audioBuffer;
-       source.connect(this.gainNode);
+       const source = audioContext.createBufferSource()
+       source.buffer = this.audioBuffer
+       source.connect(this.gainNode)
 
        // CRITICAL: Disconnect when done
        source.onended = () => {
-         source.disconnect();
-       };
+         source.disconnect()
+       }
 
-       source.start();
+       source.start()
      }
    }
    ```
@@ -494,19 +495,19 @@ Mistakes that cause delays, performance issues, or technical debt.
    class Track {
      stop() {
        if (this.source) {
-         this.source.stop();
-         this.source.disconnect(); // Don't forget this
-         this.source = null;
+         this.source.stop()
+         this.source.disconnect() // Don't forget this
+         this.source = null
        }
      }
 
      dispose() {
-       this.stop();
+       this.stop()
        // Disconnect the entire chain
-       this.gainNode.disconnect();
-       this.pannerNode.disconnect();
+       this.gainNode.disconnect()
+       this.pannerNode.disconnect()
        // Dereference AudioBuffer
-       this.audioBuffer = null;
+       this.audioBuffer = null
      }
    }
    ```
@@ -514,18 +515,18 @@ Mistakes that cause delays, performance issues, or technical debt.
 3. **Monitor memory in debug mode**:
    ```typescript
    class DebugMemoryMonitor {
-     private nodeCount = 0;
+     private nodeCount = 0
 
      trackNode(node: AudioNode) {
-       this.nodeCount++;
-       node.addEventListener('ended', () => this.nodeCount--);
+       this.nodeCount++
+       node.addEventListener('ended', () => this.nodeCount--)
      }
 
      getStats() {
        return {
          activeNodes: this.nodeCount,
          estimatedMemory: this.nodeCount * 50000 // Rough estimate
-       };
+       }
      }
    }
    ```
@@ -534,15 +535,15 @@ Mistakes that cause delays, performance issues, or technical debt.
    ```typescript
    // Instead of keeping 100 AudioBuffers, use shared buffer with offset
    class AudioSpriteSheet {
-     private buffer: AudioBuffer;
-     private sprites: Map<string, { offset: number, duration: number }>;
+     private buffer: AudioBuffer
+     private sprites: Map<string, { offset: number, duration: number }>
 
      play(spriteName: string) {
-       const sprite = this.sprites.get(spriteName);
-       const source = audioContext.createBufferSource();
-       source.buffer = this.buffer; // Single shared buffer
-       source.start(0, sprite.offset, sprite.duration);
-       source.onended = () => source.disconnect(); // Clean up
+       const sprite = this.sprites.get(spriteName)
+       const source = audioContext.createBufferSource()
+       source.buffer = this.buffer // Single shared buffer
+       source.start(0, sprite.offset, sprite.duration)
+       source.onended = () => source.disconnect() // Clean up
      }
    }
    ```
@@ -585,13 +586,13 @@ Mistakes that cause delays, performance issues, or technical debt.
      connect(source: AudioNode, destination: AudioNode) {
        // Validate same context
        if (source.context !== destination.context) {
-         throw new Error('Cannot connect nodes from different AudioContexts');
+         throw new Error('Cannot connect nodes from different AudioContexts')
        }
 
        // Validate index ranges if using specific inputs/outputs
        // (Most nodes have 1 input and 1 output, but some have multiple)
 
-       source.connect(destination);
+       source.connect(destination)
      }
    }
    ```
@@ -599,23 +600,23 @@ Mistakes that cause delays, performance issues, or technical debt.
 2. **Build chains incrementally with validation**:
    ```typescript
    class EffectsChain {
-     private nodes: AudioNode[] = [];
+     private nodes: AudioNode[] = []
 
      addEffect(effect: AudioNode): this {
        if (this.nodes.length > 0) {
-         const lastNode = this.nodes[this.nodes.length - 1];
-         lastNode.disconnect(); // Disconnect old routing
-         lastNode.connect(effect); // Connect to new effect
+         const lastNode = this.nodes[this.nodes.length - 1]
+         lastNode.disconnect() // Disconnect old routing
+         lastNode.connect(effect) // Connect to new effect
        }
 
-       this.nodes.push(effect);
-       return this; // Fluent API
+       this.nodes.push(effect)
+       return this // Fluent API
      }
 
      connectToDestination(destination: AudioNode) {
        if (this.nodes.length > 0) {
-         const lastNode = this.nodes[this.nodes.length - 1];
-         lastNode.connect(destination);
+         const lastNode = this.nodes[this.nodes.length - 1]
+         lastNode.connect(destination)
        }
      }
    }
@@ -640,8 +641,8 @@ Mistakes that cause delays, performance issues, or technical debt.
    ```typescript
    // Debug mode: print connection graph
    if (DEBUG) {
-     console.log('Audio Graph:');
-     console.log(this.source, '→', ...this.effects, '→', this.destination);
+     console.log('Audio Graph:')
+     console.log(this.source, '→', ...this.effects, '→', this.destination)
    }
    ```
 
@@ -684,33 +685,33 @@ Mistakes that cause delays, performance issues, or technical debt.
      position: number // 0 = full A, 1 = full B
    ) {
      // Equal power curve (constant power panning law)
-     const gainA = Math.cos(position * Math.PI / 2);
-     const gainB = Math.sin(position * Math.PI / 2);
+     const gainA = Math.cos(position * Math.PI / 2)
+     const gainB = Math.sin(position * Math.PI / 2)
 
-     trackA.gain.setValueAtTime(gainA, audioContext.currentTime);
-     trackB.gain.setValueAtTime(gainB, audioContext.currentTime);
+     trackA.gain.setValueAtTime(gainA, audioContext.currentTime)
+     trackB.gain.setValueAtTime(gainB, audioContext.currentTime)
    }
    ```
 
 2. **Implement exponential ramps for fades**:
    ```typescript
    function fadeOut(gainNode: GainNode, duration: number) {
-     const now = audioContext.currentTime;
-     gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+     const now = audioContext.currentTime
+     gainNode.gain.setValueAtTime(gainNode.gain.value, now)
      // Exponential feels more natural than linear
-     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration)
    }
 
    function fadeIn(gainNode: GainNode, duration: number) {
-     const now = audioContext.currentTime;
-     gainNode.gain.setValueAtTime(0.0001, now);
-     gainNode.gain.exponentialRampToValueAtTime(1, now + duration);
+     const now = audioContext.currentTime
+     gainNode.gain.setValueAtTime(0.0001, now)
+     gainNode.gain.exponentialRampToValueAtTime(1, now + duration)
    }
    ```
 
 3. **Provide crossfade curve options**:
    ```typescript
-   type CrossfadeCurve = 'linear' | 'equal-power' | 'exponential';
+   type CrossfadeCurve = 'linear' | 'equal-power' | 'exponential'
 
    class Crossfader {
      crossfade(
@@ -721,15 +722,15 @@ Mistakes that cause delays, performance issues, or technical debt.
      ) {
        switch (curve) {
          case 'equal-power':
-           this.equalPowerCrossfade(trackA, trackB, duration);
-           break;
+           this.equalPowerCrossfade(trackA, trackB, duration)
+           break
          case 'exponential':
-           this.exponentialCrossfade(trackA, trackB, duration);
-           break;
+           this.exponentialCrossfade(trackA, trackB, duration)
+           break
          case 'linear':
            // Still provide linear, but document it's not recommended
-           this.linearCrossfade(trackA, trackB, duration);
-           break;
+           this.linearCrossfade(trackA, trackB, duration)
+           break
        }
      }
    }
@@ -769,13 +770,13 @@ Mistakes that cause delays, performance issues, or technical debt.
 1. **Singleton pattern for AudioContext (already in ez-audio)**:
    ```typescript
    // GOOD: Already implemented in ez-audio
-   let audioContext: AudioContext;
+   let audioContext: AudioContext
 
    export async function getAudioContext(): Promise<AudioContext> {
      if (!audioContext) {
-       audioContext = new AudioContext();
+       audioContext = new AudioContext()
      }
-     return audioContext;
+     return audioContext
    }
    ```
 
@@ -783,14 +784,15 @@ Mistakes that cause delays, performance issues, or technical debt.
    ```typescript
    // BAD: Creates new context on error
    try {
-     audioContext.resume();
-   } catch (e) {
-     audioContext = new AudioContext(); // DON'T DO THIS
+     audioContext.resume()
+   }
+   catch (e) {
+     audioContext = new AudioContext() // DON'T DO THIS
    }
 
    // GOOD: Resume existing context
    if (audioContext.state === 'suspended') {
-     await audioContext.resume();
+     await audioContext.resume()
    }
    ```
 
@@ -803,16 +805,17 @@ Mistakes that cause delays, performance issues, or technical debt.
    ```typescript
    async function ensureAudioContext() {
      if (!audioContext) {
-       audioContext = new AudioContext();
+       audioContext = new AudioContext()
      }
 
      // Handle all states
      if (audioContext.state === 'suspended') {
-       await audioContext.resume();
-     } else if (audioContext.state === 'closed') {
+       await audioContext.resume()
+     }
+     else if (audioContext.state === 'closed') {
        // Context was closed - this is rare and usually intentional
        // Could throw error or create new one, but document this choice
-       throw new Error('AudioContext was closed. Cannot reopen.');
+       throw new Error('AudioContext was closed. Cannot reopen.')
      }
    }
    ```
@@ -856,19 +859,19 @@ Mistakes that cause annoyance but are easily fixable.
    ```typescript
    class AudioInitializer {
      async init() {
-       await audioContext.resume();
+       await audioContext.resume()
 
        // Test if audio is actually working
-       const testOscillator = audioContext.createOscillator();
-       const testGain = audioContext.createGain();
-       testGain.gain.value = 0.001; // Very quiet
-       testOscillator.connect(testGain).connect(audioContext.destination);
-       testOscillator.start();
-       testOscillator.stop(audioContext.currentTime + 0.01);
+       const testOscillator = audioContext.createOscillator()
+       const testGain = audioContext.createGain()
+       testGain.gain.value = 0.001 // Very quiet
+       testOscillator.connect(testGain).connect(audioContext.destination)
+       testOscillator.start()
+       testOscillator.stop(audioContext.currentTime + 0.01)
 
        // If iOS and might be muted, warn user
        if (this.isIOS() && audioContext.state === 'running') {
-         this.showSilentModeWarning();
+         this.showSilentModeWarning()
        }
      }
 
@@ -887,8 +890,8 @@ Mistakes that cause annoyance but are easily fixable.
    ```typescript
    // GOOD: Already implemented
    if (useIosMuteWorkaround && !iosWorkaroundPerformed) {
-     unmuteIosAudio(audioContext);
-     iosWorkaroundPerformed = true;
+     unmuteIosAudio(audioContext)
+     iosWorkaroundPerformed = true
    }
    ```
 
@@ -922,12 +925,12 @@ Mistakes that cause annoyance but are easily fixable.
 **Prevention:**
 1. **Use tiny value instead of zero**:
    ```typescript
-   const ALMOST_ZERO = 0.0001; // -80dB, effectively silent
+   const ALMOST_ZERO = 0.0001 // -80dB, effectively silent
 
    function fadeOut(gainParam: AudioParam, duration: number) {
-     const now = audioContext.currentTime;
-     gainParam.setValueAtTime(gainParam.value, now);
-     gainParam.exponentialRampToValueAtTime(ALMOST_ZERO, now + duration);
+     const now = audioContext.currentTime
+     gainParam.setValueAtTime(gainParam.value, now)
+     gainParam.exponentialRampToValueAtTime(ALMOST_ZERO, now + duration)
    }
    ```
 
@@ -939,14 +942,14 @@ Mistakes that cause annoyance but are easily fixable.
      endTime: number
    ) {
      if (targetValue <= 0) {
-       throw new Error('Exponential ramp target must be > 0. Use 0.0001 for silence.');
+       throw new Error('Exponential ramp target must be > 0. Use 0.0001 for silence.')
      }
 
      if (param.value <= 0) {
-       param.setValueAtTime(0.0001, audioContext.currentTime);
+       param.setValueAtTime(0.0001, audioContext.currentTime)
      }
 
-     param.exponentialRampToValueAtTime(targetValue, endTime);
+     param.exponentialRampToValueAtTime(targetValue, endTime)
    }
    ```
 
@@ -992,16 +995,16 @@ Mistakes that cause annoyance but are easily fixable.
 1. **Preload after initial user gesture**:
    ```typescript
    class Preloader {
-     private preloadTriggered = false;
+     private preloadTriggered = false
 
      async init() {
        // Wait for user gesture
        document.addEventListener('click', async () => {
          if (!this.preloadTriggered) {
-           this.preloadTriggered = true;
-           await this.preloadAllSounds();
+           this.preloadTriggered = true
+           await this.preloadAllSounds()
          }
-       }, { once: true });
+       }, { once: true })
      }
    }
    ```

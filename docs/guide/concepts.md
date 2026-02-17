@@ -275,7 +275,7 @@ const filter = createFilterEffect('lowpass', { frequency: 800 })
 sound.addEffect(filter)
 
 // Toggle bypass — chain rewires automatically
-filter.bypass = true  // Signal skips this effect
+filter.bypass = true // Signal skips this effect
 filter.bypass = false // Signal flows through effect again
 ```
 

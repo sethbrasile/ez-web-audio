@@ -76,22 +76,22 @@ import { MusicallyAware } from '@/musical-identity'
 
 **Example from `src/oscillator.ts`:**
 ```typescript
-// Type import from utils
-import type { TimeObject } from '@utils/create-time-object'
-
-// Value imports from utils
-import createTimeObject from '@utils/create-time-object'
-import { get } from '@utils/prop-access'
-
 // Type import from controllers
 import type { ControlType, RampType } from '@controllers/base-param-controller'
 
-// Value imports from controllers
-import { OscillatorController } from './controllers/oscillator-controller'
-
+// Type import from utils
+import type { TimeObject } from '@utils/create-time-object'
 // Type and value imports from local
 import type { BaseSoundOptions } from './base-sound'
+
+// Value imports from utils
+import createTimeObject from '@utils/create-time-object'
+
+import { get } from '@utils/prop-access'
+
 import { BaseSound } from './base-sound'
+// Value imports from controllers
+import { OscillatorController } from './controllers/oscillator-controller'
 ```
 
 **Path Aliases:**

@@ -90,7 +90,7 @@ class Envelope {
 
   // Apply commands to AudioParam
   applyTo(param: AudioParam, startTime: number): void {
-    this.getSchedulingCommands(startTime).forEach(cmd => {
+    this.getSchedulingCommands(startTime).forEach((cmd) => {
       param[cmd.method](...cmd.args)
     })
   }
@@ -186,7 +186,8 @@ class Envelope {
     // Modern browsers only - holds value at cancellation time
     if ('cancelAndHoldAtTime' in param) {
       param.cancelAndHoldAtTime(startTime)
-    } else {
+    }
+    else {
       // Fallback: calculate manually or use polyfill
       param.cancelScheduledValues(startTime)
       param.setValueAtTime(this.estimateCurrentValue(param), startTime)
@@ -408,7 +409,8 @@ class RetriggerableEnvelope extends Envelope {
 
       // Attack from current value to peak
       gainParam.linearRampToValueAtTime(1, startTime + this.attackTime)
-    } else {
+    }
+    else {
       // First trigger - start from zero
       gainParam.setValueAtTime(0, startTime)
       gainParam.linearRampToValueAtTime(1, startTime + this.attackTime)
@@ -507,7 +509,7 @@ const osc = await createOscillator({
     releaseTime: 0.4
   }
 })
-osc.play()  // Envelope applied automatically
+osc.play() // Envelope applied automatically
 ```
 
 ### Browser-Safe cancelAndHoldAtTime
@@ -528,13 +530,15 @@ class BrowserSafeEnvelope extends Envelope {
       if (this.hasCancelAndHold) {
         // Modern browsers - simple and accurate
         gainParam.cancelAndHoldAtTime(startTime)
-      } else {
+      }
+      else {
         // Firefox/Safari fallback - good enough approximation
         gainParam.cancelScheduledValues(startTime)
         const currentValue = this.estimateCurrentValue(gainParam, startTime)
         gainParam.setValueAtTime(currentValue, startTime)
       }
-    } else {
+    }
+    else {
       gainParam.setValueAtTime(0, startTime)
     }
 

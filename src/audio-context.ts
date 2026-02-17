@@ -68,14 +68,14 @@ export async function unlockAudioContext(audioContext: AudioContext): Promise<vo
   await audioContext.resume()
 }
 
-export let iosWorkaroundPerformed = false
+export const iosWorkaround = { performed: false }
 
 /**
  * Mark the iOS workaround as having been performed.
  * @internal
  */
 export function markIosWorkaroundPerformed(): void {
-  iosWorkaroundPerformed = true
+  iosWorkaround.performed = true
 }
 
 /**
@@ -84,5 +84,5 @@ export function markIosWorkaroundPerformed(): void {
  */
 export function _resetAudioContext(): void {
   _audioContext = null
-  iosWorkaroundPerformed = false
+  iosWorkaround.performed = false
 }

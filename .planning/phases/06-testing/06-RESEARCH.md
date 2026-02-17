@@ -234,9 +234,9 @@ Verified patterns from official sources and existing codebase:
 
 ### Testing Controller Parameter Updates
 ```typescript
-// Source: Project pattern (to be implemented)
-import { describe, it, expect, beforeEach } from 'vitest'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+// Source: Project pattern (to be implemented)
+import { beforeEach, describe, expect, it } from 'vitest'
 import { SoundController } from './sound-controller'
 
 describe('SoundController', () => {
@@ -363,7 +363,7 @@ describe('BeatTrack', () => {
     const beatHandler = vi.fn()
     beatTrack.addEventListener('beat', beatHandler)
 
-    beatTrack.playActiveBeats(120, 1/4) // 120 BPM, quarter notes
+    beatTrack.playActiveBeats(120, 1 / 4) // 120 BPM, quarter notes
 
     // At 120 BPM, quarter note = 500ms
     vi.advanceTimersByTime(500)

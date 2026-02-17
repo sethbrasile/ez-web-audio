@@ -273,9 +273,9 @@ sound.update('gain').to(0.5).from('ratio')
 
 **Alternative Phrasings:**
 ```typescript
-sound.update('gain').to(0.5).as('ratio')        // clearer - "interpret 0.5 AS a ratio"
-sound.update('gain').to(0.5).using('ratio')     // clearer - "interpret USING ratio scale"
-sound.update('gain').to(0.5).in('ratio')        // clearer - "0.5 IN ratio units"
+sound.update('gain').to(0.5).as('ratio') // clearer - "interpret 0.5 AS a ratio"
+sound.update('gain').to(0.5).using('ratio') // clearer - "interpret USING ratio scale"
+sound.update('gain').to(0.5).in('ratio') // clearer - "0.5 IN ratio units"
 ```
 
 **Recommendation:** Rename `.from()` to `.as()` or `.using()` for clarity. This affects:
@@ -334,10 +334,18 @@ sound.update('gain').to(0.5).in('ratio')        // clearer - "0.5 IN ratio units
 **Playable Interface:**
 ```typescript
 interface Playable {
-  play(), playAt(), playIn(), playFor(), playInAndStopAfter()
-  stop(), stopIn(), stopAt()
-  isPlaying, duration
-  onPlaySet(), onPlayRamp()
+  play: () => any
+  playAt: () => any
+  playIn: () => any
+  playFor: () => any
+  playInAndStopAfter: () => any
+  stop: () => any
+  stopIn: () => any
+  stopAt: () => any
+  isPlaying
+  duration
+  onPlaySet: () => any
+  onPlayRamp: () => any
 }
 ```
 
@@ -347,9 +355,16 @@ interface Playable {
 **Connectable Interface:**
 ```typescript
 interface Connectable {
-  connections, audioSourceNode, percentGain
-  addConnection(), removeConnection(), getConnection(), getNodeFrom()
-  changePanTo(), changeGainTo(), update()
+  connections
+  audioSourceNode
+  percentGain
+  addConnection: () => any
+  removeConnection: () => any
+  getConnection: () => any
+  getNodeFrom: () => any
+  changePanTo: () => any
+  changeGainTo: () => any
+  update: () => any
 }
 ```
 

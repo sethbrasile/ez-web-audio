@@ -169,7 +169,7 @@ None - plan executed exactly as written.
 
 **Logarithmic frequency scaling** makes the pad "feel musical":
 ```typescript
-const frequency = 100 * Math.pow(20, ratio)  // Not linear!
+const frequency = 100 * 20 ** ratio // Not linear!
 ```
 
 This ensures equal horizontal distances represent equal pitch intervals (octaves), matching human musical perception.

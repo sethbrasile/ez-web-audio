@@ -99,7 +99,7 @@ class LayeredSound implements Playable, Connectable {
 
   // Wire layers → masterGain → masterPanner → connections → destination
   private wireConnections(): void {
-    this.layers.forEach(layer => {
+    this.layers.forEach((layer) => {
       layer.connect(this.masterGainNode)
     })
     // Then wire master nodes through connections array
@@ -123,7 +123,7 @@ class LayeredSound extends BaseSound {
 
   protected setup(): void {
     // Create multiple AudioBufferSourceNodes
-    this.layerNodes = this.layers.map(buffer => {
+    this.layerNodes = this.layers.map((buffer) => {
       const node = this.audioContext.createBufferSource()
       node.buffer = buffer
       return node
@@ -133,7 +133,7 @@ class LayeredSound extends BaseSound {
 
   protected wireConnections(): void {
     // Connect all layer nodes to same gain node
-    this.layerNodes.forEach(node => {
+    this.layerNodes.forEach((node) => {
       node.connect(this.gainNode)
     })
     // Then continue normal connection chain
@@ -231,10 +231,10 @@ gainNode.gain.linearRampToValueAtTime(0, t_released + releaseDuration)
 
 ```typescript
 interface EnvelopeConfig {
-  attack: number   // seconds
-  decay: number    // seconds
-  sustain: number  // 0-1 ratio
-  release: number  // seconds
+  attack: number // seconds
+  decay: number // seconds
+  sustain: number // 0-1 ratio
+  release: number // seconds
   attackCurve?: 'linear' | 'exponential'
   releaseCurve?: 'linear' | 'exponential'
 }
@@ -250,7 +250,8 @@ class Envelope {
     param.setValueAtTime(0, startTime)
     if (this.config.attackCurve === 'exponential') {
       param.exponentialRampToValueAtTime(1, startTime + attack)
-    } else {
+    }
+    else {
       param.linearRampToValueAtTime(1, startTime + attack)
     }
 
@@ -264,7 +265,8 @@ class Envelope {
       param.setValueAtTime(param.value, releaseTime)
       if (this.config.releaseCurve === 'exponential') {
         param.exponentialRampToValueAtTime(0.001, releaseTime + release) // 0.001 instead of 0 for exp
-      } else {
+      }
+      else {
         param.linearRampToValueAtTime(0, releaseTime + release)
       }
     }
@@ -407,13 +409,13 @@ Note: "The Web Audio API doesn't support any sort of time-based event dispatch i
 ```typescript
 // Define typed events
 interface BaseSoundEventMap {
-  'play': CustomEvent<{ time: number }>
-  'stop': CustomEvent<{ time: number }>
-  'end': CustomEvent<{ duration: number }>
-  'pause': CustomEvent<{ position: number }>
-  'resume': CustomEvent<{ position: number }>
-  'load': CustomEvent<{ buffer: AudioBuffer }>
-  'error': CustomEvent<{ error: Error, type: 'load' | 'play' }>
+  play: CustomEvent<{ time: number }>
+  stop: CustomEvent<{ time: number }>
+  end: CustomEvent<{ duration: number }>
+  pause: CustomEvent<{ position: number }>
+  resume: CustomEvent<{ position: number }>
+  load: CustomEvent<{ buffer: AudioBuffer }>
+  error: CustomEvent<{ error: Error, type: 'load' | 'play' }>
 }
 
 // Extend BaseSound to inherit from EventTarget
@@ -683,7 +685,8 @@ class EffectChainBuilder {
   // Add individual effects
   reverb(impulseResponse?: AudioBuffer): this {
     const convolver = this.audioContext.createConvolver()
-    if (impulseResponse) convolver.buffer = impulseResponse
+    if (impulseResponse)
+      convolver.buffer = impulseResponse
     this.effects.push({ audioNode: convolver, name: 'Reverb' })
     return this
   }
@@ -972,8 +975,8 @@ const layered = new LayeredSound(ctx, [sound1, sound2, sound3])
 layered.applyPreset(EffectPresets.CathedralReverb)
 
 // Listen for events
-layered.on('play', (e) => console.log('All layers started'))
-layered.on('end', (e) => console.log('All layers finished'))
+layered.on('play', e => console.log('All layers started'))
+layered.on('end', e => console.log('All layers finished'))
 
 layered.play()
 ```

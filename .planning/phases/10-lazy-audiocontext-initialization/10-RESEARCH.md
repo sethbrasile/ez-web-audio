@@ -308,7 +308,7 @@ public async playAt(time: number): Promise<void> {
 ```typescript
 // BEFORE Phase 10 (required initAudio call)
 button.addEventListener('click', async () => {
-  await initAudio()  // REQUIRED
+  await initAudio() // REQUIRED
   const sound = await createSound('/click.mp3')
   sound.play()
 })
@@ -316,7 +316,7 @@ button.addEventListener('click', async () => {
 // AFTER Phase 10 (initAudio is optional)
 // Option 1: Explicit control (still works, no breaking change)
 button.addEventListener('click', async () => {
-  await initAudio()  // OPTIONAL - for iOS workaround timing
+  await initAudio() // OPTIONAL - for iOS workaround timing
   const sound = await createSound('/click.mp3')
   sound.play()
 })
@@ -324,7 +324,7 @@ button.addEventListener('click', async () => {
 // Option 2: Fully lazy (new capability)
 button.addEventListener('click', async () => {
   const sound = await createSound('/click.mp3')
-  sound.play()  // Context created + resumed automatically
+  sound.play() // Context created + resumed automatically
 })
 
 // Option 3: Pre-warm context, play later (new capability)
@@ -333,7 +333,7 @@ button.addEventListener('click', async () => {
   // Context created but may be suspended
 
   // Later, after another user gesture...
-  sound.play()  // Auto-resumes if needed
+  sound.play() // Auto-resumes if needed
 })
 ```
 

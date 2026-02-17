@@ -59,7 +59,7 @@ if (isPreloaded('/audio/sound.mp3')) {
 }
 
 // Clear cache
-clearPreloadCache()              // Clear all
+clearPreloadCache() // Clear all
 clearPreloadCache('/audio/a.mp3') // Clear specific URL
 ```
 
@@ -89,7 +89,8 @@ export async function preload(urls: string | string[]): Promise<void> {
   const results = await Promise.allSettled(
     uncachedUrls.map(async (url) => {
       const response = await fetch(url)
-      if (!response.ok) throw new Error(`HTTP ${response.status} loading ${url}`)
+      if (!response.ok)
+        throw new Error(`HTTP ${response.status} loading ${url}`)
       return { url, response }
     })
   )
@@ -99,7 +100,8 @@ export async function preload(urls: string | string[]): Promise<void> {
   for (const result of results) {
     if (result.status === 'fulfilled') {
       responseCache.set(result.value.url, result.value.response)
-    } else {
+    }
+    else {
       errors.push(result.reason.message)
     }
   }

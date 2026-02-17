@@ -130,7 +130,7 @@ The **component implementation is correct** (uses playBeats/stop), but the docum
 
 #### 1. Drum Machine Audio and Visual Sync
 
-**Test:** 
+**Test:**
 1. Visit `/examples/drum-machine`
 2. Click cells to create a pattern (e.g., kick on beats 1, 5, 9, 13)
 3. Click Play button

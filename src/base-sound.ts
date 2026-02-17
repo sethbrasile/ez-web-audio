@@ -210,22 +210,21 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     this.bypassInterceptions.set(effect, existingDesc)
 
-    const sound = this
     Object.defineProperty(effect, 'bypass', {
-      get(): boolean {
+      get: (): boolean => {
         if (existingDesc?.get) {
           return existingDesc.get.call(effect)
         }
         return (effect as any)._bypass ?? false
       },
-      set(v: boolean) {
+      set: (v: boolean) => {
         if (existingDesc?.set) {
           existingDesc.set.call(effect, v)
         }
         else {
           (effect as any)._bypass = v
         }
-        sound.wireEffectChain()
+        this.wireEffectChain()
       },
       configurable: true,
       enumerable: true,
@@ -286,7 +285,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     // Disconnect effects
     for (const effect of effects) {
-      if (!effect) continue
+      if (!effect)
+        continue
       this.safeDisconnect(effect.output)
     }
 
@@ -305,7 +305,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     // Connect through non-bypassed effects in order
     for (const effect of effects) {
-      if (!effect) continue
+      if (!effect)
+        continue
       if (!effect.bypass) {
         currentNode.connect(effect.input)
         currentNode = effect.output
@@ -342,7 +343,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public addEffect(effect: Effect, position?: number): this {
     if (position !== undefined && position < 0) {
-      throw new Error('addEffect() position must be >= 0. Received: ' + position)
+      throw new Error(`addEffect() position must be >= 0. Received: ${position}`)
     }
     if (position !== undefined && position <= this.effects.length) {
       this.effects.splice(position, 0, effect)
@@ -415,7 +416,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       return this
 
     if (position !== undefined && position < 0) {
-      throw new Error('addEffects() position must be >= 0. Received: ' + position)
+      throw new Error(`addEffects() position must be >= 0. Received: ${position}`)
     }
 
     if (position !== undefined && position <= this.effects.length) {

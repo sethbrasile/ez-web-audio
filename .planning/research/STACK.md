@@ -34,10 +34,10 @@ For the new advanced features (ADSR envelopes, event systems, audio visualizatio
 ```typescript
 // Extend existing controller pattern
 interface ADSREnvelope {
-  attack: number   // seconds
-  decay: number    // seconds
-  sustain: number  // ratio (0-1)
-  release: number  // seconds
+  attack: number // seconds
+  decay: number // seconds
+  sustain: number // ratio (0-1)
+  release: number // seconds
 }
 
 class ADSRController {
@@ -96,11 +96,11 @@ setInterval(() => {
 ```typescript
 // Type-safe event map
 interface EZAudioEventMap {
-  'play': { time: number, sound: string }
-  'stop': { time: number, sound: string }
-  'ended': { sound: string }
-  'statechange': { state: AudioContextState }
-  'beat': { beatIndex: number, track: string }
+  play: { time: number, sound: string }
+  stop: { time: number, sound: string }
+  ended: { sound: string }
+  statechange: { state: AudioContextState }
+  beat: { beatIndex: number, track: string }
 }
 
 // Extend EventTarget with typed events
@@ -186,9 +186,9 @@ audioContext.addEventListener('statechange', () => {
 ```typescript
 interface VisualizationConfig {
   fftSize?: 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768
-  smoothingTimeConstant?: number  // 0-1, default 0.8
-  minDecibels?: number           // default -100
-  maxDecibels?: number           // default -30
+  smoothingTimeConstant?: number // 0-1, default 0.8
+  minDecibels?: number // default -100
+  maxDecibels?: number // default -30
 }
 
 class AudioVisualizer {
@@ -302,11 +302,11 @@ setInterval(() => {
 
 ```typescript
 interface AudioSprite {
-  src: string            // Path to audio file (mp3, wav, etc.)
+  src: string // Path to audio file (mp3, wav, etc.)
   sprite: {
     [spriteName: string]: [
-      number,            // Start offset in milliseconds
-      number             // Duration in milliseconds
+      number, // Start offset in milliseconds
+      number // Duration in milliseconds
     ]
   }
 }
@@ -315,10 +315,10 @@ interface AudioSprite {
 const drumSprites: AudioSprite = {
   src: '/sounds/drum-kit.wav',
   sprite: {
-    kick: [0, 500],        // 0ms start, 500ms duration
-    snare: [500, 400],     // 500ms start, 400ms duration
-    hihat: [900, 200],     // 900ms start, 200ms duration
-    crash: [1100, 1500]    // 1100ms start, 1500ms duration
+    kick: [0, 500], // 0ms start, 500ms duration
+    snare: [500, 400], // 500ms start, 400ms duration
+    hihat: [900, 200], // 900ms start, 200ms duration
+    crash: [1100, 1500] // 1100ms start, 1500ms duration
   }
 }
 ```
@@ -345,10 +345,12 @@ class AudioSpriteLoader {
   }
 
   playSprite(audioContext: AudioContext, spriteName: string): AudioBufferSourceNode {
-    if (!this.audioBuffer) throw new Error('Sprites not loaded')
+    if (!this.audioBuffer)
+      throw new Error('Sprites not loaded')
 
     const sprite = this.spriteMap.get(spriteName)
-    if (!sprite) throw new Error(`Sprite '${spriteName}' not found`)
+    if (!sprite)
+      throw new Error(`Sprite '${spriteName}' not found`)
 
     const source = audioContext.createBufferSource()
     source.buffer = this.audioBuffer
@@ -419,7 +421,7 @@ interface Effect {
 interface WetDryControl {
   wet: GainNode
   dry: GainNode
-  setMix(ratio: number): void  // 0 = all dry, 1 = all wet
+  setMix: (ratio: number) => void // 0 = all dry, 1 = all wet
 }
 
 // Reverb Effect (ConvolverNode)
@@ -445,7 +447,7 @@ class ReverbEffect implements Effect {
     this.wetDry = { wet, dry, setMix: (ratio: number) => {
       wet.gain.value = ratio
       dry.gain.value = 1 - ratio
-    }}
+    } }
 
     this.wetDry.setMix(options.mix ?? 0.5)
   }
@@ -470,9 +472,9 @@ class DelayEffect implements Effect {
   constructor(
     audioContext: AudioContext,
     options: {
-      delayTime?: number,      // seconds (max 5.0)
-      feedback?: number,       // 0-1
-      mix?: number            // 0-1
+      delayTime?: number // seconds (max 5.0)
+      feedback?: number // 0-1
+      mix?: number // 0-1
     } = {}
   ) {
     this.audioNode = audioContext.createDelay(5.0)
@@ -498,9 +500,9 @@ class FilterEffect implements Effect {
   constructor(
     audioContext: AudioContext,
     options: {
-      type?: BiquadFilterType,
-      frequency?: number,
-      Q?: number,
+      type?: BiquadFilterType
+      frequency?: number
+      Q?: number
       gain?: number
     } = {}
   ) {
@@ -520,10 +522,10 @@ class CompressorEffect implements Effect {
   constructor(
     audioContext: AudioContext,
     options: {
-      threshold?: number,
-      knee?: number,
-      ratio?: number,
-      attack?: number,
+      threshold?: number
+      knee?: number
+      ratio?: number
+      attack?: number
       release?: number
     } = {}
   ) {
@@ -549,7 +551,8 @@ class EffectsChain {
   addEffect(effect: Effect, position?: number): this {
     if (position !== undefined) {
       this.effects.splice(position, 0, effect)
-    } else {
+    }
+    else {
       this.effects.push(effect)
     }
     return this
@@ -771,8 +774,8 @@ This maintains ez-audio's value proposition: **small, fast, zero-dependency wrap
 
 **Don't:**
 ```typescript
-import Tone from 'tone'  // 200kb+ dependency
-import Howler from 'howler'  // Another wrapper library
+import Howler from 'howler' // Another wrapper library
+import Tone from 'tone' // 200kb+ dependency
 ```
 
 **Why:** ez-audio IS the wrapper library. Adding another wrapper defeats the purpose and adds bundle weight.
@@ -793,7 +796,7 @@ const processor = audioContext.createScriptProcessor(4096, 1, 1)
 **Don't:**
 ```typescript
 setInterval(() => {
-  gainNode.gain.value += 0.01  // Not sample-accurate, creates clicks
+  gainNode.gain.value += 0.01 // Not sample-accurate, creates clicks
 }, 10)
 ```
 
@@ -804,7 +807,7 @@ setInterval(() => {
 **Don't:**
 ```typescript
 requestAnimationFrame(() => {
-  const data = new Uint8Array(analyser.frequencyBinCount)  // Memory churn!
+  const data = new Uint8Array(analyser.frequencyBinCount) // Memory churn!
 })
 ```
 
@@ -814,7 +817,7 @@ requestAnimationFrame(() => {
 
 **Don't:**
 ```typescript
-const buffer = loadAudioFileSync(url)  // Blocks main thread
+const buffer = loadAudioFileSync(url) // Blocks main thread
 ```
 
 **Use instead:** async/await with fetch + decodeAudioData
@@ -840,15 +843,15 @@ pnpm install  # Existing dependencies only
 ```json
 {
   "compilerOptions": {
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],  // Already present
-    "strict": true,                             // Already present
-    "strictNullChecks": true,                   // Already present
+    "lib": ["ES2020", "DOM", "DOM.Iterable"], // Already present
+    "strict": true, // Already present
+    "strictNullChecks": true, // Already present
 
     // Ensure Web Audio API types available
     "types": ["vite/client"],
 
     // Enable decorators if using class-based patterns
-    "experimentalDecorators": false  // Not needed for recommended patterns
+    "experimentalDecorators": false // Not needed for recommended patterns
   }
 }
 ```

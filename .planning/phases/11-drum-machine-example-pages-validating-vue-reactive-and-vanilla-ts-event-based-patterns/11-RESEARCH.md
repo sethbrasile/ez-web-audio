@@ -133,13 +133,12 @@ This produces frame-accurate timing tied to audio playback, not system timers.
 function makeBeats(name: string) {
   const activeSet = new Set(defaultPatterns[name] ?? [])
   return Array.from({ length: NUM_BEATS }, (_, i) =>
-    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false })
-  )
+    reactive({ active: activeSet.has(i), currentTimeIsPlaying: false, isPlaying: false }))
 }
 
 // Later, swap in real beats seamlessly
 track.beats.forEach((stub, i) => { bt.beats[i].active = stub.active })
-track.beats = bt.beats  // Template updates automatically
+track.beats = bt.beats // Template updates automatically
 ```
 
 ### Anti-Patterns to Avoid
@@ -207,7 +206,7 @@ const kick = await createBeatTrack([
   '/audio/drum-samples/kick3.wav',
 ], {
   numBeats: 16,
-  wrapWith: (beat) => reactive(beat)  // Vue only, omit for vanilla
+  wrapWith: beat => reactive(beat) // Vue only, omit for vanilla
 })
 
 // Each beat.play() cycles through samples automatically
@@ -271,6 +270,7 @@ kick.on('beat', (e) => {
 
 <script setup>
 import { watch } from 'vue'
+
 const bpm = ref(120)
 
 watch(bpm, (val) => {
@@ -287,10 +287,11 @@ watch(bpm, (val) => {
 import { onUnmounted } from 'vue'
 
 onUnmounted(() => {
-  tracks.value.forEach(t => {
+  tracks.value.forEach((t) => {
     try {
       t.beatTrack?.stop()
-    } catch {}
+    }
+    catch {}
   })
 })
 ```
@@ -299,16 +300,16 @@ onUnmounted(() => {
 ```typescript
 // Pattern for vanilla implementation
 let beatTracks: BeatTrack[] = []
-const beatHandler = (e: CustomEvent) => { /* ... */ }
+function beatHandler(e: CustomEvent) { /* ... */ }
 
 function init() {
-  beatTracks.forEach(track => {
+  beatTracks.forEach((track) => {
     track.on('beat', beatHandler)
   })
 }
 
 function cleanup() {
-  beatTracks.forEach(track => {
+  beatTracks.forEach((track) => {
     track.off('beat', beatHandler)
     track.stop()
   })

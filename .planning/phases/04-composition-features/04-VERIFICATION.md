@@ -249,9 +249,9 @@ All required files exist:
 **Pattern 1: Exact Synchronization (LayeredSound)**
 ```typescript
 // Line 101-105 in layered-sound.ts
-const startTime = this.audioContext.currentTime  // Capture ONCE
+const startTime = this.audioContext.currentTime // Capture ONCE
 await Promise.all(
-  this.layers.map(layer => layer.playAt(startTime))  // Same value for all
+  this.layers.map(layer => layer.playAt(startTime)) // Same value for all
 )
 ```
 ✓ Correct implementation of Research Pattern 1 (exact sync via shared timestamp)

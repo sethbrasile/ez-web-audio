@@ -82,7 +82,7 @@ Created a comprehensive Vue reactive pattern example page featuring:
 ```typescript
 const kick = await createBeatTrack([...urls], {
   numBeats: 16,
-  wrapWith: (beat) => reactive(beat)  // ← Makes properties reactive
+  wrapWith: beat => reactive(beat) // ← Makes properties reactive
 })
 ```
 
@@ -129,7 +129,7 @@ watch(bpm, (val) => {
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack.stop())
     setTimeout(() => {
-      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1/16))
+      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1 / 16))
     }, 50)
   }
 })
@@ -143,7 +143,8 @@ Uses computed property watching beat states across all tracks:
 const currentStep = computed(() => {
   for (const track of tracks.value) {
     for (let i = 0; i < track.beats.length; i++) {
-      if (track.beats[i].currentTimeIsPlaying) return i
+      if (track.beats[i].currentTimeIsPlaying)
+        return i
     }
   }
   return 0

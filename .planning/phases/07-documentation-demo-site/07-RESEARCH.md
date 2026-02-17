@@ -165,15 +165,8 @@ The `createSound` function loads an audio file and returns a Promise...
 
 ```vue
 <!-- .vitepress/theme/components/AudioExample.vue -->
-<template>
-  <div class="audio-example">
-    <button @click="playSound">Play</button>
-    <pre><code>{{ code }}</code></pre>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const props = defineProps<{
   code: string
@@ -188,6 +181,15 @@ async function playSound() {
   sound.play()
 }
 </script>
+
+<template>
+  <div class="audio-example">
+    <button @click="playSound">
+      Play
+    </button>
+    <pre><code>{{ code }}</code></pre>
+  </div>
+</template>
 ```
 
 **Source:** [VitePress Using Vue in Markdown](https://vitepress.dev/guide/using-vue)
@@ -419,7 +421,7 @@ grep -r -B2 "^export (async )?function" src/ | grep "/\*\*" | wc -l  # Documente
 ```typescript
 // .vitepress/config.mts
 export default defineConfig({
-  base: process.env.BASE_PATH || '/ez-web-audio/',  // Match GitHub repo name
+  base: process.env.BASE_PATH || '/ez-web-audio/', // Match GitHub repo name
   // ...
 })
 ```
@@ -532,19 +534,6 @@ export default defineConfig({
 ```vue
 <!-- .vitepress/theme/components/AudioExample.vue -->
 <!-- Source: https://vitepress.dev/guide/using-vue -->
-<template>
-  <div class="audio-example">
-    <div class="controls">
-      <button @click="play" :disabled="playing">Play</button>
-      <button @click="stop" :disabled="!playing">Stop</button>
-      <span v-if="error" class="error">{{ error }}</span>
-    </div>
-    <div class="code">
-      <slot />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 
@@ -569,7 +558,8 @@ async function play() {
 
     // Reset after typical sound duration
     setTimeout(() => { playing.value = false }, 2000)
-  } catch (e) {
+  }
+  catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play'
     playing.value = false
   }
@@ -579,6 +569,23 @@ function stop() {
   playing.value = false
 }
 </script>
+
+<template>
+  <div class="audio-example">
+    <div class="controls">
+      <button :disabled="playing" @click="play">
+        Play
+      </button>
+      <button :disabled="!playing" @click="stop">
+        Stop
+      </button>
+      <span v-if="error" class="error">{{ error }}</span>
+    </div>
+    <div class="code">
+      <slot />
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .audio-example {

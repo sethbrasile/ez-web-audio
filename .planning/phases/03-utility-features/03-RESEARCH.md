@@ -269,15 +269,15 @@ Verified patterns from codebase and official sources:
 ```typescript
 // Based on audiosprite format and Howler.js patterns
 export interface SpriteDefinition {
-  start: number    // seconds
-  end: number      // seconds
-  loop?: boolean   // default false
+  start: number // seconds
+  end: number // seconds
+  loop?: boolean // default false
 }
 
 export interface SpriteManifest {
-  resources?: string[]   // optional, for multi-format support
+  resources?: string[] // optional, for multi-format support
   spritemap: Record<string, SpriteDefinition>
-  autoplay?: string      // sprite name to autoplay
+  autoplay?: string // sprite name to autoplay
 }
 
 export class AudioSprite {
@@ -343,7 +343,8 @@ export function isPreloaded(url: string): boolean {
 export function clearPreloadCache(url?: string): void {
   if (url) {
     responses.delete(url)
-  } else {
+  }
+  else {
     responses.clear()
   }
 }

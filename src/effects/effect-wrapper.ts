@@ -1,6 +1,6 @@
 import type { Effect } from './index'
-import { getOrCreateAudioContext } from '@/audio-context'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
+import { getOrCreateAudioContext } from '@/audio-context'
 
 /**
  * Minimal interface for external effects that can be wrapped.
@@ -159,8 +159,7 @@ export class EffectWrapper implements Effect {
  *
  * AudioContext is optional. If omitted, uses the shared library AudioContext.
  *
- * @param audioContextOrEffect - Either an AudioContext or the external effect
- * @param externalEffect - The external effect (when AudioContext is provided)
+ * @param externalEffect - The external effect to wrap (or AudioContext as first arg for backwards compatibility)
  * @returns A new EffectWrapper instance implementing the Effect interface
  *
  * @example

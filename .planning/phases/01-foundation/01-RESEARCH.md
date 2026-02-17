@@ -73,37 +73,37 @@ src/
 
 // Define event payloads
 interface PlayEventDetail {
-  time: number;           // audioContext.currentTime when started
-  source: BaseSound;      // reference to sound instance
+  time: number // audioContext.currentTime when started
+  source: BaseSound // reference to sound instance
 }
 
 interface StopEventDetail {
-  time: number;
-  source: BaseSound;
+  time: number
+  source: BaseSound
 }
 
 interface EndEventDetail {
-  time: number;
-  source: BaseSound;
-  duration: number;
+  time: number
+  source: BaseSound
+  duration: number
 }
 
 interface SeekEventDetail {
-  time: number;
-  source: Track;
-  position: number;       // new position in seconds
-  previousPosition: number;
+  time: number
+  source: Track
+  position: number // new position in seconds
+  previousPosition: number
 }
 
 // Event map with discriminated union
-type SoundEventMap = {
-  'play': CustomEvent<PlayEventDetail>;
-  'stop': CustomEvent<StopEventDetail>;
-  'end': CustomEvent<EndEventDetail>;
-  'pause': CustomEvent<StopEventDetail>;
-  'resume': CustomEvent<PlayEventDetail>;
-  'seek': CustomEvent<SeekEventDetail>;
-};
+interface SoundEventMap {
+  play: CustomEvent<PlayEventDetail>
+  stop: CustomEvent<StopEventDetail>
+  end: CustomEvent<EndEventDetail>
+  pause: CustomEvent<StopEventDetail>
+  resume: CustomEvent<PlayEventDetail>
+  seek: CustomEvent<SeekEventDetail>
+}
 
 // Extend EventTarget with typed methods
 export abstract class BaseSound extends EventTarget {
@@ -113,7 +113,7 @@ export abstract class BaseSound extends EventTarget {
     listener: (event: SoundEventMap[K]) => void,
     options?: boolean | AddEventListenerOptions
   ): void {
-    super.addEventListener(type, listener as EventListener, options);
+    super.addEventListener(type, listener as EventListener, options)
   }
 
   // Type-safe removeEventListener
@@ -122,7 +122,7 @@ export abstract class BaseSound extends EventTarget {
     listener: (event: SoundEventMap[K]) => void,
     options?: boolean | EventListenerOptions
   ): void {
-    super.removeEventListener(type, listener as EventListener, options);
+    super.removeEventListener(type, listener as EventListener, options)
   }
 
   // Emit helper for internal use
@@ -130,8 +130,8 @@ export abstract class BaseSound extends EventTarget {
     type: K,
     detail: SoundEventMap[K]['detail']
   ): void {
-    const event = new CustomEvent(type, { detail });
-    this.dispatchEvent(event);
+    const event = new CustomEvent(type, { detail })
+    this.dispatchEvent(event)
   }
 }
 ```
@@ -154,11 +154,12 @@ export abstract class BaseSound extends EventTarget {
     listener: (event: SoundEventMap[K]) => void
   ): this {
     if (Array.isArray(type)) {
-      type.forEach(t => this.addEventListener(t, listener));
-    } else {
-      this.addEventListener(type, listener);
+      type.forEach(t => this.addEventListener(t, listener))
     }
-    return this; // Enable chaining
+    else {
+      this.addEventListener(type, listener)
+    }
+    return this // Enable chaining
   }
 
   // One-time listener
@@ -166,8 +167,8 @@ export abstract class BaseSound extends EventTarget {
     type: K,
     listener: (event: SoundEventMap[K]) => void
   ): this {
-    this.addEventListener(type, listener, { once: true });
-    return this;
+    this.addEventListener(type, listener, { once: true })
+    return this
   }
 
   // Dual unsubscribe pattern
@@ -177,20 +178,21 @@ export abstract class BaseSound extends EventTarget {
   ): this {
     if (listener) {
       // Remove specific listener
-      this.removeEventListener(type, listener);
-    } else {
+      this.removeEventListener(type, listener)
+    }
+    else {
       // Remove ALL listeners for this event type
       // Note: Native EventTarget doesn't track listeners, so we need to implement this
       // Store listeners in WeakMap or use custom tracking
-      this.removeAllListenersFor(type);
+      this.removeAllListenersFor(type)
     }
-    return this;
+    return this
   }
 
   // Remove all listeners for all events
   removeAllListeners(): this {
     // Implementation requires listener tracking
-    return this;
+    return this
   }
 }
 
@@ -199,11 +201,11 @@ sound
   .on('play', handlePlay)
   .on('stop', handleStop)
   .once('end', handleEnd)
-  .on(['play', 'stop'], handleBoth);
+  .on(['play', 'stop'], handleBoth)
 
-sound.off('play', handlePlay);  // Remove specific handler
-sound.off('play');              // Remove ALL play handlers
-sound.removeAllListeners();     // Clear everything
+sound.off('play', handlePlay) // Remove specific handler
+sound.off('play') // Remove ALL play handlers
+sound.removeAllListeners() // Clear everything
 ```
 
 ### Pattern 3: Custom Error Subclasses with Actionable Messages
@@ -219,31 +221,31 @@ sound.removeAllListeners();     // Clear everything
 
 export class AudioError extends Error {
   constructor(message: string, public code?: string) {
-    super(message);
-    this.name = 'AudioError';
+    super(message)
+    this.name = 'AudioError'
     // Capture stack trace, exclude constructor from trace
-    Error.captureStackTrace?.(this, this.constructor);
+    Error.captureStackTrace?.(this, this.constructor)
   }
 }
 
 export class AudioContextError extends AudioError {
   constructor(message: string, public state: AudioContextState) {
-    super(message, 'CONTEXT_ERROR');
-    this.name = 'AudioContextError';
+    super(message, 'CONTEXT_ERROR')
+    this.name = 'AudioContextError'
   }
 }
 
 export class AudioLoadError extends AudioError {
   constructor(message: string, public url: string) {
-    super(message, 'LOAD_ERROR');
-    this.name = 'AudioLoadError';
+    super(message, 'LOAD_ERROR')
+    this.name = 'AudioLoadError'
   }
 }
 
 export class InvalidNoteError extends AudioError {
   constructor(message: string, public identifier: string) {
-    super(message, 'INVALID_NOTE');
-    this.name = 'InvalidNoteError';
+    super(message, 'INVALID_NOTE')
+    this.name = 'InvalidNoteError'
   }
 }
 
@@ -252,24 +254,26 @@ if (audioContext.state === 'suspended') {
   throw new AudioContextError(
     'AudioContext is suspended. Call initAudio() after user interaction (click, tap).',
     audioContext.state
-  );
+  )
 }
 
 if (!audioBuffer) {
   throw new AudioLoadError(
     `Failed to load audio file. Check URL and CORS headers. URL: ${url}`,
     url
-  );
+  )
 }
 
 // Catching with instanceof (cleaner than code checks)
 try {
-  await sound.play();
-} catch (err) {
+  await sound.play()
+}
+catch (err) {
   if (err instanceof AudioContextError) {
-    console.log('Context issue:', err.state);
-  } else if (err instanceof AudioLoadError) {
-    console.log('Load failed:', err.url);
+    console.log('Context issue:', err.state)
+  }
+  else if (err instanceof AudioLoadError) {
+    console.log('Load failed:', err.url)
   }
 }
 ```
@@ -287,38 +291,38 @@ try {
 
 export abstract class BaseSound extends EventTarget {
   public async play(): Promise<void> {
-    await this._play();
+    await this._play()
   }
 
   public playIn(when: number): void {
-    this._playIn(when);
+    this._playIn(when)
   }
 
   public playFor(duration: number): void {
-    this._playFor(duration);
+    this._playFor(duration)
   }
 
   // Template method - subclasses override this
   protected async _play(): Promise<void> {
-    await this.playAt(this.audioContext.currentTime);
+    await this.playAt(this.audioContext.currentTime)
   }
 
   protected _playIn(when: number): void {
-    this.playAt(this.audioContext.currentTime + when);
+    this.playAt(this.audioContext.currentTime + when)
   }
 
   protected _playFor(duration: number): void {
-    this.playAt(this.audioContext.currentTime);
-    this.setTimeout(() => this.stop(), duration * 1000);
+    this.playAt(this.audioContext.currentTime)
+    this.setTimeout(() => this.stop(), duration * 1000)
   }
 }
 
 export class Track extends Sound {
   // Override only the core _play method
   protected override async _play(): Promise<void> {
-    await super._play();
-    this.audioSourceNode.onended = () => this.stop();
-    this.later(this.trackPlayPosition.bind(this));
+    await super._play()
+    this.audioSourceNode.onended = () => this.stop()
+    this.later(this.trackPlayPosition.bind(this))
   }
 
   // Now super.play(), super.playIn(), super.playFor() all work correctly
@@ -476,21 +480,21 @@ Verified patterns from official sources:
 
 export abstract class BaseSound extends EventTarget {
   protected async playAt(time: number): Promise<void> {
-    const { audioContext } = this;
-    const { currentTime } = audioContext;
+    const { audioContext } = this
+    const { currentTime } = audioContext
 
-    await audioContext.resume();
+    await audioContext.resume()
 
-    this.setup();
+    this.setup()
 
     // Emit play event BEFORE starting source
     this.emit('play', {
       time: currentTime,
       source: this
-    });
+    })
 
-    this.audioSourceNode.start(time, this.startOffset);
-    this.startedPlayingAt = time;
+    this.audioSourceNode.start(time, this.startOffset)
+    this.startedPlayingAt = time
 
     // Schedule end event using native onended
     this.audioSourceNode.onended = () => {
@@ -499,30 +503,31 @@ export abstract class BaseSound extends EventTarget {
           time: this.audioContext.currentTime,
           source: this,
           duration: this.duration.raw
-        });
+        })
       }
-    };
+    }
 
     if (time <= currentTime) {
-      this._isPlaying = true;
-    } else {
+      this._isPlaying = true
+    }
+    else {
       this.setTimeout(() => {
-        this._isPlaying = true;
-      }, (time - currentTime) * 1000);
+        this._isPlaying = true
+      }, (time - currentTime) * 1000)
     }
   }
 
   public async stop(): Promise<void> {
     if (this._isPlaying) {
-      this._isPlaying = false;
+      this._isPlaying = false
 
       // Emit stop event
       this.emit('stop', {
         time: this.audioContext.currentTime,
         source: this
-      });
+      })
 
-      this.audioSourceNode.stop(this.audioContext.currentTime);
+      this.audioSourceNode.stop(this.audioContext.currentTime)
     }
   }
 }
@@ -536,58 +541,58 @@ export abstract class BaseSound extends EventTarget {
 // https://codinhood.com/nano/js/stop-request-animation-frame-javascript
 
 export class Track extends Sound {
-  private rafId: number | null = null;
+  private rafId: number | null = null
 
   protected override async _play(): Promise<void> {
-    await super._play();
-    this.audioSourceNode.onended = () => this.stop();
-    this.later(this.trackPlayPosition.bind(this));
+    await super._play()
+    this.audioSourceNode.onended = () => this.stop()
+    this.later(this.trackPlayPosition.bind(this))
   }
 
   private trackPlayPosition(): void {
-    const { audioContext, startedPlayingAt, startOffset } = this;
+    const { audioContext, startedPlayingAt, startOffset } = this
 
     const animate = (): void => {
       // Exit early if stopped
       if (!this._isPlaying) {
-        this.rafId = null;
-        return;
+        this.rafId = null
+        return
       }
 
-      this.startOffset = startOffset + audioContext.currentTime - startedPlayingAt;
-      this.rafId = requestAnimationFrame(animate);
-    };
+      this.startOffset = startOffset + audioContext.currentTime - startedPlayingAt
+      this.rafId = requestAnimationFrame(animate)
+    }
 
-    this.rafId = requestAnimationFrame(animate);
+    this.rafId = requestAnimationFrame(animate)
   }
 
   public override stop(): void {
     // Cancel RAF before stopping
     if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
     }
 
-    this.startOffset = 0;
+    this.startOffset = 0
 
     if (this._isPlaying) {
-      this.audioSourceNode.onended = function () {};
-      super.stop();
+      this.audioSourceNode.onended = function () {}
+      super.stop()
     }
   }
 
   public pause(): void {
     // Cancel RAF on pause
     if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
     }
 
     if (this._isPlaying) {
-      const node = this.audioSourceNode;
-      node.onended = function () {};
-      node.stop();
-      this._isPlaying = false;
+      const node = this.audioSourceNode
+      node.onended = function () {}
+      node.stop()
+      this._isPlaying = false
     }
   }
 }
@@ -605,32 +610,34 @@ export class Sound extends BaseSound {
     // Disconnect old source if exists (prevents memory leak)
     if (this.audioSourceNode) {
       try {
-        this.audioSourceNode.disconnect();
-        this.audioSourceNode.onended = null;
-      } catch (e) {
+        this.audioSourceNode.disconnect()
+        this.audioSourceNode.onended = null
+      }
+      catch (e) {
         // Already disconnected, ignore
       }
     }
 
     // Create new source (single-use node)
-    const audioSourceNode = this.audioContext.createBufferSource();
-    audioSourceNode.buffer = this.audioBuffer;
-    this.audioSourceNode = audioSourceNode;
+    const audioSourceNode = this.audioContext.createBufferSource()
+    audioSourceNode.buffer = this.audioBuffer
+    this.audioSourceNode = audioSourceNode
 
     // Wire connections and set parameters
-    this.wireConnections();
-    this.controller.setValuesAtTimes();
+    this.wireConnections()
+    this.controller.setValuesAtTimes()
 
     // Cleanup after playback ends
     audioSourceNode.onended = () => {
       // Disconnect to free memory
       try {
-        audioSourceNode.disconnect();
-        audioSourceNode.onended = null;
-      } catch (e) {
+        audioSourceNode.disconnect()
+        audioSourceNode.onended = null
+      }
+      catch (e) {
         // Already disconnected
       }
-    };
+    }
   }
 }
 ```

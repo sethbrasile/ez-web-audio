@@ -130,7 +130,7 @@ Plus sidebar navigation, audio assets, and examples overview.
 ```typescript
 // Slider: 0-100 (linear)
 // Frequency: 20-20,000 Hz (logarithmic)
-frequency = 20 * Math.pow(1000, sliderValue / 100)
+frequency = 20 * 1000 ** (sliderValue / 100)
 ```
 
 **Real-time Updates:**

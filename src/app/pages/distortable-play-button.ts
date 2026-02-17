@@ -1,5 +1,5 @@
-import type { Sound } from '@/sound'
 import type { Effect } from '@/effects/types'
+import type { Sound } from '@/sound'
 import { observable, observe, unobserve } from '@nx-js/observer-util'
 import { createSound, getAudioContext, wrapEffect } from '@/index'
 

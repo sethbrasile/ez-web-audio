@@ -153,8 +153,8 @@ if (this.failedLayers.length > 0) {
 const warnThreshold = opts?.warnLayerCount ?? 8
 if (this.layers.length >= warnThreshold) {
   console.warn(
-    `LayeredSound "${this.name}" has ${this.layers.length} layers. ` +
-    `High layer counts may impact performance on some devices.`
+    `LayeredSound "${this.name}" has ${this.layers.length} layers. `
+    + `High layer counts may impact performance on some devices.`
   )
 }
 ```
