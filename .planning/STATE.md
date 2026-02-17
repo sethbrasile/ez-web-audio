@@ -66,5 +66,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 18 complete and transitioned. Phase 19 ready to plan.
-Resume file: .planning/ROADMAP.md (Phase 19 details)
+Stopped at: Phase 19 context gathered. Ready to plan.
+Resume file: .planning/phases/19-dx-improvements/19-CONTEXT.md
