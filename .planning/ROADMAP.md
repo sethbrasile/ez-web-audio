@@ -3,13 +3,13 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-17
 
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-11 (shipped 2026-02-14)
 - ✅ **v1.1 Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
-- 🚧 **v1.0 First Stable Release** — Phases 17-22 (in progress)
+- 🚧 **v1.0 First Stable Release** — Phases 17-23 (in progress)
 
 ## Phases
 
@@ -51,6 +51,7 @@
 - [x] **Phase 20: Defensive Hardening** - Add null checks, input validation, memory management, and code clarity (completed 2026-02-17)
 - [x] **Phase 21: Test Coverage** - Add integration tests, split test files by concern, add concurrent operation tests (completed 2026-02-17)
 - [x] **Phase 22: Demo App & Release** - Update demo Vue components for all API changes, update TypeDoc, publish npm 1.0.0 (completed 2026-02-17)
+- [ ] **Phase 23: Demo Example Bugfixes** - Fix runtime API bugs, design issues, and polish in all VitePress demo components
 
 ## Phase Details
 
@@ -140,6 +141,27 @@
 - [ ] 22-02-PLAN.md — TypeDoc config for protected members, comprehensive 1.0.0 CHANGELOG
 - [ ] 22-03-PLAN.md — CI pipeline gates, version bump to 1.0.0, final verification
 
+### Phase 23: Demo Example Bugfixes
+**Goal**: All VitePress demo components call the correct API, follow web audio best practices, and render correctly on HiDPI displays. `audioContextAwareTimeout` is exported as a public API for consumers.
+**Depends on**: Phase 22
+**Success Criteria** (what must be TRUE):
+  1. `audioContextAwareTimeout` is exported from `ez-web-audio` with JSDoc documentation
+  2. `createAnalyzer()` receives AudioContext as first parameter in VisualizationDemo
+  3. All `.as()` calls use valid RatioType values (`'ratio'`, `'inverseRatio'`, `'percent'`) — zero `.as('number')` remaining
+  4. `FilterEffectOptions` properties use correct casing (`q:` not `Q:`)
+  5. All effect factories use context-free API (`wrapEffect(node)` not `wrapEffect(ctx, node)`)
+  6. OscillatorDemo frequency/gain sliders update in real-time without stop/recreate gaps
+  7. XYPad mouseup handler is on document, not canvas — sound stops on release outside bounds
+  8. TimingDemo uses the exported `audioContextAwareTimeout` for visual sync, not window.setTimeout
+  9. SynthKeyboard ADSR release phase completes audibly on noteOff
+  10. Canvas elements on XYPad and VisualizationDemo render crisply on HiDPI/Retina displays
+  11. All demo components use public API accessors, not internal property access where avoidable
+**Plans**: 4 plans
+- [x] 23-01-PLAN.md — Export audioContextAwareTimeout, fix critical API bugs: createAnalyzer, .as('number'), uppercase Q, wrapEffect
+- [x] 23-02-PLAN.md — Fix design issues: OscillatorDemo gaps, XYPad mouseup, TimingDemo uses exported timeout, SynthKeyboard release
+- [x] 23-03-PLAN.md — Fix minor issues: canvas DPI, filter property access, distortion internals, final validation
+- [ ] 23-04-PLAN.md — Gap closure: fix XYPad HiDPI logical dimension reads in drawGrid and updateFromPosition
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -166,6 +188,7 @@
 | 20. Defensive Hardening | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 21. Test Coverage | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 22. Demo App & Release | v1.0 Stable | Complete    | 2026-02-17 | - |
+| 23. Demo Example Bugfixes | v1.0 Stable | 3/4 | In Progress | - |
 
 ---
 
@@ -173,4 +196,4 @@
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-17 after Phase 19 completion*
+*Last updated: 2026-02-17 after Phase 23 gap closure planning*
