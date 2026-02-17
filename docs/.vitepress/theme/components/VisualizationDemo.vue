@@ -27,19 +27,37 @@ onMounted(() => {
 })
 
 function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1
+
   if (frequencyCanvas.value) {
     const container = frequencyCanvas.value.parentElement
     if (container) {
-      frequencyCanvas.value.width = container.clientWidth
-      frequencyCanvas.value.height = 200
+      const logicalWidth = container.clientWidth
+      const logicalHeight = 200
+      frequencyCanvas.value.width = logicalWidth * dpr
+      frequencyCanvas.value.height = logicalHeight * dpr
+      // Store logical dimensions for drawing functions
+      frequencyCanvas.value.dataset.logicalWidth = String(logicalWidth)
+      frequencyCanvas.value.dataset.logicalHeight = String(logicalHeight)
+      const ctx = frequencyCanvas.value.getContext('2d')
+      if (ctx)
+        ctx.scale(dpr, dpr)
     }
   }
 
   if (waveformCanvas.value) {
     const container = waveformCanvas.value.parentElement
     if (container) {
-      waveformCanvas.value.width = container.clientWidth
-      waveformCanvas.value.height = 200
+      const logicalWidth = container.clientWidth
+      const logicalHeight = 200
+      waveformCanvas.value.width = logicalWidth * dpr
+      waveformCanvas.value.height = logicalHeight * dpr
+      // Store logical dimensions for drawing functions
+      waveformCanvas.value.dataset.logicalWidth = String(logicalWidth)
+      waveformCanvas.value.dataset.logicalHeight = String(logicalHeight)
+      const ctx = waveformCanvas.value.getContext('2d')
+      if (ctx)
+        ctx.scale(dpr, dpr)
     }
   }
 }
@@ -134,8 +152,8 @@ function drawFrequencySpectrum() {
     return
 
   const frequencyData = analyzer.getFrequencyData()
-  const width = canvas.width
-  const height = canvas.height
+  const width = Number(canvas.dataset.logicalWidth) || canvas.width
+  const height = Number(canvas.dataset.logicalHeight) || canvas.height
   const barWidth = width / frequencyData.length
 
   // Clear canvas
@@ -165,8 +183,8 @@ function drawWaveform() {
     return
 
   const waveformData = analyzer.getTimeDomainData()
-  const width = canvas.width
-  const height = canvas.height
+  const width = Number(canvas.dataset.logicalWidth) || canvas.width
+  const height = Number(canvas.dataset.logicalHeight) || canvas.height
 
   // Clear canvas
   ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
@@ -204,8 +222,10 @@ function clearCanvas(canvas: HTMLCanvasElement | null) {
   if (!ctx)
     return
 
+  const width = Number(canvas.dataset.logicalWidth) || canvas.width
+  const height = Number(canvas.dataset.logicalHeight) || canvas.height
   ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillRect(0, 0, width, height)
 }
 
 function updateWaveform() {
