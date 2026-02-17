@@ -216,7 +216,7 @@ const cSharp4 = notes.find(n => n.letter === 'C' && n.accidental === '#' && n.oc
 Shape the oscillator tone with filters:
 
 ```typescript
-import { createFilterEffect, createOscillator, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createOscillator } from 'ez-web-audio'
 
 const synth = await createOscillator({
   frequency: 200,
@@ -224,8 +224,7 @@ const synth = await createOscillator({
 })
 
 // Add a lowpass filter to remove harsh high frequencies
-const ctx = await getAudioContext()
-const lowpass = createFilterEffect(ctx, 'lowpass', {
+const lowpass = createFilterEffect('lowpass', {
   frequency: 800, // Cutoff frequency
   q: 2 // Resonance
 })

@@ -47,13 +47,12 @@ Filters modify the frequency content of audio. The FilterEffect wraps the Web Au
 ### Creating Filters
 
 ```typescript
-import { createFilterEffect, createSound, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createSound } from 'ez-web-audio'
 
 const sound = await createSound('/audio/music.mp3')
-const ctx = await getAudioContext()
 
 // Lowpass filter - remove high frequencies
-const lowpass = createFilterEffect(ctx, 'lowpass', {
+const lowpass = createFilterEffect('lowpass', {
   frequency: 1000, // Cutoff frequency in Hz
   q: 1 // Resonance (default: 1)
 })
@@ -65,14 +64,14 @@ sound.play()
 ### Adjusting Filter Parameters
 
 ```typescript
-const filter = createFilterEffect(ctx, 'lowpass', { frequency: 800 })
+const filter = createFilterEffect('lowpass', { frequency: 800 })
 
 // Adjust parameters in real-time
 filter.frequency = 1200 // Move cutoff higher
 filter.q = 4 // Increase resonance
 
 // For shelf and peaking filters
-const shelf = createFilterEffect(ctx, 'highshelf', {
+const shelf = createFilterEffect('highshelf', {
   frequency: 3000,
   gain: 6 // Boost by 6dB
 })
@@ -82,7 +81,7 @@ const shelf = createFilterEffect(ctx, 'highshelf', {
 
 #### Bass Boost
 ```typescript
-const bassBoost = createFilterEffect(ctx, 'lowshelf', {
+const bassBoost = createFilterEffect('lowshelf', {
   frequency: 200,
   gain: 8 // +8dB boost below 200Hz
 })
@@ -90,7 +89,7 @@ const bassBoost = createFilterEffect(ctx, 'lowshelf', {
 
 #### Remove Harsh Frequencies
 ```typescript
-const deHarsh = createFilterEffect(ctx, 'lowpass', {
+const deHarsh = createFilterEffect('lowpass', {
   frequency: 8000,
   q: 0.7 // Gentle rolloff
 })
@@ -99,11 +98,11 @@ const deHarsh = createFilterEffect(ctx, 'lowpass', {
 #### Telephone/Radio Effect
 ```typescript
 // Remove lows
-const highpass = createFilterEffect(ctx, 'highpass', {
+const highpass = createFilterEffect('highpass', {
   frequency: 300
 })
 // Remove highs
-const lowpass = createFilterEffect(ctx, 'lowpass', {
+const lowpass = createFilterEffect('lowpass', {
   frequency: 3400
 })
 
@@ -113,7 +112,7 @@ sound.addEffect(lowpass)
 
 #### Notch Filter (Remove Hum)
 ```typescript
-const removeHum = createFilterEffect(ctx, 'notch', {
+const removeHum = createFilterEffect('notch', {
   frequency: 60, // 60Hz power line hum
   q: 30 // Narrow notch
 })
@@ -124,10 +123,9 @@ const removeHum = createFilterEffect(ctx, 'notch', {
 GainEffect provides volume control within the effect chain. Unlike the sound's built-in gain, this can be positioned anywhere in the effect chain.
 
 ```typescript
-import { createGainEffect, getAudioContext } from 'ez-web-audio'
+import { createGainEffect } from 'ez-web-audio'
 
-const ctx = await getAudioContext()
-const gainEffect = createGainEffect(ctx, 0.5) // 50% volume
+const gainEffect = createGainEffect(0.5) // 50% volume
 
 // Adjust volume
 gainEffect.value = 0.8 // 80% volume
@@ -138,14 +136,14 @@ gainEffect.value = 1.5 // 150% (boost)
 
 ```typescript
 // Gain BEFORE filter: affects what goes into the filter
-const preGain = createGainEffect(ctx, 2.0)
-const filter = createFilterEffect(ctx, 'lowpass', { frequency: 1000 })
+const preGain = createGainEffect(2.0)
+const filter = createFilterEffect('lowpass', { frequency: 1000 })
 
 sound.addEffect(preGain) // First: boost signal
 sound.addEffect(filter) // Second: filter boosted signal
 
 // Gain AFTER filter: affects final output
-const postGain = createGainEffect(ctx, 0.5)
+const postGain = createGainEffect(0.5)
 sound.addEffect(filter)
 sound.addEffect(postGain)
 ```
@@ -162,12 +160,11 @@ Audio Source -> Effect 1 -> Effect 2 -> Effect 3 -> Gain -> Pan -> Destination
 
 ```typescript
 const sound = await createSound('/audio/sample.mp3')
-const ctx = await getAudioContext()
 
 // Create effects
-const highpass = createFilterEffect(ctx, 'highpass', { frequency: 80 })
-const lowpass = createFilterEffect(ctx, 'lowpass', { frequency: 8000 })
-const boost = createGainEffect(ctx, 1.2)
+const highpass = createFilterEffect('highpass', { frequency: 80 })
+const lowpass = createFilterEffect('lowpass', { frequency: 8000 })
+const boost = createGainEffect(1.2)
 
 // Add in order (highpass first, then lowpass, then boost)
 sound.addEffect(highpass)
@@ -188,7 +185,7 @@ console.log(`${effects.length} effects in chain`)
 sound.removeEffect(lowpass)
 
 // Insert effect at specific position
-const newEffect = createFilterEffect(ctx, 'peaking', { frequency: 1000 })
+const newEffect = createFilterEffect('peaking', { frequency: 1000 })
 sound.addEffect(newEffect, 0) // Insert at beginning
 ```
 
@@ -197,7 +194,7 @@ sound.addEffect(newEffect, 0) // Insert at beginning
 Every effect supports bypass (on/off) and mix (wet/dry blend):
 
 ```typescript
-const filter = createFilterEffect(ctx, 'lowpass', { frequency: 800 })
+const filter = createFilterEffect('lowpass', { frequency: 800 })
 
 // Bypass: temporarily disable the effect
 filter.bypass = true // Effect is bypassed (100% dry signal)
@@ -216,7 +213,7 @@ The mix control uses equal-power crossfade for natural-sounding blending. This p
 ### Toggling Effects On/Off
 
 ```typescript
-const filter = createFilterEffect(ctx, 'lowpass', { frequency: 800 })
+const filter = createFilterEffect('lowpass', { frequency: 800 })
 sound.addEffect(filter)
 
 // Toggle effect bypass
@@ -306,7 +303,7 @@ const sound = await createSound('/audio/music.mp3')
 const ctx = await getAudioContext()
 
 // Add effects
-const filter = createFilterEffect(ctx, 'lowpass', { frequency: 2000 })
+const filter = createFilterEffect('lowpass', { frequency: 2000 })
 sound.addEffect(filter)
 
 // Create and attach analyzer
@@ -336,24 +333,23 @@ The analyzer is always at the end of the signal chain (after all effects, gain, 
 ## Complete Example: DJ-Style EQ
 
 ```typescript
-import { createFilterEffect, createTrack, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createTrack } from 'ez-web-audio'
 
 const track = await createTrack('/audio/song.mp3')
-const ctx = await getAudioContext()
 
 // Three-band EQ
-const lowEQ = createFilterEffect(ctx, 'lowshelf', {
+const lowEQ = createFilterEffect('lowshelf', {
   frequency: 320,
   gain: 0 // Will be adjusted by user
 })
 
-const midEQ = createFilterEffect(ctx, 'peaking', {
+const midEQ = createFilterEffect('peaking', {
   frequency: 1000,
   q: 0.5,
   gain: 0
 })
 
-const highEQ = createFilterEffect(ctx, 'highshelf', {
+const highEQ = createFilterEffect('highshelf', {
   frequency: 3200,
   gain: 0
 })

@@ -45,12 +45,8 @@ Here's how to build an ambient generator from scratch:
 import {
   createFilterEffect,
   createOscillator,
-  createWhiteNoise,
-  getAudioContext
+  createWhiteNoise
 } from 'ez-web-audio'
-
-// Get the audio context
-const audioContext = await getAudioContext()
 
 // Create drone layer - low sine wave
 const drone = await createOscillator({
@@ -67,7 +63,7 @@ drone.changeGainTo(0.4) // Set mix level
 
 // Create texture layer - filtered white noise
 const texture = await createWhiteNoise()
-const lowpass = createFilterEffect(audioContext, 'lowpass', {
+const lowpass = createFilterEffect('lowpass', {
   frequency: 800,
   Q: 1.0
 })

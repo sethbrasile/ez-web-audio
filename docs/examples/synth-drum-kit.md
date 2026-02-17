@@ -53,7 +53,7 @@ The snare is **two layers** playing simultaneously:
 Both layers are combined with `createLayeredSound()` to ensure they start at exactly the same AudioContext timestamp.
 
 ```typescript
-import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise } from 'ez-web-audio'
 
 // Layer 1: Tonal body
 const body = await createOscillator({
@@ -64,10 +64,9 @@ body.onPlayRamp('frequency').from(100).to(60).in(0.1)
 body.onPlayRamp('gain').from(1).to(0.01).in(0.1)
 
 // Layer 2: Snare crack
-const ctx = await getAudioContext()
 const noise = await createWhiteNoise()
 
-const highpass = createFilterEffect(ctx, 'highpass', {
+const highpass = createFilterEffect('highpass', {
   frequency: 1000,
   q: 1
 })
@@ -89,9 +88,8 @@ snare.playFor(0.1)
 The hi-hat uses **multiple square oscillators** at harmonic ratios with highpass and bandpass filters. These create that characteristic metallic, shimmering sound.
 
 ```typescript
-import { createFilterEffect, createLayeredSound, createOscillator, getAudioContext } from 'ez-web-audio'
+import { createFilterEffect, createLayeredSound, createOscillator } from 'ez-web-audio'
 
-const ctx = await getAudioContext()
 const fundamentalFreq = 40
 
 // Metallic ratios: 2, 3, 4.16, 5.43, 6.79, 8.21
@@ -105,13 +103,13 @@ const oscillators = await Promise.all(
     })
 
     // Highpass filter removes bass frequencies
-    const highpass = createFilterEffect(ctx, 'highpass', {
+    const highpass = createFilterEffect('highpass', {
       frequency: 7000,
       q: 1
     })
 
     // Bandpass filter isolates the metallic shimmer around 10kHz
-    const bandpass = createFilterEffect(ctx, 'bandpass', {
+    const bandpass = createFilterEffect('bandpass', {
       frequency: 10000,
       q: 1
     })
