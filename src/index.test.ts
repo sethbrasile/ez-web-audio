@@ -38,8 +38,8 @@ describe('AudioContext Initialization', () => {
     // Create mock AudioContext instance
     mockAudioContext = new MockAudioContext() as unknown as AudioContext
 
-    // Create constructor spy
-    AudioContextConstructor = vi.fn(() => mockAudioContext)
+    // Create constructor spy (must use function syntax, not arrow, for vitest 4 constructor mocks)
+    AudioContextConstructor = vi.fn(function () { return mockAudioContext })
 
     // Stub global AudioContext
     vi.stubGlobal('AudioContext', AudioContextConstructor)

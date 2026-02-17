@@ -56,13 +56,11 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.27.3",
-    "@dotenvx/dotenvx": "^1.14.2",
     "@nx-js/observer-util": "^4.2.2",
     "@playwright/test": "^1.58.2",
     "@types/prismjs": "^1.26.4",
-    "concurrently": "^9.0.1",
     "eslint": "9.5.0",
-    "happy-dom": "^15.7.4",
+    "happy-dom": "^20.6.1",
     "prismjs": "^1.29.0",
     "standardized-audio-context": "^25.3.77",
     "standardized-audio-context-mock": "^9.7.9",
@@ -70,12 +68,12 @@
     "typedoc-plugin-markdown": "^4.9.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "typescript": "^5.6.2",
-    "vite": "^5.4.8",
-    "vite-plugin-dts": "^4.2.2",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
     "vite-plugin-prismjs": "^0.0.11",
-    "vite-tsconfig-paths": "^5.0.1",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitepress": "^1.6.4",
-    "vitest": "^2.1.1"
+    "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316"
 }
