@@ -11,6 +11,8 @@ const chordPlaying = ref(false)
 let lib: any = null
 let rafId: number | null = null
 let timeouts: number[] = []
+// clearTimeout from the audioContextAwareTimeout instance (set after first audio init)
+let acClearTimeout: ((id: number) => void) | null = null
 
 async function initIfNeeded() {
   if (!lib) {
@@ -78,20 +80,24 @@ async function playSequence() {
     s2.playAt(now + 0.5)
     s3.playAt(now + 1.0)
 
+    // Use audioContext-aware setTimeout to keep visual sync with audio clock
+    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = lib.audioContextAwareTimeout(ctx)
+    acClearTimeout = acClearTimeoutFn
+
     // Visual feedback synchronized to audio clock
     timelineNotes.value = [true, false, false]
 
-    const t1 = window.setTimeout(() => {
+    const t1 = acSetTimeout(() => {
       timelineNotes.value = [true, true, false]
     }, 500)
     timeouts.push(t1)
 
-    const t2 = window.setTimeout(() => {
+    const t2 = acSetTimeout(() => {
       timelineNotes.value = [true, true, true]
     }, 1000)
     timeouts.push(t2)
 
-    const t3 = window.setTimeout(() => {
+    const t3 = acSetTimeout(() => {
       timelineNotes.value = [false, false, false]
       sequencePlaying.value = false
     }, 1500)
@@ -122,7 +128,11 @@ async function playChord() {
       osc.playAt(now)
     })
 
-    const t = window.setTimeout(() => {
+    // Use audioContext-aware setTimeout to keep visual sync with audio clock
+    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = lib.audioContextAwareTimeout(ctx)
+    acClearTimeout = acClearTimeoutFn
+
+    const t = acSetTimeout(() => {
       oscillators.forEach((osc) => {
         try { osc.stop() }
         catch {}
@@ -142,8 +152,9 @@ onUnmounted(() => {
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
   }
-  // Clear all timeouts
-  timeouts.forEach(clearTimeout)
+  // Clear all timeouts using the audioContext-aware clearTimeout when available
+  const clearFn = acClearTimeout ?? clearTimeout
+  timeouts.forEach(clearFn)
   timeouts = []
 })
 </script>
