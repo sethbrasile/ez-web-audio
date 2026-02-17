@@ -71,37 +71,37 @@ describe('baseParamController', () => {
   })
 
   describe('update() fluent API', () => {
-    it('update("gain").to(0.5).from("ratio") sets gain to 0.5', () => {
+    it('update("gain").to(0.5).as("ratio") sets gain to 0.5', () => {
       controller.update('gain').to(0.5).as('ratio')
       expect(controller.gain).toBe(0.5)
     })
 
-    it('update("gain").to(50).from("percent") sets gain to 0.5', () => {
+    it('update("gain").to(50).as("percent") sets gain to 0.5', () => {
       controller.update('gain').to(50).as('percent')
       expect(controller.gain).toBe(0.5)
     })
 
-    it('update("gain").to(0.3).from("inverseRatio") sets gain to 0.7', () => {
+    it('update("gain").to(0.3).as("inverseRatio") sets gain to 0.7', () => {
       controller.update('gain').to(0.3).as('inverseRatio')
       expect(controller.gain).toBe(0.7)
     })
 
-    it('update("pan").to(-1).from("ratio") sets pan to -1', () => {
+    it('update("pan").to(-1).as("ratio") sets pan to -1', () => {
       controller.update('pan').to(-1).as('ratio')
       expect(controller.pan).toBe(-1)
     })
 
-    it('update("pan").to(1).from("ratio") sets pan to 1', () => {
+    it('update("pan").to(1).as("ratio") sets pan to 1', () => {
       controller.update('pan').to(1).as('ratio')
       expect(controller.pan).toBe(1)
     })
 
-    it('update("detune").to(100).from("ratio") sets audioSource.detune.value', () => {
+    it('update("detune").to(100).as("ratio") sets audioSource.detune.value', () => {
       controller.update('detune').to(100).as('ratio')
       expect(audioSource.detune.value).toBe(100)
     })
 
-    it('update("detune").to(50).from("percent") sets audioSource.detune to 0.5', () => {
+    it('update("detune").to(50).as("percent") sets audioSource.detune to 0.5', () => {
       controller.update('detune').to(50).as('percent')
       expect(audioSource.detune.value).toBe(0.5)
     })

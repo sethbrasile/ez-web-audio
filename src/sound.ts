@@ -79,7 +79,7 @@ export class Sound extends BaseSound {
     audioSourceNode.buffer = this.audioBuffer
     this.audioSourceNode = audioSourceNode
 
-    // Connect source to effect chain (legacy connections still supported)
+    // Connect source to effect chain input
     this.wireConnections()
     this.controller.setValuesAtTimes()
 

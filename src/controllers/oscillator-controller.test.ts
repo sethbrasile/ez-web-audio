@@ -47,12 +47,12 @@ describe('oscillatorController', () => {
   })
 
   describe('frequency control (override of _update)', () => {
-    it('update("frequency").to(880).from("ratio") sets oscillator.frequency.value', () => {
+    it('update("frequency").to(880).as("ratio") sets oscillator.frequency.value', () => {
       controller.update('frequency').to(880).as('ratio')
       expect(oscillatorNode.frequency.value).toBe(880)
     })
 
-    it('update("frequency").to(50).from("percent") sets frequency to 0.5', () => {
+    it('update("frequency").to(50).as("percent") sets frequency to 0.5', () => {
       controller.update('frequency').to(50).as('percent')
       expect(oscillatorNode.frequency.value).toBe(0.5)
     })

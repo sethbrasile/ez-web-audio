@@ -712,4 +712,3 @@ export type {
   SpritePlayOptions,
 }
 
-// Deprecated type aliases for backwards compatibility

@@ -2,6 +2,12 @@ import type { Envelope } from '../envelope'
 import type { ControlType, ParamController, ParamValue, ValueAtTime } from './base-param-controller'
 import { BaseParamController } from './base-param-controller'
 
+/**
+ * Parameter controller for Oscillator instances.
+ *
+ * Extends BaseParamController with frequency control and ADSR envelope support.
+ * Created automatically by Oscillator's constructor.
+ */
 export class OscillatorController extends BaseParamController implements ParamController {
   private envelope?: Envelope
 
@@ -27,6 +33,11 @@ export class OscillatorController extends BaseParamController implements ParamCo
     }
   }
 
+  /**
+   * Replace the oscillator node (called on each play() since OscillatorNode is single-use).
+   *
+   * @param oscillator - The new OscillatorNode
+   */
   public updateAudioSource(oscillator: OscillatorNode): void {
     this.oscillator = oscillator
   }
@@ -41,6 +52,10 @@ export class OscillatorController extends BaseParamController implements ParamCo
     }
   }
 
+  /**
+   * Apply all scheduled parameter values and envelope to the current audio nodes.
+   * Called by Oscillator.setup() before each play().
+   */
   public setValuesAtTimes(): void {
     const { oscillator: { context: { currentTime } } } = this
 

@@ -122,9 +122,9 @@ export function debugEvent(
 }
 
 /**
- * Log a connection chain change.
+ * Log an effect chain change (effect added, removed, or rewired).
  *
- * @param source - The sound with changed connections
+ * @param source - The sound with the changed effect chain
  * @param message - Description of the change
  * @param timestamp - audioContext.currentTime
  * @param details - Optional additional details

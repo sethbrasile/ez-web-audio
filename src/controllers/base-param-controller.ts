@@ -75,8 +75,7 @@ export class BaseParamController {
   protected linearValues: ValueAtTime[] = []
 
   /**
-   * Currently exposes gain and pan. Additional AudioParam properties
-   * (e.g., for spatial audio) should be added via mapped types in v2.
+   * Current gain value (0-1 typical range).
    */
   public get gain(): number {
     return this.gainNode.gain.value
@@ -94,11 +93,23 @@ export class BaseParamController {
     this.pannerNode.pan.value = value
   }
 
+  /**
+   * Replace the gain node, preserving the current gain value.
+   * Called by Oscillator.setup() when recreating nodes for each play().
+   *
+   * @param gainNode - The new GainNode to use
+   */
   public updateGainNode(gainNode: GainNode): void {
     gainNode.gain.value = this.gain
     this.gainNode = gainNode
   }
 
+  /**
+   * Replace the panner node, preserving the current pan value.
+   * Called by Oscillator.setup() when recreating nodes for each play().
+   *
+   * @param pannerNode - The new StereoPannerNode to use
+   */
   public updatePannerNode(pannerNode: StereoPannerNode): void {
     pannerNode.pan.value = this.pan
     this.pannerNode = pannerNode
@@ -122,6 +133,18 @@ export class BaseParamController {
     }
   }
 
+  /**
+   * Update an audio parameter immediately.
+   *
+   * @param type - The parameter to update ('gain', 'pan', 'detune', or 'frequency')
+   * @returns Fluent builder: `.to(value).as(unit)`
+   *
+   * @example
+   * ```typescript
+   * controller.update('gain').to(0.5).as('ratio')
+   * controller.update('gain').to(50).as('percent')
+   * ```
+   */
   public update(type: ControlType): { to: (value: number) => { as: (method: RatioType) => void } } {
     return {
       to: (value: number) => {
@@ -146,6 +169,19 @@ export class BaseParamController {
     }
   }
 
+  /**
+   * Schedule a parameter value to be set when play() is called.
+   *
+   * @param type - The parameter to schedule
+   * @returns Fluent builder: `.to(value).at(time)` or `.to(value).endingAt(time, rampType)`
+   *
+   * @example
+   * ```typescript
+   * // Set gain to 0 at start, ramp to 1 over 0.5s
+   * controller.onPlaySet('gain').to(0).at(0)
+   * controller.onPlaySet('gain').to(1).endingAt(0.5, 'linear')
+   * ```
+   */
   public onPlaySet(type: ControlType): { to: (value: number) => { at: (time: number) => void, endingAt: (time: number, rampType?: RampType) => void } } {
     return {
       to: (value: number) => {
@@ -165,6 +201,19 @@ export class BaseParamController {
     }
   }
 
+  /**
+   * Schedule a parameter ramp when play() is called.
+   *
+   * @param type - The parameter to ramp
+   * @param rampType - Ramp curve type ('linear' or 'exponential')
+   * @returns Fluent builder: `.from(startValue).to(endValue).in(duration)`
+   *
+   * @example
+   * ```typescript
+   * // Fade out over 2 seconds
+   * controller.onPlayRamp('gain', 'linear').from(1).to(0).in(2)
+   * ```
+   */
   public onPlayRamp(type: ControlType, rampType?: RampType): { from: (startValue: number) => { to: (endValue: number) => { in: (endTime: number) => void } } } {
     return {
       from: (startValue: number) => {

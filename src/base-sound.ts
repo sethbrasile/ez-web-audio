@@ -114,14 +114,8 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   protected _analyzer: Analyzer | null = null
 
   /**
-   * @property startOffset
-   *
-   * See Web Audio API documentation for this one, as it is just passed into the `start` method of the `audioSourceNode`.
-   *
-   * This is useful for starting a sound at a specific offset from the beginning of the sound. Manipulation of this value is used
-   * extensively in the `Track` class to allow for starting the track at specific positions.
-   *
-   * @deprecated This property will become protected in v2. Use seek() on Track for position control.
+   * Offset in seconds from the beginning of the audio buffer where playback starts.
+   * Used internally by Track for seek/resume functionality.
    *
    * @default 0
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode/start
@@ -699,14 +693,51 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this.controller.onPlayRamp(type, rampType)
   }
 
+  /**
+   * Play the sound immediately.
+   *
+   * Resumes the AudioContext if suspended, sets up the audio source,
+   * and starts playback. For finite-duration sounds (Sound, Track),
+   * automatically schedules an 'end' event when playback completes.
+   *
+   * @returns Promise that resolves when playback begins
+   *
+   * @example
+   * ```typescript
+   * const sound = await createSound('click.mp3')
+   * await sound.play()
+   * ```
+   */
   public async play(): Promise<void> {
     await this.playAt(this.audioContext.currentTime)
   }
 
+  /**
+   * Schedule playback after a delay.
+   *
+   * @param when - Seconds from now until playback starts
+   *
+   * @example
+   * ```typescript
+   * // Play in 2 seconds
+   * sound.playIn(2)
+   * ```
+   */
   public playIn(when: number): void {
     this.playAt(this.audioContext.currentTime + when)
   }
 
+  /**
+   * Play for a specific duration, then stop automatically.
+   *
+   * @param duration - Seconds of playback before stopping
+   *
+   * @example
+   * ```typescript
+   * // Play for 3 seconds
+   * sound.playFor(3)
+   * ```
+   */
   public playFor(duration: number): void {
     this.playAt(this.audioContext.currentTime)
     this.setTimeout(() => this.stop(), duration * 1000)
@@ -896,14 +927,44 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     }
   }
 
+  /**
+   * Stop the sound immediately.
+   *
+   * Emits a 'stop' event. Safe to call when not playing (no-op).
+   *
+   * @returns Promise that resolves when the stop is processed
+   *
+   * @example
+   * ```typescript
+   * await sound.stop()
+   * ```
+   */
   public async stop(): Promise<void> {
     await this.stopAt(this.audioContext.currentTime)
   }
 
+  /**
+   * Whether the sound is currently playing.
+   *
+   * @example
+   * ```typescript
+   * if (sound.isPlaying) {
+   *   await sound.stop()
+   * }
+   * ```
+   */
   public get isPlaying(): boolean {
     return this._isPlaying
   }
 
+  /**
+   * Current gain as a percentage (0-100).
+   *
+   * @example
+   * ```typescript
+   * console.log(`Volume: ${sound.percentGain}%`) // "Volume: 50%"
+   * ```
+   */
   public get percentGain(): number {
     return this.controller.gain * 100
   }
