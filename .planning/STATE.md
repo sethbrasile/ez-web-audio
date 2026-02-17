@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-17 (23-02 completed: fix design issues in demo components)
+**Last Updated:** 2026-02-17 (23-03 completed: HiDPI canvas polish, public API usage, final validation)
 **Current Focus:** Phase 23 — Demo Example Bugfixes (Complete)
 
 ## Project Reference
@@ -13,9 +13,9 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 23 of 23 (Demo Example Bugfixes)
-Plan: 2 of 2 in current phase
+Plan: 3 of 3 in current phase
 Status: Complete — Phase 23 done
-Last activity: 2026-02-17 — Completed 23-02 (real-time oscillator updates, XYPad document mouseup, audioContextAwareTimeout in TimingDemo, ADSR release confirmed in SynthKeyboard)
+Last activity: 2026-02-17 — Completed 23-03 (HiDPI canvas for XYPad and VisualizationDemo, FilterEffect public setter in AmbientGenerator, EffectWrapper.effect accessor in DistortionDemo, final validation passed)
 
 **Progress:** [████████████████████] 100%
 
@@ -46,6 +46,7 @@ Last activity: 2026-02-17 — Completed 23-02 (real-time oscillator updates, XYP
 | 22-03 | 3/TBD | 8min | 5min |
 | 23-01 | 1/2 | 3min | 3min |
 | 23-02 | 2/2 | 2min | 2.5min |
+| 23-03 | 3/3 | 12min | 5.7min |
 
 *Updated after each plan completion*
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - Phase 23-02: document-level mouseup for XYPad canvas drag interactions — canvas-only misses out-of-bounds releases
 - Phase 23-02: Oscillator.stop() already respects ADSR release — no additional scheduling needed in demo components
 - Phase 23-02: Remove oscillator from map before stop() in SynthKeyboard so re-press during release creates fresh oscillator
+- Phase 23-03: HiDPI canvas pattern — store logical dims as data-logical-width/height attributes for drawing functions; context scaled by devicePixelRatio
+- Phase 23-03: EffectWrapper.effect is the accessor for the wrapped node; .input is the routing GainNode (not the effect node)
+- Phase 23-03: FilterEffect.frequency setter (not .frequency.value AudioParam) is the correct public API
 
 ### Pending Todos
 
@@ -100,5 +104,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 23-02-PLAN.md (fix design issues in demo components — Phase 23 complete)
-Resume file: .planning/phases/23-demo-example-bugfixes/23-02-SUMMARY.md
+Stopped at: Completed 23-03-PLAN.md (HiDPI canvas polish, public API usage, final validation — Phase 23 complete)
+Resume file: .planning/phases/23-demo-example-bugfixes/23-03-SUMMARY.md
