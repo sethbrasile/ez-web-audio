@@ -348,10 +348,10 @@ export class BeatTrack extends Sampler {
     const beat = this.beats[beatIndex]
     const offset = time - this.audioContext.currentTime
 
-    // ifActivePlayIn handles everything:
+    // playInIfActive handles everything:
     // - Active beats: plays sound, sets isPlaying + currentTimeIsPlaying (both auto-reset)
     // - Inactive beats: sets currentTimeIsPlaying only (visual playhead on rests)
-    beat.ifActivePlayIn(offset)
+    beat.playInIfActive(offset)
 
     // Emit beat event at play time using AudioContext-aware timeout
     // so consumers don't need to compensate for lookahead delay
@@ -385,7 +385,7 @@ export class BeatTrack extends Sampler {
    * The underlying method for playing beats at calculated intervals.
    * @internal
    */
-  protected callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType: number = 1 / 4): void {
+  protected callPlayMethodOnBeats(method: 'playInIfActive' | 'playIn', bpm: number, noteType: number = 1 / 4): void {
     // http://bradthemad.org/guitar/tempo_explanation.php
     const duration = (240 * noteType) / bpm
     this.beats.forEach((beat, idx) => beat[method](idx * duration))

@@ -110,7 +110,7 @@ export class Beat {
    *
    * @param offset - Number of seconds from now to play
    */
-  public ifActivePlayIn(offset = 0): void {
+  public playInIfActive(offset = 0): void {
     const msOffset = offset * 1000
 
     if (this.active) {

@@ -17,7 +17,7 @@ class BeatTrack extends RealBeatTrack {
     this.sounds.add(sound)
   }
 
-  public callPlayMethodOnBeats(method: 'ifActivePlayIn' | 'playIn', bpm: number, noteType?: number): void {
+  public callPlayMethodOnBeats(method: 'playInIfActive' | 'playIn', bpm: number, noteType?: number): void {
     super.callPlayMethodOnBeats(method, bpm, noteType)
   }
 
