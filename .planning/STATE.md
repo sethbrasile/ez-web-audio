@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-17
 **Current Focus:** Milestone v1.0 Stable — First Stable Release (npm 1.0.0)
 
 ## Project Reference
@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 17 of 22 (Dependency Security Upgrades)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-16 — v1.0 stable milestone roadmap created (phases 17-22)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-17 — Completed 17-01 (vite/vitest/happy-dom upgrade)
 
-**Progress:** [░░░░░░░░░░] 0% (this milestone)
+**Progress:** [█░░░░░░░░░] 5% (this milestone)
 
 ## Performance Metrics
 
@@ -29,7 +29,7 @@ Last activity: 2026-02-16 — v1.0 stable milestone roadmap created (phases 17-2
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| TBD | TBD | TBD | TBD |
+| 17-01 | 1/3 | 3min | 3min |
 
 *Updated after each plan completion*
 
@@ -43,6 +43,7 @@ Recent decisions affecting current work:
 - Pre-1.0: Breaking changes are free — no backwards compatibility required
 - Phase 13: String concat for error messages (consistency across codebase)
 - Phase 16: E2E tests focus on error-detection, not element checks (VitePress SPA timing)
+- Phase 17-01: Vitest 4 constructor mocks require function syntax, not arrow functions
 
 ### Pending Todos
 
@@ -54,6 +55,6 @@ None active. Dependency upgrades (Phase 17) may reveal test failures — plan fo
 
 ## Session Continuity
 
-Last session: 2026-02-16
-Stopped at: Roadmap created for v1.0 stable milestone (phases 17-22). Ready to plan Phase 17.
+Last session: 2026-02-17
+Stopped at: Completed 17-01-PLAN.md, executing wave 1 of phase 17
 Resume file: None
