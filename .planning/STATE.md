@@ -8,16 +8,16 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 21 — Test Coverage
+**Current focus:** Phase 22 — Demo App & Release
 
 ## Current Position
 
-Phase: 21 of 22 (Test Coverage)
-Plan: 2 of TBD in current phase
-Status: In progress
-Last activity: 2026-02-17 — Plans 21-01 and 21-02 complete
+Phase: 22 of 22 (Demo App & Release)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-17 — Phase 21 complete, transitioned to Phase 22
 
-**Progress:** [██████████] 98%
+**Progress:** [████████████████████] 99%
 
 ## Performance Metrics
 
@@ -81,5 +81,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 21-01-PLAN.md (split base-sound.test.ts into 4 focused files).
+Stopped at: Phase 21 complete. Ready for Phase 22.
 Resume file: .planning/phases/21-test-coverage/21-01-SUMMARY.md
