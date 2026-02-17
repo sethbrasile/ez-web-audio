@@ -41,6 +41,7 @@ import { mungeSoundFont } from './utils/decode-base64'
 import frequencyMap from './utils/frequency-map'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import { playTogether } from './utils/play-together'
+import audioContextAwareTimeout from './utils/timeout'
 // @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
 import unmuteIosAudio from './utils/unmute'
 
@@ -657,6 +658,8 @@ export async function useInteractionMethods(key: HTMLElement, player: Player): P
 export {
   // Analyzer
   Analyzer,
+  // Timing utilities
+  audioContextAwareTimeout,
   AudioContextError,
   // Errors
   AudioError,
