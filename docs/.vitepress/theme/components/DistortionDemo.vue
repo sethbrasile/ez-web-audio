@@ -103,10 +103,10 @@ function updateDistortionCurve() {
     // Update the WaveShaper curve
     const newCurve = makeDistortionCurve(distortionAmount.value)
 
-    // Access the underlying distortion node
-    // wrapEffect returns { input, output, bypass, mix, node }
-    if (effect.input && effect.input.curve !== undefined) {
-      effect.input.curve = newCurve
+    // Access the underlying distortion node via the public .effect accessor on EffectWrapper.
+    // effect.effect returns the original WaveShaperNode passed to wrapEffect().
+    if (effect.effect && effect.effect.curve !== undefined) {
+      effect.effect.curve = newCurve
     }
   }
   catch (e) {
