@@ -65,7 +65,7 @@ async function startVisualization() {
   loading.value = true
 
   try {
-    const { createOscillator, createAnalyzer } = await import('ez-web-audio')
+    const { createOscillator, createAnalyzer, getAudioContext } = await import('ez-web-audio')
 
     // Create oscillator
     oscillator = await createOscillator({
@@ -74,8 +74,11 @@ async function startVisualization() {
     })
     oscillator.changeGainTo(0.3)
 
+    // Get AudioContext for analyzer creation
+    const ctx = await getAudioContext()
+
     // Create analyzer
-    analyzer = createAnalyzer({ fftSize: fftSize.value })
+    analyzer = createAnalyzer(ctx, { fftSize: fftSize.value })
 
     // Connect oscillator to analyzer
     oscillator.setAnalyzer(analyzer)
@@ -222,7 +225,7 @@ function updateFrequency() {
   if (!isPlaying.value || !oscillator)
     return
 
-  oscillator.update('frequency').to(frequency.value).as('number')
+  oscillator.update('frequency').to(frequency.value).as('ratio')
 }
 
 function updateFFTSize() {

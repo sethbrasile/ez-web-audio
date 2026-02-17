@@ -64,7 +64,7 @@ async function startAll() {
     textureNoise = await createWhiteNoise()
     textureFilter = createFilterEffect('lowpass', {
       frequency: textureFilterCutoff.value,
-      Q: 1.0,
+      q: 1.0,
     })
     textureNoise.addEffect(textureFilter)
     textureNoise.changeGainTo(textureEnabled.value ? 0.15 : 0)
@@ -162,7 +162,7 @@ function updateDroneFrequency() {
   if (!isPlaying.value || !droneOscillator)
     return
 
-  droneOscillator.update('frequency').to(droneFrequency.value).as('number')
+  droneOscillator.update('frequency').to(droneFrequency.value).as('ratio')
 }
 
 function updateTextureFilter() {
@@ -176,7 +176,7 @@ function updateShimmerFrequency() {
   if (!isPlaying.value || !shimmerOscillator)
     return
 
-  shimmerOscillator.update('frequency').to(shimmerFrequency.value).as('number')
+  shimmerOscillator.update('frequency').to(shimmerFrequency.value).as('ratio')
 }
 
 onUnmounted(() => {
