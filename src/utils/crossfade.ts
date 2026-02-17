@@ -69,12 +69,12 @@ export async function crossfade(
   const fadeInCurve = generateEqualPowerCurve('in', curveLength)
 
   // Fade out source track from current gain value
-  const fromGain = fromTrack.gainNode.gain
+  const fromGain = fromTrack.getGainNode().gain
   fromGain.setValueAtTime(fromGain.value, startTime)
   fromGain.setValueCurveAtTime(fadeOutCurve, startTime, duration)
 
   // Fade in destination track
-  const toGain = toTrack.gainNode.gain
+  const toGain = toTrack.getGainNode().gain
   if (isToTrackPlaying) {
     // Already playing - fade from current gain value
     toGain.setValueAtTime(toGain.value, startTime)

@@ -72,10 +72,10 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   /**
    * The GainNode controlling this sound's volume.
    *
-   * Exposed for advanced custom audio routing. For simple volume control,
-   * use changeGainTo() or update('gain').
+   * For simple volume control, use changeGainTo() or update('gain').
+   * For advanced routing, use getGainNode().
    */
-  public gainNode: GainNode
+  protected gainNode: GainNode
 
   protected pannerNode: StereoPannerNode
   protected setTimeout: (fn: () => void, delayMillis: number) => number
@@ -149,7 +149,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * @default 0
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode/start
    */
-  public startOffset: number = 0
+  protected startOffset: number = 0
 
   protected abstract controller: ParamController
   protected abstract wireConnections(): void
@@ -423,6 +423,25 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public getAnalyzer(): Analyzer | null {
     return this._analyzer
+  }
+
+  /**
+   * Get the GainNode for this sound.
+   *
+   * Provides controlled access to the underlying GainNode for advanced
+   * audio routing scenarios (e.g., crossfading between tracks).
+   * For simple volume control, use changeGainTo() or update('gain').
+   *
+   * @returns The GainNode controlling this sound's volume
+   *
+   * @example
+   * ```typescript
+   * const node = sound.getGainNode()
+   * node.gain.linearRampToValueAtTime(0, ctx.currentTime + 2)
+   * ```
+   */
+  public getGainNode(): GainNode {
+    return this.gainNode
   }
 
   // ===== Event System (EventTarget extension with typed events) =====
