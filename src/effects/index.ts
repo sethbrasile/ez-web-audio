@@ -32,7 +32,7 @@ export interface Effect {
   mix: number
 }
 
-export { EffectWrapper, type ExternalEffect } from './effect-wrapper'
+export { createEffect, EffectWrapper, type ExternalEffect } from './effect-wrapper'
 export { wrapEffect } from './effect-wrapper'
 export { FilterEffect, type FilterEffectOptions, type FilterType } from './filter-effect'
 

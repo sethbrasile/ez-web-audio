@@ -1,4 +1,5 @@
 import type { Effect } from './index'
+import { getOrCreateAudioContext } from '@/audio-context'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 
 /**
@@ -156,26 +157,58 @@ export class EffectWrapper implements Effect {
  * Use this for effects from libraries like Tuna.js, or custom AudioNodes like
  * WaveShaperNode that only have a connect() method.
  *
- * @param audioContext - The AudioContext to use
- * @param externalEffect - The external effect object with a connect() method
+ * AudioContext is optional. If omitted, uses the shared library AudioContext.
+ *
+ * @param audioContextOrEffect - Either an AudioContext or the external effect
+ * @param externalEffect - The external effect (when AudioContext is provided)
  * @returns A new EffectWrapper instance implementing the Effect interface
  *
  * @example
  * ```typescript
- * // Wrap a WaveShaperNode
- * const distortion = audioContext.createWaveShaper()
- * distortion.curve = makeDistortionCurve(400)
- * const wrapped = wrapEffect(audioContext, distortion)
+ * // Without AudioContext (recommended)
+ * const wrapped = wrapEffect(distortion)
  *
- * // Wrap a Tuna.js effect
- * const tuna = new Tuna(audioContext)
- * const delay = tuna.Delay({ delayTime: 300 })
- * const wrappedDelay = wrapEffect(audioContext, delay)
+ * // With explicit AudioContext (backwards compatible)
+ * const wrapped = wrapEffect(audioContext, distortion)
  * ```
  */
+export function wrapEffect(externalEffect: ExternalEffect): EffectWrapper
+export function wrapEffect(audioContext: AudioContext, externalEffect: ExternalEffect): EffectWrapper
 export function wrapEffect(
-  audioContext: AudioContext,
-  externalEffect: ExternalEffect,
+  audioContextOrEffect: AudioContext | ExternalEffect,
+  externalEffect?: ExternalEffect,
 ): EffectWrapper {
-  return new EffectWrapper(audioContext, externalEffect)
+  if (externalEffect !== undefined) {
+    // Called as wrapEffect(audioContext, effect)
+    return new EffectWrapper(audioContextOrEffect as AudioContext, externalEffect)
+  }
+  // Called as wrapEffect(effect)
+  return new EffectWrapper(getOrCreateAudioContext(), audioContextOrEffect as ExternalEffect)
+}
+
+/**
+ * Factory function to wrap any AudioNode into the Effect interface.
+ *
+ * This is a convenience for wrapping native Web Audio API nodes (WaveShaperNode,
+ * ConvolverNode, etc.) that are already AudioNodes with connect/disconnect.
+ *
+ * AudioContext is optional. If omitted, uses the shared library AudioContext.
+ *
+ * @param node - The AudioNode to wrap
+ * @param audioContext - Optional AudioContext (uses shared context if omitted)
+ * @returns A new EffectWrapper instance implementing the Effect interface
+ *
+ * @example
+ * ```typescript
+ * import { createEffect } from 'ez-web-audio'
+ *
+ * const distortion = audioContext.createWaveShaper()
+ * distortion.curve = makeDistortionCurve(400)
+ * const effect = createEffect(distortion)
+ * sound.addEffect(effect)
+ * ```
+ */
+export function createEffect(node: AudioNode, audioContext?: AudioContext): EffectWrapper {
+  const ctx = audioContext ?? getOrCreateAudioContext()
+  return new EffectWrapper(ctx, node as unknown as ExternalEffect)
 }

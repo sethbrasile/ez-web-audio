@@ -1,4 +1,5 @@
 import type { Effect } from './index'
+import { getOrCreateAudioContext } from '@/audio-context'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 
 /**
@@ -177,21 +178,49 @@ export class FilterEffect implements Effect {
 /**
  * Factory function to create a FilterEffect.
  *
- * @param audioContext - The AudioContext to use
- * @param type - The filter type (lowpass, highpass, bandpass, etc.)
- * @param options - Optional filter parameters
+ * AudioContext is optional. If omitted, uses the shared library AudioContext
+ * (created lazily on first use).
+ *
+ * @param audioContextOrType - Either an AudioContext or the filter type string
+ * @param typeOrOptions - The filter type (when AudioContext is provided) or filter options
+ * @param options - Optional filter parameters (when AudioContext is provided)
  * @returns A new FilterEffect instance
  *
  * @example
  * ```typescript
- * const lowpass = createFilterEffect(audioContext, 'lowpass', { frequency: 800 })
+ * // Without AudioContext (recommended)
+ * const lowpass = createFilterEffect('lowpass', { frequency: 800 })
+ *
+ * // With explicit AudioContext (backwards compatible)
  * const highpass = createFilterEffect(audioContext, 'highpass', { frequency: 200, q: 2 })
  * ```
  */
 export function createFilterEffect(
+  type: FilterType,
+  options?: FilterEffectOptions,
+): FilterEffect
+export function createFilterEffect(
   audioContext: AudioContext,
   type: FilterType,
-  options: FilterEffectOptions = {},
+  options?: FilterEffectOptions,
+): FilterEffect
+export function createFilterEffect(
+  audioContextOrType: AudioContext | FilterType,
+  typeOrOptions?: FilterType | FilterEffectOptions,
+  options?: FilterEffectOptions,
 ): FilterEffect {
-  return new FilterEffect(audioContext, type, options)
+  if (typeof audioContextOrType === 'string') {
+    // Called as createFilterEffect(type, options?)
+    return new FilterEffect(
+      getOrCreateAudioContext(),
+      audioContextOrType,
+      (typeOrOptions as FilterEffectOptions) ?? {},
+    )
+  }
+  // Called as createFilterEffect(audioContext, type, options?)
+  return new FilterEffect(
+    audioContextOrType,
+    typeOrOptions as FilterType,
+    options ?? {},
+  )
 }

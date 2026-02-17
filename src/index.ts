@@ -19,6 +19,7 @@ import { Analyzer, createAnalyzer } from './analyzer'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
+  createEffect,
   createFilterEffect,
   createGainEffect,
   EffectWrapper,
@@ -625,6 +626,7 @@ export {
   BeatTrack,
   clearPreloadCache,
   createAnalyzer,
+  createEffect,
   createFilterEffect,
   // Effects
   createGainEffect,

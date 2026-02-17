@@ -1,4 +1,5 @@
 import type { Effect } from './index'
+import { getOrCreateAudioContext } from '@/audio-context'
 
 /**
  * GainEffect - A thin wrapper around GainNode that implements the Effect interface.
@@ -101,16 +102,32 @@ export class GainEffect implements Effect {
 /**
  * Factory function to create a GainEffect.
  *
- * @param audioContext - The AudioContext to use
- * @param initialValue - Initial gain value (default: 1.0)
+ * AudioContext is optional. If omitted, uses the shared library AudioContext
+ * (created lazily on first use).
+ *
+ * @param audioContextOrValue - Either an AudioContext or the initial gain value
+ * @param initialValue - Initial gain value when AudioContext is provided (default: 1.0)
  * @returns A new GainEffect instance
  *
  * @example
  * ```typescript
- * const gain = createGainEffect(audioContext)
- * gain.value = 0.5  // 50% volume
+ * // Without AudioContext (recommended)
+ * const gain = createGainEffect(0.5)
+ *
+ * // With explicit AudioContext (backwards compatible)
+ * const gain = createGainEffect(audioContext, 0.5)
  * ```
  */
-export function createGainEffect(audioContext: AudioContext, initialValue = 1.0): GainEffect {
-  return new GainEffect(audioContext, initialValue)
+export function createGainEffect(initialValue?: number): GainEffect
+export function createGainEffect(audioContext: AudioContext, initialValue?: number): GainEffect
+export function createGainEffect(
+  audioContextOrValue?: AudioContext | number,
+  initialValue?: number,
+): GainEffect {
+  if (audioContextOrValue === undefined || typeof audioContextOrValue === 'number') {
+    // Called as createGainEffect() or createGainEffect(value)
+    return new GainEffect(getOrCreateAudioContext(), audioContextOrValue ?? 1.0)
+  }
+  // Called as createGainEffect(audioContext, value?)
+  return new GainEffect(audioContextOrValue, initialValue ?? 1.0)
 }
