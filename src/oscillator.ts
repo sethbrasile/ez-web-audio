@@ -18,8 +18,6 @@ export interface OscillatorFilterOptions {
   q?: number
 }
 
-/** @deprecated Use OscillatorFilterOptions instead */
-export type OscillatorOptsFilterValues = OscillatorFilterOptions
 
 /**
  * Configuration options for creating an Oscillator.
@@ -74,8 +72,6 @@ export interface OscillatorOptions extends BaseSoundOptions {
   envelope?: EnvelopeOptions
 }
 
-/** @deprecated Use OscillatorOptions instead */
-export type OscillatorOpts = OscillatorOptions
 
 const FILTERS = [
   'highpass',
@@ -261,24 +257,18 @@ export class Oscillator extends BaseSound {
   }
 
   /**
-   * Wire oscillator through filters and connections to effect chain.
+   * Wire oscillator through filters to effect chain.
    * @protected
    */
   protected wireConnections(): void {
-    // Connect source through Oscillator-specific filters and legacy connections to effect chain
-    // Chain: audioSourceNode -> [filters] -> [legacy connections] -> effectChainInput -> [effects] -> gain -> panner -> destination
-    const { connections, filters, effectChainInput, audioSourceNode } = this
+    // Chain: audioSourceNode -> [filters] -> effectChainInput -> [effects] -> gain -> panner -> destination
+    const { filters, effectChainInput, audioSourceNode } = this
 
     const nodes: AudioNode[] = [audioSourceNode]
 
     // Add all the Oscillator-specific filters
     for (let i = 0; i < filters.length; i++) {
       nodes.push(filters[i])
-    }
-
-    // Add legacy connections (if any)
-    for (let i = 0; i < connections.length; i++) {
-      nodes.push(connections[i].audioNode)
     }
 
     // Connect to effect chain input

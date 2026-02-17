@@ -713,9 +713,3 @@ export type {
 }
 
 // Deprecated type aliases for backwards compatibility
-export type {
-  /** @deprecated Use OscillatorOptions instead */
-  OscillatorOpts,
-  /** @deprecated Use OscillatorFilterOptions instead */
-  OscillatorOptsFilterValues,
-} from './oscillator'

@@ -96,31 +96,12 @@ export class Sound extends BaseSound {
   }
 
   /**
-   * Wire audio source through connections to the effect chain.
+   * Wire audio source to the effect chain input.
    * @protected
    */
   protected wireConnections(): void {
-    // Connect source through legacy connections (if any) to the effect chain input
-    // Chain: audioSourceNode -> [legacy connections] -> effectChainInput -> [effects] -> gain -> panner -> destination
-    const { connections, effectChainInput, audioSourceNode } = this
-
-    if (connections.length === 0) {
-      // No legacy connections: source connects directly to effect chain
-      audioSourceNode.connect(effectChainInput)
-    }
-    else {
-      // Legacy connections: source -> connections -> effectChainInput
-      const nodes: AudioNode[] = [audioSourceNode]
-      for (let i = 0; i < connections.length; i++) {
-        nodes.push(connections[i].audioNode)
-      }
-      nodes.push(effectChainInput)
-
-      // Connect them all together
-      for (let i = 0; i < nodes.length - 1; i++) {
-        nodes[i].connect(nodes[i + 1])
-      }
-    }
+    // Chain: audioSourceNode -> effectChainInput -> [effects] -> gain -> panner -> destination
+    this.audioSourceNode.connect(this.effectChainInput)
     // Effect chain is already wired (gain -> panner -> destination) in BaseSound
   }
 

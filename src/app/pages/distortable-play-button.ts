@@ -1,9 +1,10 @@
 import type { Sound } from '@/sound'
+import type { Effect } from '@/effects/types'
 import { observable, observe, unobserve } from '@nx-js/observer-util'
-import { createSound, getAudioContext } from '@/index'
+import { createSound, getAudioContext, wrapEffect } from '@/index'
 
-const NAME = 'distortion'
 let distortionEnabled = false
+let distortionEffect: Effect | undefined
 const sound = observable<{ note: Sound | undefined }>({ note: undefined })
 
 function makeDistortionCurve(amount: number): Float32Array {
@@ -22,17 +23,15 @@ function makeDistortionCurve(amount: number): Float32Array {
 }
 
 function addDistortion(sound: Sound): void {
-  const curve = makeDistortionCurve(400)
-
   distortionEnabled = true
 
   // lower note's gain because distorted signal has much more apparent volume
   sound.update('gain').to(0.1).as('ratio')
 
-  // Set distortionNode's curve to enable distortion
-  const node = sound.getNodeFrom<WaveShaperNode>(NAME)
-  if (node) {
-    node.curve = curve
+  // Enable distortion by setting the curve on the WaveShaper node
+  if (distortionEffect) {
+    const node = distortionEffect.input as WaveShaperNode
+    node.curve = makeDistortionCurve(400)
   }
 }
 
@@ -42,9 +41,9 @@ function removeDistortion(sound: Sound): void {
   // raise note's gain because clean signal has much less apparent volume
   sound.update('gain').to(1).as('ratio')
 
-  // Set distortionNode's curve to an empty Float32Array to disable distortion
-  const node = sound.getNodeFrom<WaveShaperNode>(NAME)
-  if (node) {
+  // Disable distortion by clearing the curve
+  if (distortionEffect) {
+    const node = distortionEffect.input as WaveShaperNode
     node.curve = new Float32Array()
   }
 }
@@ -52,13 +51,13 @@ function removeDistortion(sound: Sound): void {
 export async function setupDistortablePlayButton(element: HTMLButtonElement): Promise<void> {
   // we placed the note inside an nx-js observable so that we can make UI updates to reflect the state of the note
   sound.note = await createSound('Eb5.mp3')
-  const audioNode = (await getAudioContext()).createWaveShaper()
-  audioNode.curve = new Float32Array()
+  const audioContext = await getAudioContext()
+  const waveShaperNode = audioContext.createWaveShaper()
+  waveShaperNode.curve = new Float32Array()
 
-  sound.note.addConnection({
-    audioNode,
-    name: NAME,
-  })
+  // Wrap the WaveShaper node as an Effect and add it to the sound's effect chain
+  distortionEffect = wrapEffect(waveShaperNode)
+  sound.note.addEffect(distortionEffect)
 
   if (sound.note) {
     element.addEventListener('click', () => {

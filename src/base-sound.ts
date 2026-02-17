@@ -1,5 +1,5 @@
 import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
-import type { Connectable, Connection } from '@interfaces/connectable'
+import type { Connectable } from '@interfaces/connectable'
 import type { Playable } from '@interfaces/playable'
 import type { TimeObject } from '@utils/create-time-object'
 import type { Analyzer } from './analyzer'
@@ -112,29 +112,6 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * Audio flows through the analyzer (passthrough) before reaching destination.
    */
   protected _analyzer: Analyzer | null = null
-
-  /**
-   * @property connections
-   * An array of connections that will be placed in between the `audioSourceNode` (where the audio comes from) and the gain/panner nodes.
-   *
-   * This is useful for adding effects to a sound. For example, to add a reverb effect, you can create a `ConvolverNode` and add it to this array.
-   *
-   * The `audioSourceNode` is mandatory and always first, and the gain/panner nodes are mandatory and always last, but the nodes in between can be in any order.
-   *
-   * You can use the `addConnection` and `removeConnection` methods to add and remove connections from this array, or you can set/mutate the array directly.
-   *
-   * The `wireConnections` method is called automatically when the sound is played, and it will connect all the nodes in this array in the correct order.
-   *
-   * @deprecated Use addEffect() instead for the new persistent effect chain system.
-   *
-   * @example
-   * const sound = new Oscillator(audioContext, { type: 'sine', frequency: 440 })
-   * const convolverNode = audioContext.createConvolver()
-   * sound.connections = [convolverNode]
-   * sound.play()
-   *
-   */
-  public connections: Connection[] = []
 
   /**
    * @property startOffset
@@ -587,84 +564,6 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   ): this {
     this.removeEventListener(type, listener)
     return this
-  }
-
-  /**
-   * Add a connection to the legacy connection chain.
-   *
-   * @deprecated Use addEffect() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
-   *
-   * @param connection - The connection to add
-   * @returns this for chaining
-   */
-  public addConnection(connection: Connection): this {
-    this.connections.push(connection)
-    this.wireConnections()
-    // Debug log for connection chain change
-    debugConnection(
-      this,
-      `Connection added: ${connection.name ?? 'unnamed'}`,
-      this.audioContext.currentTime,
-      {
-        connectionCount: this.connections.length,
-        connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`),
-      },
-    )
-    return this
-  }
-
-  /**
-   * Remove a connection from the legacy connection chain.
-   *
-   * @deprecated Use removeEffect() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
-   *
-   * @param name - The name of the connection to remove
-   * @returns this for chaining
-   */
-  public removeConnection(name: string): this {
-    const connection = this.getConnection(name)
-    if (connection) {
-      const index = this.connections.indexOf(connection)
-      if (index > -1) {
-        this.connections.splice(index, 1)
-        this.wireConnections()
-        // Debug log for connection chain change
-        debugConnection(
-          this,
-          `Connection removed: ${name}`,
-          this.audioContext.currentTime,
-          {
-            connectionCount: this.connections.length,
-            connections: this.connections.map((c, i) => `[${i}] ${c.name ?? 'unnamed'}`),
-          },
-        )
-      }
-    }
-    return this
-  }
-
-  /**
-   * Get a connection from the legacy connection chain by name.
-   *
-   * @deprecated Use getEffects() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
-   *
-   * @param name - The name of the connection to retrieve
-   * @returns The connection, or undefined if not found
-   */
-  public getConnection(name: string): Connection | undefined {
-    return this.connections.find(c => c.name === name)
-  }
-
-  /**
-   * Get an AudioNode from a legacy connection by name.
-   *
-   * @deprecated Use getEffects() instead. The connections array and addConnection/removeConnection methods are from the legacy effect system.
-   *
-   * @param connectionName - The name of the connection whose node to retrieve
-   * @returns The AudioNode, or undefined if not found
-   */
-  public getNodeFrom<T extends AudioNode | StereoPannerNode>(connectionName: string): T | undefined {
-    return this.getConnection(connectionName)?.audioNode as T | undefined
   }
 
   /**

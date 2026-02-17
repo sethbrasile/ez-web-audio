@@ -267,37 +267,6 @@ describe('debug Mode Integration', () => {
     })
   })
 
-  describe('connection logging', () => {
-    it('addConnection logs debug message', () => {
-      setDebugMode(true)
-      setDebugHandler(msg => messages.push(msg))
-
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'testGain', audioNode: gainNode })
-
-      const connMsg = messages.find(m => m.type === 'connection')
-      expect(connMsg).toBeDefined()
-      expect(connMsg!.message).toContain('Connection added: testGain')
-      expect(connMsg!.details).toHaveProperty('connectionCount', 1)
-    })
-
-    it('removeConnection logs debug message', () => {
-      setDebugMode(true)
-
-      // Add without debug first
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'testGain', audioNode: gainNode })
-
-      // Clear and start capturing
-      setDebugHandler(msg => messages.push(msg))
-
-      sound.removeConnection('testGain')
-
-      const connMsg = messages.find(m => m.message.includes('Connection removed'))
-      expect(connMsg).toBeDefined()
-      expect(connMsg!.details).toHaveProperty('connectionCount', 0)
-    })
-  })
 })
 
 // Helper to create a mock Effect

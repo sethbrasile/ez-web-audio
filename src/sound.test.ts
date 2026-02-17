@@ -479,60 +479,6 @@ describe('sound', () => {
     })
   })
 
-  describe('connections (legacy)', () => {
-    it('connections array is initially empty', () => {
-      const sound = createSound(audioContext)
-      expect(sound.connections).toEqual([])
-    })
-
-    it('addConnection adds to connections array', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      expect(sound.connections).toHaveLength(1)
-    })
-
-    it('removeConnection removes from connections array', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      sound.removeConnection('customGain')
-      expect(sound.connections).toHaveLength(0)
-    })
-
-    it('getConnection returns connection by name', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      const conn = sound.getConnection('customGain')
-      expect(conn).toBeDefined()
-      expect(conn?.audioNode).toBe(gainNode)
-    })
-
-    it('getNodeFrom returns audio node from connection', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      const node = sound.getNodeFrom<GainNode>('customGain')
-      expect(node).toBe(gainNode)
-    })
-
-    it('addConnection returns this for chaining', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      const result = sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      expect(result).toBe(sound)
-    })
-
-    it('removeConnection returns this for chaining', () => {
-      const sound = createSound(audioContext)
-      const gainNode = audioContext.createGain()
-      sound.addConnection({ name: 'customGain', audioNode: gainNode })
-      const result = sound.removeConnection('customGain')
-      expect(result).toBe(sound)
-    })
-  })
-
   describe('event system', () => {
     it('on() subscribes to events', async () => {
       const sound = createSound(audioContext)
