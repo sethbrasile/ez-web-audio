@@ -252,12 +252,16 @@ function handleTouchEnd(e: TouchEvent) {
 
 onMounted(() => {
   if (canvas.value) {
-    // Set canvas size
+    // Set canvas size with HiDPI support
     const size = Math.min(400, canvas.value.clientWidth)
-    canvas.value.width = size
-    canvas.value.height = size
+    const dpr = window.devicePixelRatio || 1
+    canvas.value.width = size * dpr
+    canvas.value.height = size * dpr
 
     ctx = canvas.value.getContext('2d')
+    if (ctx) {
+      ctx.scale(dpr, dpr)
+    }
     drawGrid()
   }
   // Catch mouseup anywhere on the page so dragging outside canvas still stops playback
