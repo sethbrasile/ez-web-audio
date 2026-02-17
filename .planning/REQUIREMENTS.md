@@ -40,12 +40,12 @@ Implement all deferred audit improvements, breaking API cleanup (free pre-1.0), 
 
 ### Dependency Security
 
-- [ ] **SEC-01**: happy-dom upgraded from 15.x to 20.x (fixes 2 critical RCE vulnerabilities)
-- [ ] **SEC-02**: vitest upgraded from 2.x to 4.x (fixes 1 critical RCE vulnerability)
-- [ ] **SEC-03**: vite upgraded from 5.x to 7.x (fixes multiple moderate vulnerabilities)
-- [ ] **SEC-04**: eslint upgraded from 9.x to 10.x and @antfu/eslint-config from 2.x to 7.x
-- [ ] **SEC-05**: TypeScript upgraded from 5.6 to 5.9
-- [ ] **SEC-06**: Unused dependencies removed (@dotenvx/dotenvx, concurrently — if confirmed unused)
+- [x] **SEC-01**: happy-dom upgraded from 15.x to 20.6.1 (Phase 17-01)
+- [x] **SEC-02**: vitest upgraded from 2.x to 4.0.18 (Phase 17-01)
+- [x] **SEC-03**: vite upgraded from 5.x to 7.3.1 (Phase 17-01)
+- [x] **SEC-04**: eslint upgraded from 9.x to 10.0.0 and @antfu/eslint-config from 2.x to 7.4.3 (Phase 17-02)
+- [x] **SEC-05**: TypeScript upgraded from 5.6 to 5.9.3 (Phase 17-03)
+- [x] **SEC-06**: Unused dependencies removed (@dotenvx/dotenvx, concurrently) (Phase 17-01)
 
 ### Test Coverage
 
@@ -100,12 +100,12 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 17 | Pending |
-| SEC-02 | Phase 17 | Pending |
-| SEC-03 | Phase 17 | Pending |
-| SEC-04 | Phase 17 | Pending |
-| SEC-05 | Phase 17 | Pending |
-| SEC-06 | Phase 17 | Pending |
+| SEC-01 | Phase 17-01 | Complete |
+| SEC-02 | Phase 17-01 | Complete |
+| SEC-03 | Phase 17-01 | Complete |
+| SEC-04 | Phase 17-02 | Complete |
+| SEC-05 | Phase 17-03 | Complete |
+| SEC-06 | Phase 17-01 | Complete |
 | API-01 | Phase 18 | Pending |
 | API-02 | Phase 18 | Pending |
 | API-03 | Phase 18 | Pending |
