@@ -29,6 +29,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ Documentation polish and 2 new creative demos — v1.1
 - ✓ Test coverage expansion (913 tests: 893 unit + 20 E2E) — v1.1
 - ✓ SEO optimization (meta tags, structured data, homepage messaging) — v1.1
+- ✓ Dependency security upgrades (vite 7, vitest 4, happy-dom 20, ESLint 10, TS 5.9) — v1.0 stable Phase 17
 
 ### Active
 
@@ -98,6 +99,9 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | String concat for error messages | Consistency across codebase (decided in Phase 13) | ✓ Good |
 | Remove deprecated type aliases for 1.0 | No public 1.0 API exists — clean break, no aliases needed | ✓ Good |
 | E2E error-detection focus | VitePress SPA hydration timing too unreliable for element checks | ✓ Good |
+| Vitest 4 constructor mocks need function syntax | Arrow functions can't be constructors; vi.fn(function(){}) required | ✓ Good |
+| ESLint per-directory rule overrides | Docs Vue components get relaxed rules until Phase 22 cleanup | ✓ Good |
+| TS 5.9 typed arrays need explicit ArrayBuffer generic | Web Audio API methods require Uint8Array<ArrayBuffer> not Uint8Array | ✓ Good |
 
 ---
-*Last updated: 2026-02-16 after v1.0 milestone start*
+*Last updated: 2026-02-17 after Phase 17*
