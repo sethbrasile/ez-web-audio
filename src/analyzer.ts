@@ -64,9 +64,9 @@ export class Analyzer {
   public readonly input: AnalyserNode
 
   // Pre-allocated typed arrays for zero-allocation polling
-  private _frequencyData: Uint8Array
-  private _timeDomainData: Uint8Array
-  private _floatFrequencyData: Float32Array
+  private _frequencyData: Uint8Array<ArrayBuffer>
+  private _timeDomainData: Uint8Array<ArrayBuffer>
+  private _floatFrequencyData: Float32Array<ArrayBuffer>
 
   constructor(audioContext: AudioContext, options?: AnalyzerOptions) {
     this.input = audioContext.createAnalyser()

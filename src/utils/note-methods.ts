@@ -183,7 +183,7 @@ export function extractDecodedKeyValuePairs(ctx: AudioContext, notes: string[]):
     if (Object.prototype.hasOwnProperty.call(notes, noteName)) {
       // Transform base64 note value to Uint8Array
       const noteValue = base64ToUint8(notes[noteName])
-      promises.push(decodeNote(noteName, noteValue.buffer))
+      promises.push(decodeNote(noteName, noteValue.buffer as ArrayBuffer))
     }
   }
 

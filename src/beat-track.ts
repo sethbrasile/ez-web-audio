@@ -357,7 +357,9 @@ export class BeatTrack extends Sampler {
     // so consumers don't need to compensate for lookahead delay
     const active = beat.active
     const msOffset = offset * 1000
-    const emitBeat = (): boolean => this.emit('beat', { time, beatIndex, active, source: this })
+    const emitBeat = (): void => {
+      this.emit('beat', { time, beatIndex, active, source: this })
+    }
 
     if (msOffset <= 0) {
       emitBeat()
