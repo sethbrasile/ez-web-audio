@@ -42,8 +42,8 @@ function drawGrid(x?: number, y?: number) {
   if (!ctx || !canvas.value)
     return
 
-  const width = canvas.value.width
-  const height = canvas.value.height
+  const width = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
+  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientWidth
 
   // Clear canvas
   ctx.fillStyle = '#1a1a2e'
@@ -125,8 +125,8 @@ function updateFromPosition(x: number, y: number) {
   if (!canvas.value)
     return
 
-  const width = canvas.value.width
-  const height = canvas.value.height
+  const width = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
+  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientWidth
 
   // X-axis: frequency (100-2000 Hz, logarithmic)
   const ratio = x / width
@@ -257,6 +257,8 @@ onMounted(() => {
     const dpr = window.devicePixelRatio || 1
     canvas.value.width = size * dpr
     canvas.value.height = size * dpr
+    canvas.value.dataset.logicalWidth = String(size)
+    canvas.value.dataset.logicalHeight = String(size)
 
     ctx = canvas.value.getContext('2d')
     if (ctx) {
