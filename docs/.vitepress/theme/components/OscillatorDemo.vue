@@ -62,8 +62,18 @@ function stop() {
 }
 
 // Update oscillator parameters while playing
-watch([frequency, gain, waveType], async () => {
-  if (playing.value && oscillator) {
+// Frequency and gain update in real-time without audio gaps
+watch(frequency, (v) => {
+  if (playing.value && oscillator)
+    oscillator.update('frequency').to(v).as('ratio')
+})
+watch(gain, (v) => {
+  if (playing.value && oscillator)
+    oscillator.changeGainTo(v)
+})
+// waveType requires stop/recreate — Web Audio API OscillatorNode.type cannot change after start
+watch(waveType, async () => {
+  if (playing.value) {
     stop()
     await play()
   }
