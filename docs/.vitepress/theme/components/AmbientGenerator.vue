@@ -165,7 +165,7 @@ function updateDroneFrequency() {
   if (!isPlaying.value || !droneOscillator)
     return
 
-  droneOscillator.update('frequency').to(droneFrequency.value).from('number')
+  droneOscillator.update('frequency').to(droneFrequency.value).as('number')
 }
 
 function updateTextureFilter() {
@@ -179,7 +179,7 @@ function updateShimmerFrequency() {
   if (!isPlaying.value || !shimmerOscillator)
     return
 
-  shimmerOscillator.update('frequency').to(shimmerFrequency.value).from('number')
+  shimmerOscillator.update('frequency').to(shimmerFrequency.value).as('number')
 }
 
 onUnmounted(() => {

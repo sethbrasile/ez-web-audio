@@ -143,8 +143,8 @@ function updateFromPosition(x: number, y: number) {
   // Update oscillator if playing
   if (oscillator && isPlaying.value) {
     try {
-      oscillator.update('frequency').to(frequency).from('ratio')
-      oscillator.update('gain').to(currentGain.value).from('ratio')
+      oscillator.update('frequency').to(frequency).as('ratio')
+      oscillator.update('gain').to(currentGain.value).as('ratio')
     }
     catch (e) {
       console.error('Error updating oscillator:', e)

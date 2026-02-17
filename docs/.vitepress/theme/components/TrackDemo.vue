@@ -106,7 +106,7 @@ function stop() {
 
 function seek() {
   if (track) {
-    track.seek(seekPosition.value).from('seconds')
+    track.seek(seekPosition.value).as('seconds')
     positionString.value = track.position.string
   }
 }

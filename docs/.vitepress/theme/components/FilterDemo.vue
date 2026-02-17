@@ -55,7 +55,7 @@ async function playSound() {
     // Create source based on selected type
     if (sourceType.value === 'oscillator') {
       source = await lib.createOscillator({ frequency: 200, type: 'sawtooth' })
-      source.update('gain').to(0.3).from('ratio')
+      source.update('gain').to(0.3).as('ratio')
     }
     else {
       // White noise

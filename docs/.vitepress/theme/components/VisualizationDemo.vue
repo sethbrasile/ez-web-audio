@@ -222,7 +222,7 @@ function updateFrequency() {
   if (!isPlaying.value || !oscillator)
     return
 
-  oscillator.update('frequency').to(frequency.value).from('number')
+  oscillator.update('frequency').to(frequency.value).as('number')
 }
 
 function updateFFTSize() {
