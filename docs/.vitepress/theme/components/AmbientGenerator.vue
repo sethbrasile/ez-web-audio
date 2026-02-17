@@ -23,7 +23,6 @@ let droneOscillator: any = null
 let textureNoise: any = null
 let textureFilter: any = null
 let shimmerOscillator: any = null
-let audioContext: any = null
 
 async function togglePlayback() {
   try {
@@ -46,9 +45,7 @@ async function startAll() {
   loading.value = true
 
   try {
-    const { createOscillator, createWhiteNoise, createFilterEffect, getAudioContext } = await import('ez-web-audio')
-
-    audioContext = await getAudioContext()
+    const { createOscillator, createWhiteNoise, createFilterEffect } = await import('ez-web-audio')
 
     // Create drone layer - low-frequency sine wave with slow envelope
     droneOscillator = await createOscillator({
@@ -65,7 +62,7 @@ async function startAll() {
 
     // Create texture layer - white noise through lowpass filter
     textureNoise = await createWhiteNoise()
-    textureFilter = createFilterEffect(audioContext, 'lowpass', {
+    textureFilter = createFilterEffect('lowpass', {
       frequency: textureFilterCutoff.value,
       Q: 1.0,
     })

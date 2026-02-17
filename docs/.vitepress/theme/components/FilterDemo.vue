@@ -50,8 +50,6 @@ async function playSound() {
       initialized.value = true
     }
 
-    const ctx = await lib.getAudioContext()
-
     // Create source based on selected type
     if (sourceType.value === 'oscillator') {
       source = await lib.createOscillator({ frequency: 200, type: 'sawtooth' })
@@ -64,7 +62,7 @@ async function playSound() {
     }
 
     // Create filter
-    filter = lib.createFilterEffect(ctx, filterType.value, {
+    filter = lib.createFilterEffect(filterType.value, {
       frequency: frequency.value,
       q: q.value,
       gain: filterGain.value,
@@ -100,13 +98,11 @@ watch(filterType, async (newType) => {
     return
 
   try {
-    const ctx = await lib.getAudioContext()
-
     // Remove old filter
     source.removeEffect(filter)
 
     // Create new filter with new type
-    filter = lib.createFilterEffect(ctx, newType, {
+    filter = lib.createFilterEffect(newType, {
       frequency: frequency.value,
       q: q.value,
       gain: filterGain.value,

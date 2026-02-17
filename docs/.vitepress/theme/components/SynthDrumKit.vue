@@ -76,11 +76,10 @@ async function createSnareMeat() {
 }
 
 async function createSnareCrack() {
-  const ctx = await lib.getAudioContext()
   const noise = await lib.createWhiteNoise()
 
   // Apply highpass filter for the "crack"
-  const highpass = lib.createFilterEffect(ctx, 'highpass', {
+  const highpass = lib.createFilterEffect('highpass', {
     frequency: 1000,
     q: 1,
   })
@@ -147,8 +146,6 @@ async function playHiHat() {
     await initIfNeeded()
     flashPad('hihat')
 
-    const ctx = await lib.getAudioContext()
-
     // Create multiple square oscillators at harmonic ratios
     // Using metallic ratios for that characteristic hi-hat sound
     const fundamentalFreq = 40
@@ -162,17 +159,16 @@ async function playHiHat() {
         })
 
         // Highpass + bandpass filters for metallic character
-        const highpass = lib.createFilterEffect(ctx, 'highpass', {
+        const highpass = lib.createFilterEffect('highpass', {
           frequency: 7000,
           q: 1,
         })
-        const bandpass = lib.createFilterEffect(ctx, 'bandpass', {
+        const bandpass = lib.createFilterEffect('bandpass', {
           frequency: 10000,
           q: 1,
         })
 
-        osc.addEffect(highpass)
-        osc.addEffect(bandpass)
+        osc.addEffects([highpass, bandpass])
 
         // ADSR-style envelope matching ember-audio original
         osc.onPlayRamp('gain').from(0.00001).to(1).in(0.02)
