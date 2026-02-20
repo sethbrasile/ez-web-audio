@@ -41,7 +41,7 @@
 
 </details>
 
-### 🚧 v1.0 First Stable Release (Phases 17-22)
+### 🚧 v1.0 First Stable Release (Phases 17-24)
 
 **Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
 
@@ -52,6 +52,7 @@
 - [x] **Phase 21: Test Coverage** - Add integration tests, split test files by concern, add concurrent operation tests (completed 2026-02-17)
 - [x] **Phase 22: Demo App & Release** - Update demo Vue components for all API changes, update TypeDoc, publish npm 1.0.0 (completed 2026-02-17)
 - [x] **Phase 23: Demo Example Bugfixes** - Fix runtime API bugs, design issues, and polish in all VitePress demo components (completed 2026-02-17)
+- [ ] **Phase 24: Milestone Verification & Release Documentation** - Create missing VERIFICATION.md for phases 18 and 19, fix stale JSDoc, update CHANGELOG, clean up tracking docs, and trigger npm 1.0.0 publish
 
 ## Phase Details
 
@@ -162,6 +163,22 @@
 - [x] 23-03-PLAN.md — Fix minor issues: canvas DPI, filter property access, distortion internals, final validation
 - [ ] 23-04-PLAN.md — Gap closure: fix XYPad HiDPI logical dimension reads in drawGrid and updateFromPosition
 
+### Phase 24: Milestone Verification & Release Documentation
+**Goal**: All phases are formally verified, all documentation is accurate, and npm 1.0.0 is published
+**Depends on**: Phase 23
+**Requirements**: API-01–07, DOC-01, DX-01–08, DEF-05, DOC-03 (verification docs only — code complete)
+**Gap Closure**: Closes gaps from v1.0 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. `18-VERIFICATION.md` exists and confirms all 8 Phase 18 requirements satisfied via code inspection
+  2. `19-VERIFICATION.md` exists and confirms all 10 Phase 19 requirements satisfied via code inspection
+  3. `createWhiteNoise()` JSDoc example uses context-free API (`createFilterEffect('lowpass', {...})`)
+  4. CHANGELOG.md 1.0.0 entry includes `audioContextAwareTimeout` as a new export
+  5. All 27 REQUIREMENTS.md checkboxes marked `[x]` for completed requirements
+  6. Stale `docs/classes/` directory removed from git tracking
+  7. npm `ez-web-audio@1.0.0` is published (human gate: `git tag v1.0.0 && git push origin v1.0.0`)
+**Plans**: 1 plan
+- [ ] 24-01-PLAN.md — Verification docs, doc fixes, tracking cleanup, npm publish trigger
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -189,6 +206,7 @@
 | 21. Test Coverage | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 22. Demo App & Release | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 23. Demo Example Bugfixes | v1.0 Stable | Complete    | 2026-02-17 | - |
+| 24. Milestone Verification & Release | v1.0 Stable | 0/1 | Pending | - |
 
 ---
 
