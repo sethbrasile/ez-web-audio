@@ -78,6 +78,7 @@ All notable changes to this project will be documented in this file.
 - **`createSounds()` batch loader** -- load multiple sounds with progress events for UI feedback
 - **`getFilters()` on Oscillator** -- readonly accessor returning the current filter effects array
 - **`getSounds()` on Sampler** -- readonly accessor returning the current sounds array
+- **`audioContextAwareTimeout` utility** -- schedules callbacks synchronized to AudioContext time, enabling audio-accurate UI timers (e.g., beat-synchronized visual updates in drum machine UIs)
 - **Extensible `ControlType` via `ControlTypeMap` interface** -- add custom parameter types via TypeScript module augmentation without modifying the library
 - **`createEffect()` generic factory** -- create custom effect wrappers with a consistent API
 - Null guards and input validation throughout all public methods

@@ -474,7 +474,7 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
  *
  * // Filter white noise to create wind-like sound
  * const wind = await createWhiteNoise()
- * const lowpass = createFilterEffect(await getAudioContext(), 'lowpass', {
+ * const lowpass = createFilterEffect('lowpass', {
  *   frequency: 400
  * })
  * wind.addEffect(lowpass)
