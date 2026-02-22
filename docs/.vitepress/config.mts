@@ -70,6 +70,8 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/concepts' },
+            { text: 'Parameter Control', link: '/guide/parameter-control' },
+            { text: 'Utilities', link: '/guide/utilities' },
           ],
         },
       ],
