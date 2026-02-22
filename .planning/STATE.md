@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 29 complete: demo component fixes verified)
+**Last Updated:** 2026-02-22 (Phase 30 Plan 01 complete: utility test coverage added)
 **Current Focus:** Phase 30 — Test Coverage Expansion
 
 ## Project Reference
@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 30 of 31 (Test Coverage Expansion)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-22 — Phase 29 complete (3 plans, 10/10 success criteria verified)
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 96%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Last activity: 2026-02-22 — Phase 29 complete (3 plans, 10/10 success criteria
 | Phase 29 P02 | 2min | 2 tasks | 2 files |
 | Phase 29-demo-component-fixes P03 | 4min | 2 tasks | 8 files |
 | Phase 30 P02 | 6min | 2 tasks | 3 files |
+| Phase 30-test-coverage-expansion P01 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,8 @@ Recent decisions affecting current work:
 - [Phase 29-demo-component-fixes]: SoundfontPiano font.notes cast removed: Font.notes is SampledNote[] — cast unnecessary once font is typed as Font
 - [Phase 29-demo-component-fixes]: lib: any retained for dynamic import module references — no clean type for await import() result in variable
 - [Phase 30]: playFor isPlaying lifecycle test uses spy on stop() rather than settle-waiting for flag reset — audioContextAwareTimeout uses requestAnimationFrame (not native setTimeout) and doesn't fire in happy-dom test environment
+- [Phase 30-test-coverage-expansion]: stubGlobal('AudioContext', MockAudioContext) required because play-together.ts uses instanceof AudioContext and happy-dom does not define AudioContext
+- [Phase 30-test-coverage-expansion]: Plain object with mutable currentTime cast as AudioContext is simpler for timeout tests — avoids async lifecycle of real MockAudioContext
 
 ### Pending Todos
 
@@ -153,5 +156,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 29-03-PLAN.md
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
