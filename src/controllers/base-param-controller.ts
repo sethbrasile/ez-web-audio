@@ -30,6 +30,23 @@ export interface ControlTypeMap {
 
 /** Union of all registered control type names, extensible via {@link ControlTypeMap}. */
 export type ControlType = ControlTypeMap[keyof ControlTypeMap]
+
+/**
+ * Control types available on Sound and Track.
+ *
+ * Excludes 'frequency' since Sound/Track instances play pre-recorded audio
+ * buffers which do not have a frequency AudioParam.
+ * Use {@link OscillatorControlType} for oscillator-specific parameters.
+ */
+export type SoundControlType = 'gain' | 'pan' | 'detune'
+
+/**
+ * Control types available on Oscillator (full set including frequency).
+ *
+ * Oscillator supports all built-in control types including 'frequency' for
+ * real-time pitch control. Equivalent to {@link ControlType}.
+ */
+export type OscillatorControlType = ControlType
 export type RatioType = 'ratio' | 'inverseRatio' | 'percent'
 export type RampType = 'linear' | 'exponential'
 export type SeekType = RatioType | 'seconds'

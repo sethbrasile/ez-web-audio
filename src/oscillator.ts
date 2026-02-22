@@ -1,4 +1,4 @@
-import type { ControlType, RampType } from '@controllers/base-param-controller'
+import type { ControlType, RampType, RatioType } from '@controllers/base-param-controller'
 import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
 import type { EnvelopeOptions } from './envelope'
@@ -204,6 +204,29 @@ export class Oscillator extends BaseSound {
         this.filters.push(filterNode)
       }
     })
+  }
+
+  /**
+   * Update an audio parameter immediately.
+   *
+   * Overrides BaseSound.update() to accept the full ControlType including 'frequency',
+   * which is only valid on Oscillator instances.
+   *
+   * @param type - The parameter to update ('gain', 'pan', 'detune', or 'frequency')
+   * @returns Fluent builder: `.to(value).as(unit)`
+   *
+   * @example
+   * ```typescript
+   * osc.update('frequency').to(880).as('ratio')
+   * osc.update('gain').to(0.5).as('ratio')
+   * ```
+   */
+  public override update(type: ControlType): {
+    to: (value: number) => {
+      as: (method: RatioType) => void
+    }
+  } {
+    return this.controller.update(type)
   }
 
   /**

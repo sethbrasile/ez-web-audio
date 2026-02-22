@@ -42,6 +42,7 @@ import { pauseAll, playAll, stopAll } from './utils/collections'
 import { crossfade } from './utils/crossfade'
 import { mungeSoundFont } from './utils/decode-base64'
 import frequencyMap from './utils/frequency-map'
+import { createBrownNoiseBuffer, createPinkNoiseBuffer } from './utils/noise'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import { playTogether } from './utils/play-together'
 import audioContextAwareTimeout from './utils/timeout'
@@ -653,6 +654,65 @@ export async function createWhiteNoise(): Promise<Sound> {
 
   for (let i = 0; i < bufferSize; i++) {
     output[i] = Math.random() * 2 - 1
+  }
+
+  return new Sound(audioContext, audioBuffer)
+}
+
+/**
+ * Create a Sound containing a specific type of noise.
+ *
+ * A convenient unified API for all three noise types:
+ * - `'white'`: Equal energy across all frequencies (hiss/static)
+ * - `'pink'`: Equal energy per octave (1/f spectrum; sounds balanced and natural)
+ * - `'brown'`: Heavier bass, deeper rumble (cumulative random walk)
+ *
+ * All types return 1 second of loopable mono audio.
+ *
+ * @param type - The noise type: 'white', 'pink', or 'brown'
+ * @returns Promise resolving to a Sound containing the generated noise
+ *
+ * @example
+ * ```typescript
+ * import { createNoise } from 'ez-web-audio'
+ *
+ * // Pink noise for focus/sleep
+ * const pink = await createNoise('pink')
+ * pink.loop = true
+ * pink.play()
+ *
+ * // Brown noise for deep rumble
+ * const brown = await createNoise('brown')
+ * brown.play()
+ *
+ * // White noise (same as createWhiteNoise())
+ * const white = await createNoise('white')
+ * white.play()
+ * ```
+ */
+export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sound> {
+  await initAudio()
+  const audioContext = getOrCreateAudioContext()
+
+  let audioBuffer: AudioBuffer
+
+  switch (type) {
+    case 'pink':
+      audioBuffer = createPinkNoiseBuffer(audioContext)
+      break
+    case 'brown':
+      audioBuffer = createBrownNoiseBuffer(audioContext)
+      break
+    case 'white':
+    default: {
+      const bufferSize = audioContext.sampleRate
+      audioBuffer = audioContext.createBuffer(1, bufferSize, bufferSize)
+      const output = audioBuffer.getChannelData(0)
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1
+      }
+      break
+    }
   }
 
   return new Sound(audioContext, audioBuffer)
