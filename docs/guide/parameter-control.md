@@ -159,7 +159,7 @@ This is useful when wrapping custom AudioNodes that expose non-standard paramete
 | `sound.onPlayRamp('gain').from(a).to(b).in(t)` | Schedule linear ramp between values |
 | `sound.changeGainTo(v)` | Shorthand for gain update |
 | `sound.changePanTo(v)` | Shorthand for pan update |
-| `oscillator.changeFrequencyTo(v)` | Shorthand for frequency update |
+| `oscillator.update('frequency').to(v).as('ratio')` | Update oscillator frequency |
 
 ## Next Steps
 
