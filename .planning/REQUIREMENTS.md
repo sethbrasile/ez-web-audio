@@ -130,8 +130,8 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Final Documentation Sync (Phase 38)
 
-- [ ] **SYNC2-01**: All Phase 37 APIs documented with examples
-- [ ] **SYNC2-02**: Every public export in `index.ts` mentioned in guides
+- [x] **SYNC2-01**: All Phase 37 APIs documented with examples
+- [x] **SYNC2-02**: Every public export in `index.ts` mentioned in guides
 - [ ] **SYNC2-03**: Full lint + typecheck + test suite passes
 - [ ] **SYNC2-04**: CHANGELOG.md has complete Phase 32-38 record
 
@@ -255,8 +255,8 @@ Explicitly excluded. Documented to prevent scope creep.
 | DX3-07 | Phase 37 | Complete |
 | DX3-08 | Phase 37 | Complete |
 | DX3-09 | Phase 37 | Complete |
-| SYNC2-01 | Phase 38 | Pending |
-| SYNC2-02 | Phase 38 | Pending |
+| SYNC2-01 | Phase 38 | Complete |
+| SYNC2-02 | Phase 38 | Complete |
 | SYNC2-03 | Phase 38 | Pending |
 | SYNC2-04 | Phase 38 | Pending |
 

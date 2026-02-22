@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 37 complete (AudioInput, createNoise, volume, createTracks, typed events, narrowed ControlType, TypedEventEmitter, onPlaySet docs)
 
-**Progress:** [████████████████████] 100/101 plans (99%)
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Last activity: 2026-02-22 — Phase 37 complete (AudioInput, createNoise, volume
 | Phase 37-nice-to-have-dx-features P37-02 | 7min | 2 tasks | 6 files |
 | Phase 37-nice-to-have-dx-features P01 | 8min | 2 tasks | 6 files |
 | Phase 37-nice-to-have-dx-features P37-03 | 7min | 2 tasks | 5 files |
+| Phase 38-final-documentation-sync P01 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -197,6 +198,7 @@ Recent decisions affecting current work:
 - [Phase 37-nice-to-have-dx-features]: createTracks() mirrors createSounds() pattern — same progress callback signature (loaded, total, url)
 - [Phase 37-nice-to-have-dx-features]: TypedEventEmitter uses any in implementation signatures — resolves TS overload contravariance; BeatTrack kept as-is (delegated EventTarget, extends Sampler not EventTarget)
 - [Phase 37-nice-to-have-dx-features]: TypedEventEmitter self-referential constraint avoids requiring index signature on existing SoundEventMap/LayeredSoundEventMap interfaces
+- [Phase 38]: concepts.md trimmed to ~262 lines by condensing ADSR, init, and effect chain sections for 250-line target
 
 ### Pending Todos
 
