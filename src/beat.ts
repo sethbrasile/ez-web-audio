@@ -99,6 +99,11 @@ export class Beat {
     this.setTimeout(() => {
       this.isPlaying = true
       this.currentTimeIsPlaying = true
+      // Schedule reset after duration elapses (matching markPlaying/markCurrentTimePlaying pattern)
+      this.setTimeout(() => {
+        this.isPlaying = false
+        this.currentTimeIsPlaying = false
+      }, this.duration)
     }, msOffset)
   }
 
