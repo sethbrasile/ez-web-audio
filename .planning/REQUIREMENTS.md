@@ -99,15 +99,15 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Documentation Expansion (Phase 35)
 
-- [ ] **DOC2-01**: AudioSprite interactive example page
-- [ ] **DOC2-02**: LayeredSound interactive example page
-- [ ] **DOC2-03**: Crossfade interactive demo page
-- [ ] **DOC2-04**: React integration example
-- [ ] **DOC2-05**: `concepts.md` split into focused pages
-- [ ] **DOC2-06**: `changeFrequencyTo()` corrected in synthesis.md
-- [ ] **DOC2-07**: `audio-routing.md` uses recommended `wrapEffect()` form
-- [ ] **DOC2-08**: Example pages have proper `<script setup>` imports
-- [ ] **DOC2-09**: Integration patterns listed on examples index page
+- [x] **DOC2-01**: AudioSprite interactive example page
+- [x] **DOC2-02**: LayeredSound interactive example page
+- [x] **DOC2-03**: Crossfade interactive demo page
+- [x] **DOC2-04**: React integration example
+- [x] **DOC2-05**: `concepts.md` split into focused pages
+- [x] **DOC2-06**: `changeFrequencyTo()` corrected in synthesis.md
+- [x] **DOC2-07**: `audio-routing.md` uses recommended `wrapEffect()` form
+- [x] **DOC2-08**: Example pages have proper `<script setup>` imports
+- [x] **DOC2-09**: Integration patterns listed on examples index page
 
 ### Documentation Sync (Phase 36)
 
@@ -233,15 +233,15 @@ Explicitly excluded. Documented to prevent scope creep.
 | TEST2-07 | Phase 34 | Complete |
 | TEST2-08 | Phase 34 | Complete |
 | TEST2-09 | Phase 34 | Complete |
-| DOC2-01 | Phase 35 | Pending |
-| DOC2-02 | Phase 35 | Pending |
-| DOC2-03 | Phase 35 | Pending |
-| DOC2-04 | Phase 35 | Pending |
-| DOC2-05 | Phase 35 | Pending |
-| DOC2-06 | Phase 35 | Pending |
-| DOC2-07 | Phase 35 | Pending |
-| DOC2-08 | Phase 35 | Pending |
-| DOC2-09 | Phase 35 | Pending |
+| DOC2-01 | Phase 35 | Complete |
+| DOC2-02 | Phase 35 | Complete |
+| DOC2-03 | Phase 35 | Complete |
+| DOC2-04 | Phase 35 | Complete |
+| DOC2-05 | Phase 35 | Complete |
+| DOC2-06 | Phase 35 | Complete |
+| DOC2-07 | Phase 35 | Complete |
+| DOC2-08 | Phase 35 | Complete |
+| DOC2-09 | Phase 35 | Complete |
 | SYNC-01 | Phase 36 | Pending |
 | SYNC-02 | Phase 36 | Pending |
 | SYNC-03 | Phase 36 | Pending |
