@@ -95,7 +95,7 @@ describe('gainEffect', () => {
     it('value setter updates the underlying GainNode', () => {
       const effect = new GainEffect(audioContext)
       effect.value = 0.6
-      expect((effect.input as GainNode).gain.value).toBe(0.6)
+      expect((effect.input as GainNode).gain.value).toBeCloseTo(0.6, 5)
     })
   })
 
@@ -115,7 +115,7 @@ describe('gainEffect', () => {
       const effect = new GainEffect(audioContext, 0.5)
       effect.bypass = true
       effect.bypass = false
-      expect((effect.input as GainNode).gain.value).toBe(0.5)
+      expect((effect.input as GainNode).gain.value).toBeCloseTo(0.5, 5)
     })
 
     it('bypass preserves value property while bypassed', () => {
@@ -152,14 +152,15 @@ describe('gainEffect', () => {
     it('mix=1 applies full effect', () => {
       const effect = new GainEffect(audioContext, 0.5)
       effect.mix = 1
-      expect((effect.input as GainNode).gain.value).toBe(0.5)
+      // Equal-power: cos(π/2) * 1 + sin(π/2) * 0.5 ≈ 0 + 1 * 0.5 = 0.5
+      expect((effect.input as GainNode).gain.value).toBeCloseTo(0.5, 5)
     })
 
-    it('mix=0.5 applies half effect', () => {
+    it('mix=0.5 applies half effect (equal-power crossfade)', () => {
       const effect = new GainEffect(audioContext, 0.5)
       effect.mix = 0.5
-      // effectiveGain = 1 + (0.5 - 1) * 0.5 = 1 + (-0.5) * 0.5 = 1 - 0.25 = 0.75
-      expect((effect.input as GainNode).gain.value).toBe(0.75)
+      // Equal-power crossfade: cos(π/4) * 1 + sin(π/4) * 0.5 ≈ 0.7071 + 0.3536 ≈ 1.0607
+      expect((effect.input as GainNode).gain.value).toBeCloseTo(1.0607, 3)
     })
 
     it('mix is clamped to 0-1 range', () => {

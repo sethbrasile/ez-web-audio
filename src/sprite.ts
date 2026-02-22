@@ -147,6 +147,16 @@ export class AudioSprite {
       throw new Error(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
     }
 
+    // Validate sprite boundaries against the audio buffer
+    if (sprite.start < 0) {
+      throw new Error(`Sprite "${name}" has invalid start time: ${sprite.start} (must be >= 0)`)
+    }
+    if (sprite.end > this.audioBuffer.duration) {
+      throw new Error(
+        `Sprite "${name}" end time ${sprite.end}s exceeds buffer duration ${this.audioBuffer.duration}s`,
+      )
+    }
+
     const { gain = 1, pan = 0 } = options
 
     // Create new source node for this playback

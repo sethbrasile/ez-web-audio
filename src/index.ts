@@ -1,3 +1,4 @@
+import type { TimeObject } from '@utils/create-time-object'
 import type { AnalyzerOptions } from './analyzer'
 import type { BeatTrackOptions } from './beat-track'
 import type { ControlType, ControlTypeMap, RatioType, SeekType } from './controllers/base-param-controller'
@@ -8,7 +9,6 @@ import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
-import type { TimeObject } from '@utils/create-time-object'
 import type { SamplerOptions } from '@/sampler'
 import { Beat } from '@/beat'
 import { MusicallyAware } from '@/musical-identity'
@@ -595,7 +595,7 @@ interface Player {
  * preventEventDefaults(pianoKey)
  * ```
  */
-export function preventEventDefaults(key: HTMLElement): void {
+export function preventEventDefaults(key: HTMLElement): () => void {
   function prevent(e: Event): void {
     e.preventDefault()
   }
@@ -619,6 +619,11 @@ export function preventEventDefaults(key: HTMLElement): void {
   ]
 
   events.forEach(event => key.addEventListener(event, prevent))
+
+  // Return cleanup function to remove all added listeners
+  return () => {
+    events.forEach(event => key.removeEventListener(event, prevent))
+  }
 }
 
 /**
@@ -641,7 +646,7 @@ export function preventEventDefaults(key: HTMLElement): void {
  * // Now touching/clicking the element plays the synth
  * ```
  */
-export async function useInteractionMethods(key: HTMLElement, player: Player): Promise<void> {
+export async function useInteractionMethods(key: HTMLElement, player: Player): Promise<() => void> {
   async function play(): Promise<void> {
     await initAudio()
     player.play()
@@ -658,6 +663,16 @@ export async function useInteractionMethods(key: HTMLElement, player: Player): P
   key.addEventListener('mousedown', play)
   key.addEventListener('mouseup', stop)
   key.addEventListener('mouseleave', stop)
+
+  // Return cleanup function to remove all added listeners
+  return () => {
+    key.removeEventListener('touchstart', play)
+    key.removeEventListener('touchend', stop)
+    key.removeEventListener('touchcancel', stop)
+    key.removeEventListener('mousedown', play)
+    key.removeEventListener('mouseup', stop)
+    key.removeEventListener('mouseleave', stop)
+  }
 }
 
 export {

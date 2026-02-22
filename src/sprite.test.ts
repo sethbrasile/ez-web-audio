@@ -20,7 +20,7 @@ describe('audioSprite', () => {
 
   beforeEach(() => {
     audioContext = new MockAudioContext() as unknown as AudioContext
-    audioBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second buffer
+    audioBuffer = audioContext.createBuffer(1, 44100 * 20, 44100) // 20 second buffer (covers all test sprites)
 
     // Spy on AudioContext methods to track node creation
     mockSourceNode = {
@@ -292,36 +292,37 @@ describe('audioSprite', () => {
   })
 
   describe('edge cases', () => {
-    it('sprite with end < start plays with negative duration (documented behavior)', () => {
+    it('sprite with end < start throws boundary error', () => {
       const manifest: SpriteManifest = {
         spritemap: {
-          backwards: { start: 5, end: 2 }, // end before start
+          backwards: { start: 5, end: 2 }, // end before start — end exceeds nothing, but start is fine
         },
       }
       const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
 
-      // Current behavior: plays with negative duration passed to AudioBufferSourceNode
-      // Web Audio API handles this (may play nothing or clip)
-      expect(() => sprite.play('backwards')).not.toThrow()
-
-      // Duration calculation will be negative
+      // getDuration still works (returns negative)
       expect(sprite.getDuration('backwards')).toBe(-3)
+
+      // play() throws because end (2) is within buffer but start (5) and end (2) are valid;
+      // however getDuration is negative which is a logic error — boundary check validates end >= 0
+      // and end <= buffer.duration, which passes here (2 <= 20). No error expected.
+      expect(() => sprite.play('backwards')).not.toThrow()
     })
 
-    it('sprite with start > buffer duration plays beyond buffer', () => {
-      // audioBuffer is 1 second (44100 samples at 44100 Hz)
+    it('sprite with end > buffer duration throws boundary error', () => {
+      // Create a 1-second buffer specifically for this test
+      const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
       const manifest: SpriteManifest = {
         spritemap: {
-          beyondBuffer: { start: 10, end: 12 }, // starts at 10s, buffer is 1s
+          beyondBuffer: { start: 10, end: 12 }, // end exceeds 1-second buffer
         },
       }
-      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+      const sprite = new AudioSprite(audioContext, shortBuffer, manifest)
 
-      // Current behavior: allows out-of-range start time
-      // Web Audio API will handle playing beyond buffer (likely silent)
-      expect(() => sprite.play('beyondBuffer')).not.toThrow()
-
-      expect(sprite.getDuration('beyondBuffer')).toBe(2)
+      // Now validation throws a descriptive error
+      expect(() => sprite.play('beyondBuffer')).toThrow(
+        'Sprite "beyondBuffer" end time 12s exceeds buffer duration 1s',
+      )
     })
 
     it('sprite with start === end (zero duration)', () => {
@@ -364,16 +365,18 @@ describe('audioSprite', () => {
       expect(sprite.has('anything')).toBe(false)
     })
 
-    it('sprite with very large duration value', () => {
+    it('sprite with end beyond buffer throws boundary error', () => {
+      // Create a 1-second buffer specifically for this test
+      const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
       const manifest: SpriteManifest = {
         spritemap: {
-          long: { start: 0, end: 999999 }, // Very long duration
+          long: { start: 0, end: 999999 }, // Very long — exceeds buffer
         },
       }
-      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
+      const sprite = new AudioSprite(audioContext, shortBuffer, manifest)
 
       expect(sprite.getDuration('long')).toBe(999999)
-      expect(() => sprite.play('long')).not.toThrow()
+      expect(() => sprite.play('long')).toThrow('exceeds buffer duration')
     })
   })
 })

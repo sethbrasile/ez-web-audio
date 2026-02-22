@@ -88,13 +88,16 @@ export class GainEffect implements Effect {
   }
 
   /**
-   * Apply the effective gain based on mix level.
-   * effectiveGain = 1 + (value - 1) * mix
-   * When mix = 0: effectiveGain = 1 (passthrough)
-   * When mix = 1: effectiveGain = value (full effect)
+   * Apply the effective gain based on mix level using equal-power crossfade.
+   * Uses cosine/sine curves to avoid volume dip at the midpoint compared to linear.
+   * When mix = 0: effectiveGain = 1 (passthrough — dry)
+   * When mix = 1: effectiveGain = value (full effect — wet)
    */
   private applyEffectiveGain(): void {
-    const effectiveGain = 1 + (this._value - 1) * this._mix
+    // Equal-power crossfade: constant power, no volume dip at midpoint
+    const dryGain = Math.cos(this._mix * Math.PI / 2)
+    const wetGain = Math.sin(this._mix * Math.PI / 2)
+    const effectiveGain = dryGain * 1 + wetGain * this._value
     this.gainNode.gain.value = effectiveGain
   }
 }

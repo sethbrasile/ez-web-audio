@@ -300,7 +300,8 @@ export class Track extends Sound {
       const adjustedOffset = withinRange(offset, 0, duration)
 
       // L-3: Only proceed if position actually changed or track is playing
-      if (adjustedOffset === this.startOffset && !_isPlaying) return
+      if (adjustedOffset === this.startOffset && !_isPlaying)
+        return
 
       if (_isPlaying) {
         await this.stop() // await ensures startOffset=0 completes before new offset is set (C-4)

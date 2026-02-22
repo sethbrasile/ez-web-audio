@@ -1,6 +1,15 @@
 import type { Playable } from '@interfaces/playable'
 import { getOrCreateAudioContext } from '@/audio-context'
 
+/** Minimal interface for objects that expose an AudioContext instance */
+interface WithAudioContext {
+  audioContext: AudioContext
+}
+
+function hasAudioContext(p: unknown): p is WithAudioContext {
+  return typeof p === 'object' && p !== null && 'audioContext' in p && (p as WithAudioContext).audioContext instanceof AudioContext
+}
+
 /**
  * Play multiple sounds synchronized to the exact same AudioContext timestamp.
  *
@@ -29,9 +38,9 @@ export async function playTogether(playables: Playable[]): Promise<void> {
     return
 
   // Get audioContext from first playable that has it, or use shared context
-  const firstWithCtx = playables.find(p => 'audioContext' in p && (p as any).audioContext)
-  const ctx = firstWithCtx
-    ? (firstWithCtx as any).audioContext as AudioContext
+  const firstWithCtx = playables.find(p => hasAudioContext(p))
+  const ctx = firstWithCtx && hasAudioContext(firstWithCtx)
+    ? firstWithCtx.audioContext
     : getOrCreateAudioContext()
 
   // Schedule slightly in the future to ensure all sources start simultaneously

@@ -28,7 +28,12 @@ export class Font {
   /**
    * Array of all SampledNote instances in this font.
    */
-  constructor(public notes: SampledNote[]) {}
+  private readonly noteMap: Map<string, SampledNote>
+
+  constructor(public notes: SampledNote[]) {
+    // Build Map for O(1) identifier lookup instead of O(n) array.find()
+    this.noteMap = new Map(notes.map(note => [note.identifier, note]))
+  }
 
   /**
    * Get a note by its identifier.
@@ -46,7 +51,7 @@ export class Font {
    * ```
    */
   getNote(identifier: string): SampledNote | undefined {
-    return this.notes.find(note => note.identifier === identifier)
+    return this.noteMap.get(identifier)
   }
 
   /**
