@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-21
+**Last Updated:** 2026-02-22
 
 ## Milestones
 
@@ -243,7 +243,10 @@ Plans:
   6. `deploy-docs-site.yml` runs typecheck and lint before deploying
   7. `SoundController`, `OscillatorController`, and `Player` interface are exported
   8. ESM-only nature is documented in README
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 27-01-PLAN.md — Fix package.json metadata, CI quality gates, export controllers and Player
+- [ ] 27-02-PLAN.md — Write professional README with badges, install, quick-start, features, ESM docs
 
 ### Phase 28: Documentation Corrections
 **Goal**: All documentation accurately reflects the library's actual API behavior and all significant features have narrative docs
@@ -338,7 +341,7 @@ Plans:
 | 24. Milestone Verification & Release | v1.0 Stable | 0/1 | Pending | - |
 | 25. New Example Pages | v1.0 Stable | 0/? | Pending | - |
 | 26. Source Code Fixes | 6/6 | Complete    | 2026-02-22 | - |
-| 27. Package Quality & README | v1.0 Stable | 0/? | Pending | - |
+| 27. Package Quality & README | v1.0 Stable | 0/2 | Pending | - |
 | 28. Documentation Corrections | v1.0 Stable | 0/? | Pending | - |
 | 29. Demo Component Fixes | v1.0 Stable | 0/? | Pending | - |
 | 30. Test Coverage Expansion | v1.0 Stable | 0/? | Pending | - |
@@ -350,4 +353,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-21 after Phase 26 planning (6 plans created)*
+*Last updated: 2026-02-22 after Phase 27 planning (2 plans created)*
