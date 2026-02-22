@@ -95,6 +95,38 @@ A step sequencer with multiple drum lanes, BPM control, and a visual playhead. C
 - Looping playback with tempo control
 - Visual feedback during playback
 
+## Composition
+
+### [Audio Sprite](/examples/audio-sprite)
+
+Pack multiple short sounds into a single audio file and play them by name. Reduce HTTP requests in audio-heavy applications by loading once and playing many.
+
+**You'll learn:**
+- Loading a sprite with `createSprite()` and a spritemap definition
+- Playing named segments with `sprite.play('name')`
+- Looping sprite segments and stopping them with `sprite.stop('name')`
+- Reducing HTTP requests with sprite bundling
+
+### [Layered Sound](/examples/layered-sound)
+
+Play multiple audio layers in perfect synchronization using a shared `audioContext.currentTime`. Control all layers as a group or adjust each individually.
+
+**You'll learn:**
+- Creating synchronized playback with `createLayeredSound()`
+- Master gain/pan control affecting all layers at once
+- Individual layer access and per-layer gain control
+- Listening for `play`, `stop`, and `end` events
+
+### [Crossfade](/examples/crossfade)
+
+Transition smoothly between two tracks using equal-power crossfade curves. Create DJ-style fades that maintain constant perceived loudness throughout.
+
+**You'll learn:**
+- Using `crossfade(fromTrack, toTrack, duration)` for smooth transitions
+- How equal-power curves prevent the volume dip of linear fades
+- Awaiting crossfade completion for sequenced transitions
+- Chaining multiple crossfades together
+
 ## Effects & Routing
 
 ### [Effects](/examples/effects)

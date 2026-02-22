@@ -121,6 +121,14 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Composition',
+          items: [
+            { text: 'Audio Sprite', link: '/examples/audio-sprite' },
+            { text: 'Layered Sound', link: '/examples/layered-sound' },
+            { text: 'Crossfade', link: '/examples/crossfade' },
+          ],
+        },
+        {
           text: 'Creative',
           items: [
             { text: 'Ambient Generator', link: '/examples/ambient-generator' },
