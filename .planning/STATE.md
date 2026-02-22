@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 29 complete (3 plans, 10/10 success criteria verified)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 96%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Last activity: 2026-02-22 — Phase 29 complete (3 plans, 10/10 success criteria
 | Phase 29-demo-component-fixes P01 | 2min | 2 tasks | 3 files |
 | Phase 29 P02 | 2min | 2 tasks | 2 files |
 | Phase 29-demo-component-fixes P03 | 4min | 2 tasks | 8 files |
+| Phase 30 P02 | 6min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,7 @@ Recent decisions affecting current work:
 - [Phase 29-demo-component-fixes]: import type ordering: ez-web-audio type imports before vue value imports per perfectionist/sort-imports rule
 - [Phase 29-demo-component-fixes]: SoundfontPiano font.notes cast removed: Font.notes is SampledNote[] — cast unnecessary once font is typed as Font
 - [Phase 29-demo-component-fixes]: lib: any retained for dynamic import module references — no clean type for await import() result in variable
+- [Phase 30]: playFor isPlaying lifecycle test uses spy on stop() rather than settle-waiting for flag reset — audioContextAwareTimeout uses requestAnimationFrame (not native setTimeout) and doesn't fire in happy-dom test environment
 
 ### Pending Todos
 
