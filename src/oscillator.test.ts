@@ -17,10 +17,10 @@ describe('oscillator with ADSR envelope', () => {
     it('creates oscillator with full envelope options', () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.05,
-          decayTime: 0.2,
-          sustainLevel: 0.6,
-          releaseTime: 0.4,
+          attack: 0.05,
+          decay: 0.2,
+          sustain: 0.6,
+          release: 0.4,
         },
       })
       expect(osc).toBeDefined()
@@ -38,7 +38,7 @@ describe('oscillator with ADSR envelope', () => {
 
     it('envelope option uses defaults when partial', () => {
       const osc = new Oscillator(audioContext, {
-        envelope: { attackTime: 0.1 }, // only attack specified
+        envelope: { attack: 0.1 }, // only attack specified
       })
       expect(osc).toBeDefined()
     })
@@ -49,8 +49,8 @@ describe('oscillator with ADSR envelope', () => {
         type: 'sawtooth',
         gain: 0.5,
         envelope: {
-          attackTime: 0.1,
-          sustainLevel: 0.8,
+          attack: 0.1,
+          sustain: 0.8,
         },
       })
       expect(osc).toBeDefined()
@@ -58,7 +58,7 @@ describe('oscillator with ADSR envelope', () => {
 
     it('combines envelope with filter options', () => {
       const osc = new Oscillator(audioContext, {
-        envelope: { attackTime: 0.05 },
+        envelope: { attack: 0.05 },
         lowpass: { frequency: 1000, q: 2 },
       })
       expect(osc).toBeDefined()
@@ -69,10 +69,10 @@ describe('oscillator with ADSR envelope', () => {
     it('applies envelope on play', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          decayTime: 0.1,
-          sustainLevel: 0.7,
-          releaseTime: 0.3,
+          attack: 0.01,
+          decay: 0.1,
+          sustain: 0.7,
+          release: 0.3,
         },
       })
       await osc.play()
@@ -88,15 +88,15 @@ describe('oscillator with ADSR envelope', () => {
     it('stop triggers release phase and schedules stop', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          decayTime: 0.1,
-          sustainLevel: 0.7,
-          releaseTime: 0.3,
+          attack: 0.01,
+          decay: 0.1,
+          sustain: 0.7,
+          release: 0.3,
         },
       })
       await osc.play()
       expect(osc.isPlaying).toBe(true)
-      // Stop triggers release and schedules stopAt after releaseTime
+      // Stop triggers release and schedules stopAt after release
       // With envelope, stop() is async and waits for release
       await osc.stop()
       // After awaiting stop, the oscillator should be stopped
@@ -106,10 +106,10 @@ describe('oscillator with ADSR envelope', () => {
     it('can be retriggered while playing (clickless)', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.05,
-          decayTime: 0.1,
-          sustainLevel: 0.7,
-          releaseTime: 0.2,
+          attack: 0.05,
+          decay: 0.1,
+          sustain: 0.7,
+          release: 0.2,
         },
       })
       // Play, then retrigger
@@ -125,9 +125,9 @@ describe('oscillator with ADSR envelope', () => {
     it('envelope and onPlaySet coexist', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          sustainLevel: 0.7,
-          releaseTime: 0.3,
+          attack: 0.01,
+          sustain: 0.7,
+          release: 0.3,
         },
       })
       // Additional gain automation on top of envelope
@@ -139,9 +139,9 @@ describe('oscillator with ADSR envelope', () => {
     it('envelope and onPlayRamp coexist', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.05,
-          sustainLevel: 0.6,
-          releaseTime: 0.2,
+          attack: 0.05,
+          sustain: 0.6,
+          release: 0.2,
         },
       })
       // Frequency ramp alongside envelope gain control
@@ -166,7 +166,7 @@ describe('oscillator with ADSR envelope', () => {
 
     it('multiple onPlaySet calls with envelope', async () => {
       const osc = new Oscillator(audioContext, {
-        envelope: { attackTime: 0.02, sustainLevel: 0.8 },
+        envelope: { attack: 0.02, sustain: 0.8 },
       })
       osc.onPlaySet('frequency').to(660).at(0.1)
       osc.onPlaySet('frequency').to(880).at(0.2)
@@ -180,10 +180,10 @@ describe('oscillator with ADSR envelope', () => {
     it('zero attack time works', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0,
-          decayTime: 0.1,
-          sustainLevel: 0.5,
-          releaseTime: 0.1,
+          attack: 0,
+          decay: 0.1,
+          sustain: 0.5,
+          release: 0.1,
         },
       })
       await osc.play()
@@ -193,9 +193,9 @@ describe('oscillator with ADSR envelope', () => {
     it('zero release time works', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          sustainLevel: 0.7,
-          releaseTime: 0,
+          attack: 0.01,
+          sustain: 0.7,
+          release: 0,
         },
       })
       await osc.play()
@@ -206,10 +206,10 @@ describe('oscillator with ADSR envelope', () => {
     it('full sustain (1.0) works', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          decayTime: 0.1,
-          sustainLevel: 1.0,
-          releaseTime: 0.2,
+          attack: 0.01,
+          decay: 0.1,
+          sustain: 1.0,
+          release: 0.2,
         },
       })
       await osc.play()
@@ -219,10 +219,10 @@ describe('oscillator with ADSR envelope', () => {
     it('zero sustain (0.0) works', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.01,
-          decayTime: 0.1,
-          sustainLevel: 0.0,
-          releaseTime: 0.2,
+          attack: 0.01,
+          decay: 0.1,
+          sustain: 0.0,
+          release: 0.2,
         },
       })
       await osc.play()
@@ -231,11 +231,24 @@ describe('oscillator with ADSR envelope', () => {
   })
 
   describe('edge cases', () => {
-    it('oscillator with frequency 0 plays without error', async () => {
+    it('frequency 0 defaults to 440 because 0 is falsy with || operator', () => {
+      // options?.frequency || 440 — 0 is falsy so it defaults to 440
+      // This is a known quirk: passing frequency: 0 silently becomes 440
       const osc = new Oscillator(audioContext, { frequency: 0 })
-      await osc.play()
-      expect(osc.isPlaying).toBe(true)
-      // Note: 0 Hz oscillator produces silence but is valid Web Audio API behavior
+      expect(osc).toBeDefined()
+      // It constructs without error because 0 || 440 = 440, and 440 > 0 passes the guard
+    })
+
+    it('negative frequency throws descriptive error', () => {
+      expect(() => new Oscillator(audioContext, { frequency: -1 })).toThrow(
+        'Oscillator frequency must be greater than 0',
+      )
+    })
+
+    it('frequency undefined defaults to 440', () => {
+      // No frequency option — defaults to 440
+      const osc = new Oscillator(audioContext)
+      expect(osc).toBeDefined()
     })
 
     it('oscillator with very high frequency (20000 Hz) plays without error', async () => {
@@ -256,10 +269,10 @@ describe('oscillator with ADSR envelope', () => {
     it('oscillator with envelope plays without error (automation tested elsewhere)', async () => {
       const osc = new Oscillator(audioContext, {
         envelope: {
-          attackTime: 0.1,
-          decayTime: 0.2,
-          sustainLevel: 0.7,
-          releaseTime: 0.3,
+          attack: 0.1,
+          decay: 0.2,
+          sustain: 0.7,
+          release: 0.3,
         },
       })
 

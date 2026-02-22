@@ -347,3 +347,274 @@ describe('audioContext Initialization', () => {
     })
   })
 })
+
+describe('factory functions', () => {
+  let mockAudioContext: AudioContext
+  let AudioContextConstructor: ReturnType<typeof vi.fn>
+  let mockFetch: ReturnType<typeof vi.fn>
+
+  function makeMockResponse(options: { ok?: boolean, status?: number, statusText?: string, arrayBuffer?: ArrayBuffer, text?: string } = {}) {
+    const { ok = true, status = 200, statusText = 'OK', arrayBuffer = new ArrayBuffer(8), text = '' } = options
+    const response = {
+      ok,
+      status,
+      statusText,
+      clone: vi.fn(),
+      arrayBuffer: vi.fn().mockResolvedValue(arrayBuffer),
+      text: vi.fn().mockResolvedValue(text),
+    } as unknown as Response
+    // clone returns a fresh response-like object
+    ;(response.clone as ReturnType<typeof vi.fn>).mockReturnValue({
+      ok,
+      status,
+      statusText,
+      clone: vi.fn().mockReturnThis(),
+      arrayBuffer: vi.fn().mockResolvedValue(arrayBuffer),
+      text: vi.fn().mockResolvedValue(text),
+    })
+    return response
+  }
+
+  beforeEach(async () => {
+    vi.resetModules()
+
+    const { AudioContext: MockAudioContext } = await import('standardized-audio-context-mock')
+    mockAudioContext = new MockAudioContext() as unknown as AudioContext
+
+    // eslint-disable-next-line prefer-arrow-callback
+    AudioContextConstructor = vi.fn(function _MockAudioContext() {
+      return mockAudioContext
+    })
+    vi.stubGlobal('AudioContext', AudioContextConstructor)
+
+    mockFetch = vi.fn()
+    vi.stubGlobal('fetch', mockFetch)
+
+    // Mock unmute to avoid side effects
+    vi.doMock('./utils/unmute', () => ({ default: vi.fn() }))
+  })
+
+  afterEach(async () => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+    // Clear preload cache to avoid cross-test pollution
+    const { clearPreloadCache } = await import('./preload')
+    clearPreloadCache()
+  })
+
+  describe('createSound()', () => {
+    it('returns a Sound instance on successful fetch', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSound, Sound } = await import('./index')
+
+      const sound = await createSound('test.mp3')
+
+      expect(sound).toBeInstanceOf(Sound)
+    })
+
+    it('throws AudioLoadError on network error', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createSound, AudioLoadError } = await import('./index')
+
+      await expect(createSound('test.mp3')).rejects.toBeInstanceOf(AudioLoadError)
+    })
+
+    it('throws AudioLoadError with URL info on network error', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createSound } = await import('./index')
+
+      await expect(createSound('test.mp3')).rejects.toThrow('test.mp3')
+    })
+
+    it('throws AudioLoadError on HTTP 404', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createSound, AudioLoadError } = await import('./index')
+
+      await expect(createSound('missing.mp3')).rejects.toBeInstanceOf(AudioLoadError)
+    })
+
+    it('throws AudioLoadError with status on HTTP error', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createSound } = await import('./index')
+
+      await expect(createSound('missing.mp3')).rejects.toThrow('404')
+    })
+  })
+
+  describe('createTrack()', () => {
+    it('returns a Track instance on successful fetch', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTrack, Track } = await import('./index')
+
+      const track = await createTrack('song.mp3')
+
+      expect(track).toBeInstanceOf(Track)
+    })
+
+    it('throws AudioLoadError on network error', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createTrack, AudioLoadError } = await import('./index')
+
+      await expect(createTrack('song.mp3')).rejects.toBeInstanceOf(AudioLoadError)
+    })
+
+    it('throws AudioLoadError on HTTP error', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 500, statusText: 'Server Error' }))
+      const { createTrack } = await import('./index')
+
+      await expect(createTrack('song.mp3')).rejects.toThrow('500')
+    })
+  })
+
+  describe('createSounds()', () => {
+    it('returns array of Sound instances', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSounds, Sound } = await import('./index')
+
+      const sounds = await createSounds(['a.mp3', 'b.mp3', 'c.mp3'])
+
+      expect(sounds).toHaveLength(3)
+      sounds.forEach(s => expect(s).toBeInstanceOf(Sound))
+    })
+
+    it('returns empty array for empty urls input', async () => {
+      const { createSounds } = await import('./index')
+
+      const sounds = await createSounds([])
+
+      expect(sounds).toEqual([])
+    })
+
+    it('calls onProgress for each loaded sound', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSounds } = await import('./index')
+      const onProgress = vi.fn()
+
+      await createSounds(['a.mp3', 'b.mp3'], onProgress)
+
+      expect(onProgress).toHaveBeenCalledTimes(2)
+    })
+
+    it('calls onProgress with (loaded, total, url) signature', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSounds } = await import('./index')
+      const calls: [number, number, string][] = []
+      const onProgress = vi.fn((loaded: number, total: number, url: string) => {
+        calls.push([loaded, total, url])
+      })
+
+      await createSounds(['a.mp3', 'b.mp3'], onProgress)
+
+      expect(calls).toHaveLength(2)
+      // total is always 2
+      calls.forEach(([, total]) => expect(total).toBe(2))
+      // urls are correct
+      const urls = calls.map(([, , url]) => url)
+      expect(urls).toContain('a.mp3')
+      expect(urls).toContain('b.mp3')
+    })
+
+    it('throws AudioLoadError if any fetch fails', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createSounds, AudioLoadError } = await import('./index')
+
+      await expect(createSounds(['a.mp3'])).rejects.toBeInstanceOf(AudioLoadError)
+    })
+  })
+
+  describe('createBeatTrack()', () => {
+    it('returns a BeatTrack instance', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createBeatTrack, BeatTrack } = await import('./index')
+
+      const beatTrack = await createBeatTrack(['kick.mp3'])
+
+      expect(beatTrack).toBeInstanceOf(BeatTrack)
+    })
+
+    it('passes numBeats option through to BeatTrack', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createBeatTrack } = await import('./index')
+
+      const beatTrack = await createBeatTrack(['kick.mp3'], { numBeats: 8 })
+
+      expect(beatTrack.beats).toHaveLength(8)
+    })
+
+    it('throws AudioLoadError on failed fetch', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createBeatTrack, AudioLoadError } = await import('./index')
+
+      await expect(createBeatTrack(['kick.mp3'])).rejects.toBeInstanceOf(AudioLoadError)
+    })
+  })
+
+  describe('createSampler()', () => {
+    it('returns a Sampler instance', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSampler, Sampler } = await import('./index')
+
+      const sampler = await createSampler(['snare1.mp3', 'snare2.mp3'])
+
+      expect(sampler).toBeInstanceOf(Sampler)
+    })
+
+    it('throws AudioLoadError on failed fetch', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createSampler, AudioLoadError } = await import('./index')
+
+      await expect(createSampler(['snare.mp3'])).rejects.toBeInstanceOf(AudioLoadError)
+    })
+  })
+
+  describe('createFont()', () => {
+    it('throws error with URL on HTTP error response', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createFont } = await import('./index')
+
+      await expect(createFont('piano.js')).rejects.toThrow('piano.js')
+    })
+
+    it('throws error with status on HTTP error', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createFont } = await import('./index')
+
+      await expect(createFont('piano.js')).rejects.toThrow('HTTP 404')
+    })
+
+    it('wraps network error with URL info', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createFont } = await import('./index')
+
+      await expect(createFont('piano.js')).rejects.toThrow('piano.js')
+    })
+  })
+
+  describe('createSprite()', () => {
+    it('returns an AudioSprite instance on successful fetch', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSprite, AudioSprite } = await import('./index')
+      const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
+
+      const sprite = await createSprite('sounds.mp3', manifest)
+
+      expect(sprite).toBeInstanceOf(AudioSprite)
+    })
+
+    it('throws AudioLoadError on HTTP error', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createSprite, AudioLoadError } = await import('./index')
+      const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
+
+      await expect(createSprite('sounds.mp3', manifest)).rejects.toBeInstanceOf(AudioLoadError)
+    })
+
+    it('throws AudioLoadError with URL on HTTP error', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse({ ok: false, status: 404, statusText: 'Not Found' }))
+      const { createSprite } = await import('./index')
+      const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
+
+      await expect(createSprite('sounds.mp3', manifest)).rejects.toThrow('sounds.mp3')
+    })
+  })
+})
