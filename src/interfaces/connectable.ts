@@ -10,7 +10,7 @@ export interface Connectable {
   audioSourceNode: AudioNode
   changePanTo: (value: number) => this
   changeGainTo: (value: number) => this
-  update: (type: ControlType, value: number) => {
+  update: (type: ControlType) => {
     to: (value: number) => {
       as: (method: RatioType) => void
     }

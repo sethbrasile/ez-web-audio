@@ -2,12 +2,12 @@ import type { ControlType, RampType } from '@controllers/base-param-controller'
 import type { TimeObject } from '@utils/create-time-object'
 
 export interface Playable {
-  play: () => void
+  play: () => Promise<void>
   playAt: (time: number) => void
   playIn: (when: number) => void
   playFor: (duration: number) => void
   playInAndStopAfter: (playIn: number, stopAfter: number) => void
-  stop: () => void
+  stop: () => Promise<void>
   stopIn: (seconds: number) => void
   stopAt: (time: number) => void
   isPlaying: boolean
