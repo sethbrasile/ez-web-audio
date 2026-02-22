@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 27 complete (2 plans, 8/8 success criteria verified)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 97%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Last activity: 2026-02-22 — Phase 27 complete (2 plans, 8/8 success criteria v
 | Phase 26-source-code-fixes P06 | 5min | 2 tasks | 11 files |
 | Phase 27-package-quality-readme P02 | 2min | 1 tasks | 1 files |
 | Phase 27-package-quality-readme P01 | 2min | 2 tasks | 4 files |
+| Phase 28-documentation-corrections P01 | 8min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase 27-01]: homepage and bugs fields ordered before repository in package.json per ESLint jsonc/sort-keys rule
 - [Phase 27-01]: SoundController and OscillatorController exported as named exports for advanced consumers needing direct controller access
 - [Phase 27-01]: Player interface exported (not type-only) as a concrete contract for useInteractionMethods API consumers
+- [Phase 28-documentation-corrections]: percentPlayed is 0-100 — progress bar code updated: no * 100 multiplication needed
+- [Phase 28-documentation-corrections]: createAnalyzer() requires AudioContext as first arg — getAudioContext() added before each call in visualization.md
+- [Phase 28-documentation-corrections]: Effect bypass auto-rewires chain — manual rewireEffects() after bypass toggle removed from docs
 
 ### Pending Todos
 
