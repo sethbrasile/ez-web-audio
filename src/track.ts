@@ -39,6 +39,14 @@ export class Track extends Sound {
   private rafId: number | null = null
 
   /**
+   * Tracks whether the track was paused (vs. stopped).
+   * Used by resume() to distinguish a paused state from a stopped state.
+   * Fixes H-4: resume() at position 0 was impossible with the old `startOffset > 0` guard.
+   * @private
+   */
+  private _isPaused = false
+
+  /**
    * Get the current playback position.
    *
    * Returns a TimeObject with the position in multiple formats:
@@ -83,11 +91,34 @@ export class Track extends Sound {
 
   /**
    * Hook called after playback starts.
-   * Sets up the onended handler and starts position tracking.
+   * Sets up the onended handler for natural completion detection and starts position tracking.
+   * Fixes H-2: emits 'end' event on natural completion instead of swallowing it.
    * @protected
    */
   protected override _onPlaybackStarted(): void {
-    this.audioSourceNode.onended = () => this.stop()
+    this.audioSourceNode.onended = () => {
+      // Cleanup: disconnect nodes to free memory
+      try {
+        this.audioSourceNode.disconnect()
+        this.audioSourceNode.onended = null
+      }
+      catch {
+        // Already disconnected
+      }
+
+      // Only handle natural completion — stop() sets _isPlaying=false BEFORE the node stops,
+      // so if _isPlaying is still true here, this is a natural end (not a user-initiated stop).
+      if (this._isPlaying) {
+        this._isPlaying = false
+        this.emit('end', {
+          time: this.audioContext.currentTime,
+          source: this,
+          duration: this.duration.raw,
+        })
+        // Clean up position tracking; void the promise since we're in a callback
+        void this.stop()
+      }
+    }
     this.later(this.trackPlayPosition.bind(this))
   }
 
@@ -126,6 +157,7 @@ export class Track extends Sound {
       node.onended = function () {}
       node.stop()
       this._isPlaying = false
+      this._isPaused = true
 
       // Emit pause event
       this.emit('pause', {
@@ -141,6 +173,7 @@ export class Track extends Sound {
    *
    * If the track was paused, resumes from where it left off.
    * Emits a 'resume' event with the playback position.
+   * Fixes H-4: now works correctly even when paused at position 0.
    *
    * @example
    * ```typescript
@@ -158,7 +191,10 @@ export class Track extends Sound {
    * ```
    */
   public resume(): void {
-    if (!this._isPlaying && this.startOffset > 0) {
+    // Use _isPaused flag instead of startOffset > 0 to support resuming at position 0 (H-4)
+    if (!this._isPlaying && this._isPaused) {
+      this._isPaused = false
+
       // Emit resume event before starting
       this.emit('resume', {
         time: this.audioContext.currentTime,
@@ -194,6 +230,7 @@ export class Track extends Sound {
       this.rafId = null
     }
 
+    this._isPaused = false
     this.startOffset = 0
 
     if (this._isPlaying) {
@@ -233,9 +270,10 @@ export class Track extends Sound {
    * - `'inverseRatio'`: Distance from end as ratio (0 = end, 1 = start)
    *
    * Emits a 'seek' event with the new and previous positions.
+   * Fixes C-4: awaits stop() before setting new offset to prevent race condition.
    *
    * @param amount - The position value (meaning depends on the `.as()` type)
-   * @returns Fluent builder with `.as(type)` method
+   * @returns Fluent builder with `.as(type)` method returning Promise<void>
    *
    * @example
    * ```typescript
@@ -253,16 +291,19 @@ export class Track extends Sound {
    * })
    * ```
    */
-  public seek(amount: number): { as: (type: SeekType) => void } {
+  public seek(amount: number): { as: (type: SeekType) => Promise<void> } {
     const duration = this.duration.raw
     const previousPosition = this.startOffset
 
-    const moveToOffset = (offset: number): void => {
+    const moveToOffset = async (offset: number): Promise<void> => {
       const _isPlaying = this._isPlaying
       const adjustedOffset = withinRange(offset, 0, duration)
 
+      // L-3: Only proceed if position actually changed or track is playing
+      if (adjustedOffset === this.startOffset && !_isPlaying) return
+
       if (_isPlaying) {
-        this.stop()
+        await this.stop() // await ensures startOffset=0 completes before new offset is set (C-4)
         this.startOffset = adjustedOffset
         this.later(() => this.play())
       }
@@ -280,20 +321,16 @@ export class Track extends Sound {
     }
 
     return {
-      as: (type: SeekType) => {
+      as: (type: SeekType): Promise<void> => {
         switch (type) {
           case 'ratio':
-            moveToOffset(amount * duration)
-            break
+            return moveToOffset(amount * duration)
           case 'percent':
-            moveToOffset(amount * duration * 0.01)
-            break
+            return moveToOffset(amount * duration * 0.01)
           case 'inverseRatio':
-            moveToOffset(duration - amount * duration)
-            break
+            return moveToOffset(duration - amount * duration)
           case 'seconds':
-            moveToOffset(amount)
-            break
+            return moveToOffset(amount)
         }
       },
     }

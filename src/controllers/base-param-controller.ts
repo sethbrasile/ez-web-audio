@@ -257,18 +257,8 @@ export class BaseParamController {
           to: (endValue: number) => {
             return {
               in: (endTime: number) => {
-                // Use direct push (not onPlaySet) to avoid dedup removing the startValue.
-                // onPlayRamp always writes two entries for the same type (start + end),
-                // so dedup would incorrectly remove the start when the end is pushed.
-                // Remove any prior entries for this type first (last ramp wins),
-                // then push both start and end values.
-                this.startingValues = this.startingValues.filter(v => v.type !== type)
-                this.exponentialValues = this.exponentialValues.filter(v => v.type !== type)
-                this.linearValues = this.linearValues.filter(v => v.type !== type)
-
-                const startParam: ParamValue = { type, value: startValue }
-                this.startingValues.push(startParam)
-                this.addRampValue({ type, value: endValue, time: endTime }, rampType)
+                this.onPlaySet(type).to(startValue)
+                this.onPlaySet(type).to(endValue).endingAt(endTime, rampType)
               },
             }
           },

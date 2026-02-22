@@ -460,7 +460,7 @@ describe('track', () => {
       await track.play()
       expect(track.isPlaying).toBe(true)
       const stopSpy = vi.spyOn(track, 'stop')
-      track.seek(5).as('seconds')
+      await track.seek(5).as('seconds')
       // Seek while playing calls stop then schedules play via later()
       expect(stopSpy).toHaveBeenCalled()
       expect(track.startOffset).toBe(5)
@@ -470,7 +470,7 @@ describe('track', () => {
       const track = createTrack(audioContext, 10)
       track.startOffset = 2
       await track.play()
-      track.seek(7).as('seconds')
+      await track.seek(7).as('seconds')
       // Position should be updated to new value
       expect(track.startOffset).toBe(7)
     })
