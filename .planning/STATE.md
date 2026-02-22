@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In progress
 Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: t
 | Phase 29-demo-component-fixes P03 | 4min | 2 tasks | 8 files |
 | Phase 30 P02 | 6min | 2 tasks | 3 files |
 | Phase 30-test-coverage-expansion P01 | 8min | 2 tasks | 3 files |
+| Phase 30-test-coverage-expansion P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,8 @@ Recent decisions affecting current work:
 - [Phase 30]: playFor isPlaying lifecycle test uses spy on stop() rather than settle-waiting for flag reset — audioContextAwareTimeout uses requestAnimationFrame (not native setTimeout) and doesn't fire in happy-dom test environment
 - [Phase 30-test-coverage-expansion]: stubGlobal('AudioContext', MockAudioContext) required because play-together.ts uses instanceof AudioContext and happy-dom does not define AudioContext
 - [Phase 30-test-coverage-expansion]: Plain object with mutable currentTime cast as AudioContext is simpler for timeout tests — avoids async lifecycle of real MockAudioContext
+- [Phase 30-test-coverage-expansion]: addFilter() API does not exist on Oscillator — constructor-only filter setup; tests use getFilters() verification
+- [Phase 30-test-coverage-expansion]: BeatTrack/Sampler have no getEffects()/addEffect() — effects live on individual Sound instances within BeatTrack; integration tests verify per-Sound effect persistence
 
 ### Pending Todos
 
@@ -156,5 +159,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 30-01-PLAN.md
+Stopped at: Completed 30-03-PLAN.md
 Resume file: None
