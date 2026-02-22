@@ -1154,6 +1154,33 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     return this.controller.gain * 100
   }
 
+  /**
+   * Alias for gain. Get/set the volume (0 = silent, 1 = full volume).
+   *
+   * Values above 1 amplify the signal and may cause distortion. The setter
+   * delegates to `changeGainTo()`, which throws if the value is negative and
+   * warns if it exceeds 1.
+   *
+   * Inherited by Sound, Track, and Oscillator.
+   *
+   * @example
+   * ```typescript
+   * sound.volume = 0.5  // set to half volume
+   * console.log(sound.volume) // 0.5
+   *
+   * // Works on all BaseSound subclasses
+   * const osc = await createOscillator()
+   * osc.volume = 0.8
+   * ```
+   */
+  public get volume(): number {
+    return this.gainNode.gain.value
+  }
+
+  public set volume(value: number) {
+    this.changeGainTo(value)
+  }
+
   protected later(fn: () => void): void {
     this._trackedTimeout(fn, 1)
   }

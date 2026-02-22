@@ -1,6 +1,6 @@
 import type { Effect } from './effects'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
 import { Sound } from '@/sound'
 import { settle } from './test/helpers'
@@ -394,6 +394,41 @@ describe('defensive Guards', () => {
       await sound.play()
       // Just verify it plays without errors — clearScheduledValues prevents accumulation
       expect(sound.isPlaying).toBe(true)
+    })
+  })
+
+  describe('volume alias', () => {
+    it('volume getter returns the current gain node value', () => {
+      sound.changeGainTo(0.7)
+      expect(sound.volume).toBe(sound.getGainNode().gain.value)
+    })
+
+    it('volume getter returns 1 by default', () => {
+      expect(sound.volume).toBe(1)
+    })
+
+    it('volume setter updates gain', () => {
+      sound.volume = 0.5
+      expect(sound.volume).toBeCloseTo(0.5)
+    })
+
+    it('volume setter delegates to changeGainTo behavior: throws on negative', () => {
+      expect(() => {
+        sound.volume = -1
+      }).toThrow('Gain must be >= 0')
+    })
+
+    it('volume setter delegates to changeGainTo behavior: warns on value > 1', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      sound.volume = 1.5
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Gain value 1.5'))
+      warnSpy.mockRestore()
+    })
+
+    it('volume alias is inherited by Oscillator', () => {
+      const osc = new Oscillator(audioContext)
+      osc.volume = 0.6
+      expect(osc.volume).toBeCloseTo(0.6)
     })
   })
 })

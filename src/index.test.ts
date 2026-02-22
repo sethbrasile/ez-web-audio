@@ -722,4 +722,33 @@ describe('factory functions', () => {
       await expect(createSprite('sounds.mp3', manifest)).rejects.toThrow('sounds.mp3')
     })
   })
+
+  describe('createNoise()', () => {
+    it('createNoise("white") returns a Sound with a non-empty audioBuffer', async () => {
+      const { createNoise, Sound } = await import('./index')
+
+      const noise = await createNoise('white')
+
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('createNoise("pink") returns a Sound with a non-empty audioBuffer', async () => {
+      const { createNoise, Sound } = await import('./index')
+
+      const noise = await createNoise('pink')
+
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('createNoise("brown") returns a Sound with a non-empty audioBuffer', async () => {
+      const { createNoise, Sound } = await import('./index')
+
+      const noise = await createNoise('brown')
+
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+  })
 })
