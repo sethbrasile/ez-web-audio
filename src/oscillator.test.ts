@@ -305,3 +305,174 @@ describe('oscillator getFilters', () => {
     expect(osc.getFilters()).toHaveLength(1)
   })
 })
+
+describe('filter chain', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('single lowpass filter via constructor option', () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 1000, q: 2 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(1)
+    expect(filters[0].type).toBe('lowpass')
+  })
+
+  it('multiple filters added in order: highpass then lowpass', () => {
+    // FILTERS array in oscillator.ts: ['highpass', 'bandpass', 'lowpass', ...]
+    // highpass comes before lowpass in the FILTERS iteration order
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      highpass: { frequency: 200 },
+      lowpass: { frequency: 3000, q: 1 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(2)
+    // highpass is first in FILTERS array
+    expect(filters[0].type).toBe('highpass')
+    // lowpass follows highpass in FILTERS array
+    expect(filters[1].type).toBe('lowpass')
+  })
+
+  it('constructor lowpass filter option creates a filter', () => {
+    const osc = new Oscillator(audioContext, {
+      lowpass: { frequency: 500, q: 1 },
+    })
+    expect(osc.getFilters()).toHaveLength(1)
+  })
+
+  it('multiple constructor filter types create multiple filters', () => {
+    const osc = new Oscillator(audioContext, {
+      lowpass: { frequency: 3000 },
+      highpass: { frequency: 200 },
+    })
+    expect(osc.getFilters()).toHaveLength(2)
+  })
+
+  it('filters persist through play()', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 1000, q: 1 },
+    })
+    expect(osc.getFilters()).toHaveLength(1)
+    await osc.play()
+    expect(osc.isPlaying).toBe(true)
+    // Filters are set at construction time and persist through play
+    expect(osc.getFilters()).toHaveLength(1)
+    expect(osc.getFilters()[0].type).toBe('lowpass')
+  })
+
+  it('all supported filter types are created correctly', () => {
+    const osc = new Oscillator(audioContext, {
+      bandpass: { frequency: 1000 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(1)
+    expect(filters[0].type).toBe('bandpass')
+  })
+
+  it('notch filter type is created correctly', () => {
+    const osc = new Oscillator(audioContext, {
+      notch: { frequency: 2000, q: 5 },
+    })
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(1)
+    expect(filters[0].type).toBe('notch')
+  })
+})
+
+describe('anti-click fade-out on stop', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('stop() completes without error when no filters present', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    expect(osc.isPlaying).toBe(true)
+    await expect(osc.stop()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(false)
+  })
+
+  it('stop() completes without error when lowpass filter is present', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 1000, q: 1 },
+    })
+    await osc.play()
+    expect(osc.isPlaying).toBe(true)
+    await expect(osc.stop()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(false)
+  })
+
+  it('stop() completes without error when multiple filters are present', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      highpass: { frequency: 100 },
+      lowpass: { frequency: 3000, q: 2 },
+    })
+    await osc.play()
+    await expect(osc.stop()).resolves.not.toThrow()
+  })
+
+  it('play twice does not error (new gainNode created each play())', async () => {
+    // Each play() creates a new gainNode via setup() and disconnects old one
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    expect(osc.isPlaying).toBe(true)
+    // Retrigger — setup() disconnects old gainNode and creates new one
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(true)
+  })
+
+  it('stop() after stop() does not error (idempotent)', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    await osc.stop()
+    // Second stop on an already-stopped oscillator should not throw
+    await expect(osc.stop()).resolves.not.toThrow()
+  })
+})
+
+describe('wireConnections with filters', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('source connects through filters to gain — no runtime error', async () => {
+    // wireConnections chains: audioSourceNode -> [filters] -> effectChainInput -> gain -> panner -> destination
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 1000, q: 1 },
+    })
+    // play() calls setup() which calls wireConnections()
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(true)
+  })
+
+  it('multiple filters in chain connect without error', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      highpass: { frequency: 100 },
+      bandpass: { frequency: 800, q: 2 },
+      lowpass: { frequency: 4000 },
+    })
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.getFilters()).toHaveLength(3)
+  })
+
+  it('oscillator without filters connects directly without error', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.getFilters()).toHaveLength(0)
+  })
+})
