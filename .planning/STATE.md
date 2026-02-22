@@ -17,7 +17,7 @@ Plan: 1 of 1 in current phase (paused at Task 4 checkpoint)
 Status: In Progress — awaiting human publish trigger
 Last activity: 2026-02-20 — Completed Tasks 1-3 of 24-01 (verification docs created, JSDoc+CHANGELOG fixed, housekeeping confirmed)
 
-**Progress:** [████████████████████] 100%
+**Progress:** [█████████░] 92%
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Last activity: 2026-02-20 — Completed Tasks 1-3 of 24-01 (verification docs cr
 | 23-04 | 4/4 | 2min | 4.8min |
 
 *Updated after each plan completion*
+| Phase 26-source-code-fixes P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - Phase 23-03: EffectWrapper.effect is the accessor for the wrapped node; .input is the routing GainNode (not the effect node)
 - Phase 23-03: FilterEffect.frequency setter (not .frequency.value AudioParam) is the correct public API
 - Phase 23-04: XYPad canvas drawing functions read dataset.logicalWidth/logicalHeight (not canvas.width/height) — canvas.width is physical pixels after HiDPI setup
+- [Phase 26-source-code-fixes]: Connectable.update() takes only ControlType (no value parameter) — value is chained via .to()
+- [Phase 26-source-code-fixes]: Playable.play() and .stop() return Promise<void> — matches actual async BaseSound implementations
 
 ### Pending Todos
 
