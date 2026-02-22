@@ -337,6 +337,40 @@ describe('defensive Guards', () => {
     })
   })
 
+  describe('addEffects() happy path', () => {
+    it('adds multiple effects at once', () => {
+      const effect1 = createMockEffect(audioContext)
+      const effect2 = createMockEffect(audioContext)
+      sound.addEffects([effect1, effect2])
+      expect(sound.getEffects()).toHaveLength(2)
+      expect(sound.getEffects()[0]).toBe(effect1)
+      expect(sound.getEffects()[1]).toBe(effect2)
+    })
+
+    it('returns this for chaining', () => {
+      const effect1 = createMockEffect(audioContext)
+      const result = sound.addEffects([effect1])
+      expect(result).toBe(sound)
+    })
+
+    it('adds effects at specified position', () => {
+      const effect1 = createMockEffect(audioContext)
+      const effect2 = createMockEffect(audioContext)
+      sound.addEffect(effect1)
+      sound.addEffects([effect2], 0)
+      const effects = sound.getEffects()
+      expect(effects[0]).toBe(effect2)
+      expect(effects[1]).toBe(effect1)
+    })
+
+    it('adds empty array without error and returns this', () => {
+      expect(() => sound.addEffects([])).not.toThrow()
+      const result = sound.addEffects([])
+      expect(result).toBe(sound)
+      expect(sound.getEffects()).toHaveLength(0)
+    })
+  })
+
   describe('null entries in effect iteration', () => {
     it('wireEffectChain skips null entries without throwing', () => {
       const effect = createMockEffect(audioContext)

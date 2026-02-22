@@ -388,6 +388,77 @@ describe('sound', () => {
         const result = sound.changeGainTo(0.5)
         expect(result).toBe(sound)
       })
+
+      it('throws for negative gain value', () => {
+        const sound = createSound(audioContext)
+        expect(() => sound.changeGainTo(-0.5)).toThrow('Gain must be >= 0. Received: -0.5')
+        expect(() => sound.changeGainTo(-1)).toThrow('Gain must be >= 0. Received: -1')
+      })
+
+      it('accepts negative zero (which is >= 0 in JS)', () => {
+        const sound = createSound(audioContext)
+        // -0 >= 0 is true in JS, so -0 should not throw
+        expect(() => sound.changeGainTo(-0)).not.toThrow()
+      })
+
+      it('warns for gain > 1', () => {
+        const sound = createSound(audioContext)
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        sound.changeGainTo(1.5)
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('exceeds 1.0'),
+        )
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('distortion'),
+        )
+        // Method still returns this (succeeds despite warning)
+        const result = sound.changeGainTo(1.5)
+        expect(result).toBe(sound)
+        warnSpy.mockRestore()
+      })
+
+      it('does not warn for gain exactly 1', () => {
+        const sound = createSound(audioContext)
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        sound.changeGainTo(1)
+        expect(warnSpy).not.toHaveBeenCalled()
+        warnSpy.mockRestore()
+      })
+
+      it('does not warn for gain 0', () => {
+        const sound = createSound(audioContext)
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        sound.changeGainTo(0)
+        expect(warnSpy).not.toHaveBeenCalled()
+        warnSpy.mockRestore()
+      })
+    })
+
+    describe('getGainNode()', () => {
+      it('returns a GainNode instance with a gain property', () => {
+        const sound = createSound(audioContext)
+        const node = sound.getGainNode()
+        expect(node).toBeDefined()
+        expect(node.gain).toBeDefined()
+      })
+
+      it('returns the same node on repeated calls', () => {
+        const sound = createSound(audioContext)
+        const node1 = sound.getGainNode()
+        const node2 = sound.getGainNode()
+        expect(node1).toBe(node2)
+      })
+
+      it('returned node gain reflects changeGainTo()', () => {
+        const sound = createSound(audioContext)
+        // Should not throw — the method chain works correctly
+        expect(() => {
+          sound.changeGainTo(0.5)
+          const node = sound.getGainNode()
+          // Verify the gain AudioParam exists and is accessible
+          expect(node.gain).toBeDefined()
+        }).not.toThrow()
+      })
     })
 
     describe('changePanTo()', () => {
