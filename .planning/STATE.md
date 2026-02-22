@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 26 complete: all source code fixes verified)
+**Last Updated:** 2026-02-21 (Phase 27 plan 01 complete: package metadata, CI quality gates, controller exports)
 **Current Focus:** Phase 27 — Package Quality & README
 
 ## Project Reference
@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 27 of 31 (Package Quality & README)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-22 — Phase 26 complete (6 plans, 18/18 success criteria verified)
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-02-21 — Phase 27 plan 01 complete (2 tasks, 4 files modified)
 
-**Progress:** [██████████] 97%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Last activity: 2026-02-22 — Phase 26 complete (6 plans, 18/18 success criteria
 | Phase 26-source-code-fixes P05 | 9min | 2 tasks | 3 files |
 | Phase 26-source-code-fixes P06 | 5min | 2 tasks | 11 files |
 | Phase 27-package-quality-readme P02 | 2min | 1 tasks | 1 files |
+| Phase 27-package-quality-readme P01 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,9 @@ Recent decisions affecting current work:
 - [Phase 26-source-code-fixes]: Response cache: store clone / consume original in load() and createSprite() — more defensive than clone-on-read
 - [Phase 26-source-code-fixes]: GainEffect equal-power: cos(mix*π/2)*dry + sin(mix*π/2)*wet avoids volume dip at midpoint
 - [Phase 27-package-quality-readme]: CI badge uses shields.io github/actions/workflow/status URL (not github.com badge.svg) so all 3 badges use img.shields.io domain for consistent grep verification
+- [Phase 27-01]: homepage and bugs fields ordered before repository in package.json per ESLint jsonc/sort-keys rule
+- [Phase 27-01]: SoundController and OscillatorController exported as named exports for advanced consumers needing direct controller access
+- [Phase 27-01]: Player interface exported (not type-only) as a concrete contract for useInteractionMethods API consumers
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Phase 26 complete, ready to plan Phase 27
+Last session: 2026-02-21
+Stopped at: Completed 27-01-PLAN.md
 Resume file: None
