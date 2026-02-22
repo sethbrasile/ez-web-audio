@@ -420,17 +420,34 @@ layer.setGain(0.5) // Affects all layers
 
 ### AudioSprite
 
-Multiple sounds from one file:
+Pack multiple sounds into a single audio file and play them by name. AudioSprite reduces HTTP requests — ideal for games or apps with many short sound effects.
 
 ```typescript
-const sprite = await createSprite('sounds.mp3', {
+import { createSprite } from 'ez-web-audio'
+
+const sprite = await createSprite('/audio/ui-sounds.mp3', {
   spritemap: {
-    laser: { start: 0, end: 0.3 },
-    explosion: { start: 1.0, end: 2.5 }
+    click: { start: 0, end: 0.1 },
+    hover: { start: 0.5, end: 0.65 },
+    success: { start: 1.0, end: 1.8 },
+    error: { start: 2.0, end: 2.5 }
   }
 })
-sprite.play('laser')
+
+// Play a named sprite
+sprite.play('click')
+
+// Play with options
+sprite.play('success', { gain: 0.8 })
+
+// Loop a sprite (e.g. engine hum) and stop it later
+sprite.play('hover', { loop: true })
+sprite.stop('hover')
 ```
+
+Sprite boundaries are defined in seconds. All sprites share the same `AudioBuffer` — only the playback region differs. A single fetch loads everything.
+
+AudioSprite is also exported as a class for advanced use cases (e.g., managing sprites in a collection).
 
 ### White Noise
 
@@ -465,18 +482,22 @@ stopAll(sounds) // Stop all sounds
 
 ### Synchronized Playback
 
-Play multiple sounds at the exact same time:
+Play multiple sounds at the exact same AudioContext timestamp. Unlike calling `play()` on each sound sequentially (which introduces tiny timing gaps), `playTogether` schedules all sources to a shared start time slightly in the future:
 
 ```typescript
-import { createSound, playTogether } from 'ez-web-audio'
+import { createSound, createOscillator, playTogether } from 'ez-web-audio'
 
-const kick = await createSound('kick.mp3')
-const snare = await createSound('snare.mp3')
-const hihat = await createSound('hihat.mp3')
+const bass = await createSound('/audio/bass.mp3')
+const melody = await createSound('/audio/melody.mp3')
+const chord = await createOscillator({ frequency: 440, type: 'triangle' })
 
-await playTogether([kick, snare, hihat])
-// All three start at the exact same AudioContext time
+// All three start at precisely the same AudioContext time
+await playTogether([bass, melody, chord])
 ```
+
+Use cases: building chords from oscillators, layering SFX components, and synchronizing stems in a multi-track arrangement.
+
+Works with any mix of `Sound`, `Track`, and `Oscillator` instances.
 
 ### Batch Loading
 
@@ -493,20 +514,25 @@ const sounds = await createSounds(
 
 ### Crossfade
 
-Smoothly transition between two tracks:
+Smoothly transition between two tracks using an equal-power curve. Equal-power crossfading keeps the total perceived loudness constant throughout the transition — there is no volume dip at the midpoint that a simple linear cross-fade would produce.
 
 ```typescript
-import { crossfade } from 'ez-web-audio'
+import { createTrack, crossfade } from 'ez-web-audio'
 
-const trackA = await createTrack('/music/intro.mp3')
-const trackB = await createTrack('/music/main.mp3')
+const intro = await createTrack('/music/intro.mp3')
+const main = await createTrack('/music/main.mp3')
 
-trackA.play()
+intro.play()
 
-// Crossfade from A to B over 2 seconds
-crossfade(trackA, trackB, 2)
-// trackA fades out while trackB fades in, using equal-power curve
+// Crossfade from intro to main over 3 seconds
+// intro fades out; main fades in — overlap uses equal-power curve
+await crossfade(intro, main, 3)
+// intro is now stopped, main is playing at full volume
 ```
+
+`crossfade` returns a `Promise` that resolves when the transition is complete and the source track has been stopped. If the destination track is already playing, the fade starts from its current position; otherwise it starts playing at gain 0 and fades in.
+
+Typical use cases: DJ transitions, ambient scene changes, and background music swaps.
 
 ### Debug Mode
 
