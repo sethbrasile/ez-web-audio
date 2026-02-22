@@ -347,7 +347,11 @@ Plans:
   7. `createFont()` checks `response.ok` and wraps fetch in try/catch with descriptive errors
   8. `CLAUDE.md` uses `.as('ratio')` not `.from('ratio')`
   9. `Oscillator.setup()` documents or mitigates GainNode replacement (consumers warned about cached references)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 32-01-PLAN.md — Quick fixes: LICENSE, CLAUDE.md, Playable interface, Sound opts type, createFont error handling
+- [ ] 32-02-PLAN.md — EnvelopeOptions short ADSR names rename, Oscillator GainNode replacement warning
+- [ ] 32-03-PLAN.md — AudioSprite loop fix, BaseSound stale setTimeout _isPlaying safety
 
 ### Phase 33: DX Convenience APIs
 **Goal**: Common audio operations that currently require multiple API calls are available as single convenience methods
