@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 26 complete (6 plans, 18/18 success criteria verified)
 
-**Progress:** [████████████████████] 73/74 plans (99%)
+**Progress:** [██████████] 97%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Last activity: 2026-02-22 — Phase 26 complete (6 plans, 18/18 success criteria
 | Phase 26-source-code-fixes P02 | 7 | 2 tasks | 5 files |
 | Phase 26-source-code-fixes P05 | 9min | 2 tasks | 3 files |
 | Phase 26-source-code-fixes P06 | 5min | 2 tasks | 11 files |
+| Phase 27-package-quality-readme P02 | 2min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,7 @@ Recent decisions affecting current work:
 - [Phase 26-source-code-fixes]: mungeSoundFont validation sequence: type check, MIDI.Soundfont. marker, = assignment, boundary check, JSON.parse try/catch
 - [Phase 26-source-code-fixes]: Response cache: store clone / consume original in load() and createSprite() — more defensive than clone-on-read
 - [Phase 26-source-code-fixes]: GainEffect equal-power: cos(mix*π/2)*dry + sin(mix*π/2)*wet avoids volume dip at midpoint
+- [Phase 27-package-quality-readme]: CI badge uses shields.io github/actions/workflow/status URL (not github.com badge.svg) so all 3 badges use img.shields.io domain for consistent grep verification
 
 ### Pending Todos
 
