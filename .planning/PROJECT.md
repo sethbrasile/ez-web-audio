@@ -34,6 +34,8 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ DX improvements (auto-rewire bypass, context-free effect factories, batch APIs, extensible ControlType) — v1.0 stable Phase 19
 - ✓ Defensive hardening (null guards, input validation, memory management) — v1.0 stable Phase 20
 
+- ✓ Source code fixes: race conditions, memory leaks, missing exports, API contract violations — v1.0 stable Phase 26
+
 ### Active
 
 Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for detailed REQ-IDs
@@ -70,7 +72,7 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 901 tests (881 unit + 20 E2E), published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data. Phases 17-20 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening).
+**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 939 tests (919 unit + 20 E2E), published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data. Phases 17-26 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening, test coverage, demo app, demo bugfixes, milestone verification, examples, source code fixes).
 
 **Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
 
@@ -110,5 +112,7 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | ControlTypeMap interface for extensibility | Module augmentation lets downstream users add custom parameter types | ✓ Good |
 | DEF-04 consume-once semantics | onPlaySet/onPlayRamp schedules cleared after each play; re-schedule before each play() for repeated automation | ✓ Good |
 
+| Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
+
 ---
-*Last updated: 2026-02-17 after Phase 20*
+*Last updated: 2026-02-22 after Phase 26*
