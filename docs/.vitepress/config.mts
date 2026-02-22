@@ -111,6 +111,7 @@ export default defineConfig({
           items: [
             { text: 'Vue Reactive Pattern', link: '/examples/drum-machine-vue' },
             { text: 'Vanilla TS Events', link: '/examples/drum-machine-vanilla' },
+            { text: 'React Integration', link: '/examples/react-integration' },
           ],
         },
         {

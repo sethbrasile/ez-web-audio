@@ -127,6 +127,36 @@ Transition smoothly between two tracks using equal-power crossfade curves. Creat
 - Awaiting crossfade completion for sequenced transitions
 - Chaining multiple crossfades together
 
+## Integration Patterns
+
+### [Vue Reactive Pattern](/examples/drum-machine-vue)
+
+Build a drum machine using Vue 3's reactive system for automatic UI updates when beat states change.
+
+**You'll learn:**
+- Using `wrapWith: reactive` for Vue reactivity
+- Computed properties for beat state
+- Watch-based tempo control
+
+### [Vanilla TypeScript Events](/examples/drum-machine-vanilla)
+
+Build a drum machine with vanilla TypeScript using DOM events and manual state management.
+
+**You'll learn:**
+- Event-based audio state management
+- Manual DOM updates on audio events
+- Framework-free audio integration
+
+### [React Integration](/examples/react-integration)
+
+Integrate ez-web-audio into React applications using hooks patterns with useRef, useEffect, and custom hooks.
+
+**You'll learn:**
+- Using `useRef` for audio instance management
+- `useEffect` cleanup for audio disposal
+- Custom hooks for reusable audio logic
+- Position tracking with `requestAnimationFrame`
+
 ## Effects & Routing
 
 ### [Effects](/examples/effects)
