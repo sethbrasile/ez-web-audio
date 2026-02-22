@@ -1,4 +1,5 @@
 import type { TimeObject } from '@utils/create-time-object'
+import type { BaseSoundOptions } from './base-sound'
 import createTimeObject from '@utils/create-time-object'
 import { BaseSound } from './base-sound'
 import { SoundController } from './controllers/sound-controller'
@@ -36,6 +37,43 @@ export class Sound extends BaseSound {
   /** Controller for managing gain, pan, and other audio parameters. */
   protected controller: SoundController
 
+  /** Internal loop state. Applied to AudioBufferSourceNode on each play. */
+  private _loop: boolean = false
+
+  /**
+   * Enable or disable native looping for this sound.
+   *
+   * When `loop` is true, the audio replays from the beginning when it reaches the end,
+   * providing gapless looping via the native `AudioBufferSourceNode.loop` property.
+   * Call `stop()` to end looped playback.
+   *
+   * @example
+   * ```typescript
+   * const sfx = await createSound('rain.mp3')
+   * sfx.loop = true
+   * sfx.play() // plays continuously until stop()
+   *
+   * // Stop looped playback
+   * await sfx.stop()
+   * ```
+   */
+  public get loop(): boolean {
+    return this._loop
+  }
+
+  public set loop(value: boolean) {
+    this._loop = value
+  }
+
+  /**
+   * Returns whether this sound is set to loop. Used by BaseSound.playAt() to
+   * skip the duration timeout when looping is enabled.
+   * @protected
+   */
+  protected override get _isLooping(): boolean {
+    return this._loop
+  }
+
   /**
    * Create a Sound instance.
    *
@@ -45,7 +83,7 @@ export class Sound extends BaseSound {
    * @param audioBuffer - The decoded audio data to play
    * @param opts - Optional configuration (name, setTimeout override)
    */
-  constructor(audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: any) {
+  constructor(audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: BaseSoundOptions) {
     super(audioContext, opts)
 
     const audioSourceNode = audioContext.createBufferSource()
@@ -77,6 +115,7 @@ export class Sound extends BaseSound {
     // Create new source node (AudioBufferSourceNode is single-use)
     const audioSourceNode = this.audioContext.createBufferSource()
     audioSourceNode.buffer = this.audioBuffer
+    audioSourceNode.loop = this._loop
     this.audioSourceNode = audioSourceNode
 
     // Connect source to effect chain input
