@@ -359,7 +359,7 @@ Plans:
 | 28. Documentation Corrections | 2/2 | Complete    | 2026-02-22 | - |
 | 29. Demo Component Fixes | 3/3 | Complete    | 2026-02-22 | - |
 | 30. Test Coverage Expansion | 3/3 | Complete    | 2026-02-22 | - |
-| 31. E2E & Integration Test Expansion | v1.0 Stable | 0/2 | Pending | - |
+| 31. E2E & Integration Test Expansion | 1/2 | In Progress|  | - |
 
 ---
 

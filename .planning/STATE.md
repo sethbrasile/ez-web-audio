@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In progress
 Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: t
 | Phase 30 P02 | 6min | 2 tasks | 3 files |
 | Phase 30-test-coverage-expansion P01 | 8min | 2 tasks | 3 files |
 | Phase 30-test-coverage-expansion P03 | 3min | 2 tasks | 2 files |
+| Phase 31-e2e-integration-test-expansion P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,8 @@ Recent decisions affecting current work:
 - [Phase 30-test-coverage-expansion]: Plain object with mutable currentTime cast as AudioContext is simpler for timeout tests — avoids async lifecycle of real MockAudioContext
 - [Phase 30-test-coverage-expansion]: addFilter() API does not exist on Oscillator — constructor-only filter setup; tests use getFilters() verification
 - [Phase 30-test-coverage-expansion]: BeatTrack/Sampler have no getEffects()/addEffect() — effects live on individual Sound instances within BeatTrack; integration tests verify per-Sound effect persistence
+- [Phase 31-e2e-integration-test-expansion]: waitForSelector('.VPContent') + waitForLoadState('networkidle') replaces waitForTimeout(3000) for VitePress SPA hydration
+- [Phase 31-e2e-integration-test-expansion]: Mobile viewport for E2E uses iPhone 14 dimensions (390x844) via test.use({ viewport })
 
 ### Pending Todos
 
