@@ -365,7 +365,10 @@ Plans:
   5. `createAnalyzer()` has an overload that works without AudioContext parameter (matching other factory patterns)
   6. `createOscillator({ note: 'A4' })` accepts a note name and looks up frequency from `frequencyMap`
   7. `BeatTrack.setPattern([1,0,1,0])` sets beat active states from an array
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 33-01-PLAN.md — Add fadeIn/fadeOut, loop property, and dispose() to BaseSound/Sound/Track
+- [ ] 33-02-PLAN.md — Add context-free createAnalyzer, note-based oscillator, BeatTrack.setPattern
 
 ### Phase 34: Test Gap Closure
 **Goal**: All untested public methods, guards, and edge cases identified in test coverage review are covered
