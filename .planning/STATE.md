@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 35 complete (concepts split, 3 interactive examples, React integration guide, API fixes)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Last activity: 2026-02-22 — Phase 35 complete (concepts split, 3 interactive e
 | Phase 35-documentation-expansion P02 | 4min | 2 tasks | 9 files |
 | Phase 35 P03 | 8min | 2 tasks | 3 files |
 | Phase 36-documentation-sync P01 | 4min | 2 tasks | 4 files |
+| Phase 36-documentation-sync P02 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -181,6 +182,9 @@ Recent decisions affecting current work:
 - [Phase 35]: React example uses pure markdown code blocks — satisfies DOC2-08 since page documents React patterns, not Vue; ESLint processes tsx code blocks in markdown so imports must follow perfectionist/sort-imports rules
 - [Phase 36-01]: Pre-existing lint errors in utilities.md code block import sort order are out-of-scope — present before this plan, no new errors introduced
 - [Phase 36-01]: concepts.md TimeObject example condensed to prose to keep file under 250 lines while preserving information
+- [Phase 36-02]: docs/api/ is gitignored — TypeDoc output generated during build, not committed
+- [Phase 36-02]: JSDoc inline type mentions like Promise<void> must use backticks to avoid VitePress HTML parse errors in generated API docs
+- [Phase 36-02]: changeFrequencyTo removed in Phase 26 — correct replacement is fluent update('frequency').to(v).as('ratio')
 
 ### Pending Todos
 

@@ -111,10 +111,10 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Documentation Sync (Phase 36)
 
-- [ ] **SYNC-01**: Every API method signature in guides matches implementation
-- [ ] **SYNC-02**: Every code example compiles against current TypeScript types
-- [ ] **SYNC-03**: TypeDoc API reference regenerated for Phase 32-33 changes
-- [ ] **SYNC-04**: CHANGELOG.md updated with Phase 32-35 changes
+- [x] **SYNC-01**: Every API method signature in guides matches implementation
+- [x] **SYNC-02**: Every code example compiles against current TypeScript types
+- [x] **SYNC-03**: TypeDoc API reference regenerated for Phase 32-33 changes
+- [x] **SYNC-04**: CHANGELOG.md updated with Phase 32-35 changes
 
 ### Nice-to-Have DX (Phase 37)
 
@@ -242,10 +242,10 @@ Explicitly excluded. Documented to prevent scope creep.
 | DOC2-07 | Phase 35 | Complete |
 | DOC2-08 | Phase 35 | Complete |
 | DOC2-09 | Phase 35 | Complete |
-| SYNC-01 | Phase 36 | Pending |
-| SYNC-02 | Phase 36 | Pending |
-| SYNC-03 | Phase 36 | Pending |
-| SYNC-04 | Phase 36 | Pending |
+| SYNC-01 | Phase 36 | Complete |
+| SYNC-02 | Phase 36 | Complete |
+| SYNC-03 | Phase 36 | Complete |
+| SYNC-04 | Phase 36 | Complete |
 | DX3-01 | Phase 37 | Pending |
 | DX3-02 | Phase 37 | Pending |
 | DX3-03 | Phase 37 | Pending |
