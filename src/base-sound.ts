@@ -29,6 +29,16 @@ export interface BaseSoundOptions {
    * @returns Timeout ID for cancellation
    */
   setTimeout?: (fn: () => void, delayMillis: number) => number
+
+  /**
+   * Custom clearTimeout implementation.
+   *
+   * Must match the setTimeout implementation. By default, the AudioContext-aware
+   * clearTimeout is used.
+   *
+   * @param id - Timeout ID returned by setTimeout
+   */
+  clearTimeout?: (id: number) => void
 }
 
 /**
@@ -68,6 +78,7 @@ export interface BaseSoundOptions {
  */
 export abstract class BaseSound extends EventTarget implements Connectable, Playable {
   protected _isPlaying = false
+  private _disposed = false
 
   /**
    * The GainNode controlling this sound's volume.
@@ -79,7 +90,30 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
   protected pannerNode: StereoPannerNode
   protected setTimeout: (fn: () => void, delayMillis: number) => number
+  protected clearTimeout: (id: number) => void
+  private _pendingTimeoutIds: number[] = []
   protected startedPlayingAt: number = 0
+
+  /**
+   * Wrap setTimeout to track the returned ID for later cancellation.
+   * @private
+   */
+  private _trackedTimeout(fn: () => void, delayMillis: number): number {
+    const id = this.setTimeout(fn, delayMillis)
+    this._pendingTimeoutIds.push(id)
+    return id
+  }
+
+  /**
+   * Cancel all pending tracked timeouts (prevents stale callbacks from corrupting state).
+   * @private
+   */
+  private _cancelPendingTimeouts(): void {
+    for (const id of this._pendingTimeoutIds) {
+      this.clearTimeout(id)
+    }
+    this._pendingTimeoutIds = []
+  }
   private static _hasWarnedAboutSuspended = false
 
   /**
@@ -181,9 +215,12 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     if (opts?.setTimeout) {
       this.setTimeout = opts.setTimeout
+      this.clearTimeout = opts?.clearTimeout ?? (() => {})
     }
     else {
-      this.setTimeout = audioContextAwareTimeout(audioContext).setTimeout
+      const timer = audioContextAwareTimeout(audioContext)
+      this.setTimeout = timer.setTimeout
+      this.clearTimeout = timer.clearTimeout
     }
   }
 
@@ -866,7 +903,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public playFor(duration: number): void {
     this.playAt(this.audioContext.currentTime)
-    this.setTimeout(() => this.stop(), duration * 1000)
+    this._trackedTimeout(() => this.stop(), duration * 1000)
   }
 
   /**
@@ -911,9 +948,16 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * ```
    */
   public async playAt(time: number): Promise<void> {
+    if (this._disposed) {
+      throw new Error('Cannot play a disposed sound. Create a new instance.')
+    }
+
     const { audioContext } = this
     const { currentTime } = audioContext
     const duration = this.duration.raw
+
+    // Cancel stale timeouts from any previous play cycle to prevent _isPlaying corruption
+    this._cancelPendingTimeouts()
 
     await audioContext.resume()
 
@@ -935,7 +979,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       this._isPlaying = true
     }
     else {
-      this.setTimeout(() => {
+      this._trackedTimeout(() => {
         this._isPlaying = true
       }, (time - currentTime) * 1000)
     }
@@ -980,9 +1024,9 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       }
     }
 
-    // if duration exists and is finite, schedule _isPlaying to false after duration has elapsed
-    if (duration && Number.isFinite(duration)) {
-      this.setTimeout(() => {
+    // if duration exists and is finite and not looping, schedule _isPlaying to false after duration has elapsed
+    if (duration && Number.isFinite(duration) && !this._isLooping) {
+      this._trackedTimeout(() => {
         this._isPlaying = false
       }, (duration - this.startOffset) * 1000)
     }
@@ -1040,6 +1084,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     const currentTime = this.audioContext.currentTime
 
     const stop = (): void => {
+      this._cancelPendingTimeouts()
       if (this._isPlaying) {
         this._isPlaying = false
 
@@ -1060,7 +1105,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       stop()
     }
     else {
-      this.setTimeout(() => {
+      this._trackedTimeout(() => {
         stop()
       }, (time - currentTime) * 1000)
     }
@@ -1109,6 +1154,140 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
   }
 
   protected later(fn: () => void): void {
-    this.setTimeout(fn, 1)
+    this._trackedTimeout(fn, 1)
+  }
+
+  /**
+   * Whether this instance has been disposed.
+   *
+   * Once disposed, the instance cannot be used for playback.
+   * Create a new instance if you need to play the sound again.
+   *
+   * @example
+   * ```typescript
+   * sound.dispose()
+   * console.log(sound.disposed) // true
+   * ```
+   */
+  public get disposed(): boolean {
+    return this._disposed
+  }
+
+  /**
+   * Protected getter for looping state. Override in subclasses that support looping.
+   * Used by playAt() to skip the duration timeout when looping is active.
+   * @protected
+   */
+  protected get _isLooping(): boolean {
+    return false
+  }
+
+  /**
+   * Fade in the sound from silence to its current gain over `duration` seconds, then play.
+   *
+   * Schedules a gain ramp from 0 to the current gain value and calls play().
+   * The current gain is restored after playback — use changeGainTo() to set a target volume before calling fadeIn().
+   *
+   * @param duration - Fade-in duration in seconds
+   * @returns Promise that resolves when playback begins
+   *
+   * @example
+   * ```typescript
+   * const sound = await createSound('music.mp3')
+   * await sound.fadeIn(2) // fade in over 2 seconds
+   * ```
+   */
+  public async fadeIn(duration: number): Promise<void> {
+    const targetGain = this.gainNode.gain.value
+    this.onPlaySet('gain').to(0).at(0)
+    this.onPlaySet('gain').to(targetGain).endingAt(duration, 'linear')
+    await this.play()
+  }
+
+  /**
+   * Fade out the sound from its current gain to silence over `duration` seconds, then stop.
+   *
+   * If the sound is not playing, this is a no-op.
+   * Returns a Promise that resolves after the fade completes and stop() has been called.
+   *
+   * @param duration - Fade-out duration in seconds
+   * @returns Promise that resolves when the fade and stop are complete
+   *
+   * @example
+   * ```typescript
+   * const sound = await createSound('music.mp3')
+   * await sound.play()
+   * await sound.fadeOut(2) // fade out over 2 seconds then stop
+   * ```
+   */
+  public fadeOut(duration: number): Promise<void> {
+    if (!this._isPlaying)
+      return Promise.resolve()
+
+    const now = this.audioContext.currentTime
+    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now)
+    this.gainNode.gain.linearRampToValueAtTime(0, now + duration)
+
+    return new Promise<void>((resolve) => {
+      this._trackedTimeout(() => {
+        void this.stop().then(resolve)
+      }, duration * 1000)
+    })
+  }
+
+  /**
+   * Dispose this sound instance, releasing all audio resources.
+   *
+   * Disconnects all audio nodes, clears the effect chain, cancels pending timeouts,
+   * and marks the instance as unusable. After disposing, calling play() will throw an error.
+   *
+   * Dispose is idempotent — calling it multiple times is safe.
+   *
+   * @example
+   * ```typescript
+   * const sound = await createSound('click.mp3')
+   * await sound.play()
+   *
+   * // When done with the sound
+   * sound.dispose()
+   * console.log(sound.disposed) // true
+   *
+   * // Attempting to play after dispose will throw
+   * // sound.play() // throws Error: Cannot play a disposed sound
+   * ```
+   */
+  public dispose(): void {
+    if (this._disposed)
+      return
+
+    // Stop playback if currently playing
+    if (this._isPlaying) {
+      try {
+        this.audioSourceNode.stop()
+      }
+      catch {
+        // Already stopped, ignore
+      }
+      this._isPlaying = false
+    }
+
+    // Cancel all pending timeouts
+    this._cancelPendingTimeouts()
+
+    // Disconnect all audio nodes
+    this.safeDisconnect(this.effectChainInput)
+    this.safeDisconnect(this.gainNode)
+    this.safeDisconnect(this.pannerNode)
+
+    // Restore and clear effects
+    for (const e of this.effects) {
+      this.restoreBypass(e)
+    }
+    this.effects = []
+
+    // Detach analyzer
+    this._analyzer = null
+
+    this._disposed = true
   }
 }
