@@ -928,6 +928,18 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
 
     this.setup()
 
+    // Set _isPlaying before emitting 'play' so listeners see correct state (M-11)
+    // For the immediate case (time <= currentTime), set to true now so 'play' listeners
+    // see isPlaying === true. For scheduled-future case, setTimeout is still correct.
+    if (time <= currentTime) {
+      this._isPlaying = true
+    }
+    else {
+      this.setTimeout(() => {
+        this._isPlaying = true
+      }, (time - currentTime) * 1000)
+    }
+
     // Emit play event
     this.emit('play', {
       time: currentTime,
@@ -940,10 +952,20 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     this.audioSourceNode.start(time, this.startOffset)
     this.startedPlayingAt = time
 
-    // Set up end event via onended (fires when playback completes naturally)
-    // Note: onended fires for both natural completion AND stop() calls,
-    // so we check _isPlaying to only emit 'end' for natural completion
+    // Consolidated onended handler: cleanup + 'end' event emission (H-1 fix)
+    // Merges disconnect cleanup (previously in Sound.setup()) with end event emission.
+    // This handler is the single owner of onended — Track._onPlaybackStarted() will
+    // override it with its own version that also emits 'end' (H-2 fix in Task 2).
     this.audioSourceNode.onended = () => {
+      // Cleanup: disconnect nodes to free memory (merged from Sound.setup())
+      try {
+        this.audioSourceNode.disconnect()
+        this.audioSourceNode.onended = null
+      }
+      catch {
+        // Already disconnected
+      }
+
       // Only emit 'end' if still playing (natural completion)
       // If _isPlaying is false, it means stop() was called which already emitted 'stop'
       if (this._isPlaying) {
@@ -963,15 +985,6 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
       this.setTimeout(() => {
         this._isPlaying = false
       }, (duration - this.startOffset) * 1000)
-    }
-
-    if (time <= currentTime) {
-      this._isPlaying = true
-    }
-    else {
-      this.setTimeout(() => {
-        this._isPlaying = true
-      }, (time - currentTime) * 1000)
     }
 
     // Hook for subclasses to add behavior when playback starts

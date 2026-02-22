@@ -82,17 +82,7 @@ export class Sound extends BaseSound {
     // Connect source to effect chain input
     this.wireConnections()
     this.controller.setValuesAtTimes()
-
-    // Cleanup after playback ends to free memory
-    audioSourceNode.onended = () => {
-      try {
-        audioSourceNode.disconnect()
-        audioSourceNode.onended = null
-      }
-      catch {
-        // Already disconnected
-      }
-    }
+    // Note: onended cleanup is handled by BaseSound.playAt() to avoid overwrite chain (H-1 fix)
   }
 
   /**
