@@ -87,15 +87,15 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Test Gap Closure (Phase 34)
 
-- [ ] **TEST2-01**: Factory functions have dedicated tests including error paths
-- [ ] **TEST2-02**: Oscillator `frequency: 0` behavior consistent (contradiction resolved)
-- [ ] **TEST2-03**: `AudioSprite.stop()` and `stopAll()` tested
-- [ ] **TEST2-04**: `changeGainTo()` negative value and gain > 1 warning tested
-- [ ] **TEST2-05**: `getGainNode()` tested
-- [ ] **TEST2-06**: `addEffects()` happy path tested
-- [ ] **TEST2-07**: `BeatTrack.on()`/`.off()`/`.once()` tested
-- [ ] **TEST2-08**: `Envelope.estimateCurrentValue()` and `isActive` tested
-- [ ] **TEST2-09**: `Analyzer.fftSize` setter validation tested
+- [x] **TEST2-01**: Factory functions have dedicated tests including error paths
+- [x] **TEST2-02**: Oscillator `frequency: 0` behavior consistent (contradiction resolved)
+- [x] **TEST2-03**: `AudioSprite.stop()` and `stopAll()` tested
+- [x] **TEST2-04**: `changeGainTo()` negative value and gain > 1 warning tested
+- [x] **TEST2-05**: `getGainNode()` tested
+- [x] **TEST2-06**: `addEffects()` happy path tested
+- [x] **TEST2-07**: `BeatTrack.on()`/`.off()`/`.once()` tested
+- [x] **TEST2-08**: `Envelope.estimateCurrentValue()` and `isActive` tested
+- [x] **TEST2-09**: `Analyzer.fftSize` setter validation tested
 
 ### Documentation Expansion (Phase 35)
 
@@ -224,15 +224,15 @@ Explicitly excluded. Documented to prevent scope creep.
 | DX2-04 | Phase 33 | Complete |
 | DX2-05 | Phase 33 | Complete |
 | DX2-06 | Phase 33 | Complete |
-| TEST2-01 | Phase 34 | Pending |
-| TEST2-02 | Phase 34 | Pending |
-| TEST2-03 | Phase 34 | Pending |
-| TEST2-04 | Phase 34 | Pending |
-| TEST2-05 | Phase 34 | Pending |
-| TEST2-06 | Phase 34 | Pending |
-| TEST2-07 | Phase 34 | Pending |
-| TEST2-08 | Phase 34 | Pending |
-| TEST2-09 | Phase 34 | Pending |
+| TEST2-01 | Phase 34 | Complete |
+| TEST2-02 | Phase 34 | Complete |
+| TEST2-03 | Phase 34 | Complete |
+| TEST2-04 | Phase 34 | Complete |
+| TEST2-05 | Phase 34 | Complete |
+| TEST2-06 | Phase 34 | Complete |
+| TEST2-07 | Phase 34 | Complete |
+| TEST2-08 | Phase 34 | Complete |
+| TEST2-09 | Phase 34 | Complete |
 | DOC2-01 | Phase 35 | Pending |
 | DOC2-02 | Phase 35 | Pending |
 | DOC2-03 | Phase 35 | Pending |
