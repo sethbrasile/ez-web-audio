@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
       - name: Build library (needed for examples that import it)
         run: pnpm build:lib
 
