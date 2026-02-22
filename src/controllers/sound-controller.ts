@@ -44,8 +44,11 @@ export class SoundController extends BaseParamController implements ParamControl
         case 'gain':
           this.gainNode.gain.setValueAtTime(item.value, currentTime)
           break
+        case 'pan':
+          this.pannerNode.pan.setValueAtTime(item.value, currentTime)
+          break
         default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune'.`)
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune', 'pan'.`)
       }
     })
   }
@@ -60,8 +63,11 @@ export class SoundController extends BaseParamController implements ParamControl
         case 'gain':
           this.applyRampToParam(this.gainNode.gain, item.value, time, rampType)
           break
+        case 'pan':
+          this.applyRampToParam(this.pannerNode.pan, item.value, time, rampType)
+          break
         default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune'.`)
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for SoundController: 'gain', 'detune', 'pan'.`)
       }
     })
   }

@@ -73,7 +73,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
   }
 
   private applyValues(values: ParamValue[], currentTime: number): void {
-    const { oscillator, gainNode } = this
+    const { oscillator, gainNode, pannerNode } = this
     values.forEach((item) => {
       switch (item.type) {
         case 'frequency':
@@ -82,14 +82,20 @@ export class OscillatorController extends BaseParamController implements ParamCo
         case 'gain':
           gainNode.gain.setValueAtTime(item.value, currentTime)
           break
+        case 'detune':
+          oscillator.detune.setValueAtTime(item.value, currentTime)
+          break
+        case 'pan':
+          pannerNode.pan.setValueAtTime(item.value, currentTime)
+          break
         default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency'.`)
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency', 'detune', 'pan'.`)
       }
     })
   }
 
   private applyRampValues(values: ValueAtTime[], currentTime: number, rampType: 'exponential' | 'linear'): void {
-    const { oscillator, gainNode } = this
+    const { oscillator, gainNode, pannerNode } = this
     values.forEach((item) => {
       const time = currentTime + item.time
       switch (item.type) {
@@ -99,8 +105,14 @@ export class OscillatorController extends BaseParamController implements ParamCo
         case 'gain':
           this.applyRampToParam(gainNode.gain, item.value, time, rampType)
           break
+        case 'detune':
+          this.applyRampToParam(oscillator.detune, item.value, time, rampType)
+          break
+        case 'pan':
+          this.applyRampToParam(pannerNode.pan, item.value, time, rampType)
+          break
         default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency'.`)
+          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency', 'detune', 'pan'.`)
       }
     })
   }

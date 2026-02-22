@@ -153,14 +153,32 @@ describe('oscillatorController', () => {
       expect(spy).toHaveBeenCalledWith(0.5, audioContext.currentTime + 0.5)
     })
 
-    it('throws for unsupported control type in applyValues', () => {
-      controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for OscillatorController: \'gain\', \'frequency\'.')
+    it('applies detune values via detune.setValueAtTime', () => {
+      controller.onPlaySet('detune').to(100)
+      const spy = vi.spyOn(oscillatorNode.detune, 'setValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(100, expect.any(Number))
     })
 
-    it('throws for unsupported control type in applyRampValues', () => {
-      controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for OscillatorController: \'gain\', \'frequency\'.')
+    it('applies pan values via pannerNode.pan.setValueAtTime', () => {
+      controller.onPlaySet('pan').to(-0.5)
+      const spy = vi.spyOn(pannerNode.pan, 'setValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(-0.5, expect.any(Number))
+    })
+
+    it('applies detune ramps via applyRampToParam', () => {
+      controller.onPlaySet('detune').to(200).endingAt(1.0)
+      const spy = vi.spyOn(oscillatorNode.detune, 'exponentialRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(200, expect.any(Number))
+    })
+
+    it('applies pan ramps via applyRampToParam', () => {
+      controller.onPlaySet('pan').to(1).endingAt(0.5, 'linear')
+      const spy = vi.spyOn(pannerNode.pan, 'linearRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(1, expect.any(Number))
     })
   })
 

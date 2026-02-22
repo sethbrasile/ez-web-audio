@@ -92,15 +92,18 @@ describe('soundController', () => {
       expect(spy).toHaveBeenCalledWith(0.5, audioContext.currentTime + 1.0)
     })
 
-    it('throws for unsupported control type in applyValues', () => {
-      // Use onPlaySet for pan which is not supported in SoundController
-      controller.onPlaySet('pan').to(0.5)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for SoundController: \'gain\', \'detune\'.')
+    it('applies pan values via pannerNode.pan.setValueAtTime', () => {
+      controller.onPlaySet('pan').to(-1)
+      const spy = vi.spyOn(pannerNode.pan, 'setValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(-1, expect.any(Number))
     })
 
-    it('throws for unsupported control type in applyRampValues', () => {
+    it('applies pan ramps via exponentialRampToValueAtTime', () => {
       controller.onPlaySet('pan').to(0.5).endingAt(1.0)
-      expect(() => controller.setValuesAtTimes()).toThrow('Unsupported control type: \'pan\'. Supported types for SoundController: \'gain\', \'detune\'.')
+      const spy = vi.spyOn(pannerNode.pan, 'exponentialRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(0.5, expect.any(Number))
     })
   })
 
