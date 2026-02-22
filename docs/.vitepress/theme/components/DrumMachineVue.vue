@@ -165,11 +165,7 @@ async function togglePlay() {
 
 watch(bpm, (val) => {
   if (playing.value && initialized) {
-    // BPM changes require restart
-    tracks.value.forEach(t => t.beatTrack.stop())
-    setTimeout(() => {
-      tracks.value.forEach(t => t.beatTrack.playBeats(val, 1 / 16))
-    }, 50)
+    tracks.value.forEach(t => t.beatTrack.setTempo(val))
   }
 })
 

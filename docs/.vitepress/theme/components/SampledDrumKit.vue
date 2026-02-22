@@ -98,18 +98,9 @@ async function playPad(padName: string) {
 }
 
 onUnmounted(() => {
-  // Cleanup samplers
-  try {
-    if (kickSampler)
-      kickSampler.stop()
-    if (snareSampler)
-      snareSampler.stop()
-    if (hihatSampler)
-      hihatSampler.stop()
-  }
-  catch (e) {
-    // Ignore cleanup errors
-  }
+  kickSampler = null
+  snareSampler = null
+  hihatSampler = null
 })
 </script>
 
