@@ -41,7 +41,7 @@
 
 </details>
 
-### 🚧 v1.0 First Stable Release (Phases 17-24)
+### 🚧 v1.0 First Stable Release (Phases 17-31)
 
 **Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
 
@@ -53,6 +53,13 @@
 - [x] **Phase 22: Demo App & Release** - Update demo Vue components for all API changes, update TypeDoc, publish npm 1.0.0 (completed 2026-02-17)
 - [x] **Phase 23: Demo Example Bugfixes** - Fix runtime API bugs, design issues, and polish in all VitePress demo components (completed 2026-02-17)
 - [ ] **Phase 24: Milestone Verification & Release Documentation** - Create missing VERIFICATION.md for phases 18 and 19, fix stale JSDoc, update CHANGELOG, clean up tracking docs, and trigger npm 1.0.0 publish
+- [ ] **Phase 25: New Example Pages** - Add interactive examples for AudioSprite, crossfade, and playTogether — features with no demo coverage
+- [ ] **Phase 26: Source Code Fixes** - Fix all runtime bugs, race conditions, memory leaks, and validation gaps found in code review
+- [ ] **Phase 27: Package Quality & README** - Write proper README, fix package.json config, add CI quality gates
+- [ ] **Phase 28: Documentation Corrections** - Fix all incorrect docs, add missing feature documentation
+- [ ] **Phase 29: Demo Component Fixes** - Fix demo bugs, accessibility issues, and polish
+- [ ] **Phase 30: Test Coverage Expansion** - Add tests for untested modules and missing scenarios
+- [ ] **Phase 31: E2E & Integration Test Expansion** - Add interaction E2E tests, integration coverage, mobile viewport testing
 
 ## Phase Details
 
@@ -179,6 +186,121 @@
 **Plans**: 1 plan
 - [ ] 24-01-PLAN.md — Verification docs, doc fixes, tracking cleanup, npm publish trigger
 
+### Phase 25: New Example Pages
+**Goal**: Every significant library feature has an interactive example on the docs site — no feature is "hidden" from developers browsing examples
+**Depends on**: Phase 24 (or can run in parallel with review fix phases)
+**Success Criteria** (what must be TRUE):
+  1. An AudioSprite example page exists at `docs/examples/audio-sprite.md` with a Vue component demonstrating sprite loading, named segment playback, and overlapping plays
+  2. A Crossfade example page exists at `docs/examples/crossfade.md` with a Vue component demonstrating smooth transition between two tracks (e.g., DJ crossfader or ambient scene transition)
+  3. A playTogether example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering (e.g., chord builder or layered SFX)
+  4. All three examples appear in `docs/examples/index.md` with descriptions
+  5. All three examples appear in the VitePress sidebar navigation
+  6. All example code uses the current 1.0 API correctly
+**Plans**: TBD (created during `/gsd:plan-phase`)
+
+### Phase 26: Source Code Fixes
+**Goal**: All runtime bugs, race conditions, memory leaks, and API contract violations identified in code review are fixed
+**Depends on**: Phase 24 (verification docs complete first)
+**Gap Closure**: Closes review findings C-3, C-4, C-5, H-1–H-6, M-1–M-13, L-1–L-9
+**Success Criteria** (what must be TRUE):
+  1. `BeatTrackOptions`, `SamplerOptions`, `TimeObject`, `RatioType`, `SeekType` are exported from `src/index.ts`
+  2. `Track.seek()` awaits `stop()` before setting new offset — no race condition
+  3. `Connectable` interface `update()` signature matches `BaseSound.update()` implementation
+  4. `Sound.setup()` onended cleanup is preserved through `playAt()` — nodes disconnect after natural completion
+  5. `Track` emits 'end' event on natural playback completion (not just 'stop')
+  6. `Oscillator.setup()` disconnects old GainNode before creating new one
+  7. `Track.resume()` works when paused at position 0
+  8. `playBeats()` plays ALL beats unconditionally; `playActiveBeats()` plays only active beats
+  9. `BeatTrack.resume()` recalculates nextBeatTime relative to current audioContext.currentTime
+  10. `exponentialRampToValueAtTime` with value 0 uses a safe near-zero value instead of throwing
+  11. `AudioSprite` has a `stop()` method for looping sprites
+  12. `onPlaySet` replaces (not accumulates) schedules for the same parameter
+  13. `LayeredSound` removes old 'end' listeners before adding new ones on play()
+  14. `_isPlaying` is set before emitting 'play' event
+  15. `OscillatorController` and `SoundController` support detune/pan in scheduled values
+  16. `mungeSoundFont` validates input and throws descriptive errors
+  17. Response cache clone pattern is safe against double-consumption
+  18. All low-priority source issues (L-1 through L-9) resolved
+**Plans**: TBD
+
+### Phase 27: Package Quality & README
+**Goal**: The npm package page is professional, discoverable, and correctly configured for all bundler environments
+**Depends on**: Phase 26 (source fixes complete before package polish)
+**Gap Closure**: Closes review findings C-1, C-2, H-12–H-16, L-13–L-15
+**Success Criteria** (what must be TRUE):
+  1. README.md has: project description, installation instructions, quick-start code examples, feature list, docs site link, badges (npm version, CI status, license)
+  2. No "WORK IN PROGRESS" text remains in README
+  3. `package.json` has `homepage`, `bugs`, and `main` fields
+  4. Keywords include: drum-machine, synthesizer, soundfont, audio-sprite, beat, rhythm, filter, sampler, envelope, effects, typescript
+  5. `publish.yml` runs lint before publish
+  6. `deploy-docs-site.yml` runs typecheck and lint before deploying
+  7. `SoundController`, `OscillatorController`, and `Player` interface are exported
+  8. ESM-only nature is documented in README
+**Plans**: TBD
+
+### Phase 28: Documentation Corrections
+**Goal**: All documentation accurately reflects the library's actual API behavior and all significant features have narrative docs
+**Depends on**: Phase 26 (source fixes may change API behavior docs reference)
+**Gap Closure**: Closes review findings C-6–C-9, H-9, H-17, M-19–M-25
+**Success Criteria** (what must be TRUE):
+  1. `percentPlayed` documented correctly as returning 0-100 (not 0-1) in all guide and example pages
+  2. `createAnalyzer()` examples show AudioContext as first parameter
+  3. FilterEffect property access uses setter pattern (`lowpass.frequency = 1200`) and lowercase `q`
+  4. `addEffect()` JSDoc in base-sound.ts uses current context-free factory signature
+  5. `rewireEffects()` documentation is consistent — auto-rewire for bypass, manual only for add/remove
+  6. Synth keyboard example has `async` on functions using `await`
+  7. AudioSprite/createSprite has narrative docs and example page
+  8. crossfade utility has narrative docs and example
+  9. playTogether utility has narrative docs and example
+  10. useInteractionMethods, preventEventDefaults, clearPreloadCache, debug utilities, and Envelope class all documented
+**Plans**: TBD
+
+### Phase 29: Demo Component Fixes
+**Goal**: All VitePress demo components work correctly, are accessible, and follow best practices
+**Depends on**: Phase 26 (source fixes may affect demo behavior)
+**Gap Closure**: Closes review findings H-7, H-8, M-14–M-18, L-10–L-12
+**Success Criteria** (what must be TRUE):
+  1. SampledDrumKit.vue cleanup uses correct API (not nonexistent `sampler.stop()`)
+  2. DrumMachineVue.vue BPM watcher uses `setTempo(bpm)` instead of setTimeout stop/restart
+  3. PianoKeyboard touchmove handles sliding between keys without stuck notes
+  4. AmbientGenerator filter frequency assignment works correctly through proxy
+  5. FilterDemo does not call `rewireEffects()` manually (auto-rewire handles it)
+  6. All interactive elements have aria-labels (sliders, play buttons)
+  7. Volume warnings use accessible text (not emoji-only)
+  8. XYPad height calculation doesn't fall back to clientWidth
+  9. Demo components use proper TypeScript types instead of `any` for library instances
+  10. SoundfontPiano cleanup stops playing notes before disposing
+**Plans**: TBD
+
+### Phase 30: Test Coverage Expansion
+**Goal**: All untested modules and missing test scenarios identified in code review are covered
+**Depends on**: Phase 26 (test the fixed code, not the buggy code)
+**Gap Closure**: Closes review findings T-1–T-9, M-27
+**Success Criteria** (what must be TRUE):
+  1. `timeout.ts` has tests covering RAF-based timing, audioContext.currentTime drift correction, cancellation
+  2. `equal-power-crossfade.ts` has tests verifying cos/sin curve math and edge cases (0, 0.5, 1)
+  3. `beat.ts` has tests for `playIfActive()` and `playInIfActive()` — the primary BeatTrack scheduler methods
+  4. `play-together.ts` has tests for synchronized playback, error handling, empty array
+  5. BaseSound timing methods tested: `playFor()`, `playInAndStopAfter()`, `stopIn()`, `stopAt()`
+  6. Oscillator `addFilter()`, filter wiring, and anti-click fade-out tested
+  7. OscillatorController frequency ramp scheduling tested
+  8. Integration tests exist for Track+effects and BeatTrack+effects combinations
+  9. Factory function error propagation paths tested
+  10. Cleanup/dispose pattern has at least one integration test
+**Plans**: TBD
+
+### Phase 31: E2E & Integration Test Expansion
+**Goal**: E2E tests verify actual user interactions and the test infrastructure is robust
+**Depends on**: Phase 29 (demo fixes complete before testing demos)
+**Gap Closure**: Closes review findings H-10, H-11, T-10, M-26, L-17
+**Success Criteria** (what must be TRUE):
+  1. At least 5 demo pages have E2E tests that click buttons, toggle beats, or interact with controls
+  2. E2E tests verify DOM changes after interaction (not just absence of JS errors)
+  3. Integration tests cover Track+effects, Oscillator+filters, BeatTrack+effects, Sampler, and LayeredSound
+  4. All `waitForTimeout(3000)` calls replaced with condition-based waits (`waitForSelector`, `waitForFunction`)
+  5. At least one Playwright test runs with a mobile viewport configuration
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -207,6 +329,13 @@
 | 22. Demo App & Release | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 23. Demo Example Bugfixes | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 24. Milestone Verification & Release | v1.0 Stable | 0/1 | Pending | - |
+| 25. New Example Pages | v1.0 Stable | 0/? | Pending | - |
+| 26. Source Code Fixes | v1.0 Stable | 0/? | Pending | - |
+| 27. Package Quality & README | v1.0 Stable | 0/? | Pending | - |
+| 28. Documentation Corrections | v1.0 Stable | 0/? | Pending | - |
+| 29. Demo Component Fixes | v1.0 Stable | 0/? | Pending | - |
+| 30. Test Coverage Expansion | v1.0 Stable | 0/? | Pending | - |
+| 31. E2E & Integration Test Expansion | v1.0 Stable | 0/? | Pending | - |
 
 ---
 
@@ -214,4 +343,4 @@
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-17 after Phase 23 gap closure planning*
+*Last updated: 2026-02-21 after code review gap closure planning (Phases 26-31)*
