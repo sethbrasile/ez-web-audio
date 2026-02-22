@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions, oscillator freq:0, sprite stop, gain guards, effects batch, BeatTrack events)
 
-**Progress:** [██████████] 97%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions
 | Phase 34 P02 | 8min | 2 tasks | 3 files |
 | Phase 34-test-gap-closure P01 | 2min | 2 tasks | 3 files |
 | Phase 35 P01 | 10min | 2 tasks | 6 files |
+| Phase 35-documentation-expansion P02 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -172,6 +173,9 @@ Recent decisions affecting current work:
 - [Phase 35]: concepts.md trimmed from 693 to 245 lines by splitting parameter control and utilities into dedicated guide pages
 - [Phase 35]: synthesis.md changeFrequencyTo() replaced with update('frequency').to().as('ratio') — fluent API is the recommended consistent pattern
 - [Phase 35]: audio-routing.md all wrapEffect(ctx, node) calls updated to 1-arg wrapEffect(node) form
+- [Phase 35-documentation-expansion]: AudioSpriteDemo uses kick1.wav with artificial sprite regions — no dedicated sprite file in assets
+- [Phase 35-documentation-expansion]: CrossfadeDemo loads short-music.mp3 twice as two Track instances for bidirectional crossfade demo
+- [Phase 35-documentation-expansion]: Composition sidebar section added for AudioSprite/LayeredSound/Crossfade — composition patterns distinct from Sampling
 
 ### Pending Todos
 
