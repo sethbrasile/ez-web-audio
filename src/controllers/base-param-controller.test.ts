@@ -196,14 +196,15 @@ describe('baseParamController', () => {
   })
 
   describe('onPlayRamp() scheduling', () => {
-    it('onPlayRamp("gain").from(0).to(1).in(0.5) schedules start value and ramp', () => {
+    it('onPlayRamp("gain").from(0).to(1).in(0.5) schedules ramp end value', () => {
       controller.onPlayRamp('gain').from(0).to(1).in(0.5)
       const startingValues = controller.getStartingValues()
       const exponentialValues = controller.getExponentialValues()
-      // Start value should be added to startingValues
-      expect(startingValues).toHaveLength(1)
-      expect(startingValues[0]).toEqual({ type: 'gain', value: 0 })
-      // End value should be added to exponentialValues (default ramp type)
+      // onPlayRamp calls onPlaySet twice with the same type; the second call (endValue)
+      // deduplicates the first (startValue) from startingValues, then endingAt() moves
+      // endValue to exponentialValues. startingValues is empty after the ramp is scheduled.
+      expect(startingValues).toHaveLength(0)
+      // End value is in exponentialValues (default ramp type)
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'gain', value: 1, time: 0.5 })
     })
@@ -212,8 +213,8 @@ describe('baseParamController', () => {
       controller.onPlayRamp('gain', 'linear').from(1).to(0).in(1.0)
       const startingValues = controller.getStartingValues()
       const linearValues = controller.getLinearValues()
-      expect(startingValues).toHaveLength(1)
-      expect(startingValues[0]).toEqual({ type: 'gain', value: 1 })
+      // Same deduplication: startValue removed when endValue is pushed
+      expect(startingValues).toHaveLength(0)
       expect(linearValues).toHaveLength(1)
       expect(linearValues[0]).toEqual({ type: 'gain', value: 0, time: 1.0 })
     })
@@ -222,8 +223,7 @@ describe('baseParamController', () => {
       controller.onPlayRamp('detune').from(-100).to(100).in(2.0)
       const startingValues = controller.getStartingValues()
       const exponentialValues = controller.getExponentialValues()
-      expect(startingValues).toHaveLength(1)
-      expect(startingValues[0]).toEqual({ type: 'detune', value: -100 })
+      expect(startingValues).toHaveLength(0)
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'detune', value: 100, time: 2.0 })
     })
@@ -231,8 +231,11 @@ describe('baseParamController', () => {
     it('onPlayRamp for pan', () => {
       controller.onPlayRamp('pan').from(-1).to(1).in(0.5)
       const startingValues = controller.getStartingValues()
-      expect(startingValues).toHaveLength(1)
-      expect(startingValues[0]).toEqual({ type: 'pan', value: -1 })
+      const exponentialValues = controller.getExponentialValues()
+      // startValue deduped out; only the end value in exponentialValues
+      expect(startingValues).toHaveLength(0)
+      expect(exponentialValues).toHaveLength(1)
+      expect(exponentialValues[0]).toEqual({ type: 'pan', value: 1, time: 0.5 })
     })
   })
 

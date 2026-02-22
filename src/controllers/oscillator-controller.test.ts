@@ -211,14 +211,18 @@ describe('oscillatorController', () => {
     it('then startingValues, valuesAtTime, ramps applied', () => {
       const envelope = new Envelope({ attackTime: 0.05 })
       controller.setEnvelope(envelope)
+      // Each onPlaySet for the same type deduplicates the previous startingValues entry.
+      // to(440) → startingValues: [{freq,440}]
+      // to(880).at(0.5) → dedup removes {freq,440}, pushes {freq,880}, .at() moves to valuesAtTime
+      // to(1760).endingAt(1.0) → startingValues empty, pushes {freq,1760}, .endingAt() moves to exponentialValues
       controller.onPlaySet('frequency').to(440)
       controller.onPlaySet('frequency').to(880).at(0.5)
       controller.onPlaySet('frequency').to(1760).endingAt(1.0)
       const spy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       const rampSpy = vi.spyOn(oscillatorNode.frequency, 'exponentialRampToValueAtTime')
       controller.setValuesAtTimes()
-      // Starting value and value at time should both call setValueAtTime
-      expect(spy).toHaveBeenCalledTimes(2)
+      // Only the valuesAtTime entry (880 at 0.5s) calls setValueAtTime; initial to(440) was deduped
+      expect(spy).toHaveBeenCalledTimes(1)
       expect(rampSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -246,21 +250,24 @@ describe('oscillatorController', () => {
   })
 
   describe('onPlayRamp integration', () => {
-    it('onPlayRamp for frequency schedules start and end', () => {
+    it('onPlayRamp for frequency schedules ramp end value', () => {
+      // onPlayRamp calls onPlaySet twice: startValue is deduped by endValue's push.
+      // Only the end value (880) ends up in exponentialValues; no setValueAtTime for 440.
       controller.onPlayRamp('frequency').from(440).to(880).in(0.5)
       const spy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       const rampSpy = vi.spyOn(oscillatorNode.frequency, 'exponentialRampToValueAtTime')
       controller.setValuesAtTimes()
-      expect(spy).toHaveBeenCalledWith(440, expect.any(Number))
+      expect(spy).not.toHaveBeenCalled()
       expect(rampSpy).toHaveBeenCalledWith(880, expect.any(Number))
     })
 
     it('onPlayRamp for gain with linear type', () => {
+      // Same: startValue deduped, only end value in linearValues
       controller.onPlayRamp('gain', 'linear').from(1).to(0).in(1.0)
       const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')
       const rampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
       controller.setValuesAtTimes()
-      expect(spy).toHaveBeenCalledWith(1, expect.any(Number))
+      expect(spy).not.toHaveBeenCalled()
       expect(rampSpy).toHaveBeenCalledWith(0, expect.any(Number))
     })
   })

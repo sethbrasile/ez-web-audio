@@ -216,6 +216,11 @@ export class BaseParamController {
   public onPlaySet(type: ControlType): { to: (value: number) => { at: (time: number) => void, endingAt: (time: number, rampType?: RampType) => void } } {
     return {
       to: (value: number) => {
+        // Deduplicate: replace any prior startingValues entry for the same type so that
+        // calling onPlaySet('gain').to(X) twice replaces rather than accumulates.
+        // Only startingValues is filtered here — valuesAtTime/exponentialValues/linearValues
+        // are managed by at()/endingAt() and must not be cleared.
+        this.startingValues = this.startingValues.filter(v => v.type !== type)
         const paramValue: ParamValue = { type, value }
         this.startingValues.push(paramValue)
         return {
@@ -252,8 +257,18 @@ export class BaseParamController {
           to: (endValue: number) => {
             return {
               in: (endTime: number) => {
-                this.onPlaySet(type).to(startValue)
-                this.onPlaySet(type).to(endValue).endingAt(endTime, rampType)
+                // Use direct push (not onPlaySet) to avoid dedup removing the startValue.
+                // onPlayRamp always writes two entries for the same type (start + end),
+                // so dedup would incorrectly remove the start when the end is pushed.
+                // Remove any prior entries for this type first (last ramp wins),
+                // then push both start and end values.
+                this.startingValues = this.startingValues.filter(v => v.type !== type)
+                this.exponentialValues = this.exponentialValues.filter(v => v.type !== type)
+                this.linearValues = this.linearValues.filter(v => v.type !== type)
+
+                const startParam: ParamValue = { type, value: startValue }
+                this.startingValues.push(startParam)
+                this.addRampValue({ type, value: endValue, time: endTime }, rampType)
               },
             }
           },
@@ -311,9 +326,14 @@ export class BaseParamController {
     rampType: 'exponential' | 'linear',
   ): void {
     switch (rampType) {
-      case 'exponential':
-        param.exponentialRampToValueAtTime(value, time)
+      case 'exponential': {
+        // exponentialRampToValueAtTime throws RangeError if value is 0 (Web Audio API constraint).
+        // Use a near-zero value to approximate silence without throwing.
+        const SAFE_NEAR_ZERO = 0.00001
+        const safeValue = value === 0 ? SAFE_NEAR_ZERO : value
+        param.exponentialRampToValueAtTime(safeValue, time)
         break
+      }
       case 'linear':
         param.linearRampToValueAtTime(value, time)
         break
