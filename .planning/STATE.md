@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions, oscillator freq:0, sprite stop, gain guards, effects batch, BeatTrack events)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions
 | Phase 34-test-gap-closure P01 | 2min | 2 tasks | 3 files |
 | Phase 35 P01 | 10min | 2 tasks | 6 files |
 | Phase 35-documentation-expansion P02 | 4min | 2 tasks | 9 files |
+| Phase 35 P03 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -176,6 +177,7 @@ Recent decisions affecting current work:
 - [Phase 35-documentation-expansion]: AudioSpriteDemo uses kick1.wav with artificial sprite regions — no dedicated sprite file in assets
 - [Phase 35-documentation-expansion]: CrossfadeDemo loads short-music.mp3 twice as two Track instances for bidirectional crossfade demo
 - [Phase 35-documentation-expansion]: Composition sidebar section added for AudioSprite/LayeredSound/Crossfade — composition patterns distinct from Sampling
+- [Phase 35]: React example uses pure markdown code blocks — satisfies DOC2-08 since page documents React patterns, not Vue; ESLint processes tsx code blocks in markdown so imports must follow perfectionist/sort-imports rules
 
 ### Pending Todos
 
