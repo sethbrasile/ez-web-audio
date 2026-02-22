@@ -7,6 +7,7 @@ import type { Effect } from './effects'
 import type { SoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
 import { debugConnection, debugEvent } from './debug'
+import { TypedEventEmitter } from './events/typed-event-emitter'
 
 /**
  * Configuration options for BaseSound and its subclasses.
@@ -76,7 +77,7 @@ export interface BaseSoundOptions {
  * sound.on('end', () => console.log('Finished'))
  * ```
  */
-export abstract class BaseSound extends EventTarget implements Connectable, Playable {
+export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> implements Connectable, Playable {
   protected _isPlaying = false
   private _disposed = false
 
@@ -577,151 +578,6 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    */
   public getGainNode(): GainNode {
     return this.gainNode
-  }
-
-  // ===== Event System (EventTarget extension with typed events) =====
-
-  /**
-   * Add a typed event listener for sound lifecycle events.
-   * Overloaded to provide type safety for known event types while remaining
-   * compatible with EventTarget.
-   *
-   * @param type - The event type ('play', 'stop', 'end', etc.)
-   * @param listener - The event handler function
-   * @param options - Standard addEventListener options
-   */
-  override addEventListener<K extends keyof SoundEventMap>(
-    type: K,
-    listener: (event: SoundEventMap[K]) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions
-  ): void
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | AddEventListenerOptions,
-  ): void {
-    super.addEventListener(type, listener as EventListener, options)
-  }
-
-  /**
-   * Remove a typed event listener for sound lifecycle events.
-   * Overloaded to provide type safety for known event types while remaining
-   * compatible with EventTarget.
-   *
-   * @param type - The event type ('play', 'stop', 'end', etc.)
-   * @param listener - The event handler function to remove
-   * @param options - Standard removeEventListener options
-   */
-  override removeEventListener<K extends keyof SoundEventMap>(
-    type: K,
-    listener: (event: SoundEventMap[K]) => void,
-    options?: boolean | EventListenerOptions
-  ): void
-  override removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | EventListenerOptions
-  ): void
-  override removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | EventListenerOptions,
-  ): void {
-    super.removeEventListener(type, listener as EventListener, options)
-  }
-
-  /**
-   * Emit a typed event with the given detail.
-   * @protected
-   * @param type - The event type to emit
-   * @param detail - The event detail object
-   */
-  protected emit<K extends keyof SoundEventMap>(
-    type: K,
-    detail: SoundEventMap[K]['detail'],
-  ): void {
-    const event = new CustomEvent(type, { detail })
-    this.dispatchEvent(event)
-  }
-
-  // ===== Convenience Methods (.on/.once/.off) =====
-
-  /**
-   * Subscribe to one or more events. Supports chaining.
-   *
-   * @example
-   * ```typescript
-   * sound.on('play', handlePlay).on('stop', handleStop);
-   * sound.on(['play', 'stop'], handleBoth);
-   * ```
-   *
-   * @param type - The event type(s) to subscribe to
-   * @param listener - The event handler function
-   * @returns this for chaining
-   */
-  on<K extends keyof SoundEventMap>(
-    type: K | K[],
-    listener: (event: SoundEventMap[K]) => void,
-  ): this {
-    if (Array.isArray(type)) {
-      type.forEach(t => this.addEventListener(t, listener as (event: SoundEventMap[typeof t]) => void))
-    }
-    else {
-      this.addEventListener(type, listener)
-    }
-    return this
-  }
-
-  /**
-   * Subscribe to an event once. Handler is removed after first invocation.
-   *
-   * @example
-   * ```typescript
-   * sound.once('end', () => console.log('Playback finished'));
-   * ```
-   *
-   * @param type - The event type to subscribe to
-   * @param listener - The event handler function
-   * @returns this for chaining
-   */
-  once<K extends keyof SoundEventMap>(
-    type: K,
-    listener: (event: SoundEventMap[K]) => void,
-  ): this {
-    this.addEventListener(type, listener, { once: true })
-    return this
-  }
-
-  /**
-   * Unsubscribe from an event.
-   *
-   * Note: Due to native EventTarget limitations, you must provide the same
-   * listener function reference that was used when subscribing. To remove
-   * listeners, store the function reference when adding it.
-   *
-   * @example
-   * ```typescript
-   * const handler = (e) => console.log(e.detail);
-   * sound.on('play', handler);
-   * // later...
-   * sound.off('play', handler);
-   * ```
-   *
-   * @param type - The event type to unsubscribe from
-   * @param listener - The event handler function to remove
-   * @returns this for chaining
-   */
-  off<K extends keyof SoundEventMap>(
-    type: K,
-    listener: (event: SoundEventMap[K]) => void,
-  ): this {
-    this.removeEventListener(type, listener)
-    return this
   }
 
   /**

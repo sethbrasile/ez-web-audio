@@ -964,6 +964,7 @@ export type {
   WarningEventDetail,
 } from './events/event-types'
 // Re-export LayeredSound types
+export { TypedEventEmitter } from './events/typed-event-emitter'
 export { LayeredSound } from './layered-sound'
 export type { LayeredSoundOptions } from './layered-sound'
 

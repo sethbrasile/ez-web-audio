@@ -1,6 +1,7 @@
 import type { LayeredSoundEventMap } from './events/event-types'
 import type { Oscillator } from './oscillator'
 import type { Sound } from './sound'
+import { TypedEventEmitter } from './events/typed-event-emitter'
 import audioContextAwareTimeout from './utils/timeout'
 
 /**
@@ -32,7 +33,7 @@ export interface LayeredSoundOptions {
  * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
  * ```
  */
-export class LayeredSound extends EventTarget {
+export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   private layers: (Sound | Oscillator)[]
   private failedLayers: { index: number, error: Error }[] = []
   private setTimeout: (fn: () => void, delayMillis: number) => number
@@ -200,150 +201,5 @@ export class LayeredSound extends EventTarget {
       this.layerEndHandlers.set(layer, handler)
       layer.once('end', handler)
     })
-  }
-
-  // ===== Event System (EventTarget extension with typed events) =====
-
-  /**
-   * Add a typed event listener for LayeredSound lifecycle events.
-   * Overloaded to provide type safety for known event types while remaining
-   * compatible with EventTarget.
-   *
-   * @param type - The event type ('play', 'stop', 'end', 'warning')
-   * @param listener - The event handler function
-   * @param options - Standard addEventListener options
-   */
-  override addEventListener<K extends keyof LayeredSoundEventMap>(
-    type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions
-  ): void
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | AddEventListenerOptions,
-  ): void {
-    super.addEventListener(type, listener as EventListener, options)
-  }
-
-  /**
-   * Remove a typed event listener for LayeredSound lifecycle events.
-   * Overloaded to provide type safety for known event types while remaining
-   * compatible with EventTarget.
-   *
-   * @param type - The event type ('play', 'stop', 'end', 'warning')
-   * @param listener - The event handler function to remove
-   * @param options - Standard removeEventListener options
-   */
-  override removeEventListener<K extends keyof LayeredSoundEventMap>(
-    type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void,
-    options?: boolean | EventListenerOptions
-  ): void
-  override removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | EventListenerOptions
-  ): void
-  override removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | ((event: CustomEvent) => void) | null,
-    options?: boolean | EventListenerOptions,
-  ): void {
-    super.removeEventListener(type, listener as EventListener, options)
-  }
-
-  /**
-   * Emit a typed event with the given detail.
-   * @protected
-   * @param type - The event type to emit
-   * @param detail - The event detail object
-   */
-  protected emit<K extends keyof LayeredSoundEventMap>(
-    type: K,
-    detail: LayeredSoundEventMap[K]['detail'],
-  ): void {
-    const event = new CustomEvent(type, { detail })
-    this.dispatchEvent(event)
-  }
-
-  // ===== Convenience Methods (.on/.once/.off) =====
-
-  /**
-   * Subscribe to one or more events. Supports chaining.
-   *
-   * @example
-   * ```typescript
-   * layered.on('play', handlePlay).on('stop', handleStop);
-   * layered.on(['play', 'stop'], handleBoth);
-   * ```
-   *
-   * @param type - The event type(s) to subscribe to
-   * @param listener - The event handler function
-   * @returns this for chaining
-   */
-  on<K extends keyof LayeredSoundEventMap>(
-    type: K | K[],
-    listener: (event: LayeredSoundEventMap[K]) => void,
-  ): this {
-    if (Array.isArray(type)) {
-      type.forEach(t => this.addEventListener(t, listener as (event: LayeredSoundEventMap[typeof t]) => void))
-    }
-    else {
-      this.addEventListener(type, listener)
-    }
-    return this
-  }
-
-  /**
-   * Subscribe to an event once. Handler is removed after first invocation.
-   *
-   * @example
-   * ```typescript
-   * layered.once('end', () => console.log('All layers finished'));
-   * ```
-   *
-   * @param type - The event type to subscribe to
-   * @param listener - The event handler function
-   * @returns this for chaining
-   */
-  once<K extends keyof LayeredSoundEventMap>(
-    type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void,
-  ): this {
-    this.addEventListener(type, listener, { once: true })
-    return this
-  }
-
-  /**
-   * Unsubscribe from an event.
-   *
-   * Note: Due to native EventTarget limitations, you must provide the same
-   * listener function reference that was used when subscribing. To remove
-   * listeners, store the function reference when adding it.
-   *
-   * @example
-   * ```typescript
-   * const handler = (e) => console.log(e.detail);
-   * layered.on('play', handler);
-   * // later...
-   * layered.off('play', handler);
-   * ```
-   *
-   * @param type - The event type to unsubscribe from
-   * @param listener - The event handler function to remove
-   * @returns this for chaining
-   */
-  off<K extends keyof LayeredSoundEventMap>(
-    type: K,
-    listener: (event: LayeredSoundEventMap[K]) => void,
-  ): this {
-    this.removeEventListener(type, listener)
-    return this
   }
 }
