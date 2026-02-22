@@ -320,7 +320,10 @@ Plans:
   3. Integration tests cover Track+effects, Oscillator+filters, BeatTrack+effects, Sampler, and LayeredSound
   4. All `waitForTimeout(3000)` calls replaced with condition-based waits (`waitForSelector`, `waitForFunction`)
   5. At least one Playwright test runs with a mobile viewport configuration
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 31-01-PLAN.md — E2E interaction tests: replace waitForTimeout, add DOM verification, mobile viewport
+- [ ] 31-02-PLAN.md — Integration test additions: Oscillator+filters, Sampler, LayeredSound suites
 
 ## Progress
 
@@ -356,7 +359,7 @@ Plans:
 | 28. Documentation Corrections | 2/2 | Complete    | 2026-02-22 | - |
 | 29. Demo Component Fixes | 3/3 | Complete    | 2026-02-22 | - |
 | 30. Test Coverage Expansion | 3/3 | Complete    | 2026-02-22 | - |
-| 31. E2E & Integration Test Expansion | v1.0 Stable | 0/? | Pending | - |
+| 31. E2E & Integration Test Expansion | v1.0 Stable | 0/2 | Pending | - |
 
 ---
 
@@ -364,4 +367,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after Phase 30 planning (3 plans created)*
+*Last updated: 2026-02-22 after Phase 31 planning (2 plans created)*
