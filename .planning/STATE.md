@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In progress
 Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: t
 | Phase 30-test-coverage-expansion P03 | 3min | 2 tasks | 2 files |
 | Phase 31-e2e-integration-test-expansion P01 | 2min | 2 tasks | 3 files |
 | Phase 31-e2e-integration-test-expansion P02 | 2min | 2 tasks | 1 files |
+| Phase 33-dx-convenience-apis P02 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,9 @@ Recent decisions affecting current work:
 - [Phase 31-e2e-integration-test-expansion]: Mobile viewport for E2E uses iPhone 14 dimensions (390x844) via test.use({ viewport })
 - [Phase 31-02]: Oscillator filter API uses named options (lowpass/highpass/bandpass) not a filters array — plan test code had wrong signature, corrected
 - [Phase 31-02]: LayeredSound.play() calls layer.playAt(startTime) for exact sync — spy target must be playAt not play in integration tests
+- [Phase 33-dx-convenience-apis]: createAnalyzer overload in index.ts (not analyzer.ts) — index.ts has getOrCreateAudioContext() access; keeps Analyzer class dependency-free
+- [Phase 33-dx-convenience-apis]: note option takes precedence over frequency in OscillatorOptions — note is higher-level API; frequencyMap cast as Record<string, number> for string key lookup
+- [Phase 33-dx-convenience-apis]: BeatTrack.setPattern shorter arrays default remaining beats to inactive — prevents stale state from prior patterns
 
 ### Pending Todos
 
