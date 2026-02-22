@@ -1,6 +1,6 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 28 complete: documentation corrections and feature narrative docs)
+**Last Updated:** 2026-02-22 (Phase 29-01 complete: demo component API misuse bug fixes)
 **Current Focus:** Phase 29 — Demo Component Fixes
 
 ## Project Reference
@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 29 of 31 (Demo Component Fixes)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-22 — Phase 28 complete (2 plans, 10/10 success criteria verified)
+Plan: 1 of 3 complete
+Status: In Progress
+Last activity: 2026-02-22 — Phase 29-01 complete (2 tasks, 3 files, demo component bug fixes)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 96%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Last activity: 2026-02-22 — Phase 28 complete (2 plans, 10/10 success criteria
 | Phase 27-package-quality-readme P01 | 2min | 2 tasks | 4 files |
 | Phase 28-documentation-corrections P01 | 8min | 2 tasks | 8 files |
 | Phase 28 P02 | 2min | 2 tasks | 1 files |
+| Phase 29-demo-component-fixes P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,9 @@ Recent decisions affecting current work:
 - [Phase 28-documentation-corrections]: Effect bypass auto-rewires chain — manual rewireEffects() after bypass toggle removed from docs
 - [Phase 28]: Envelope section placed under ADSR Envelope subsection — logical grouping since Envelope class powers oscillator envelopes
 - [Phase 28]: Preloading Audio section added alongside Cache Management — natural pairing for load/clear workflow
+- [Phase 29-demo-component-fixes]: SampledDrumKit cleanup: null references not stop() — Sampler has no stop() method; one-shot sounds complete naturally
+- [Phase 29-demo-component-fixes]: DrumMachineVue BPM: setTempo() directly from watch — no stop/restart gap; setTempo updates on next scheduler tick
+- [Phase 29-demo-component-fixes]: FilterDemo bypass: filter.bypass direct assignment — Phase 19 auto-rewire handles chain reconnect; no rewireEffects() needed
 
 ### Pending Todos
 
@@ -139,6 +143,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Completed 27-01-PLAN.md
+Last session: 2026-02-22
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
