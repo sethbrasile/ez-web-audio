@@ -156,13 +156,55 @@ export function createNotes(json?: Record<string, number>): Note[] {
 }
 
 /**
- * Create a Sound from an audio file URL.
+ * Union type for audio input sources accepted by factory functions.
+ *
+ * - `string`: URL to an audio file (fetched via network)
+ * - `ArrayBuffer`: Raw decoded audio data (decoded directly)
+ * - `Blob`: Binary audio data (e.g., from File API or fetch response)
+ * - `File`: File selected via `<input type="file">` or drag-and-drop
+ *
+ * @example
+ * ```typescript
+ * import type { AudioInput } from 'ez-web-audio'
+ *
+ * async function loadAudio(input: AudioInput) {
+ *   return createSound(input)
+ * }
+ * ```
+ */
+export type AudioInput = string | ArrayBuffer | Blob | File
+
+/**
+ * Load an ArrayBuffer (or Blob/File converted to ArrayBuffer) into a Sound or Track.
+ * @private
+ */
+async function loadFromBuffer(
+  buffer: ArrayBuffer,
+  type: 'sound' | 'track',
+): Promise<Sound | Track> {
+  await initAudio()
+  const audioContext = getOrCreateAudioContext()
+  let audioBuffer: AudioBuffer
+  try {
+    audioBuffer = await audioContext.decodeAudioData(buffer)
+  }
+  catch {
+    throw new AudioLoadError(
+      'Failed to decode audio. ArrayBuffer may be corrupted or unsupported format.',
+      '[ArrayBuffer]',
+    )
+  }
+  return createSoundFor(type, audioBuffer)
+}
+
+/**
+ * Create a Sound from an audio file URL, ArrayBuffer, Blob, or File.
  *
  * Sound is for one-shot audio playback (sound effects, UI sounds). Each call to
  * `.play()` creates a new audio source, allowing overlapping playback.
  * Use {@link createTrack} instead for music with pause/resume/seek.
  *
- * @param url - URL to the audio file (local path, relative URL, or absolute URL)
+ * @param input - URL string, ArrayBuffer, Blob, or File containing audio data
  * @returns Promise resolving to a Sound instance
  * @throws {AudioLoadError} If the audio file cannot be loaded or decoded
  *
@@ -170,30 +212,43 @@ export function createNotes(json?: Record<string, number>): Note[] {
  * ```typescript
  * import { createSound } from 'ez-web-audio'
  *
+ * // From URL
  * const click = await createSound('click.mp3')
  * click.play()
  *
- * // Sounds can overlap
- * click.play()
- * click.play()
+ * // From ArrayBuffer (e.g., from fetch or File API)
+ * const response = await fetch('click.mp3')
+ * const buffer = await response.arrayBuffer()
+ * const click2 = await createSound(buffer)
  *
- * // Control volume
- * click.changeGainTo(0.5)
- * click.play()
+ * // From File (e.g., drag-and-drop)
+ * input.addEventListener('change', async (e) => {
+ *   const file = e.target.files[0]
+ *   const sound = await createSound(file)
+ *   sound.play()
+ * })
  * ```
  */
-export function createSound(url: string): Promise<Sound> {
-  return load(url, 'sound') as Promise<Sound>
+export async function createSound(input: AudioInput): Promise<Sound> {
+  if (typeof input === 'string') {
+    return load(input, 'sound') as Promise<Sound>
+  }
+  if (input instanceof ArrayBuffer) {
+    return loadFromBuffer(input, 'sound') as Promise<Sound>
+  }
+  // Blob or File
+  const buffer = await input.arrayBuffer()
+  return loadFromBuffer(buffer, 'sound') as Promise<Sound>
 }
 
 /**
- * Create a Track from an audio file URL.
+ * Create a Track from an audio file URL, ArrayBuffer, Blob, or File.
  *
  * Track extends Sound with position tracking, pause/resume, and seeking.
  * Use Track for music or longer audio where users need playback control.
  * Unlike Sound, only one playback can be active at a time.
  *
- * @param url - URL to the audio file (local path, relative URL, or absolute URL)
+ * @param input - URL string, ArrayBuffer, Blob, or File containing audio data
  * @returns Promise resolving to a Track instance
  * @throws {AudioLoadError} If the audio file cannot be loaded or decoded
  *
@@ -208,15 +263,24 @@ export function createSound(url: string): Promise<Sound> {
  * song.pause()
  * song.resume()
  *
- * // Seek to 30 seconds
- * song.seek(30).as('seconds')
+ * // From ArrayBuffer
+ * const buffer = await fetch('song.mp3').then(r => r.arrayBuffer())
+ * const song2 = await createTrack(buffer)
  *
  * // Get current position
  * console.log(song.position.string) // '0:30'
  * ```
  */
-export async function createTrack(url: string): Promise<Track> {
-  return load(url, 'track') as Promise<Track>
+export async function createTrack(input: AudioInput): Promise<Track> {
+  if (typeof input === 'string') {
+    return load(input, 'track') as Promise<Track>
+  }
+  if (input instanceof ArrayBuffer) {
+    return loadFromBuffer(input, 'track') as Promise<Track>
+  }
+  // Blob or File
+  const buffer = await input.arrayBuffer()
+  return loadFromBuffer(buffer, 'track') as Promise<Track>
 }
 
 /**
@@ -253,6 +317,44 @@ export async function createSounds(
     loaded++
     onProgress?.(loaded, total, url)
     return sound
+  })
+
+  return Promise.all(promises)
+}
+
+/**
+ * Load multiple tracks from an array of URLs with optional progress tracking.
+ *
+ * Mirrors {@link createSounds} but returns Track instances. Loads all tracks
+ * in parallel for speed. Progress callback fires after each track finishes loading.
+ *
+ * @param urls - Array of audio file URLs to load
+ * @param onProgress - Optional callback fired after each track loads
+ * @returns Promise resolving to array of Track instances
+ * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
+ *
+ * @example
+ * ```typescript
+ * import { createTracks } from 'ez-web-audio'
+ *
+ * const tracks = await createTracks(
+ *   ['intro.mp3', 'verse.mp3', 'chorus.mp3'],
+ *   (loaded, total, url) => console.log(`Loaded ${loaded}/${total}: ${url}`)
+ * )
+ * ```
+ */
+export async function createTracks(
+  urls: string[],
+  onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Track[]> {
+  const total = urls.length
+  let loaded = 0
+
+  const promises = urls.map(async (url) => {
+    const track = await load(url, 'track') as Track
+    loaded++
+    onProgress?.(loaded, total, url)
+    return track
   })
 
   return Promise.all(promises)
@@ -785,7 +887,22 @@ export {
   wrapEffect,
 }
 
-export type { LayeredSoundEventMap, WarningEventDetail } from './events/event-types'
+export type {
+  AudioEventSource,
+  BeatEventDetail,
+  BeatTrackEventMap,
+  EndEventDetail,
+  EventDetailFor,
+  LayeredSoundEventMap,
+  PauseEventDetail,
+  PlayEventDetail,
+  ResumeEventDetail,
+  SeekEventDetail,
+  SoundEventMap,
+  SoundEventType,
+  StopEventDetail,
+  WarningEventDetail,
+} from './events/event-types'
 // Re-export LayeredSound types
 export { LayeredSound } from './layered-sound'
 export type { LayeredSoundOptions } from './layered-sound'

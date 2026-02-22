@@ -2,9 +2,29 @@
  * Event type definitions for audio lifecycle events.
  *
  * These types enable type-safe event handling throughout the library.
- * The source property uses `unknown` to avoid circular imports - consumers
- * should type-narrow using instanceof checks when needed.
+ * The source property is typed as {@link AudioEventSource} — a union of all
+ * classes that emit events. Use instanceof checks to narrow to a specific class.
  */
+import type { BaseSound } from '../base-sound'
+import type { BeatTrack } from '../beat-track'
+import type { LayeredSound } from '../layered-sound'
+
+/**
+ * Union of all classes that emit events in ez-web-audio.
+ *
+ * Event detail `source` fields are typed as `AudioEventSource` instead of `unknown`.
+ * Use instanceof checks to narrow to a specific class:
+ *
+ * @example
+ * ```typescript
+ * sound.on('play', (e) => {
+ *   if (e.detail.source instanceof Sound) {
+ *     console.log('played by a Sound')
+ *   }
+ * })
+ * ```
+ */
+export type AudioEventSource = BaseSound | BeatTrack | LayeredSound
 
 /**
  * Detail for 'play' events, fired when audio playback starts.
@@ -13,7 +33,7 @@ export interface PlayEventDetail {
   /** The audioContext.currentTime when playback started */
   time: number
   /** The sound instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
 }
 
 /**
@@ -23,7 +43,7 @@ export interface StopEventDetail {
   /** The audioContext.currentTime when playback stopped */
   time: number
   /** The sound instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
 }
 
 /**
@@ -33,7 +53,7 @@ export interface EndEventDetail {
   /** The audioContext.currentTime when playback ended */
   time: number
   /** The sound instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
   /** The duration of the audio that played (in seconds) */
   duration: number
 }
@@ -45,7 +65,7 @@ export interface PauseEventDetail {
   /** The audioContext.currentTime when pause occurred */
   time: number
   /** The Track instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
   /** The playback position (in seconds) where the track was paused */
   position?: number
   /** For BeatTrack: the beat index where paused */
@@ -59,7 +79,7 @@ export interface ResumeEventDetail {
   /** The audioContext.currentTime when resume occurred */
   time: number
   /** The Track instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
   /** The playback position (in seconds) where the track resumed */
   position?: number
   /** For BeatTrack: the beat index where resumed */
@@ -73,7 +93,7 @@ export interface SeekEventDetail {
   /** The audioContext.currentTime when seek occurred */
   time: number
   /** The Track instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
   /** The new playback position (in seconds) */
   position: number
   /** The previous playback position (in seconds) before the seek */
@@ -134,7 +154,7 @@ export interface BeatEventDetail {
   /** Whether this beat is active (plays sound) or a rest */
   active: boolean
   /** The BeatTrack instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
 }
 
 /**
@@ -156,7 +176,7 @@ export interface WarningEventDetail {
   /** Array of layers that failed to load */
   failedLayers: { index: number, error: Error }[]
   /** The LayeredSound instance that emitted this event */
-  source: unknown
+  source: AudioEventSource
 }
 
 /**
