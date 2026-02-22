@@ -259,9 +259,9 @@ Plans:
   4. `addEffect()` JSDoc in base-sound.ts uses current context-free factory signature
   5. `rewireEffects()` documentation is consistent — auto-rewire for bypass, manual only for add/remove
   6. Synth keyboard example has `async` on functions using `await`
-  7. AudioSprite/createSprite has narrative docs and example page
-  8. crossfade utility has narrative docs and example
-  9. playTogether utility has narrative docs and example
+  7. AudioSprite/createSprite has narrative docs (example page deferred to Phase 25)
+  8. crossfade utility has narrative docs (example deferred to Phase 25)
+  9. playTogether utility has narrative docs (example deferred to Phase 25)
   10. useInteractionMethods, preventEventDefaults, clearPreloadCache, debug utilities, and Envelope class all documented
 **Plans**: 2 plans
 Plans:
