@@ -65,9 +65,17 @@ onUnmounted(() => {
   // Cleanup
   try {
     if (font) {
-      // Font doesn't have a global stop method, individual notes decay naturally
+      // Stop any currently playing notes before disposing
+      const notes = font.notes as any[]
+      for (const note of notes) {
+        if (note.isPlaying) {
+          try { note.stop() }
+          catch {}
+        }
+      }
       font = null
     }
+    activeNotes.value.clear()
   }
   catch (e) {
     // Ignore cleanup errors
