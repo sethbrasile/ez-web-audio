@@ -38,7 +38,9 @@ export async function preload(urls: string | string[]): Promise<void> {
 
   for (const result of results) {
     if (result.status === 'fulfilled') {
-      responseCache.set(result.value.url, result.value.response)
+      // Store a clone so the cached response body is always unconsumed.
+      // Response.body can only be read once; cloning preserves re-readability.
+      responseCache.set(result.value.url, result.value.response.clone())
     }
     else {
       errors.push(result.reason.message)

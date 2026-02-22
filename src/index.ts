@@ -450,8 +450,10 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
         audioUrl,
       )
     }
-    responseCache.set(audioUrl, response)
-    buffer = await audioContext.decodeAudioData(await response.clone().arrayBuffer())
+    // Store a clone so the cached response body is always unconsumed.
+    // Response.body can only be read once; always store a fresh clone.
+    responseCache.set(audioUrl, response.clone())
+    buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
   }
 
   return new AudioSprite(audioContext, buffer, manifest)
@@ -552,13 +554,15 @@ async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track
     )
   }
 
-  responseCache.set(src, response)
+  // Store a clone so the cached response body is always unconsumed.
+  // Response.body can only be read once; always store a fresh clone.
+  responseCache.set(src, response.clone())
 
   await initAudio()
 
   let buffer: AudioBuffer
   try {
-    buffer = await audioContext.decodeAudioData(await response.clone().arrayBuffer())
+    buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
   }
   catch {
     throw new AudioLoadError(
