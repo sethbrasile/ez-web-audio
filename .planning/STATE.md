@@ -54,6 +54,7 @@ Last activity: 2026-02-20 — Completed Tasks 1-3 of 24-01 (verification docs cr
 | Phase 26-source-code-fixes P03 | 10min | 2 tasks | 3 files |
 | Phase 26-source-code-fixes P04 | 6min | 2 tasks | 6 files |
 | Phase 26-source-code-fixes P02 | 7 | 2 tasks | 5 files |
+| Phase 26-source-code-fixes P05 | 9min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,7 @@ Recent decisions affecting current work:
 - [Phase 26-02]: seek().as() returns Promise<void> — callers seeking while playing must await to avoid race with stop()
 - [Phase 26-02]: _isPaused explicit flag preferred over startOffset > 0 guard — startOffset can be 0 when track is paused at start
 - [Phase 26-02]: Track._onPlaybackStarted() is the single onended owner for Track; BaseSound.playAt() sets it first then Track overrides — intentional
+- [Phase 26-source-code-fixes]: Phase 26-05: Oscillator GainNode disconnect wrapped in try/catch; AudioSprite activeSources only tracks looping sprites; LayeredSound layerEndHandlers Map for reliable off() deduplication
 
 ### Pending Todos
 

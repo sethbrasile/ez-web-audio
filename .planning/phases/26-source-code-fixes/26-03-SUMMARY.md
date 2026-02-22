@@ -113,6 +113,15 @@ None - no external service configuration required.
 - Resume timing is correct: no catch-up beats after pause
 - Beat flag lifecycle is complete: `playIn()` resets flags after `duration` ms
 
+## Self-Check: PASSED
+
+- FOUND: src/beat-track.ts
+- FOUND: src/beat.ts
+- FOUND: 26-03-SUMMARY.md
+- FOUND: ff1d917 (feat: differentiate playBeats vs playActiveBeats, fix resume timing)
+- FOUND: 257bc9a (fix: schedule flag reset in Beat.playIn() after duration elapses)
+- FOUND: 07498b6 (docs: complete plan)
+
 ---
 *Phase: 26-source-code-fixes*
 *Completed: 2026-02-22*
