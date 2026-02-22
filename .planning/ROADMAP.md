@@ -41,7 +41,7 @@
 
 </details>
 
-### 🚧 v1.0 First Stable Release (Phases 17-31)
+### 🚧 v1.0 First Stable Release (Phases 17-38)
 
 **Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
 
@@ -60,6 +60,13 @@
 - [x] **Phase 29: Demo Component Fixes** - Fix demo bugs, accessibility issues, and polish (completed 2026-02-22)
 - [x] **Phase 30: Test Coverage Expansion** - Add tests for untested modules and missing scenarios (completed 2026-02-22)
 - [x] **Phase 31: E2E & Integration Test Expansion** - Add interaction E2E tests, integration coverage, mobile viewport testing (completed 2026-02-22)
+- [ ] **Phase 32: Critical Fixes & API Contract Corrections** - Fix bugs, type contract violations, and safety issues found in comprehensive code review
+- [ ] **Phase 33: DX Convenience APIs** - Add fadeIn/fadeOut, loop, dispose, note-based oscillators, and pattern-setting convenience methods
+- [ ] **Phase 34: Test Gap Closure** - Add tests for untested factory functions, guards, cleanup methods, and edge cases
+- [ ] **Phase 35: Documentation Expansion & Fixes** - Add missing example pages, fix incorrect code examples, split oversized guide pages
+- [ ] **Phase 36: Documentation Sync (Post-Fixes)** - Cross-reference all Phase 32-35 changes against docs, verify every API is accurately documented
+- [ ] **Phase 37: Nice-to-Have DX Features** - ArrayBuffer/Blob input, noise types, volume alias, createTracks, event type improvements, DRY event system
+- [ ] **Phase 38: Final Documentation Sync** - Document all Phase 37 additions, final verification pass, CHANGELOG update, release gate
 
 ## Phase Details
 
@@ -325,6 +332,109 @@ Plans:
 - [ ] 31-01-PLAN.md — E2E interaction tests: replace waitForTimeout, add DOM verification, mobile viewport
 - [ ] 31-02-PLAN.md — Integration test additions: Oscillator+filters, Sampler, LayeredSound suites
 
+### Phase 32: Critical Fixes & API Contract Corrections
+**Goal**: All bugs, type contract violations, and safety issues identified in comprehensive code review are fixed
+**Depends on**: Phase 31
+**Requirements**: FIX-01 through FIX-09
+**Gap Closure**: Closes code review critical findings C-1 through C-5, S-1, S-2, S-5, S-12
+**Success Criteria** (what must be TRUE):
+  1. MIT LICENSE file exists at project root and is included in npm package
+  2. `AudioSprite` with `loop: true` actually loops (duration arg not passed to `source.start()` when looping)
+  3. `EnvelopeOptions` uses short property names (`attack`, `decay`, `sustain`, `release`) matching standard ADSR convention and all JSDoc examples
+  4. `Playable` interface return types match implementations (`Promise<void>` for async methods)
+  5. Stale setTimeout from previous play cannot corrupt `_isPlaying` of current play (timeout ID stored and cancelled in `stop()`)
+  6. `Sound` constructor `opts` parameter is typed (not `any`)
+  7. `createFont()` checks `response.ok` and wraps fetch in try/catch with descriptive errors
+  8. `CLAUDE.md` uses `.as('ratio')` not `.from('ratio')`
+  9. `Oscillator.setup()` documents or mitigates GainNode replacement (consumers warned about cached references)
+**Plans**: TBD
+
+### Phase 33: DX Convenience APIs
+**Goal**: Common audio operations that currently require multiple API calls are available as single convenience methods
+**Depends on**: Phase 32
+**Requirements**: DX2-01 through DX2-06
+**Success Criteria** (what must be TRUE):
+  1. `sound.fadeIn(duration)` plays with a gain ramp from 0 to current gain over `duration` seconds
+  2. `sound.fadeOut(duration)` ramps gain to 0 over `duration` seconds then stops
+  3. `Sound.loop` and `Track.loop` properties enable native looping without timing gaps
+  4. `BaseSound.dispose()` disconnects all audio nodes, removes event listeners, and marks instance as disposed
+  5. `createAnalyzer()` has an overload that works without AudioContext parameter (matching other factory patterns)
+  6. `createOscillator({ note: 'A4' })` accepts a note name and looks up frequency from `frequencyMap`
+  7. `BeatTrack.setPattern([1,0,1,0])` sets beat active states from an array
+**Plans**: TBD
+
+### Phase 34: Test Gap Closure
+**Goal**: All untested public methods, guards, and edge cases identified in test coverage review are covered
+**Depends on**: Phase 33 (test the new APIs too)
+**Requirements**: TEST2-01 through TEST2-09
+**Success Criteria** (what must be TRUE):
+  1. Factory functions (`createSound`, `createTrack`, `createSounds`, `createBeatTrack`, `createSampler`, `createFont`, `createSprite`) have dedicated tests including error paths
+  2. Oscillator `frequency: 0` behavior is consistent between source guard and test (contradiction resolved)
+  3. `AudioSprite.stop(name)` and `stopAll()` have test coverage
+  4. `changeGainTo()` negative value rejection and gain > 1 warning are tested
+  5. `getGainNode()` returns correct node and is tested
+  6. `addEffects()` happy path (batch adding multiple effects) is tested
+  7. `BeatTrack.on()`, `.off()`, `.once()` convenience methods are tested
+  8. `Envelope.estimateCurrentValue()` and `isActive` are tested through lifecycle
+  9. `Analyzer.fftSize` setter validation (non-power-of-2 rejection) is tested
+**Plans**: TBD
+
+### Phase 35: Documentation Expansion & Fixes
+**Goal**: Every significant library feature has an interactive example, all code examples are correct, and guides are well-organized
+**Depends on**: Phase 33 (document new convenience APIs)
+**Requirements**: DOC2-01 through DOC2-09
+**Success Criteria** (what must be TRUE):
+  1. AudioSprite interactive example page exists with Vue demo component
+  2. LayeredSound interactive example page exists with Vue demo component
+  3. Crossfade interactive demo page exists with Vue demo component
+  4. React integration example exists (hooks pattern with useRef, useEffect)
+  5. `concepts.md` split into focused pages (concepts, parameter-control, utilities) each under ~250 lines
+  6. `changeFrequencyTo()` removed from synthesis.md, replaced with correct `.update('frequency')` API
+  7. `audio-routing.md` uses recommended 1-arg `wrapEffect()` form consistently
+  8. All example pages have proper `<script setup>` imports for their components
+  9. Integration patterns (Vue, Vanilla TS) listed on examples index page
+**Plans**: TBD
+
+### Phase 36: Documentation Sync (Post-Fixes)
+**Goal**: All documentation accurately reflects every change made in Phases 32-35
+**Depends on**: Phase 35
+**Requirements**: SYNC-01 through SYNC-04
+**Success Criteria** (what must be TRUE):
+  1. Every public API method signature in guide/example pages matches actual implementation
+  2. Every code example in docs compiles against current TypeScript types (no references to removed/renamed APIs)
+  3. API reference (TypeDoc) regenerated and reflects Phase 32-33 changes
+  4. Navigation sidebar, example index, and cross-links all resolve correctly
+  5. CHANGELOG.md updated with all Phase 32-35 changes
+**Plans**: TBD
+
+### Phase 37: Nice-to-Have DX Features
+**Goal**: The library covers all common audio development patterns with ergonomic APIs
+**Depends on**: Phase 34 (tests pass before adding new features)
+**Requirements**: DX3-01 through DX3-09
+**Success Criteria** (what must be TRUE):
+  1. `createSound()` and `createTrack()` accept `ArrayBuffer`, `Blob`, or `File` as input (not just URLs)
+  2. `createNoise('pink' | 'brown' | 'white')` factory exists for noise generation
+  3. `volume` is an alias property for gain on BaseSound (get/set)
+  4. `createTracks(urls[], onProgress?)` batch loader matches `createSounds()` pattern
+  5. Event detail `source` typed as `BaseSound | BeatTrack | LayeredSound` instead of `unknown`
+  6. `ControlType` narrowed per class — `Sound.update()` only accepts `'gain' | 'pan' | 'detune'`
+  7. `SoundEventType`, `BeatTrackEventMap`, `BeatEventDetail` exported from public API
+  8. Event system `on/off/once/emit` extracted into shared `TypedEventTarget<TMap>` mixin (DRY)
+  9. `onPlaySet()` behavior documented prominently — schedules consumed after one play
+**Plans**: TBD
+
+### Phase 38: Final Documentation Sync
+**Goal**: All Phase 37 additions are fully documented with examples, and the entire docs site is verified accurate
+**Depends on**: Phase 37
+**Requirements**: SYNC2-01 through SYNC2-04
+**Success Criteria** (what must be TRUE):
+  1. All Phase 37 new APIs (ArrayBuffer input, noise types, volume alias, createTracks, typed events) have docs coverage
+  2. Every public export in `src/index.ts` has a corresponding mention in guide or example pages
+  3. Full lint + typecheck + test suite passes
+  4. CHANGELOG.md has complete record of all Phases 32-38
+  5. Documentation site builds without warnings
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -360,6 +470,13 @@ Plans:
 | 29. Demo Component Fixes | 3/3 | Complete    | 2026-02-22 | - |
 | 30. Test Coverage Expansion | 3/3 | Complete    | 2026-02-22 | - |
 | 31. E2E & Integration Test Expansion | 2/2 | Complete    | 2026-02-22 | - |
+| 32. Critical Fixes & API Contracts | v1.0 Stable | 0/? | Pending | - |
+| 33. DX Convenience APIs | v1.0 Stable | 0/? | Pending | - |
+| 34. Test Gap Closure | v1.0 Stable | 0/? | Pending | - |
+| 35. Documentation Expansion & Fixes | v1.0 Stable | 0/? | Pending | - |
+| 36. Documentation Sync (Post-Fixes) | v1.0 Stable | 0/? | Pending | - |
+| 37. Nice-to-Have DX Features | v1.0 Stable | 0/? | Pending | - |
+| 38. Final Documentation Sync | v1.0 Stable | 0/? | Pending | - |
 
 ---
 
@@ -367,4 +484,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after Phase 31 planning (2 plans created)*
+*Last updated: 2026-02-22 after code review gap closure phases 32-38 created*
