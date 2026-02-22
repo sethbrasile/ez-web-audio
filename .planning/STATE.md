@@ -1,23 +1,23 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 33 complete: DX Convenience APIs)
-**Current Focus:** Phase 34 — Test Gap Closure
+**Last Updated:** 2026-02-22 (Phase 34 complete: Test Gap Closure)
+**Current Focus:** Phase 35 — Documentation Expansion & Fixes
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 34 — Test Gap Closure
+**Current focus:** Phase 35 — Documentation Expansion & Fixes
 
 ## Current Position
 
-Phase: 34 of 38 (Test Gap Closure)
-Plan: 2 of TBD
-Status: In progress
-Last activity: 2026-02-22 — Phase 34-02 complete (changeGainTo guards, getGainNode, addEffects happy path, BeatTrack on/off/once tests)
+Phase: 35 of 38 (Documentation Expansion & Fixes)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions, oscillator freq:0, sprite stop, gain guards, effects batch, BeatTrack events)
 
-**Progress:** [██████████] 99%
+**Progress:** [████████████████████] 92/93 plans (99%)
 
 ## Performance Metrics
 
@@ -180,5 +180,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 33 complete, ready to plan Phase 34
+Stopped at: Phase 34 complete, ready to plan Phase 35
 Resume file: None
