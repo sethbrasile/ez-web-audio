@@ -3,6 +3,7 @@ import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
 import type { EnvelopeOptions } from './envelope'
 import createTimeObject from '@utils/create-time-object'
+import frequencyMap from '@utils/frequency-map'
 import { get } from '@utils/prop-access'
 import { BaseSound } from './base-sound'
 import { OscillatorController } from './controllers/oscillator-controller'
@@ -43,6 +44,18 @@ export interface OscillatorFilterOptions {
 export interface OscillatorOptions extends BaseSoundOptions {
   /** Starting offset in seconds (rarely used for oscillators). */
   startOffset?: number
+  /**
+   * Note name (e.g., 'A4', 'C3', 'Eb5'). Looked up in the frequency map.
+   * Takes precedence over `frequency` if both provided.
+   * Use flat notation (Db, Eb, Gb, Ab, Bb) not sharp notation.
+   *
+   * @example
+   * ```typescript
+   * // Play middle C
+   * const osc = await createOscillator({ note: 'C4', type: 'sine' })
+   * ```
+   */
+  note?: string
   /** Base frequency in Hz (default: 440). */
   frequency?: number
   /** Detune in cents (100 cents = 1 semitone). */
@@ -149,7 +162,20 @@ export class Oscillator extends BaseSound {
   constructor(audioContext: AudioContext, options?: OscillatorOptions) {
     super(audioContext, options)
     this.type = options?.type || 'sine'
-    this.freq = options?.frequency || 440
+
+    if (options?.note) {
+      const freq = (frequencyMap as Record<string, number>)[options.note]
+      if (freq === undefined) {
+        throw new Error(
+          `Unknown note "${options.note}". Valid notes: C0-B8 with accidentals (e.g., A4, Db3, Eb5). `
+          + `Use flat notation (Db, Eb, Gb, Ab, Bb) not sharp notation.`,
+        )
+      }
+      this.freq = freq
+    }
+    else {
+      this.freq = options?.frequency || 440
+    }
 
     if (this.freq <= 0) {
       throw new Error(`Oscillator frequency must be greater than 0. Received: ${this.freq}`)
@@ -226,6 +252,11 @@ export class Oscillator extends BaseSound {
    * Set up a fresh OscillatorNode for playback.
    * Called automatically before each play() since OscillatorNode is single-use.
    * @protected
+   * @remarks
+   * **Warning:** This method replaces the internal GainNode. If you have cached a
+   * reference to the GainNode (e.g. via `getGainNode()`), the cached reference becomes
+   * stale after `play()` is called. Always re-fetch the GainNode after play() if you
+   * need a live reference.
    */
   protected setup(): void {
     // Create a new oscillator on every play
@@ -384,7 +415,7 @@ export class Oscillator extends BaseSound {
       const releaseTime = this.audioContext.currentTime
       this.controller.triggerRelease(releaseTime)
       // Schedule actual stop after release completes
-      const releaseEndTime = releaseTime + this.envelope.releaseTime
+      const releaseEndTime = releaseTime + this.envelope.release
       await this.stopAt(releaseEndTime)
     }
     else {

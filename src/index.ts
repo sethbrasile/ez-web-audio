@@ -19,7 +19,7 @@ import { Oscillator } from '@/oscillator'
 import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
-import { Analyzer, createAnalyzer } from './analyzer'
+import { Analyzer } from './analyzer'
 import { getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
@@ -349,11 +349,56 @@ export async function createSampler(urls: string[], opts?: SamplerOptions): Prom
  *   envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.5 }
  * })
  * piano.play()
+ *
+ * // Using note name instead of frequency
+ * const a4 = await createOscillator({ note: 'A4', type: 'sine' })
+ * a4.play()
  * ```
  */
 export async function createOscillator(options?: OscillatorOptions): Promise<Oscillator> {
   await initAudio()
   return new Oscillator(getOrCreateAudioContext(), options)
+}
+
+/**
+ * Create an Analyzer for audio visualization.
+ *
+ * The context-free overload uses the shared AudioContext created by the library,
+ * so you do not need to obtain an AudioContext manually.
+ *
+ * @param options - Optional analyzer configuration (fftSize, minDecibels, maxDecibels, smoothingTimeConstant)
+ * @returns Analyzer instance
+ *
+ * @example
+ * ```typescript
+ * import { createAnalyzer } from 'ez-web-audio'
+ *
+ * // Context-free — no AudioContext needed
+ * const analyzer = createAnalyzer({ fftSize: 1024 })
+ * sound.setAnalyzer(analyzer)
+ *
+ * // With explicit AudioContext
+ * const ctx = await getAudioContext()
+ * const analyzer2 = createAnalyzer(ctx, { fftSize: 2048 })
+ *
+ * function visualize() {
+ *   const freqData = analyzer.getFrequencyData()
+ *   // Use freqData for visualization
+ *   requestAnimationFrame(visualize)
+ * }
+ * visualize()
+ * ```
+ */
+export function createAnalyzer(options?: AnalyzerOptions): Analyzer
+export function createAnalyzer(audioContext: AudioContext, options?: AnalyzerOptions): Analyzer
+export function createAnalyzer(
+  audioContextOrOptions?: AudioContext | AnalyzerOptions,
+  maybeOptions?: AnalyzerOptions,
+): Analyzer {
+  if (audioContextOrOptions instanceof AudioContext) {
+    return new Analyzer(audioContextOrOptions, maybeOptions)
+  }
+  return new Analyzer(getOrCreateAudioContext(), audioContextOrOptions)
 }
 
 /**
@@ -408,14 +453,25 @@ export async function createLayeredSound(
  * ```
  */
 export async function createFont(url: string): Promise<Font> {
-  const response = await fetch(url)
-  const text = await response.text()
-  const audioData = mungeSoundFont(text)
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
-  const keyValuePairs = await extractDecodedKeyValuePairs(audioContext, audioData)
-  const notes = createNoteObjectsForFont(audioContext, keyValuePairs)
-  return new Font(notes)
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to load soundfont from "${url}": HTTP ${response.status} ${response.statusText}`)
+    }
+    const text = await response.text()
+    const audioData = mungeSoundFont(text)
+    await initAudio()
+    const audioContext = getOrCreateAudioContext()
+    const keyValuePairs = await extractDecodedKeyValuePairs(audioContext, audioData)
+    const notes = createNoteObjectsForFont(audioContext, keyValuePairs)
+    return new Font(notes)
+  }
+  catch (error) {
+    if (error instanceof Error && error.message.includes('Failed to load soundfont')) {
+      throw error
+    }
+    throw new Error(`Failed to load soundfont from "${url}": ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 /**
@@ -691,7 +747,6 @@ export {
   Beat,
   BeatTrack,
   clearPreloadCache,
-  createAnalyzer,
   createEffect,
   createFilterEffect,
   // Effects
