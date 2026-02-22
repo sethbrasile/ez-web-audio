@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In progress
 Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: t
 | Phase 30-test-coverage-expansion P01 | 8min | 2 tasks | 3 files |
 | Phase 30-test-coverage-expansion P03 | 3min | 2 tasks | 2 files |
 | Phase 31-e2e-integration-test-expansion P01 | 2min | 2 tasks | 3 files |
+| Phase 31-e2e-integration-test-expansion P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,8 @@ Recent decisions affecting current work:
 - [Phase 30-test-coverage-expansion]: BeatTrack/Sampler have no getEffects()/addEffect() — effects live on individual Sound instances within BeatTrack; integration tests verify per-Sound effect persistence
 - [Phase 31-e2e-integration-test-expansion]: waitForSelector('.VPContent') + waitForLoadState('networkidle') replaces waitForTimeout(3000) for VitePress SPA hydration
 - [Phase 31-e2e-integration-test-expansion]: Mobile viewport for E2E uses iPhone 14 dimensions (390x844) via test.use({ viewport })
+- [Phase 31-02]: Oscillator filter API uses named options (lowpass/highpass/bandpass) not a filters array — plan test code had wrong signature, corrected
+- [Phase 31-02]: LayeredSound.play() calls layer.playAt(startTime) for exact sync — spy target must be playAt not play in integration tests
 
 ### Pending Todos
 
