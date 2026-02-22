@@ -20,7 +20,8 @@ test.describe('Documentation Site Navigation', () => {
 
       await page.goto(pageInfo.path)
       await page.waitForLoadState('domcontentloaded')
-      await page.waitForTimeout(3000)
+      await page.waitForSelector('.VPContent', { timeout: 10000 })
+      await page.waitForLoadState('networkidle')
 
       // Verify no errors
       expect(errors, `${pageInfo.name} should have no errors`).toHaveLength(0)
@@ -30,7 +31,7 @@ test.describe('Documentation Site Navigation', () => {
   test('homepage has correct title', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('domcontentloaded')
-    await page.waitForTimeout(2000)
+    await page.waitForSelector('h1', { timeout: 10000 })
 
     // Check page title
     await expect(page).toHaveTitle(/EZ Web Audio/)

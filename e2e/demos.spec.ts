@@ -37,7 +37,8 @@ test.describe('Demo Pages - Error Detection', () => {
       // Navigate and wait
       await page.goto(path)
       await page.waitForLoadState('domcontentloaded')
-      await page.waitForTimeout(3000) // Wait for Vue hydration
+      await page.waitForSelector('.VPContent', { timeout: 10000 })
+      await page.waitForLoadState('networkidle')
 
       // Verify no uncaught errors
       expect(errors, `${path} should have no page errors`).toHaveLength(0)
