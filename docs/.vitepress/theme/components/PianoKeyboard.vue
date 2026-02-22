@@ -37,6 +37,7 @@ const keyboardMap: Record<string, string> = {
 // Track which keys are currently pressed to prevent key repeat
 const pressedKeys = ref(new Set<string>())
 const mouseDown = ref(false)
+const currentTouchNote = ref<string | null>(null)
 
 // Generate all notes from C4 to C5
 const allNotes = [
@@ -101,11 +102,50 @@ function handleMouseEnter(note: string) {
 }
 
 function handleTouchStart(event: TouchEvent, note: string) {
+  currentTouchNote.value = note
   emit('noteOn', note)
 }
 
-function handleTouchEnd(note: string) {
-  emit('noteOff', note)
+function handleTouchMove(event: TouchEvent) {
+  if (event.touches.length === 0) {
+    return
+  }
+
+  const touch = event.touches[0]
+  const element = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null
+  if (!element) {
+    return
+  }
+
+  // Walk up to find a .key element with aria-label containing the note
+  const keyEl = element.closest('.key') as HTMLElement | null
+  if (!keyEl) {
+    return
+  }
+
+  // Extract note from aria-label "Play C4" -> "C4"
+  const ariaLabel = keyEl.getAttribute('aria-label') || ''
+  const noteMatch = ariaLabel.match(/Play (.+)/)
+  if (!noteMatch) {
+    return
+  }
+
+  const newNote = noteMatch[1]
+  if (newNote !== currentTouchNote.value) {
+    // Finger moved to a different key
+    if (currentTouchNote.value) {
+      emit('noteOff', currentTouchNote.value)
+    }
+    currentTouchNote.value = newNote
+    emit('noteOn', newNote)
+  }
+}
+
+function handleTouchEnd() {
+  if (currentTouchNote.value) {
+    emit('noteOff', currentTouchNote.value)
+    currentTouchNote.value = null
+  }
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -159,7 +199,8 @@ onUnmounted(() => {
         @mouseleave="handleMouseLeave(key.note)"
         @mouseenter="handleMouseEnter(key.note)"
         @touchstart.prevent="handleTouchStart($event, key.note)"
-        @touchend.prevent="handleTouchEnd(key.note)"
+        @touchmove.prevent="handleTouchMove"
+        @touchend.prevent="handleTouchEnd"
       >
         <span class="key-label">{{ key.label }}</span>
       </div>
