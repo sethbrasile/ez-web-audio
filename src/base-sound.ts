@@ -58,7 +58,7 @@ export interface BaseSoundOptions {
  * sound.onPlayRamp('gain').from(1).to(0).in(2) // fade out over 2s
  *
  * // Add effects
- * const filter = createFilterEffect(ctx, 'lowpass', { frequency: 1000 })
+ * const filter = createFilterEffect('lowpass', { frequency: 1000 })
  * sound.addEffect(filter)
  *
  * // Listen for events

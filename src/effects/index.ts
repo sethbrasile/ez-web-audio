@@ -9,8 +9,8 @@
  * import { createSound, createGainEffect, createFilterEffect } from 'ez-web-audio'
  *
  * const sound = await createSound('audio.mp3')
- * const boost = createGainEffect(audioContext, 1.5)
- * const filter = createFilterEffect(audioContext, 'lowpass', { frequency: 800 })
+ * const boost = createGainEffect(1.5)
+ * const filter = createFilterEffect('lowpass', { frequency: 800 })
  *
  * sound.addEffect(boost)
  * sound.addEffect(filter)
