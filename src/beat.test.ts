@@ -1,6 +1,6 @@
 import type { BeatOptions } from '@/beat'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Beat } from '@/beat'
 import { mockSetTimeout, settle } from './test/helpers'
 
@@ -75,4 +75,148 @@ it('sets `isPlaying` to `true` when played and sets up a timer that sets `isPlay
   expect(beat.isPlaying).toBe(true)
 
   expect(await settle(() => beat.isPlaying)).toBe(false)
+})
+
+describe('playIfActive()', () => {
+  it('when active=true, calls parent play and sets isPlaying=true', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = true
+    beat.playIfActive()
+
+    expect(parent.playCalled).toBe(true)
+    expect(beat.isPlaying).toBe(true)
+  })
+
+  it('when active=false, does NOT call parent play and isPlaying stays false', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = false
+    beat.playIfActive()
+
+    expect(parent.playCalled).toBe(false)
+    expect(beat.isPlaying).toBe(false)
+  })
+
+  it('always sets currentTimeIsPlaying regardless of active state', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = false
+    beat.playIfActive()
+
+    expect(beat.currentTimeIsPlaying).toBe(true)
+  })
+
+  it('isPlaying resets to false after duration elapses', async () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = true
+    beat.playIfActive()
+
+    expect(beat.isPlaying).toBe(true)
+    expect(await settle(() => beat.isPlaying)).toBe(false)
+  })
+
+  it('currentTimeIsPlaying resets to false after duration elapses', async () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.playIfActive()
+
+    expect(beat.currentTimeIsPlaying).toBe(true)
+    expect(await settle(() => beat.currentTimeIsPlaying)).toBe(false)
+  })
+})
+
+describe('playInIfActive()', () => {
+  it('when active=true, calls parentPlayIn with the given offset', async () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = true
+    beat.playInIfActive(0.5)
+
+    expect(parent.playInCalled).toBe(true)
+    expect(parent.playInValue).toBe(0.5)
+  })
+
+  it('when active=false, does NOT call parentPlayIn', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = false
+    beat.playInIfActive(0.5)
+
+    expect(parent.playInCalled).toBe(false)
+  })
+
+  it('always sets currentTimeIsPlaying after offset elapses, even when inactive', async () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = false
+    beat.playInIfActive(0)
+
+    expect(await settle(() => beat.currentTimeIsPlaying)).toBe(true)
+  })
+
+  it('when active, both isPlaying and currentTimeIsPlaying are set after offset elapses', async () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+      duration: 1,
+      setTimeout: mockSetTimeout,
+    })
+
+    beat.active = true
+    beat.playInIfActive(0)
+
+    expect(await settle(() => beat.isPlaying)).toBe(true)
+    expect(beat.currentTimeIsPlaying).toBe(true)
+  })
 })
