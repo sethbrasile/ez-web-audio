@@ -65,7 +65,7 @@
 - [x] **Phase 34: Test Gap Closure** - Add tests for untested factory functions, guards, cleanup methods, and edge cases (completed 2026-02-22)
 - [x] **Phase 35: Documentation Expansion & Fixes** - Add missing example pages, fix incorrect code examples, split oversized guide pages (completed 2026-02-22)
 - [x] **Phase 36: Documentation Sync (Post-Fixes)** - Cross-reference all Phase 32-35 changes against docs, verify every API is accurately documented (completed 2026-02-22)
-- [ ] **Phase 37: Nice-to-Have DX Features** - ArrayBuffer/Blob input, noise types, volume alias, createTracks, event type improvements, DRY event system
+- [x] **Phase 37: Nice-to-Have DX Features** - ArrayBuffer/Blob input, noise types, volume alias, createTracks, event type improvements, DRY event system (completed 2026-02-22)
 - [ ] **Phase 38: Final Documentation Sync** - Document all Phase 37 additions, final verification pass, CHANGELOG update, release gate
 
 ## Phase Details
@@ -496,7 +496,7 @@ Plans:
 | 34. Test Gap Closure | 2/2 | Complete    | 2026-02-22 | - |
 | 35. Documentation Expansion & Fixes | 3/3 | Complete    | 2026-02-22 | - |
 | 36. Documentation Sync (Post-Fixes) | 2/2 | Complete    | 2026-02-22 | - |
-| 37. Nice-to-Have DX Features | 2/3 | In Progress|  | - |
+| 37. Nice-to-Have DX Features | 3/3 | Complete   | 2026-02-22 | - |
 | 38. Final Documentation Sync | v1.0 Stable | 0/? | Pending | - |
 
 ---

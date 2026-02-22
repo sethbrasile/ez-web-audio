@@ -118,15 +118,15 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Nice-to-Have DX (Phase 37)
 
-- [ ] **DX3-01**: `createSound()`/`createTrack()` accept ArrayBuffer, Blob, or File input
-- [ ] **DX3-02**: `createNoise('pink' | 'brown' | 'white')` factory
-- [ ] **DX3-03**: `volume` alias property for gain on BaseSound
-- [ ] **DX3-04**: `createTracks(urls[], onProgress?)` batch loader
-- [ ] **DX3-05**: Event detail `source` typed as union (not `unknown`)
-- [ ] **DX3-06**: `ControlType` narrowed per class
-- [ ] **DX3-07**: Event map types (`SoundEventType`, `BeatTrackEventMap`, etc.) exported
-- [ ] **DX3-08**: Event system `on/off/once/emit` extracted into shared mixin (DRY)
-- [ ] **DX3-09**: `onPlaySet()` schedule consumption behavior prominently documented
+- [x] **DX3-01**: `createSound()`/`createTrack()` accept ArrayBuffer, Blob, or File input
+- [x] **DX3-02**: `createNoise('pink' | 'brown' | 'white')` factory
+- [x] **DX3-03**: `volume` alias property for gain on BaseSound
+- [x] **DX3-04**: `createTracks(urls[], onProgress?)` batch loader
+- [x] **DX3-05**: Event detail `source` typed as union (not `unknown`)
+- [x] **DX3-06**: `ControlType` narrowed per class
+- [x] **DX3-07**: Event map types (`SoundEventType`, `BeatTrackEventMap`, etc.) exported
+- [x] **DX3-08**: Event system `on/off/once/emit` extracted into shared mixin (DRY)
+- [x] **DX3-09**: `onPlaySet()` schedule consumption behavior prominently documented
 
 ### Final Documentation Sync (Phase 38)
 
@@ -246,15 +246,15 @@ Explicitly excluded. Documented to prevent scope creep.
 | SYNC-02 | Phase 36 | Complete |
 | SYNC-03 | Phase 36 | Complete |
 | SYNC-04 | Phase 36 | Complete |
-| DX3-01 | Phase 37 | Pending |
-| DX3-02 | Phase 37 | Pending |
-| DX3-03 | Phase 37 | Pending |
-| DX3-04 | Phase 37 | Pending |
-| DX3-05 | Phase 37 | Pending |
-| DX3-06 | Phase 37 | Pending |
-| DX3-07 | Phase 37 | Pending |
-| DX3-08 | Phase 37 | Pending |
-| DX3-09 | Phase 37 | Pending |
+| DX3-01 | Phase 37 | Complete |
+| DX3-02 | Phase 37 | Complete |
+| DX3-03 | Phase 37 | Complete |
+| DX3-04 | Phase 37 | Complete |
+| DX3-05 | Phase 37 | Complete |
+| DX3-06 | Phase 37 | Complete |
+| DX3-07 | Phase 37 | Complete |
+| DX3-08 | Phase 37 | Complete |
+| DX3-09 | Phase 37 | Complete |
 | SYNC2-01 | Phase 38 | Pending |
 | SYNC2-02 | Phase 38 | Pending |
 | SYNC2-03 | Phase 38 | Pending |

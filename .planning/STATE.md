@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHANGELOG, stale API sweep)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -79,6 +79,7 @@ Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHAN
 | Phase 36-documentation-sync P02 | 4min | 2 tasks | 2 files |
 | Phase 37-nice-to-have-dx-features P37-02 | 7min | 2 tasks | 6 files |
 | Phase 37-nice-to-have-dx-features P01 | 8min | 2 tasks | 6 files |
+| Phase 37-nice-to-have-dx-features P37-03 | 7min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -194,6 +195,8 @@ Recent decisions affecting current work:
 - [Phase 37-nice-to-have-dx-features]: createNoise('white'|'pink'|'brown') unified factory: pink uses Voss-McCartney 16-generator, brown uses cumulative random walk ±0.02 clamped to [-1,1]
 - [Phase 37-nice-to-have-dx-features]: volume getter/setter alias on BaseSound delegates to changeGainTo() — reuses validation (negative throws, >1 warns)
 - [Phase 37-nice-to-have-dx-features]: createTracks() mirrors createSounds() pattern — same progress callback signature (loaded, total, url)
+- [Phase 37-nice-to-have-dx-features]: TypedEventEmitter uses any in implementation signatures — resolves TS overload contravariance; BeatTrack kept as-is (delegated EventTarget, extends Sampler not EventTarget)
+- [Phase 37-nice-to-have-dx-features]: TypedEventEmitter self-referential constraint avoids requiring index signature on existing SoundEventMap/LayeredSoundEventMap interfaces
 
 ### Pending Todos
 
