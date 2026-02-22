@@ -53,7 +53,7 @@ distortionNode.curve = makeDistortionCurve(400)
 distortionNode.oversample = '4x'
 
 // Wrap it with ez-web-audio's effect interface
-const effect = wrapEffect(ctx, distortionNode)
+const effect = wrapEffect(distortionNode)
 effect.mix = 0.7 // 70% wet, 30% dry
 
 // Add to the signal chain
@@ -124,7 +124,7 @@ The adapter pattern works with **any** Web Audio node:
 ```typescript
 const convolver = ctx.createConvolver()
 convolver.buffer = await loadImpulseResponse('/audio/hall-reverb.wav')
-const reverb = wrapEffect(ctx, convolver)
+const reverb = wrapEffect(convolver)
 reverb.mix = 0.3
 sound.addEffect(reverb)
 ```
@@ -142,7 +142,7 @@ feedback.gain.value = 0.4
 delay.connect(feedback)
 feedback.connect(delay)
 
-const delayEffect = wrapEffect(ctx, delay)
+const delayEffect = wrapEffect(delay)
 sound.addEffect(delayEffect)
 ```
 
@@ -160,13 +160,13 @@ const chorus = new tuna.Chorus({
   delay: 0.0045
 })
 
-const chorusEffect = wrapEffect(ctx, chorus)
+const chorusEffect = wrapEffect(chorus)
 sound.addEffect(chorusEffect)
 ```
 
 ## API Used
 
-- **`wrapEffect(context, node)`** — Wrap any AudioNode with ez-web-audio's effect interface
+- **`wrapEffect(node)`** — Wrap any AudioNode with ez-web-audio's effect interface
 - **`sound.addEffect(effect)`** — Add effect to signal chain
 - **`sound.removeEffect(effect)`** — Remove effect from signal chain
 - **`effect.bypass`** — Boolean to bypass effect

@@ -242,8 +242,8 @@ synth.play()
 // Change frequency smoothly
 synth.update('frequency').to(880).as('ratio')
 
-// Or use the controller directly
-synth.changeFrequencyTo(523.25) // C5
+// Change to a specific note
+synth.update('frequency').to(523.25).as('ratio') // C5
 ```
 
 ## Volume Control
