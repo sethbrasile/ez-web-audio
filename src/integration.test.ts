@@ -732,3 +732,85 @@ describe('Sampler integration', () => {
     expect(() => sampler.play()).toThrow()
   })
 })
+
+describe('LayeredSound integration', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = new Mock() as unknown as AudioContext
+  })
+
+  function createSoundBuffer(durationSeconds: number = 1): Sound {
+    const sampleRate = 44100
+    const length = Math.floor(durationSeconds * sampleRate)
+    const audioBuffer = audioContext.createBuffer(1, length, sampleRate)
+    return new Sound(audioContext, audioBuffer)
+  }
+
+  it('LayeredSound with two Sound layers — layerCount is 2', () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    // LayeredSound constructor: (audioContext, layers[], opts?)
+    const layered = new LayeredSound(audioContext, [sound1, sound2])
+
+    expect(layered.layerCount).toBe(2)
+  })
+
+  it('LayeredSound play() calls playAt on all layers', async () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    // LayeredSound.play() calls layer.playAt(startTime) for exact sync — spy on playAt
+    const playAtSpy1 = vi.spyOn(sound1, 'playAt')
+    const playAtSpy2 = vi.spyOn(sound2, 'playAt')
+
+    // LayeredSound constructor: (audioContext, layers[], opts?)
+    const layered = new LayeredSound(audioContext, [sound1, sound2])
+    await layered.play()
+
+    expect(playAtSpy1).toHaveBeenCalledTimes(1)
+    expect(playAtSpy2).toHaveBeenCalledTimes(1)
+  })
+
+  it('LayeredSound stop() stops all layers', async () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    const stopSpy1 = vi.spyOn(sound1, 'stop')
+    const stopSpy2 = vi.spyOn(sound2, 'stop')
+
+    // LayeredSound constructor: (audioContext, layers[], opts?)
+    const layered = new LayeredSound(audioContext, [sound1, sound2])
+    await layered.play()
+    await layered.stop()
+
+    expect(stopSpy1).toHaveBeenCalledTimes(1)
+    expect(stopSpy2).toHaveBeenCalledTimes(1)
+  })
+
+  it('LayeredSound getLayer() returns correct layer by index', () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    // LayeredSound constructor: (audioContext, layers[], opts?)
+    const layered = new LayeredSound(audioContext, [sound1, sound2])
+
+    expect(layered.getLayer(0)).toBe(sound1)
+    expect(layered.getLayer(1)).toBe(sound2)
+    expect(layered.getLayer(2)).toBeUndefined()
+  })
+
+  it('LayeredSound with Sound layer that has effect — effect preserved through layered play', async () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    const externalEffect = { connect: vi.fn() }
+    const effect = new EffectWrapper(audioContext, externalEffect)
+
+    sound1.addEffect(effect)
+    // LayeredSound constructor: (audioContext, layers[], opts?)
+    const layered = new LayeredSound(audioContext, [sound1, sound2])
+
+    await layered.play()
+
+    // Effect on individual layer persists through LayeredSound operation
+    expect((layered.getLayer(0) as Sound).getEffects()).toHaveLength(1)
+    expect((layered.getLayer(0) as Sound).getEffects()[0]).toBe(effect)
+  })
+})
