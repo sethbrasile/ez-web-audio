@@ -2,9 +2,12 @@ import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 
 import AudioDemo from './components/AudioDemo.vue'
+import AudioSpriteDemo from './components/AudioSpriteDemo.vue'
+import CrossfadeDemo from './components/CrossfadeDemo.vue'
 import DistortionDemo from './components/DistortionDemo.vue'
 import DrumMachine from './components/DrumMachine.vue'
 import FilterDemo from './components/FilterDemo.vue'
+import LayeredSoundDemo from './components/LayeredSoundDemo.vue'
 import OscillatorDemo from './components/OscillatorDemo.vue'
 import PianoKeyboard from './components/PianoKeyboard.vue'
 import SampledDrumKit from './components/SampledDrumKit.vue'
@@ -20,6 +23,8 @@ export default {
   enhanceApp({ app }) {
     // Register components globally for use in markdown
     app.component('AudioDemo', AudioDemo)
+    app.component('AudioSpriteDemo', AudioSpriteDemo)
+    app.component('CrossfadeDemo', CrossfadeDemo)
     app.component('OscillatorDemo', OscillatorDemo)
     app.component('TrackDemo', TrackDemo)
     app.component('PianoKeyboard', PianoKeyboard)
@@ -32,5 +37,6 @@ export default {
     app.component('DistortionDemo', DistortionDemo)
     app.component('SoundfontPiano', SoundfontPiano)
     app.component('FilterDemo', FilterDemo)
+    app.component('LayeredSoundDemo', LayeredSoundDemo)
   },
 } satisfies Theme
