@@ -58,6 +58,9 @@ export interface SpritePlayOptions {
  * ```
  */
 export class AudioSprite {
+  /** Tracks active looping sources by sprite name so they can be stopped via stop(). */
+  private activeSources = new Map<string, AudioBufferSourceNode[]>()
+
   constructor(
     private audioContext: AudioContext,
     private audioBuffer: AudioBuffer,
@@ -173,11 +176,31 @@ export class AudioSprite {
     const offset = sprite.start
     const duration = sprite.end - sprite.start
 
+    // Track looping sources so they can be stopped via stop(name)
+    if (sprite.loop) {
+      if (!this.activeSources.has(name)) {
+        this.activeSources.set(name, [])
+      }
+      this.activeSources.get(name)!.push(source)
+    }
+
     // Start playback
     source.start(this.audioContext.currentTime, offset, duration)
 
     // Cleanup after playback ends
     source.onended = () => {
+      // Remove from active sources tracking
+      const sources = this.activeSources.get(name)
+      if (sources) {
+        const idx = sources.indexOf(source)
+        if (idx !== -1) {
+          sources.splice(idx, 1)
+        }
+        if (sources.length === 0) {
+          this.activeSources.delete(name)
+        }
+      }
+
       try {
         source.disconnect()
         gainNode.disconnect()
@@ -188,5 +211,49 @@ export class AudioSprite {
       }
       source.onended = null
     }
+  }
+
+  /**
+   * Stop all active playback of the named sprite.
+   *
+   * Only useful for sprites defined with `loop: true`, since non-looping sprites
+   * stop automatically when their duration elapses.
+   *
+   * @param name - The sprite name to stop
+   *
+   * @example
+   * ```typescript
+   * sprite.play('bgmusic') // starts looping
+   * // later...
+   * sprite.stop('bgmusic') // stops the loop
+   * ```
+   */
+  stop(name: string): void {
+    const sources = this.activeSources.get(name) ?? []
+    sources.forEach((source) => {
+      try {
+        source.stop()
+      }
+      catch {
+        // Already stopped
+      }
+    })
+    this.activeSources.delete(name)
+  }
+
+  /**
+   * Stop all active looping sprites.
+   *
+   * @example
+   * ```typescript
+   * sprite.play('bgmusic')
+   * sprite.play('ambient')
+   * sprite.stopAll() // stops both
+   * ```
+   */
+  stopAll(): void {
+    this.activeSources.forEach((_, name) => {
+      this.stop(name)
+    })
   }
 }

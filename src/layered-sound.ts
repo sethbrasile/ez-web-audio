@@ -36,6 +36,8 @@ export class LayeredSound extends EventTarget {
   private layers: (Sound | Oscillator)[]
   private failedLayers: { index: number, error: Error }[] = []
   private setTimeout: (fn: () => void, delayMillis: number) => number
+  /** Tracks 'end' handlers per layer so they can be removed before adding new ones. */
+  private layerEndHandlers: Map<Sound | Oscillator, () => void> = new Map()
   public name: string
 
   constructor(
@@ -166,10 +168,18 @@ export class LayeredSound extends EventTarget {
    * Creates a fresh Set per play() call to support multiple playbacks.
    */
   private setupLayerEndTracking(): void {
+    // Remove all previously registered 'end' handlers before adding new ones.
+    // Without this, repeated play() calls accumulate listeners that fire spurious 'end' events.
+    this.layerEndHandlers.forEach((handler, layer) => {
+      layer.off('end', handler)
+    })
+    this.layerEndHandlers.clear()
+
     const endedLayers = new Set<Sound | Oscillator>()
 
     const handleEnd = (layer: Sound | Oscillator): void => {
       endedLayers.add(layer)
+      this.layerEndHandlers.delete(layer)
 
       // Emit when last layer finishes
       if (endedLayers.size === this.layers.length) {
@@ -186,7 +196,9 @@ export class LayeredSound extends EventTarget {
     }
 
     this.layers.forEach((layer) => {
-      layer.once('end', () => handleEnd(layer))
+      const handler = (): void => handleEnd(layer)
+      this.layerEndHandlers.set(layer, handler)
+      layer.once('end', handler)
     })
   }
 
