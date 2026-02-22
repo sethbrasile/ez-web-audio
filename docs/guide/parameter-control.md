@@ -114,6 +114,24 @@ function addVibrato(oscillator: Oscillator, rate = 5, depth = 10) {
 }
 ```
 
+## Convenience Methods
+
+For common fade operations, use the built-in convenience methods instead of manual scheduling:
+
+### Fade In
+
+```typescript
+sound.fadeIn(0.5) // Play with gain ramping from 0 to current gain over 0.5s
+```
+
+### Fade Out
+
+```typescript
+await sound.fadeOut(1.0) // Ramp gain to 0 over 1s, then stop. Returns a Promise.
+```
+
+These methods handle the scheduling internally — no need to call `onPlaySet()` or manage timeouts yourself.
+
 ## Extending ControlType
 
 The parameter system can be extended for custom control types via TypeScript module augmentation:

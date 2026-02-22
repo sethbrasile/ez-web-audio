@@ -34,6 +34,16 @@ click.play()
 
 Each `play()` creates a new `AudioBufferSourceNode` and cleans it up when finished. Perfect for UI feedback, game SFX, and drum samples.
 
+### Looping
+
+Set `loop = true` for seamless looping — no gap between repeats. Looped sounds must be stopped manually:
+
+```typescript
+click.loop = true
+click.play()
+click.stop() // Looped sounds don't end on their own
+```
+
 ## Track: Music Playback
 
 **Use Track for:** Longer audio files where you need playback control.
@@ -50,17 +60,7 @@ song.resume()
 song.seek(60).as('seconds') // Jump to 1 minute
 ```
 
-Position is returned as a `TimeObject`:
-
-```typescript
-const pos = track.position
-console.log(pos.raw) // 83.5 (seconds)
-console.log(pos.string) // "1:23"
-console.log(pos.pojo) // { minutes: 1, seconds: 23 }
-console.log(track.percentPlayed) // 31 (31%)
-```
-
-Track limitation: only one playback at a time — calling `play()` while playing restarts.
+Position is returned as a `TimeObject` with `raw` (seconds), `string` ("1:23"), and `pojo` (`{ minutes, seconds }`) fields. Track limitation: only one playback at a time — calling `play()` while playing restarts.
 
 ## Oscillator: Sound Synthesis
 
@@ -68,7 +68,7 @@ Track limitation: only one playback at a time — calling `play()` while playing
 
 ```typescript
 const synth = await createOscillator({
-  frequency: 440, // Hz (A4 note)
+  note: 'A4', // or use frequency: 440
   type: 'sine', // sine, square, sawtooth, triangle
   envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 }
 })
@@ -76,6 +76,8 @@ const synth = await createOscillator({
 synth.play()
 synth.stop() // Triggers ADSR release phase
 ```
+
+The `note` option looks up frequency from the built-in frequency map. When both `note` and `frequency` are provided, `note` takes precedence.
 
 ### Waveform Types
 
@@ -102,7 +104,7 @@ The `Envelope` class is also exported for direct use when you need to drive auto
 
 ### Lazy Initialization
 
-EZ Web Audio creates the AudioContext automatically when you first use a factory function. Ensure your first audio call is inside a user interaction handler:
+EZ Web Audio creates the AudioContext automatically when you first use a factory function inside a user interaction handler:
 
 ```typescript
 button.onclick = async () => {
@@ -111,8 +113,8 @@ button.onclick = async () => {
 }
 ```
 
-::: tip Explicit initialization
-Call `initAudio()` for iOS mute workaround or pre-warming: `await initAudio()` inside the user interaction handler before creating sounds.
+::: tip
+For iOS mute workaround or pre-warming, call `await initAudio()` inside the interaction handler before creating sounds.
 :::
 
 ### Single Context and States
@@ -149,21 +151,15 @@ sound.play()
 Effects are processed in insertion order. Add multiple at once with `addEffects()`. Toggle bypass without removing — the chain rewires automatically:
 
 ```typescript
-sound.addEffect(compressor)
-sound.addEffects([eq, limiter])
-
-filter.bypass = true // Signal skips this effect
-filter.bypass = false // Signal flows through again
+sound.addEffects([compressor, eq, limiter])
+filter.bypass = true // Signal skips; filter.bypass = false to restore
 ```
 
 Wrap any Web Audio API node with `wrapEffect()`:
 
 ```typescript
-import { wrapEffect } from 'ez-web-audio'
-
 const distortion = audioContext.createWaveShaper()
-const effect = wrapEffect(distortion)
-sound.addEffect(effect)
+sound.addEffect(wrapEffect(distortion))
 ```
 
 ## Events
@@ -204,6 +200,12 @@ Drum machine patterns with per-beat active/inactive state:
 const kick = await createBeatTrack(['kick.mp3'])
 kick.beats[0].active = true
 kick.beats[4].active = true
+```
+
+Use `setPattern()` to set all beats at once from an array (shorter arrays default remaining beats to inactive):
+
+```typescript
+kick.setPattern([1, 0, 1, 0, 1, 0, 1, 0]) // Set all beats at once
 ```
 
 ### LayeredSound

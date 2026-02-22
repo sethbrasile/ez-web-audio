@@ -190,6 +190,27 @@ cleanup()
 
 Both helpers work with any object that has `play()` and `stop()` methods — not just oscillators.
 
+## Resource Cleanup
+
+When you're done with a sound, call `dispose()` to disconnect all audio nodes and free resources:
+
+```typescript
+sound.dispose()
+// sound.play() will now throw — the instance is no longer usable
+```
+
+`dispose()` is idempotent — calling it multiple times has no additional effect. This is especially important in single-page applications where audio instances are created and destroyed as users navigate between views.
+
+### Context-Free Analyzer
+
+`createAnalyzer()` works without passing an AudioContext — it resolves the shared context automatically:
+
+```typescript
+const analyzer = createAnalyzer({ fftSize: 2048 })
+```
+
+This matches the pattern used by `createFilterEffect()` and `createGainEffect()`, keeping your code consistent without needing to manage context references directly.
+
 ## Next Steps
 
 - [Core Concepts](/guide/concepts) - Sound types, AudioContext lifecycle, audio routing
