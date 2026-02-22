@@ -276,6 +276,150 @@ describe('audioSprite', () => {
     })
   })
 
+  describe('stop()', () => {
+    let createdSources: AudioBufferSourceNode[]
+
+    beforeEach(() => {
+      createdSources = []
+      vi.spyOn(audioContext, 'createBufferSource').mockImplementation(() => {
+        const source = {
+          buffer: null,
+          loop: false,
+          loopStart: 0,
+          loopEnd: 0,
+          connect: vi.fn().mockReturnThis(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          onended: null,
+        } as unknown as AudioBufferSourceNode
+        createdSources.push(source)
+        return source
+      })
+    })
+
+    it('stops a looping source that was playing', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('bgm') // bgm has loop: true
+      const source = createdSources[0]
+
+      sprite.stop('bgm')
+
+      expect(source.stop).toHaveBeenCalled()
+    })
+
+    it('cleans up activeSources after stop', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('bgm')
+      sprite.stop('bgm')
+
+      // Stopping again should be a no-op (source already removed)
+      expect(() => sprite.stop('bgm')).not.toThrow()
+    })
+
+    it('stops multiple looping sources for the same sprite', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('bgm')
+      sprite.play('bgm')
+
+      const source1 = createdSources[0]
+      const source2 = createdSources[1]
+
+      sprite.stop('bgm')
+
+      expect(source1.stop).toHaveBeenCalled()
+      expect(source2.stop).toHaveBeenCalled()
+    })
+
+    it('stop() with non-existent name does not throw', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      expect(() => sprite.stop('nonexistent')).not.toThrow()
+    })
+
+    it('stop() on non-looping sprite is a no-op', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser') // laser has no loop
+      const source = createdSources[0]
+
+      sprite.stop('laser')
+
+      // Non-looping sources are not in activeSources, so stop() is not called
+      expect(source.stop).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('stopAll()', () => {
+    let createdSources: AudioBufferSourceNode[]
+
+    beforeEach(() => {
+      createdSources = []
+      vi.spyOn(audioContext, 'createBufferSource').mockImplementation(() => {
+        const source = {
+          buffer: null,
+          loop: false,
+          loopStart: 0,
+          loopEnd: 0,
+          connect: vi.fn().mockReturnThis(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          onended: null,
+        } as unknown as AudioBufferSourceNode
+        createdSources.push(source)
+        return source
+      })
+    })
+
+    it('stops all active looping sprites', () => {
+      const multiLoopManifest: SpriteManifest = {
+        spritemap: {
+          bgm: { start: 0, end: 5, loop: true },
+          ambient: { start: 5, end: 15, loop: true },
+        },
+      }
+      const sprite = new AudioSprite(audioContext, audioBuffer, multiLoopManifest)
+
+      sprite.play('bgm')
+      sprite.play('ambient')
+
+      const bgmSource = createdSources[0]
+      const ambientSource = createdSources[1]
+
+      sprite.stopAll()
+
+      expect(bgmSource.stop).toHaveBeenCalled()
+      expect(ambientSource.stop).toHaveBeenCalled()
+    })
+
+    it('stopAll() when nothing is playing does not throw', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      expect(() => sprite.stopAll()).not.toThrow()
+    })
+
+    it('stopAll() only affects looping sprites, not one-shots', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser') // non-looping
+      sprite.play('bgm') // looping
+
+      const laserSource = createdSources[0]
+      const bgmSource = createdSources[1]
+
+      sprite.stopAll()
+
+      // bgm (looping) is stopped
+      expect(bgmSource.stop).toHaveBeenCalled()
+      // laser (non-looping) was never in activeSources, stop not called
+      expect(laserSource.stop).not.toHaveBeenCalled()
+    })
+  })
+
   describe('manifest with resources', () => {
     it('accepts manifest with optional resources array', () => {
       const manifestWithResources: SpriteManifest = {
