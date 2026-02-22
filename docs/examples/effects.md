@@ -219,8 +219,7 @@ sound.addEffect(filter)
 // Toggle effect bypass
 function toggleFilter() {
   filter.bypass = !filter.bypass
-  // When bypass changes, call rewireEffects if needed
-  sound.rewireEffects()
+  // Effect chain rewires automatically when bypass is toggled
 }
 ```
 
@@ -241,7 +240,7 @@ distortion.curve = makeDistortionCurve(400)
 distortion.oversample = '4x'
 
 // Wrap it to get bypass/mix controls
-const wrapped = wrapEffect(ctx, distortion)
+const wrapped = wrapEffect(distortion)
 wrapped.mix = 0.7 // 70% distortion
 
 sound.addEffect(wrapped)
@@ -267,7 +266,7 @@ const chorus = new tuna.Chorus({
 })
 
 // Wrap it for standard Effect interface
-const wrapped = wrapEffect(ctx, chorus)
+const wrapped = wrapEffect(chorus)
 wrapped.mix = 0.5 // 50% chorus blend
 
 sound.addEffect(wrapped)

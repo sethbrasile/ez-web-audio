@@ -71,7 +71,7 @@ Multiple oscillators can play simultaneously. Track them in a Map to manage indi
 ```typescript
 const oscillators = new Map()
 
-function playNote(note: string) {
+async function playNote(note: string) {
   const frequency = frequencyMap[note]
   const osc = await createOscillator({ frequency, envelope })
   osc.play()

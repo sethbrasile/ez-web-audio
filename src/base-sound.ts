@@ -338,7 +338,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * @returns this for chaining
    *
    * @example
-   * const filter = createFilterEffect(audioContext, 'lowpass', { frequency: 1000 })
+   * const filter = createFilterEffect('lowpass', { frequency: 1000 })
    * sound.addEffect(filter)
    */
   public addEffect(effect: Effect, position?: number): this {
