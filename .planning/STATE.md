@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHANGELOG, stale API sweep)
 
-**Progress:** [████████████████████] 97/98 plans (99%)
+**Progress:** [██████████] 97%
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHAN
 | Phase 35 P03 | 8min | 2 tasks | 3 files |
 | Phase 36-documentation-sync P01 | 4min | 2 tasks | 4 files |
 | Phase 36-documentation-sync P02 | 4min | 2 tasks | 2 files |
+| Phase 37-nice-to-have-dx-features P37-02 | 7min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,9 @@ Recent decisions affecting current work:
 - [Phase 36-02]: docs/api/ is gitignored — TypeDoc output generated during build, not committed
 - [Phase 36-02]: JSDoc inline type mentions like Promise<void> must use backticks to avoid VitePress HTML parse errors in generated API docs
 - [Phase 36-02]: changeFrequencyTo removed in Phase 26 — correct replacement is fluent update('frequency').to(v).as('ratio')
+- [Phase 37-nice-to-have-dx-features]: AudioEventSource uses import type in event-types.ts — erased at compile time, no circular runtime dep between base-sound.ts and event-types.ts
+- [Phase 37-nice-to-have-dx-features]: SoundControlType is manual literal union 'gain'|'pan'|'detune' — keeps Sound types stable when consumers augment ControlTypeMap
+- [Phase 37-nice-to-have-dx-features]: Connectable.update narrowed to SoundControlType; Oscillator overrides with ControlType — method override satisfies TypeScript covariance rules
 
 ### Pending Todos
 
