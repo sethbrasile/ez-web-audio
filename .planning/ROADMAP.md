@@ -304,7 +304,11 @@ Plans:
   8. Integration tests exist for Track+effects and BeatTrack+effects combinations
   9. Factory function error propagation paths tested
   10. Cleanup/dispose pattern has at least one integration test
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 30-01-PLAN.md — Test untested utilities: timeout.ts, equal-power-crossfade.ts, play-together.ts
+- [ ] 30-02-PLAN.md — Expand beat.ts, sound.ts timing, and oscillator-controller.ts ramp tests
+- [ ] 30-03-PLAN.md — Oscillator filter chain tests, integration tests (Track+effects, factory errors, dispose)
 
 ### Phase 31: E2E & Integration Test Expansion
 **Goal**: E2E tests verify actual user interactions and the test infrastructure is robust
@@ -351,7 +355,7 @@ Plans:
 | 27. Package Quality & README | 2/2 | Complete    | 2026-02-22 | - |
 | 28. Documentation Corrections | 2/2 | Complete    | 2026-02-22 | - |
 | 29. Demo Component Fixes | 3/3 | Complete    | 2026-02-22 | - |
-| 30. Test Coverage Expansion | v1.0 Stable | 0/? | Pending | - |
+| 30. Test Coverage Expansion | v1.0 Stable | 0/3 | Planned | - |
 | 31. E2E & Integration Test Expansion | v1.0 Stable | 0/? | Pending | - |
 
 ---
@@ -360,4 +364,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after Phase 29 planning (3 plans created)*
+*Last updated: 2026-02-22 after Phase 30 planning (3 plans created)*
