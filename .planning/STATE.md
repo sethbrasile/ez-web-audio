@@ -17,7 +17,7 @@ Plan: 1 of 1 in current phase (paused at Task 4 checkpoint)
 Status: In Progress — awaiting human publish trigger
 Last activity: 2026-02-20 — Completed Tasks 1-3 of 24-01 (verification docs created, JSDoc+CHANGELOG fixed, housekeeping confirmed)
 
-**Progress:** [█████████░] 93%
+**Progress:** [██████████] 95%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Last activity: 2026-02-20 — Completed Tasks 1-3 of 24-01 (verification docs cr
 *Updated after each plan completion*
 | Phase 26-source-code-fixes P01 | 2min | 2 tasks | 3 files |
 | Phase 26-source-code-fixes P03 | 10min | 2 tasks | 3 files |
+| Phase 26-source-code-fixes P04 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase 26-03]: playBeats() uses _playAllBeats=true (beat.playIn unconditional); playActiveBeats() uses _playAllBeats=false (beat.playInIfActive conditional); flag persists across pause/resume
 - [Phase 26-03]: BeatTrack.resume() resets nextBeatTime=audioContext.currentTime (not stale pausedBeatTime) to prevent catch-up beats after long pause
 - [Phase 26-03]: Beat.playIn() flag reset uses nested setTimeout inside offset callback — set true, then schedule reset after this.duration ms
+- [Phase 26-source-code-fixes]: onPlaySet dedup uses startingValues-only filter: last bare to() wins, ramp arrays preserved, multi-point automation changed
+- [Phase 26-source-code-fixes]: SAFE_NEAR_ZERO = 0.00001 for exponentialRampToValueAtTime zero guard — MDN standard workaround
+- [Phase 26-source-code-fixes]: OscillatorController and SoundController now support all ControlType values in scheduled automation
 
 ### Pending Todos
 
