@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In progress
 Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: timeout, equal-power-crossfade, play-together)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Last activity: 2026-02-22 — Phase 30 Plan 01 complete (29 new utility tests: t
 | Phase 31-e2e-integration-test-expansion P01 | 2min | 2 tasks | 3 files |
 | Phase 31-e2e-integration-test-expansion P02 | 2min | 2 tasks | 1 files |
 | Phase 33-dx-convenience-apis P02 | 5min | 2 tasks | 3 files |
+| Phase 33-dx-convenience-apis P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,9 @@ Recent decisions affecting current work:
 - [Phase 33-dx-convenience-apis]: createAnalyzer overload in index.ts (not analyzer.ts) — index.ts has getOrCreateAudioContext() access; keeps Analyzer class dependency-free
 - [Phase 33-dx-convenience-apis]: note option takes precedence over frequency in OscillatorOptions — note is higher-level API; frequencyMap cast as Record<string, number> for string key lookup
 - [Phase 33-dx-convenience-apis]: BeatTrack.setPattern shorter arrays default remaining beats to inactive — prevents stale state from prior patterns
+- [Phase 33-dx-convenience-apis]: fadeOut returns Promise via _trackedTimeout wrapping stop() for cleanup tracking
+- [Phase 33-dx-convenience-apis]: Sound._isLooping override keeps loop logic in Sound, BaseSound default is false
+- [Phase 33-dx-convenience-apis]: Track inherits loop from Sound — no setup() override means Sound.setup() handles AudioBufferSourceNode.loop for both
 
 ### Pending Todos
 

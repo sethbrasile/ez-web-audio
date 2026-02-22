@@ -78,12 +78,12 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### DX Convenience APIs (Phase 33)
 
-- [ ] **DX2-01**: `fadeIn(duration)` / `fadeOut(duration)` convenience methods on BaseSound
-- [ ] **DX2-02**: `loop` property on Sound and Track for native looping
-- [ ] **DX2-03**: `dispose()` cleanup method on BaseSound
-- [ ] **DX2-04**: `createAnalyzer()` overload without AudioContext parameter
-- [ ] **DX2-05**: `createOscillator({ note: 'A4' })` accepts note name
-- [ ] **DX2-06**: `BeatTrack.setPattern([1,0,1,0])` convenience method
+- [x] **DX2-01**: `fadeIn(duration)` / `fadeOut(duration)` convenience methods on BaseSound
+- [x] **DX2-02**: `loop` property on Sound and Track for native looping
+- [x] **DX2-03**: `dispose()` cleanup method on BaseSound
+- [x] **DX2-04**: `createAnalyzer()` overload without AudioContext parameter
+- [x] **DX2-05**: `createOscillator({ note: 'A4' })` accepts note name
+- [x] **DX2-06**: `BeatTrack.setPattern([1,0,1,0])` convenience method
 
 ### Test Gap Closure (Phase 34)
 
@@ -218,12 +218,12 @@ Explicitly excluded. Documented to prevent scope creep.
 | FIX-07 | Phase 32 | Pending |
 | FIX-08 | Phase 32 | Pending |
 | FIX-09 | Phase 32 | Pending |
-| DX2-01 | Phase 33 | Pending |
-| DX2-02 | Phase 33 | Pending |
-| DX2-03 | Phase 33 | Pending |
-| DX2-04 | Phase 33 | Pending |
-| DX2-05 | Phase 33 | Pending |
-| DX2-06 | Phase 33 | Pending |
+| DX2-01 | Phase 33 | Complete |
+| DX2-02 | Phase 33 | Complete |
+| DX2-03 | Phase 33 | Complete |
+| DX2-04 | Phase 33 | Complete |
+| DX2-05 | Phase 33 | Complete |
+| DX2-06 | Phase 33 | Complete |
 | TEST2-01 | Phase 34 | Pending |
 | TEST2-02 | Phase 34 | Pending |
 | TEST2-03 | Phase 34 | Pending |

@@ -61,7 +61,7 @@
 - [x] **Phase 30: Test Coverage Expansion** - Add tests for untested modules and missing scenarios (completed 2026-02-22)
 - [x] **Phase 31: E2E & Integration Test Expansion** - Add interaction E2E tests, integration coverage, mobile viewport testing (completed 2026-02-22)
 - [ ] **Phase 32: Critical Fixes & API Contract Corrections** - Fix bugs, type contract violations, and safety issues found in comprehensive code review
-- [ ] **Phase 33: DX Convenience APIs** - Add fadeIn/fadeOut, loop, dispose, note-based oscillators, and pattern-setting convenience methods
+- [x] **Phase 33: DX Convenience APIs** - Add fadeIn/fadeOut, loop, dispose, note-based oscillators, and pattern-setting convenience methods (completed 2026-02-22)
 - [ ] **Phase 34: Test Gap Closure** - Add tests for untested factory functions, guards, cleanup methods, and edge cases
 - [ ] **Phase 35: Documentation Expansion & Fixes** - Add missing example pages, fix incorrect code examples, split oversized guide pages
 - [ ] **Phase 36: Documentation Sync (Post-Fixes)** - Cross-reference all Phase 32-35 changes against docs, verify every API is accurately documented
@@ -478,7 +478,7 @@ Plans:
 | 30. Test Coverage Expansion | 3/3 | Complete    | 2026-02-22 | - |
 | 31. E2E & Integration Test Expansion | 2/2 | Complete    | 2026-02-22 | - |
 | 32. Critical Fixes & API Contracts | v1.0 Stable | 0/? | Pending | - |
-| 33. DX Convenience APIs | 1/2 | In Progress|  | - |
+| 33. DX Convenience APIs | 2/2 | Complete   | 2026-02-22 | - |
 | 34. Test Gap Closure | v1.0 Stable | 0/? | Pending | - |
 | 35. Documentation Expansion & Fixes | v1.0 Stable | 0/? | Pending | - |
 | 36. Documentation Sync (Post-Fixes) | v1.0 Stable | 0/? | Pending | - |
