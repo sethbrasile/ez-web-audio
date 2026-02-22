@@ -403,7 +403,11 @@ Plans:
   7. `audio-routing.md` uses recommended 1-arg `wrapEffect()` form consistently
   8. All example pages have proper `<script setup>` imports for their components
   9. Integration patterns (Vue, Vanilla TS) listed on examples index page
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 35-01-PLAN.md — Split concepts.md into focused pages, fix synthesis.md and audio-routing.md API examples
+- [ ] 35-02-PLAN.md — Create AudioSprite, LayeredSound, Crossfade interactive example pages with Vue components
+- [ ] 35-03-PLAN.md — Create React integration example, update examples index with integration patterns
 
 ### Phase 36: Documentation Sync (Post-Fixes)
 **Goal**: All documentation accurately reflects every change made in Phases 32-35
