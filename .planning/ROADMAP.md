@@ -487,7 +487,7 @@ Plans:
 | 32. Critical Fixes & API Contracts | v1.0 Stable | 0/? | Pending | - |
 | 33. DX Convenience APIs | 2/2 | Complete    | 2026-02-22 | - |
 | 34. Test Gap Closure | 2/2 | Complete    | 2026-02-22 | - |
-| 35. Documentation Expansion & Fixes | v1.0 Stable | 0/? | Pending | - |
+| 35. Documentation Expansion & Fixes | 1/3 | In Progress|  | - |
 | 36. Documentation Sync (Post-Fixes) | v1.0 Stable | 0/? | Pending | - |
 | 37. Nice-to-Have DX Features | v1.0 Stable | 0/? | Pending | - |
 | 38. Final Documentation Sync | v1.0 Stable | 0/? | Pending | - |

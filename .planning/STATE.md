@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions, oscillator freq:0, sprite stop, gain guards, effects batch, BeatTrack events)
 
-**Progress:** [████████████████████] 92/93 plans (99%)
+**Progress:** [██████████] 97%
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Last activity: 2026-02-22 — Phase 34 complete (34 new tests: factory functions
 | Phase 33-dx-convenience-apis P01 | 3min | 2 tasks | 2 files |
 | Phase 34 P02 | 8min | 2 tasks | 3 files |
 | Phase 34-test-gap-closure P01 | 2min | 2 tasks | 3 files |
+| Phase 35 P01 | 10min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -168,6 +169,9 @@ Recent decisions affecting current work:
 - [Phase 34-test-gap-closure]: Factory function tests use vi.resetModules() + vi.stubGlobal('fetch') pattern matching existing index.test.ts conventions
 - [Phase 34-test-gap-closure]: Oscillator frequency:0 test replaced with accurate documentation: 0 is falsy so defaults to 440 via || operator, negative values throw
 - [Phase 34-test-gap-closure]: AudioSprite stop/stopAll tests use per-test createdSources factory to track unique source nodes per play() call
+- [Phase 35]: concepts.md trimmed from 693 to 245 lines by splitting parameter control and utilities into dedicated guide pages
+- [Phase 35]: synthesis.md changeFrequencyTo() replaced with update('frequency').to().as('ratio') — fluent API is the recommended consistent pattern
+- [Phase 35]: audio-routing.md all wrapEffect(ctx, node) calls updated to 1-arg wrapEffect(node) form
 
 ### Pending Todos
 
