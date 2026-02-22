@@ -36,6 +36,25 @@ document.querySelector('button')?.addEventListener('click', async () => {
 })
 ```
 
+### Loading from Other Sources
+
+`createSound()` and `createTrack()` also accept `ArrayBuffer`, `Blob`, or `File` inputs — not just URL strings. This is useful for file uploads, drag-and-drop, or pre-fetched data:
+
+```typescript
+// From a file input
+input.addEventListener('change', async (e) => {
+  const file = (e.target as HTMLInputElement).files![0]
+  const sound = await createSound(file)
+  sound.play()
+})
+
+// From a pre-fetched ArrayBuffer
+const buffer = await fetch('/sounds/click.mp3').then(r => r.arrayBuffer())
+const sound = await createSound(buffer)
+```
+
+The `AudioInput` type (`string | ArrayBuffer | Blob | File`) is exported for use in your own function signatures.
+
 ### AudioContext & User Interaction
 
 Browsers require a user interaction (click, tap, keypress) before playing audio.

@@ -128,6 +128,17 @@ EZ Web Audio uses one shared AudioContext for all sounds. Context states:
 | `interrupted` | iOS backgrounded — wait for foreground |
 | `closed` | Context destroyed — cannot recover |
 
+## Volume Control
+
+All sounds have a `volume` getter/setter as a convenient alias for gain control:
+
+```typescript
+sound.volume = 0.5 // Same as sound.changeGainTo(0.5)
+console.log(sound.volume) // 0.5
+```
+
+`volume` delegates to `changeGainTo()` — the same validation applies (negative values throw, values above 1 log a warning).
+
 ## Audio Routing
 
 Each sound follows this signal path:
@@ -164,22 +175,47 @@ sound.addEffect(wrapEffect(distortion))
 
 ## Events
 
-All playable sounds emit events via `on(event, handler)`:
+All playable sounds emit typed events via `on(event, handler)`:
 
 | Event | Trigger | Available on |
 |-------|---------|--------------|
 | `play` | `play()` called | All |
 | `stop` | `stop()` called | All |
 | `end` | Audio finished naturally | All |
-| `pause` | `pause()` called | Track only |
-| `resume` | `resume()` called | Track only |
+| `pause` | `pause()` called | Track, BeatTrack |
+| `resume` | `resume()` called | Track, BeatTrack |
 | `seek` | `seek()` called | Track only |
+| `beat` | Beat scheduled | BeatTrack only |
+| `warning` | Issue encountered | LayeredSound only |
 
 ```typescript
-sound.on('play', e => console.log('Started at', e.detail.time))
-sound.on('end', () => console.log('Finished naturally'))
+sound.on('play', (e) => {
+  console.log(e.detail.time) // audioContext.currentTime
+  console.log(e.detail.source) // typed as AudioEventSource
+})
 track.on('seek', e => console.log('Seeked to', e.detail.position))
 ```
+
+### Event Types
+
+Event detail `source` fields are typed as `AudioEventSource` (a union of `BaseSound | BeatTrack | LayeredSound`). The library exports event map and detail types for type-safe handling:
+
+```typescript
+import type {
+  AudioEventSource,
+  EventDetailFor,
+  SoundEventMap,
+  SoundEventType,
+} from 'ez-web-audio'
+import { TypedEventEmitter } from 'ez-web-audio'
+
+// Extract detail type from event name
+type PlayDetail = EventDetailFor<'play'> // PlayEventDetail
+```
+
+Also exported: `BeatTrackEventMap`, `LayeredSoundEventMap`, `PlayEventDetail`, `StopEventDetail`, `EndEventDetail`, `PauseEventDetail`, `ResumeEventDetail`, `SeekEventDetail`, `BeatEventDetail`, `WarningEventDetail`.
+
+`TypedEventEmitter<TMap>` is exported for advanced consumers building custom event-driven audio classes that need type-safe event emission.
 
 ## Other Sound Types
 
@@ -229,15 +265,20 @@ sprite.play('click')
 sprite.play('success', { gain: 0.8 })
 ```
 
-### White Noise
+### Noise Generation
 
-Generate white noise procedurally (useful for wind, rain, texture):
+Generate noise procedurally with `createNoise()` — useful for ambience, sleep sounds, and synthesis building blocks:
 
 ```typescript
-const noise = await createWhiteNoise()
-noise.addEffect(createFilterEffect('lowpass', { frequency: 400 }))
-noise.play()
+const white = await createNoise('white') // Flat spectrum (hiss)
+const pink = await createNoise('pink') // 1/f — natural, balanced
+const brown = await createNoise('brown') // Deep rumble
+
+pink.loop = true
+pink.play()
 ```
+
+All noise types return a looped `Sound` instance. You can also use `createWhiteNoise()` for the single-type shorthand.
 
 ## Next Steps
 

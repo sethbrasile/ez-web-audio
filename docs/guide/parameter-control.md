@@ -132,6 +132,23 @@ await sound.fadeOut(1.0) // Ramp gain to 0 over 1s, then stop. Returns a Promise
 
 These methods handle the scheduling internally — no need to call `onPlaySet()` or manage timeouts yourself.
 
+## Narrowed Control Types
+
+`Sound.update()`, `Sound.onPlaySet()`, and `Sound.onPlayRamp()` accept `SoundControlType` — only `'gain' | 'pan' | 'detune'`. `Oscillator` overrides these methods to accept the full `ControlType` (which also includes `'frequency'`). TypeScript catches mistakes at compile time:
+
+```typescript
+import type { ControlType, SoundControlType } from 'ez-web-audio'
+
+sound.update('gain').to(0.5).as('ratio') // OK
+sound.update('frequency').to(440).as('ratio') // TypeScript error!
+
+osc.update('frequency').to(880).as('ratio') // OK — Oscillator accepts all
+```
+
+### Controllers
+
+The underlying `SoundController` and `OscillatorController` classes are exported for advanced consumers who need direct access to parameter scheduling logic. Most users will never need these — the fluent `update()`/`onPlaySet()`/`onPlayRamp()` API handles everything.
+
 ## Extending ControlType
 
 The parameter system can be extended for custom control types via TypeScript module augmentation:

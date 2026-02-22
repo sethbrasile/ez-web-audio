@@ -53,7 +53,18 @@ const sounds = await createSounds(
 )
 ```
 
-The callback fires after each sound finishes loading, making it easy to drive a loading progress bar.
+For tracks (music with pause/resume/seek), use `createTracks()`:
+
+```typescript
+import { createTracks } from 'ez-web-audio'
+
+const tracks = await createTracks(
+  ['intro.mp3', 'verse.mp3', 'chorus.mp3'],
+  (loaded, total, url) => console.log(`${loaded}/${total}: ${url}`)
+)
+```
+
+Both callbacks fire after each item finishes loading, making it easy to drive a loading progress bar.
 
 ## Crossfade
 
@@ -111,6 +122,20 @@ clearPreloadCache()
 ```
 
 `clearPreloadCache()` without arguments clears the entire cache. With a URL argument, it removes only that entry. After clearing, the next `createSound()` or `preload()` call for that URL fetches it fresh.
+
+## Noise Generation
+
+Generate procedural noise for ambience, testing, or synthesis:
+
+```typescript
+import { createNoise } from 'ez-web-audio'
+
+const white = await createNoise('white') // Equal energy — hiss/static
+const pink = await createNoise('pink') // 1/f spectrum — natural ambience
+const brown = await createNoise('brown') // Random walk — deep rumble
+```
+
+White noise has a flat spectrum (equal energy at all frequencies). Pink noise rolls off 3 dB/octave, sounding more balanced to human ears. Brown noise rolls off 6 dB/octave for a deep, rumbling character. All return a looped `Sound` instance — add effects and control gain like any other sound.
 
 ## Debug Mode
 
