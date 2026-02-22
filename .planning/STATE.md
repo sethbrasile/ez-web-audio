@@ -1,21 +1,21 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 27 complete: professional README, package metadata, CI gates)
-**Current Focus:** Phase 28 — Documentation Corrections
+**Last Updated:** 2026-02-22 (Phase 28 complete: documentation corrections and feature narrative docs)
+**Current Focus:** Phase 29 — Demo Component Fixes
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Phase 28 — Documentation Corrections
+**Current focus:** Phase 29 — Demo Component Fixes
 
 ## Current Position
 
-Phase: 28 of 31 (Documentation Corrections)
+Phase: 29 of 31 (Demo Component Fixes)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-02-22 — Phase 27 complete (2 plans, 8/8 success criteria verified)
+Last activity: 2026-02-22 — Phase 28 complete (2 plans, 10/10 success criteria verified)
 
 **Progress:** [██████████] 99%
 
