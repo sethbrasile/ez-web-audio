@@ -90,32 +90,13 @@ The `note` option looks up frequency from the built-in frequency map. When both 
 
 ### ADSR Envelope
 
-The envelope shapes how volume changes over time (Attack / Decay / Sustain / Release):
-
-```ts
-const piano = { attack: 0.01, decay: 0.5, sustain: 0, release: 0.3 }
-const pad = { attack: 0.5, decay: 0.2, sustain: 0.8, release: 1.0 }
-const pluck = { attack: 0.001, decay: 0.3, sustain: 0.2, release: 0.1 }
-```
-
-The `Envelope` class is also exported for direct use when you need to drive automation manually — see [Synthesis](/examples/synthesis) for details.
+The envelope shapes volume over time (Attack / Decay / Sustain / Release). The `Envelope` class is also exported for direct use — see [Synthesis](/examples/synthesis) for details.
 
 ## AudioContext Lifecycle
 
 ### Lazy Initialization
 
-EZ Web Audio creates the AudioContext automatically when you first use a factory function inside a user interaction handler:
-
-```typescript
-button.onclick = async () => {
-  const sound = await createSound('/audio/click.mp3')
-  sound.play()
-}
-```
-
-::: tip
-For iOS mute workaround or pre-warming, call `await initAudio()` inside the interaction handler before creating sounds.
-:::
+EZ Web Audio creates the AudioContext automatically when you first call a factory function inside a user interaction handler. For iOS mute workaround or pre-warming, call `await initAudio()` first.
 
 ### Single Context and States
 
@@ -157,21 +138,9 @@ sound.changePanTo(-0.5)
 sound.play()
 ```
 
-### Effect Chain, Bypass, and Custom Effects
+### Effect Chain and Bypass
 
-Effects are processed in insertion order. Add multiple at once with `addEffects()`. Toggle bypass without removing — the chain rewires automatically:
-
-```typescript
-sound.addEffects([compressor, eq, limiter])
-filter.bypass = true // Signal skips; filter.bypass = false to restore
-```
-
-Wrap any Web Audio API node with `wrapEffect()`:
-
-```typescript
-const distortion = audioContext.createWaveShaper()
-sound.addEffect(wrapEffect(distortion))
-```
+Effects are processed in insertion order. Add multiple with `addEffects([a, b, c])`. Toggle `filter.bypass = true` to skip an effect — the chain rewires automatically. Wrap any raw Web Audio node with `wrapEffect(node)`.
 
 ## Events
 
@@ -213,9 +182,7 @@ import { TypedEventEmitter } from 'ez-web-audio'
 type PlayDetail = EventDetailFor<'play'> // PlayEventDetail
 ```
 
-Also exported: `BeatTrackEventMap`, `LayeredSoundEventMap`, `PlayEventDetail`, `StopEventDetail`, `EndEventDetail`, `PauseEventDetail`, `ResumeEventDetail`, `SeekEventDetail`, `BeatEventDetail`, `WarningEventDetail`.
-
-`TypedEventEmitter<TMap>` is exported for advanced consumers building custom event-driven audio classes that need type-safe event emission.
+Also exported: `BeatTrackEventMap`, `LayeredSoundEventMap`, and all detail types (`PlayEventDetail`, `StopEventDetail`, etc.). `TypedEventEmitter<TMap>` is available for building custom event-driven audio classes.
 
 ## Other Sound Types
 
@@ -255,14 +222,13 @@ layer.play()
 
 ### AudioSprite
 
-Pack multiple sounds into one audio file for fewer HTTP requests:
+Pack multiple sounds into one audio file — play segments by name with `createSprite()`:
 
 ```typescript
 const sprite = await createSprite('/audio/ui-sounds.mp3', {
   spritemap: { click: { start: 0, end: 0.1 }, success: { start: 1.0, end: 1.8 } }
 })
 sprite.play('click')
-sprite.play('success', { gain: 0.8 })
 ```
 
 ### Noise Generation
@@ -279,6 +245,14 @@ pink.play()
 ```
 
 All noise types return a looped `Sound` instance. You can also use `createWhiteNoise()` for the single-type shorthand.
+
+## Error Classes
+
+The library exports typed error classes: `AudioError` (base), `AudioLoadError` (load/decode failure), `AudioContextError` (context issues), and `InvalidNoteError` (invalid note name). All extend `AudioError` for catch-all handling.
+
+## Advanced Exports
+
+The library also exports: `MusicallyAware` (musical identity mixin), `createEffect` (low-level effect wrapper), `Connectable`/`Playable` (interfaces), options types (`AnalyzerOptions`, `BeatTrackOptions`, `EnvelopeOptions`, `FilterEffectOptions`, `OscillatorOptions`, `OscillatorFilterOptions`, `SamplerOptions`, `LayeredSoundOptions`), sprite types (`SpriteDefinition`, `SpriteManifest`, `SpritePlayOptions`), and unit types (`RatioType`, `SeekType`, `FilterType`). See the [API Reference](/api/) for details.
 
 ## Next Steps
 

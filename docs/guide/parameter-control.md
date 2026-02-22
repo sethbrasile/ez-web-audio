@@ -137,7 +137,7 @@ These methods handle the scheduling internally — no need to call `onPlaySet()`
 `Sound.update()`, `Sound.onPlaySet()`, and `Sound.onPlayRamp()` accept `SoundControlType` — only `'gain' | 'pan' | 'detune'`. `Oscillator` overrides these methods to accept the full `ControlType` (which also includes `'frequency'`). TypeScript catches mistakes at compile time:
 
 ```typescript
-import type { ControlType, SoundControlType } from 'ez-web-audio'
+import type { ControlType, OscillatorControlType, SoundControlType } from 'ez-web-audio'
 
 sound.update('gain').to(0.5).as('ratio') // OK
 sound.update('frequency').to(440).as('ratio') // TypeScript error!
