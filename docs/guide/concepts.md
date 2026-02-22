@@ -159,6 +159,38 @@ const pad = { attack: 0.5, decay: 0.2, sustain: 0.8, release: 1.0 }
 const pluck = { attack: 0.001, decay: 0.3, sustain: 0.2, release: 0.1 }
 ```
 
+### Envelope Class
+
+The `Envelope` class is also exported for advanced use cases. Normally you configure it via `createOscillator({ envelope: { ... } })`, but you can instantiate it directly when you need to drive automation from your own code.
+
+```typescript
+import { Envelope } from 'ez-web-audio'
+
+const env = new Envelope({
+  attackTime: 0.05,
+  decayTime: 0.1,
+  sustainLevel: 0.7,
+  releaseTime: 0.3
+})
+
+// Apply to any AudioParam (typically a GainNode)
+env.applyTo(gainNode.gain, audioContext.currentTime)
+
+// Release on note end
+env.release(gainNode.gain, audioContext.currentTime)
+```
+
+`EnvelopeOptions` fields (all optional, with defaults):
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `attackTime` | number (s) | 0.01 | Time to ramp from 0 to peak |
+| `decayTime` | number (s) | 0.1 | Time to fall to sustain level |
+| `sustainLevel` | number (0–1) | 0.7 | Volume held during sustain |
+| `releaseTime` | number (s) | 0.3 | Time to fade after release |
+
+The Envelope supports click-free retriggering — if you call `applyTo` while the envelope is still active, it picks up from the current value instead of jumping to zero.
+
 ## AudioContext Lifecycle
 
 ### Lazy Initialization
@@ -534,6 +566,41 @@ await crossfade(intro, main, 3)
 
 Typical use cases: DJ transitions, ambient scene changes, and background music swaps.
 
+### Preloading Audio
+
+Cache audio files before they are needed so playback starts instantly:
+
+```typescript
+import { preload, createSound, isPreloaded } from 'ez-web-audio'
+
+// Preload during a loading screen
+await preload(['/audio/level1.mp3', '/audio/level2.mp3', '/audio/boss.mp3'])
+
+// Subsequent createSound/createTrack calls hit the cache — no additional fetch
+const level1 = await createSound('/audio/level1.mp3')
+
+// Check if a URL is already cached
+console.log(isPreloaded('/audio/level1.mp3')) // true
+```
+
+### Cache Management
+
+Clear the internal preload cache when you no longer need cached audio — useful in long-running apps after level transitions:
+
+```typescript
+import { clearPreloadCache, preload } from 'ez-web-audio'
+
+await preload(['/audio/level1.mp3', '/audio/level2.mp3'])
+
+// Level transition: free memory from level 1 assets
+clearPreloadCache('/audio/level1.mp3') // Clear a single URL
+
+// Or clear everything at once
+clearPreloadCache()
+```
+
+`clearPreloadCache()` without arguments clears the entire cache. With a URL argument, it removes only that entry. After clearing, the next `createSound()` or `preload()` call for that URL fetches it fresh.
+
 ### Debug Mode
 
 Enable debug logging for troubleshooting:
@@ -541,14 +608,84 @@ Enable debug logging for troubleshooting:
 ```typescript
 import { setDebugHandler, setDebugMode } from 'ez-web-audio'
 
-// Enable debug mode with default console logging
+// Enable debug mode — logs all events to the console
 setDebugMode(true)
-
-// Or provide a custom handler
-setDebugHandler((message) => {
-  console.log(`[Audio Debug] ${message.type}: ${message.message}`)
-})
+// Example console output:
+//   [ez-audio:event] [0.000] kick: play
+//   [ez-audio:connection] [0.021] kick: Effect added at position 0
+//   [ez-audio:warning] [1.420] bgMusic: AudioContext suspended
 ```
+
+Each message is a `DebugMessage` object with:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `'event' \| 'connection' \| 'warning'` | Category of message |
+| `source` | string | Sound name or identifier |
+| `message` | string | Human-readable description |
+| `timestamp` | number | `audioContext.currentTime` |
+
+Use `setDebugHandler` to capture messages in your own logging system:
+
+```typescript
+import { setDebugHandler, setDebugMode } from 'ez-web-audio'
+
+// Capture all debug messages (works even when setDebugMode is false)
+setDebugHandler((msg) => {
+  if (msg.type === 'warning') {
+    myLogger.warn(`[${msg.source}] ${msg.message}`)
+  }
+})
+
+// Filter to connection events only
+setDebugHandler((msg) => {
+  if (msg.type === 'connection') {
+    console.log(`[${msg.type}] ${msg.message}`)
+    // Example output: [connection] Effect added at position 0
+  }
+})
+
+// Restore default console.log handler
+setDebugHandler(null)
+```
+
+### Interaction Helpers
+
+Bind touch and mouse events to a sound for piano-style interactive controls.
+
+`useInteractionMethods(element, player)` attaches `touchstart`/`mousedown` → `play()` and `touchend`/`mouseup`/`mouseleave` → `stop()`. It returns a cleanup function to remove all listeners:
+
+```typescript
+import { useInteractionMethods, createOscillator } from 'ez-web-audio'
+
+const synth = await createOscillator({ frequency: 440 })
+const key = document.getElementById('piano-key')!
+
+const cleanup = await useInteractionMethods(key, synth)
+// Touching or clicking the element now plays/stops the synth
+
+// Later — clean up on component unmount
+cleanup()
+```
+
+`preventEventDefaults(element)` prevents text selection, context menus, and drag-and-drop on interactive audio elements. It also returns a cleanup function:
+
+```typescript
+import { preventEventDefaults, useInteractionMethods, createOscillator } from 'ez-web-audio'
+
+const synth = await createOscillator({ frequency: 261.63 }) // C4
+const key = document.getElementById('key-c4')!
+
+// Prevent browser defaults (selection, context menu, drag) before binding audio
+const removePrevention = preventEventDefaults(key)
+const cleanup = await useInteractionMethods(key, synth)
+
+// Clean up both when done
+removePrevention()
+cleanup()
+```
+
+Both helpers work with any object that has `play()` and `stop()` methods — not just oscillators.
 
 ## Next Steps
 
