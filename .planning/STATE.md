@@ -1,7 +1,7 @@
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-22 (Phase 29-01 complete: demo component API misuse bug fixes)
-**Current Focus:** Phase 29 — Demo Component Fixes
+**Last Updated:** 2026-02-22 (Phase 29-03 complete: accessibility and TypeScript type safety)
+**Current Focus:** Phase 29 — Demo Component Fixes (Complete)
 
 ## Project Reference
 
@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 29 of 31 (Demo Component Fixes)
-Plan: 1 of 3 complete
-Status: In Progress
-Last activity: 2026-02-22 — Phase 29-01 complete (2 tasks, 3 files, demo component bug fixes)
+Plan: 3 of 3 complete
+Status: Phase Complete
+Last activity: 2026-02-22 — Phase 29-03 complete (2 tasks, 8 files, accessibility and TypeScript type safety)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Last activity: 2026-02-22 — Phase 29-01 complete (2 tasks, 3 files, demo compo
 | Phase 28 P02 | 2min | 2 tasks | 1 files |
 | Phase 29-demo-component-fixes P01 | 2min | 2 tasks | 3 files |
 | Phase 29 P02 | 2min | 2 tasks | 2 files |
+| Phase 29-demo-component-fixes P03 | 4min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,9 @@ Recent decisions affecting current work:
 - [Phase 29-demo-component-fixes]: FilterDemo bypass: filter.bypass direct assignment — Phase 19 auto-rewire handles chain reconnect; no rewireEffects() needed
 - [Phase 29]: Font.notes (public array) used directly in SoundfontPiano cleanup — Font has no getNotes() method
 - [Phase 29]: AmbientGenerator.vue textureFilter.frequency setter confirmed correct — no change needed
+- [Phase 29-demo-component-fixes]: import type ordering: ez-web-audio type imports before vue value imports per perfectionist/sort-imports rule
+- [Phase 29-demo-component-fixes]: SoundfontPiano font.notes cast removed: Font.notes is SampledNote[] — cast unnecessary once font is typed as Font
+- [Phase 29-demo-component-fixes]: lib: any retained for dynamic import module references — no clean type for await import() result in variable
 
 ### Pending Todos
 
@@ -147,5 +151,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 29-01-PLAN.md
+Stopped at: Completed 29-03-PLAN.md
 Resume file: None
