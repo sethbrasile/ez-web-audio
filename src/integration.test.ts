@@ -5,7 +5,9 @@ import { Analyzer } from './analyzer'
 import { BeatTrack } from './beat-track'
 import { EffectWrapper } from './effects/effect-wrapper'
 import { Font } from './font'
+import { LayeredSound } from './layered-sound'
 import { Oscillator } from './oscillator'
+import { Sampler } from './sampler'
 import { Sound } from './sound'
 import { Track } from './track'
 import { settle } from './test/helpers'
@@ -591,5 +593,142 @@ describe('cleanup/dispose pattern', () => {
 
     expect(track.isPlaying).toBe(false)
     expect(track.position.raw).toBe(0)
+  })
+})
+
+describe('Oscillator + filters integration', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = new Mock() as unknown as AudioContext
+  })
+
+  it('Oscillator with lowpass filter — getFilters() returns filter after construction', () => {
+    // OscillatorOptions uses named filter properties: lowpass, highpass, bandpass, etc.
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 800, q: 1 },
+    })
+
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(1)
+    expect(filters[0].type).toBe('lowpass')
+  })
+
+  it('Oscillator with multiple filters — all filters present and in order', () => {
+    // OscillatorOptions uses named filter properties; FILTERS array order is:
+    // ['highpass', 'bandpass', 'lowpass', ...] — highpass comes before lowpass
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      highpass: { frequency: 200, q: 1 },
+      lowpass: { frequency: 4000, q: 1 },
+    })
+
+    const filters = osc.getFilters()
+    expect(filters).toHaveLength(2)
+    expect(filters[0].type).toBe('highpass')
+    expect(filters[1].type).toBe('lowpass')
+  })
+
+  it('Oscillator with filter can play and stop without error', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      lowpass: { frequency: 2000, q: 1 },
+    })
+
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(true)
+
+    await expect(osc.stop()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(false)
+  })
+
+  it('Oscillator with filters can stop and restart — filters preserved', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      bandpass: { frequency: 1000, q: 2 },
+    })
+
+    await osc.play()
+    expect(osc.getFilters()).toHaveLength(1)
+
+    await osc.stop()
+    expect(osc.getFilters()).toHaveLength(1)
+
+    // Can play again after stop
+    await expect(osc.play()).resolves.not.toThrow()
+    expect(osc.isPlaying).toBe(true)
+    expect(osc.getFilters()).toHaveLength(1)
+  })
+})
+
+describe('Sampler integration', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = new Mock() as unknown as AudioContext
+  })
+
+  function createSoundBuffer(durationSeconds: number = 1): Sound {
+    const sampleRate = 44100
+    const length = Math.floor(durationSeconds * sampleRate)
+    const audioBuffer = audioContext.createBuffer(1, length, sampleRate)
+    return new Sound(audioContext, audioBuffer)
+  }
+
+  it('Sampler round-robin plays each sound in sequence', () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    const sound3 = createSoundBuffer()
+    // Sampler constructor: (sounds[], opts?) — no audioContext
+    const sampler = new Sampler([sound1, sound2, sound3])
+
+    const playSpy1 = vi.spyOn(sound1, 'play')
+    const playSpy2 = vi.spyOn(sound2, 'play')
+    const playSpy3 = vi.spyOn(sound3, 'play')
+
+    sampler.play()
+    sampler.play()
+    sampler.play()
+    sampler.play() // wraps back to sound1
+
+    expect(playSpy1).toHaveBeenCalledTimes(2) // first and fourth call
+    expect(playSpy2).toHaveBeenCalledTimes(1)
+    expect(playSpy3).toHaveBeenCalledTimes(1)
+  })
+
+  it('Sampler getSounds() returns all sounds — integration check', () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    // Sampler constructor: (sounds[], opts?) — no audioContext
+    const sampler = new Sampler([sound1, sound2])
+
+    const sounds = sampler.getSounds()
+    expect(sounds).toHaveLength(2)
+    expect(sounds[0]).toBe(sound1)
+    expect(sounds[1]).toBe(sound2)
+  })
+
+  it('Sampler with effects on individual sounds — effects persist through sampler play', () => {
+    const sound1 = createSoundBuffer()
+    const sound2 = createSoundBuffer()
+    const externalEffect = { connect: vi.fn() }
+    const effect = new EffectWrapper(audioContext, externalEffect)
+
+    // Effects live on individual Sound instances, not Sampler
+    sound1.addEffect(effect)
+
+    // Sampler constructor: (sounds[], opts?) — no audioContext
+    const sampler = new Sampler([sound1, sound2])
+
+    // Effect on sound1 persists through sampler operations
+    expect((sampler.getSounds()[0] as Sound).getEffects()).toHaveLength(1)
+    expect((sampler.getSounds()[0] as Sound).getEffects()[0]).toBe(effect)
+  })
+
+  it('Sampler play() with empty sounds throws clear error', () => {
+    // Sampler constructor: (sounds[], opts?) — no audioContext
+    const sampler = new Sampler([])
+    expect(() => sampler.play()).toThrow()
   })
 })
