@@ -17,7 +17,7 @@ Plan: 1 of 3 complete
 Status: In Progress
 Last activity: 2026-02-22 — Phase 29-01 complete (2 tasks, 3 files, demo component bug fixes)
 
-**Progress:** [██████████] 96%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Last activity: 2026-02-22 — Phase 29-01 complete (2 tasks, 3 files, demo compo
 | Phase 28-documentation-corrections P01 | 8min | 2 tasks | 8 files |
 | Phase 28 P02 | 2min | 2 tasks | 1 files |
 | Phase 29-demo-component-fixes P01 | 2min | 2 tasks | 3 files |
+| Phase 29 P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase 29-demo-component-fixes]: SampledDrumKit cleanup: null references not stop() — Sampler has no stop() method; one-shot sounds complete naturally
 - [Phase 29-demo-component-fixes]: DrumMachineVue BPM: setTempo() directly from watch — no stop/restart gap; setTempo updates on next scheduler tick
 - [Phase 29-demo-component-fixes]: FilterDemo bypass: filter.bypass direct assignment — Phase 19 auto-rewire handles chain reconnect; no rewireEffects() needed
+- [Phase 29]: Font.notes (public array) used directly in SoundfontPiano cleanup — Font has no getNotes() method
+- [Phase 29]: AmbientGenerator.vue textureFilter.frequency setter confirmed correct — no change needed
 
 ### Pending Todos
 
