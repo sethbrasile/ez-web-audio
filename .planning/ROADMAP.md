@@ -496,7 +496,7 @@ Plans:
 | 34. Test Gap Closure | 2/2 | Complete    | 2026-02-22 | - |
 | 35. Documentation Expansion & Fixes | 3/3 | Complete    | 2026-02-22 | - |
 | 36. Documentation Sync (Post-Fixes) | 2/2 | Complete    | 2026-02-22 | - |
-| 37. Nice-to-Have DX Features | 1/3 | In Progress|  | - |
+| 37. Nice-to-Have DX Features | 2/3 | In Progress|  | - |
 | 38. Final Documentation Sync | v1.0 Stable | 0/? | Pending | - |
 
 ---

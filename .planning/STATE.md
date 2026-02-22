@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHANGELOG, stale API sweep)
 
-**Progress:** [██████████] 97%
+**Progress:** [██████████] 98%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Last activity: 2026-02-22 — Phase 36 complete (guide sync, TypeDoc regen, CHAN
 | Phase 36-documentation-sync P01 | 4min | 2 tasks | 4 files |
 | Phase 36-documentation-sync P02 | 4min | 2 tasks | 2 files |
 | Phase 37-nice-to-have-dx-features P37-02 | 7min | 2 tasks | 6 files |
+| Phase 37-nice-to-have-dx-features P01 | 8min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,10 @@ Recent decisions affecting current work:
 - [Phase 37-nice-to-have-dx-features]: AudioEventSource uses import type in event-types.ts — erased at compile time, no circular runtime dep between base-sound.ts and event-types.ts
 - [Phase 37-nice-to-have-dx-features]: SoundControlType is manual literal union 'gain'|'pan'|'detune' — keeps Sound types stable when consumers augment ControlTypeMap
 - [Phase 37-nice-to-have-dx-features]: Connectable.update narrowed to SoundControlType; Oscillator overrides with ControlType — method override satisfies TypeScript covariance rules
+- [Phase 37-nice-to-have-dx-features]: AudioInput union type (string|ArrayBuffer|Blob|File) extends createSound/createTrack for ergonomic raw data input
+- [Phase 37-nice-to-have-dx-features]: createNoise('white'|'pink'|'brown') unified factory: pink uses Voss-McCartney 16-generator, brown uses cumulative random walk ±0.02 clamped to [-1,1]
+- [Phase 37-nice-to-have-dx-features]: volume getter/setter alias on BaseSound delegates to changeGainTo() — reuses validation (negative throws, >1 warns)
+- [Phase 37-nice-to-have-dx-features]: createTracks() mirrors createSounds() pattern — same progress callback signature (loaded, total, url)
 
 ### Pending Todos
 
