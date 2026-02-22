@@ -640,3 +640,91 @@ describe('edge cases', () => {
     })
   })
 })
+
+describe('on(), off(), once() convenience methods', () => {
+  it('on() subscribes to events and returns this for chaining', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    let callCount = 0
+    const handler = () => callCount++
+
+    const result = track.on('stop', handler)
+
+    // Returns this for chaining
+    expect(result).toBe(track)
+
+    // Trigger the event
+    track.playActiveBeats(120, 1 / 4)
+    track.stop()
+
+    expect(callCount).toBe(1)
+  })
+
+  it('off() removes event listener', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    let callCount = 0
+    const handler = () => callCount++
+
+    track.on('stop', handler)
+    track.off('stop', handler)
+
+    // Trigger event — handler should NOT be called
+    track.playActiveBeats(120, 1 / 4)
+    track.stop()
+
+    expect(callCount).toBe(0)
+  })
+
+  it('off() returns this for chaining', () => {
+    const track = createBeatTrack()
+    const handler = () => {}
+    const result = track.off('stop', handler)
+    expect(result).toBe(track)
+  })
+
+  it('once() fires handler only once', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    let callCount = 0
+    track.once('stop', () => callCount++)
+
+    // Trigger stop twice
+    track.playActiveBeats(120, 1 / 4)
+    track.stop()
+    track.playActiveBeats(120, 1 / 4)
+    track.stop()
+
+    expect(callCount).toBe(1)
+  })
+
+  it('once() returns this for chaining', () => {
+    const track = createBeatTrack()
+    const result = track.once('stop', () => {})
+    expect(result).toBe(track)
+  })
+
+  it('on() supports chaining multiple events', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    let beatCount = 0
+    let stopCount = 0
+
+    // Chain .on() calls
+    track.on('beat', () => beatCount++).on('stop', () => stopCount++)
+
+    track.playActiveBeats(120, 1 / 4)
+    expect(beatCount).toBeGreaterThan(0)
+
+    track.stop()
+    expect(stopCount).toBe(1)
+  })
+})
