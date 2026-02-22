@@ -62,9 +62,11 @@ export class BeatTrack extends Sampler {
   private currentTempo: number = 120
   private noteType: number = 1 / 4
 
+  // Play mode flag: true = play all beats unconditionally, false = play only active beats
+  private _playAllBeats = false
+
   // Pause state
   private pausedBeatIndex: number | null = null
-  private pausedBeatTime: number | null = null
 
   // Beat cache (replaces module-level WeakMap for framework proxy compatibility)
   private _beats: Beat[] = []
@@ -153,12 +155,14 @@ export class BeatTrack extends Sampler {
    * Starts a lookahead scheduler that triggers beats at precise audio times.
    * Emits 'beat' events for UI synchronization.
    *
+   * Unlike `playActiveBeats()`, this plays ALL beats regardless of their `active` flag.
+   *
    * @param bpm - Tempo in beats per minute
    * @param noteType - Rhythmic subdivision as a fraction. Common values: 1/4 (quarter notes), 1/8 (eighth notes), 1/16 (sixteenth notes). The beat duration in seconds is calculated as: (240 * noteType) / bpm.
    *
    * @example
    * ```typescript
-   * track.playBeats(120, 1/4)  // 120 BPM, quarter notes
+   * track.playBeats(120, 1/4)  // 120 BPM, quarter notes — all beats play
    * track.playBeats(140, 1/8)  // 140 BPM, eighth notes
    * ```
    */
@@ -169,6 +173,7 @@ export class BeatTrack extends Sampler {
     if (noteType <= 0) {
       throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
+    this._playAllBeats = true
     this.currentTempo = bpm
     this.noteType = noteType
     this.nextBeatTime = this.audioContext.currentTime
@@ -200,6 +205,7 @@ export class BeatTrack extends Sampler {
     if (noteType <= 0) {
       throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
+    this._playAllBeats = false
     this.currentTempo = bpm
     this.noteType = noteType
     this.nextBeatTime = this.audioContext.currentTime
@@ -227,7 +233,6 @@ export class BeatTrack extends Sampler {
     this.currentBeatIndex = 0
     this.nextBeatTime = 0
     this.pausedBeatIndex = null
-    this.pausedBeatTime = null
 
     this.emit('stop', {
       time: this.audioContext.currentTime,
@@ -255,7 +260,6 @@ export class BeatTrack extends Sampler {
     }
 
     this.pausedBeatIndex = this.currentBeatIndex
-    this.pausedBeatTime = this.nextBeatTime
 
     this.emit('pause', {
       time: this.audioContext.currentTime,
@@ -280,7 +284,9 @@ export class BeatTrack extends Sampler {
   public resume(): void {
     if (this.pausedBeatIndex !== null) {
       this.currentBeatIndex = this.pausedBeatIndex
-      this.nextBeatTime = this.pausedBeatTime ?? this.audioContext.currentTime
+      // Reset nextBeatTime to current time to prevent scheduler catch-up:
+      // pausedBeatTime is in the past; restoring it would cause hundreds of beats to fire immediately
+      this.nextBeatTime = this.audioContext.currentTime
 
       this.emit('resume', {
         time: this.audioContext.currentTime,
@@ -291,7 +297,6 @@ export class BeatTrack extends Sampler {
       this.scheduler()
 
       this.pausedBeatIndex = null
-      this.pausedBeatTime = null
     }
   }
 
@@ -348,10 +353,16 @@ export class BeatTrack extends Sampler {
     const beat = this.beats[beatIndex]
     const offset = time - this.audioContext.currentTime
 
-    // playInIfActive handles everything:
-    // - Active beats: plays sound, sets isPlaying + currentTimeIsPlaying (both auto-reset)
-    // - Inactive beats: sets currentTimeIsPlaying only (visual playhead on rests)
-    beat.playInIfActive(offset)
+    if (this._playAllBeats) {
+      // playBeats mode: play all beats unconditionally regardless of beat.active
+      beat.playIn(offset)
+    }
+    else {
+      // playActiveBeats mode: only active beats produce sound; inactive beats are rests
+      // - Active beats: plays sound, sets isPlaying + currentTimeIsPlaying (both auto-reset)
+      // - Inactive beats: sets currentTimeIsPlaying only (visual playhead on rests)
+      beat.playInIfActive(offset)
+    }
 
     // Emit beat event at play time using AudioContext-aware timeout
     // so consumers don't need to compensate for lookahead delay

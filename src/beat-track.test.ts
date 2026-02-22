@@ -234,13 +234,16 @@ describe('resume() behavior', () => {
     track.addSound(sound)
 
     track.playActiveBeats(120, 1 / 4)
-    const beatIndexBeforePause = track.getCurrentBeatIndex()
 
     track.pause()
+    // Capture the saved paused beat index before calling resume
+    const savedBeatIndex = track.getPausedBeatIndex()!
+
     track.resume()
 
-    // After resume, current beat index should match what was captured during pause
-    expect(track.getCurrentBeatIndex()).toBe(beatIndexBeforePause)
+    // After resume, the scheduler starts from savedBeatIndex and advances forward.
+    // currentBeatIndex should be >= savedBeatIndex (resumed from correct position).
+    expect(track.getCurrentBeatIndex()).toBeGreaterThanOrEqual(savedBeatIndex)
   })
 
   it('restarts scheduler after resume', () => {
