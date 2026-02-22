@@ -37,6 +37,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ Source code fixes: race conditions, memory leaks, missing exports, API contract violations — v1.0 stable Phase 26
 - ✓ Package quality: professional README, package.json metadata, CI gates, controller exports — v1.0 stable Phase 27
 - ✓ Documentation corrections: fixed 6 critical doc errors, added narrative docs for 7 features — v1.0 stable Phase 28
+- ✓ Demo component fixes: accessibility, touch handling, TypeScript types, API corrections — v1.0 stable Phase 29
 
 ### Active
 
@@ -117,4 +118,4 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
 
 ---
-*Last updated: 2026-02-22 after Phase 28*
+*Last updated: 2026-02-22 after Phase 29*
