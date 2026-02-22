@@ -150,6 +150,39 @@ export class BeatTrack extends Sampler {
   }
 
   /**
+   * Set beat active states from a pattern array.
+   *
+   * Each element maps to a beat: truthy values (1, true) set the beat active,
+   * falsy values (0, false) set it inactive. If the array is shorter than
+   * the number of beats, remaining beats are set inactive. If longer, extra
+   * values are ignored.
+   *
+   * @param pattern - Array of 0/1 or boolean values representing the beat pattern
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * const kick = await createBeatTrack(['kick.mp3'], { numBeats: 8 })
+   *
+   * // 4-on-the-floor pattern
+   * kick.setPattern([1, 0, 1, 0, 1, 0, 1, 0])
+   *
+   * // Shorter array — remaining beats inactive
+   * kick.setPattern([1, 0, 1]) // beats 3-7 become inactive
+   *
+   * // Chainable
+   * kick.setPattern([1, 0, 1, 0]).playActiveBeats(120, 1/4)
+   * ```
+   */
+  public setPattern(pattern: (number | boolean)[]): this {
+    const beats = this.beats
+    for (let i = 0; i < beats.length; i++) {
+      beats[i].active = i < pattern.length ? !!pattern[i] : false
+    }
+    return this
+  }
+
+  /**
    * Start playing all beats in the pattern continuously.
    *
    * Starts a lookahead scheduler that triggers beats at precise audio times.
