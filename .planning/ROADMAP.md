@@ -384,7 +384,10 @@ Plans:
   7. `BeatTrack.on()`, `.off()`, `.once()` convenience methods are tested
   8. `Envelope.estimateCurrentValue()` and `isActive` are tested through lifecycle
   9. `Analyzer.fftSize` setter validation (non-power-of-2 rejection) is tested
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 34-01-PLAN.md — Factory function tests, oscillator frequency:0 fix, AudioSprite stop/stopAll tests
+- [ ] 34-02-PLAN.md — changeGainTo guards, getGainNode, addEffects happy path, BeatTrack events, verify Envelope/Analyzer
 
 ### Phase 35: Documentation Expansion & Fixes
 **Goal**: Every significant library feature has an interactive example, all code examples are correct, and guides are well-organized
