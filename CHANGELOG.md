@@ -17,6 +17,15 @@ All notable changes to this project will be documented in this file.
 - **`createOscillator({ note: 'A4' })`** — accepts note name from built-in frequency map
 - **`createAnalyzer()` overload** — works without AudioContext parameter (resolves shared context internally)
 - **`BeatTrack.setPattern([1,0,1,0])`** — set beat active states from a numeric/boolean array
+- **`createSound()` / `createTrack()` accept `ArrayBuffer`, `Blob`, or `File`** — not just URL strings; use the `AudioInput` type
+- **`createNoise('white' | 'pink' | 'brown')`** — unified noise generation factory (pink uses Voss-McCartney algorithm, brown uses random walk)
+- **`volume` getter/setter** on BaseSound — alias for `changeGainTo()` with same validation
+- **`createTracks(urls[], onProgress?)`** — batch Track loader matching `createSounds()` pattern
+- **Typed event sources** — event detail `source` field typed as `AudioEventSource` (was `unknown`)
+- **Narrowed `ControlType` per class** — `Sound.update()` accepts `SoundControlType` (`'gain' | 'pan' | 'detune'`); `Oscillator.update()` accepts full `ControlType` (including `'frequency'`)
+- **Event map types exported** — `SoundEventMap`, `BeatTrackEventMap`, `LayeredSoundEventMap`, `AudioEventSource`, `SoundEventType`, and all detail types
+- **`TypedEventEmitter<TMap>`** — shared base class for typed event systems, exported for advanced consumers
+- **`onPlaySet()` / `onPlayRamp()` consume-once behavior** prominently documented in JSDoc
 - AudioSprite interactive example page
 - LayeredSound interactive example page
 - Crossfade interactive example page
@@ -37,6 +46,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- `BaseSound` and `LayeredSound` now extend `TypedEventEmitter` (DRY refactor, ~120 lines removed)
 - Test count: 1038+ unit tests (up from 937)
 
 ## [1.0.0] - 2026-02-17
