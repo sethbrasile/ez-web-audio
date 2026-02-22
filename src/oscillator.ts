@@ -234,6 +234,14 @@ export class Oscillator extends BaseSound {
     oscillator.frequency.setValueAtTime(this.freq || 440, this.audioContext.currentTime)
     this.audioSourceNode = oscillator
 
+    // Disconnect old gain node before replacing to prevent memory leak
+    if (this.gainNode) {
+      try {
+        this.gainNode.disconnect()
+      }
+      catch { /* Already disconnected */ }
+    }
+
     // Create a new gain node on every play and update the effect chain
     const gainNode = this.audioContext.createGain()
     this.gainNode = gainNode
