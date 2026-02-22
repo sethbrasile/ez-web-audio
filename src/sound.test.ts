@@ -210,6 +210,59 @@ describe('sound', () => {
     })
   })
 
+  describe('timing methods', () => {
+    describe('stopIn(0) stops immediately', () => {
+      it('stops a playing sound immediately when called with 0', async () => {
+        const sound = createSound(audioContext)
+        await sound.play()
+        expect(sound.isPlaying).toBe(true)
+        await sound.stopIn(0)
+        expect(sound.isPlaying).toBe(false)
+      })
+    })
+
+    describe('stopAt(audioContext.currentTime) stops immediately', () => {
+      it('stops immediately when called with current time', async () => {
+        const sound = createSound(audioContext)
+        await sound.play()
+        expect(sound.isPlaying).toBe(true)
+        await sound.stopAt(audioContext.currentTime)
+        expect(sound.isPlaying).toBe(false)
+      })
+    })
+
+    describe('playFor(duration) isPlaying lifecycle', () => {
+      it('isPlaying becomes true after playFor starts', async () => {
+        const sound = createSound(audioContext)
+        expect(sound.isPlaying).toBe(false)
+        sound.playFor(1)
+        expect(await settle(() => sound.isPlaying)).toBe(true)
+      })
+
+      it('sound is playing after playFor starts (isPlaying lifecycle begins)', async () => {
+        const sound = createSound(audioContext)
+        // playFor calls playAt internally (without await), so isPlaying is set async
+        // We verify the playing state via settle after the playAt promise resolves
+        const stopSpy = vi.spyOn(sound, 'stop')
+        sound.playFor(1)
+        expect(await settle(() => sound.isPlaying)).toBe(true)
+        // stop not called yet (duration hasn't elapsed)
+        expect(stopSpy).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('playInAndStopAfter timing', () => {
+      it('stopIn is called with playIn + stopAfter total time', () => {
+        const sound = createSound(audioContext)
+        const playInSpy = vi.spyOn(sound, 'playIn')
+        const stopInSpy = vi.spyOn(sound, 'stopIn')
+        sound.playInAndStopAfter(1, 2)
+        expect(playInSpy).toHaveBeenCalledWith(1)
+        expect(stopInSpy).toHaveBeenCalledWith(3) // playIn + stopAfter = 1 + 2 = 3
+      })
+    })
+  })
+
   describe('stop behavior', () => {
     describe('stop()', () => {
       it('sets isPlaying to false', async () => {

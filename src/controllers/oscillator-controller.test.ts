@@ -290,6 +290,57 @@ describe('oscillatorController', () => {
     })
   })
 
+  describe('frequency ramp scheduling', () => {
+    it('onPlayRamp("frequency", "linear") schedules linear ramp from start to end value', () => {
+      controller.onPlayRamp('frequency', 'linear').from(220).to(440).in(0.5)
+      const setValueSpy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
+      const linearRampSpy = vi.spyOn(oscillatorNode.frequency, 'linearRampToValueAtTime')
+      controller.setValuesAtTimes()
+      // onPlayRamp deduplicates: start value (220) is removed; only end value (440) remains in linearValues
+      expect(setValueSpy).not.toHaveBeenCalled()
+      expect(linearRampSpy).toHaveBeenCalledWith(440, expect.any(Number))
+    })
+
+    it('onPlayRamp("frequency", "exponential") schedules exponential ramp to end value', () => {
+      controller.onPlayRamp('frequency').from(440).to(880).in(1.0)
+      const exponentialRampSpy = vi.spyOn(oscillatorNode.frequency, 'exponentialRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(exponentialRampSpy).toHaveBeenCalledWith(880, expect.any(Number))
+    })
+
+    it('onPlaySet("frequency") schedules setValueAtTime call', () => {
+      controller.onPlaySet('frequency').to(880)
+      const spy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
+      controller.setValuesAtTimes()
+      expect(spy).toHaveBeenCalledWith(880, expect.any(Number))
+    })
+
+    it('onPlayRamp("detune") schedules detune ramp', () => {
+      controller.onPlayRamp('detune').from(0).to(100).in(0.5)
+      const rampSpy = vi.spyOn(oscillatorNode.detune, 'exponentialRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(rampSpy).toHaveBeenCalledWith(100, expect.any(Number))
+    })
+
+    it('onPlayRamp("pan") schedules pan ramp on pannerNode', () => {
+      controller.onPlayRamp('pan', 'linear').from(-1).to(1).in(2.0)
+      const rampSpy = vi.spyOn(pannerNode.pan, 'linearRampToValueAtTime')
+      controller.setValuesAtTimes()
+      expect(rampSpy).toHaveBeenCalledWith(1, expect.any(Number))
+    })
+
+    it('scheduled values are cleared after setValuesAtTimes — second call is a no-op for that ramp', () => {
+      controller.onPlayRamp('frequency').from(220).to(880).in(0.5)
+      const rampSpy = vi.spyOn(oscillatorNode.frequency, 'exponentialRampToValueAtTime')
+      // First call: applies the ramp
+      controller.setValuesAtTimes()
+      expect(rampSpy).toHaveBeenCalledTimes(1)
+      // Second call: ramp was cleared, nothing to apply
+      controller.setValuesAtTimes()
+      expect(rampSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('edge cases', () => {
     it('handles zero frequency', () => {
       controller.onPlaySet('frequency').to(0)
