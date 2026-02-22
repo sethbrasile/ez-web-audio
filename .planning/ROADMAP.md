@@ -263,7 +263,10 @@ Plans:
   8. crossfade utility has narrative docs and example
   9. playTogether utility has narrative docs and example
   10. useInteractionMethods, preventEventDefaults, clearPreloadCache, debug utilities, and Envelope class all documented
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 28-01-PLAN.md — Fix incorrect docs (percentPlayed, createAnalyzer, FilterEffect, addEffect JSDoc, rewireEffects, async)
+- [ ] 28-02-PLAN.md — Add missing feature documentation (AudioSprite, crossfade, playTogether, interaction helpers, cache, debug, Envelope)
 
 ### Phase 29: Demo Component Fixes
 **Goal**: All VitePress demo components work correctly, are accessible, and follow best practices
@@ -342,7 +345,7 @@ Plans:
 | 25. New Example Pages | v1.0 Stable | 0/? | Pending | - |
 | 26. Source Code Fixes | 6/6 | Complete    | 2026-02-22 | - |
 | 27. Package Quality & README | 2/2 | Complete    | 2026-02-22 | - |
-| 28. Documentation Corrections | v1.0 Stable | 0/? | Pending | - |
+| 28. Documentation Corrections | v1.0 Stable | 0/2 | Pending | - |
 | 29. Demo Component Fixes | v1.0 Stable | 0/? | Pending | - |
 | 30. Test Coverage Expansion | v1.0 Stable | 0/? | Pending | - |
 | 31. E2E & Integration Test Expansion | v1.0 Stable | 0/? | Pending | - |
@@ -353,4 +356,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after Phase 27 planning (2 plans created)*
+*Last updated: 2026-02-22 after Phase 28 planning (2 plans created)*
