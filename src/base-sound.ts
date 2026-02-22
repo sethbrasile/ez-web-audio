@@ -661,6 +661,27 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
    * @param type - The parameter to control ('gain' or 'pan')
    * @returns Fluent builder for setting value and timing
    *
+   * @remarks
+   * **Important: Schedules are consumed after each play() call.**
+   * The values set via onPlaySet() are applied once when play() runs,
+   * then cleared. If you need the same schedule on every play, call
+   * onPlaySet() again before each play() call.
+   *
+   * ```typescript
+   * // This fade-in only applies to the FIRST play:
+   * sound.onPlaySet('gain').to(0).at(0)
+   * sound.onPlaySet('gain').to(1).endingAt(0.5, 'linear')
+   * sound.play() // fades in
+   * sound.play() // no fade — schedule was consumed
+   *
+   * // To repeat the schedule, re-call onPlaySet() before each play():
+   * function playWithFadeIn() {
+   *   sound.onPlaySet('gain').to(0).at(0)
+   *   sound.onPlaySet('gain').to(1).endingAt(0.5, 'linear')
+   *   sound.play()
+   * }
+   * ```
+   *
    * @example
    * ```typescript
    * // Fade in: start at 0, ramp to 1 over 0.5 seconds
@@ -691,6 +712,25 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
    * @param type - The parameter to ramp ('gain' or 'pan')
    * @param rampType - Type of ramp curve ('linear' or 'exponential')
    * @returns Fluent builder for setting start value, end value, and duration
+   *
+   * @remarks
+   * **Important: Schedules are consumed after each play() call.**
+   * The ramp set via onPlayRamp() is applied once when play() runs,
+   * then cleared. If you need the same ramp on every play, call
+   * onPlayRamp() again before each play() call.
+   *
+   * ```typescript
+   * // This fade-out only applies to the FIRST play:
+   * sound.onPlayRamp('gain', 'linear').from(1).to(0).in(2)
+   * sound.play() // fades out over 2 seconds
+   * sound.play() // no fade — schedule was consumed
+   *
+   * // To repeat, re-schedule before each play:
+   * function playWithFadeOut() {
+   *   sound.onPlayRamp('gain', 'linear').from(1).to(0).in(2)
+   *   sound.play()
+   * }
+   * ```
    *
    * @example
    * ```typescript

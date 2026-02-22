@@ -223,6 +223,11 @@ export class BaseParamController {
    * @param type - The parameter to schedule
    * @returns Fluent builder: `.to(value).at(time)` or `.to(value).endingAt(time, rampType)`
    *
+   * @remarks
+   * Schedules set via onPlaySet() are consumed (cleared) after each
+   * play() call by {@link clearScheduledValues}. Re-schedule before
+   * each play() if you need repeated automation.
+   *
    * @example
    * ```typescript
    * // Set gain to 0 at start, ramp to 1 over 0.5s
@@ -291,6 +296,9 @@ export class BaseParamController {
    * that parameter schedules set via onPlaySet() and onPlayRamp() are consumed once
    * per play() call. If the same schedule is needed on every play, call onPlaySet()
    * or onPlayRamp() before each play() call.
+   *
+   * @see onPlaySet
+   * @see onPlayRamp
    */
   protected clearScheduledValues(): void {
     this.startingValues = []
