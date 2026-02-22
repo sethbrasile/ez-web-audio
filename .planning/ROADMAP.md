@@ -438,7 +438,11 @@ Plans:
   7. `SoundEventType`, `BeatTrackEventMap`, `BeatEventDetail` exported from public API
   8. Event system `on/off/once/emit` extracted into shared `TypedEventTarget<TMap>` mixin (DRY)
   9. `onPlaySet()` behavior documented prominently — schedules consumed after one play
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 37-01-PLAN.md — ArrayBuffer/Blob/File input, createNoise factory, volume alias, createTracks batch loader
+- [ ] 37-02-PLAN.md — Type event sources, narrow ControlType per class, export event map types
+- [ ] 37-03-PLAN.md — Extract shared TypedEventEmitter mixin, document onPlaySet consumption
 
 ### Phase 38: Final Documentation Sync
 **Goal**: All Phase 37 additions are fully documented with examples, and the entire docs site is verified accurate
