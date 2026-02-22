@@ -1,7 +1,7 @@
 import type { TimeObject } from '@utils/create-time-object'
 import type { AnalyzerOptions } from './analyzer'
 import type { BeatTrackOptions } from './beat-track'
-import type { ControlType, ControlTypeMap, RatioType, SeekType } from './controllers/base-param-controller'
+import type { ControlType, ControlTypeMap, OscillatorControlType, RatioType, SeekType, SoundControlType } from './controllers/base-param-controller'
 import type { DebugMessage } from './debug'
 import type { Effect, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
 import type { EnvelopeOptions } from './envelope'
@@ -908,31 +908,27 @@ export { LayeredSound } from './layered-sound'
 export type { LayeredSoundOptions } from './layered-sound'
 
 export type {
-  // Analyzer types
   AnalyzerOptions,
-  // Beat track types
   BeatTrackOptions,
   Connectable,
-  // Controller types
   ControlType,
   ControlTypeMap,
   DebugMessage,
-  // Effect types
   Effect,
   EnvelopeOptions,
   ExternalEffect,
   FilterEffectOptions,
   FilterType,
+  OscillatorControlType,
   OscillatorFilterOptions,
   OscillatorOptions,
   Playable,
   RatioType,
-  // Sampler types
   SamplerOptions,
   SeekType,
+  SoundControlType,
   SpriteDefinition,
   SpriteManifest,
   SpritePlayOptions,
-  // Utility types
   TimeObject,
 }

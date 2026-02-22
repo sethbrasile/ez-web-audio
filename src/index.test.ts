@@ -439,6 +439,36 @@ describe('factory functions', () => {
 
       await expect(createSound('missing.mp3')).rejects.toThrow('404')
     })
+
+    it('accepts ArrayBuffer input and returns Sound', async () => {
+      const { createSound, Sound } = await import('./index')
+
+      const buffer = new ArrayBuffer(8)
+      const sound = await createSound(buffer)
+
+      expect(sound).toBeInstanceOf(Sound)
+    })
+
+    it('accepts Blob input and returns Sound', async () => {
+      const { createSound, Sound } = await import('./index')
+
+      // Create a Blob with an underlying ArrayBuffer
+      const arrayBuffer = new ArrayBuffer(8)
+      const blob = new Blob([arrayBuffer], { type: 'audio/wav' })
+      const sound = await createSound(blob)
+
+      expect(sound).toBeInstanceOf(Sound)
+    })
+
+    it('accepts File input and returns Sound', async () => {
+      const { createSound, Sound } = await import('./index')
+
+      const arrayBuffer = new ArrayBuffer(8)
+      const file = new File([arrayBuffer], 'click.wav', { type: 'audio/wav' })
+      const sound = await createSound(file)
+
+      expect(sound).toBeInstanceOf(Sound)
+    })
   })
 
   describe('createTrack()', () => {
@@ -463,6 +493,25 @@ describe('factory functions', () => {
       const { createTrack } = await import('./index')
 
       await expect(createTrack('song.mp3')).rejects.toThrow('500')
+    })
+
+    it('accepts Blob input and returns Track', async () => {
+      const { createTrack, Track } = await import('./index')
+
+      const arrayBuffer = new ArrayBuffer(8)
+      const blob = new Blob([arrayBuffer], { type: 'audio/wav' })
+      const track = await createTrack(blob)
+
+      expect(track).toBeInstanceOf(Track)
+    })
+
+    it('accepts ArrayBuffer input and returns Track', async () => {
+      const { createTrack, Track } = await import('./index')
+
+      const buffer = new ArrayBuffer(8)
+      const track = await createTrack(buffer)
+
+      expect(track).toBeInstanceOf(Track)
     })
   })
 
@@ -519,6 +568,62 @@ describe('factory functions', () => {
       const { createSounds, AudioLoadError } = await import('./index')
 
       await expect(createSounds(['a.mp3'])).rejects.toBeInstanceOf(AudioLoadError)
+    })
+  })
+
+  describe('createTracks()', () => {
+    it('returns array of Track instances', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTracks, Track } = await import('./index')
+
+      const tracks = await createTracks(['a.mp3', 'b.mp3', 'c.mp3'])
+
+      expect(tracks).toHaveLength(3)
+      tracks.forEach(t => expect(t).toBeInstanceOf(Track))
+    })
+
+    it('returns empty array for empty urls input', async () => {
+      const { createTracks } = await import('./index')
+
+      const tracks = await createTracks([])
+
+      expect(tracks).toEqual([])
+    })
+
+    it('calls onProgress for each loaded track', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTracks } = await import('./index')
+      const onProgress = vi.fn()
+
+      await createTracks(['a.mp3', 'b.mp3'], onProgress)
+
+      expect(onProgress).toHaveBeenCalledTimes(2)
+    })
+
+    it('calls onProgress with (loaded, total, url) signature', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTracks } = await import('./index')
+      const calls: [number, number, string][] = []
+      const onProgress = vi.fn((loaded: number, total: number, url: string) => {
+        calls.push([loaded, total, url])
+      })
+
+      await createTracks(['a.mp3', 'b.mp3'], onProgress)
+
+      expect(calls).toHaveLength(2)
+      // total is always 2
+      calls.forEach(([, total]) => expect(total).toBe(2))
+      // urls are correct
+      const urls = calls.map(([, , url]) => url)
+      expect(urls).toContain('a.mp3')
+      expect(urls).toContain('b.mp3')
+    })
+
+    it('throws AudioLoadError if any fetch fails', async () => {
+      mockFetch.mockRejectedValue(new Error('Network failure'))
+      const { createTracks, AudioLoadError } = await import('./index')
+
+      await expect(createTracks(['a.mp3'])).rejects.toBeInstanceOf(AudioLoadError)
     })
   })
 

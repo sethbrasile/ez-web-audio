@@ -1,4 +1,4 @@
-import type { ControlType, ParamController, RampType, RatioType } from '@controllers/base-param-controller'
+import type { ParamController, RampType, RatioType, SoundControlType } from '@controllers/base-param-controller'
 import type { Connectable } from '@interfaces/connectable'
 import type { Playable } from '@interfaces/playable'
 import type { TimeObject } from '@utils/create-time-object'
@@ -114,6 +114,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
     }
     this._pendingTimeoutIds = []
   }
+
   private static _hasWarnedAboutSuspended = false
 
   /**
@@ -741,7 +742,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * sound.update('pan').to(-1).as('ratio')
    * ```
    */
-  public update(type: ControlType): {
+  public update(type: SoundControlType): {
     to: (value: number) => {
       as: (method: RatioType) => void
     }
@@ -817,7 +818,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * sound.play()
    * ```
    */
-  public onPlaySet(type: ControlType): {
+  public onPlaySet(type: SoundControlType): {
     to: (value: number) => {
       at: (time: number) => void
       endingAt: (time: number, rampType?: RampType) => void
@@ -846,7 +847,7 @@ export abstract class BaseSound extends EventTarget implements Connectable, Play
    * sound.play()
    * ```
    */
-  public onPlayRamp(type: ControlType, rampType?: RampType): {
+  public onPlayRamp(type: SoundControlType, rampType?: RampType): {
     from: (startValue: number) => {
       to: (endValue: number) => {
         in: (endTime: number) => void
