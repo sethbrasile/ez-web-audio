@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Breaking Changes
+
+- **`EnvelopeOptions` property names shortened** — `attackTime` renamed to `attack`, `decayTime` to `decay`, `sustainLevel` to `sustain`, `releaseTime` to `release`. The `Envelope.release()` method renamed to `Envelope.triggerRelease()` to avoid collision with the new `release` property.
+
+### Added
+
+- **`fadeIn(duration)`** — Play with gain ramping from 0 to current gain over specified duration
+- **`fadeOut(duration)`** — Ramp gain to 0 and stop; returns a Promise that resolves when complete
+- **`loop` property** on Sound and Track — enables native `AudioBufferSourceNode.loop` without timing gaps
+- **`dispose()`** on BaseSound — disconnects all audio nodes, removes event listeners, marks instance as disposed (idempotent)
+- **`createOscillator({ note: 'A4' })`** — accepts note name from built-in frequency map
+- **`createAnalyzer()` overload** — works without AudioContext parameter (resolves shared context internally)
+- **`BeatTrack.setPattern([1,0,1,0])`** — set beat active states from a numeric/boolean array
+- AudioSprite interactive example page
+- LayeredSound interactive example page
+- Crossfade interactive example page
+- React integration example with hooks patterns
+- `docs/guide/parameter-control.md` and `docs/guide/utilities.md` split from oversized `concepts.md`
+
+### Fixed
+
+- **AudioSprite `loop: true`** now actually loops — duration arg no longer passed to `source.start()` when looping
+- **Stale setTimeout** can no longer corrupt `_isPlaying` across rapid play/stop cycles — timeout IDs tracked and cancelled
+- **`Playable` interface** return types match async implementations (`Promise<void>`)
+- **`Sound` constructor** `opts` parameter typed as `BaseSoundOptions` (was `any`)
+- **`createFont()`** validates `response.ok` and wraps fetch in try/catch with descriptive errors
+- **`CLAUDE.md`** uses `.as('ratio')` (was `.from('ratio')`)
+- **Oscillator `setup()`** documents GainNode replacement risk in JSDoc
+- `synthesis.md` uses `update('frequency')` instead of removed `changeFrequencyTo()`
+- `audio-routing.md` uses 1-arg `wrapEffect(node)` instead of 2-arg form
+
+### Changed
+
+- Test count: 1038+ unit tests (up from 937)
+
 ## [1.0.0] - 2026-02-17
 
 ### Breaking Changes
