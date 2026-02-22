@@ -111,7 +111,6 @@ watch(filterType, async (newType) => {
 
     // Add new filter
     source.addEffect(filter)
-    source.rewireEffects()
   }
   catch (err) {
     error.value = err instanceof Error ? err.message : 'Error changing filter type'
@@ -137,9 +136,8 @@ watch(filterGain, (newGain) => {
 })
 
 watch(bypassed, (newBypassed) => {
-  if (filter && source) {
+  if (filter) {
     filter.bypass = newBypassed
-    source.rewireEffects()
   }
 })
 
