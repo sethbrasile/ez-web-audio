@@ -17,7 +17,7 @@ Plan: 2 of TBD
 Status: In progress
 Last activity: 2026-02-22 — Phase 34-02 complete (changeGainTo guards, getGainNode, addEffects happy path, BeatTrack on/off/once tests)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -71,6 +71,7 @@ Last activity: 2026-02-22 — Phase 34-02 complete (changeGainTo guards, getGain
 | Phase 33-dx-convenience-apis P02 | 5min | 2 tasks | 3 files |
 | Phase 33-dx-convenience-apis P01 | 3min | 2 tasks | 2 files |
 | Phase 34 P02 | 8min | 2 tasks | 3 files |
+| Phase 34-test-gap-closure P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -164,6 +165,9 @@ Recent decisions affecting current work:
 - [Phase 33-dx-convenience-apis]: Track inherits loop from Sound — no setup() override means Sound.setup() handles AudioBufferSourceNode.loop for both
 - [Phase 34]: BeatTrack on/off/once tests trigger events via stop() since BeatTrack uses a private internal eventTarget — spy-based approaches not needed
 - [Phase 34]: changeGainTo() warn tests use vi.spyOn(console, 'warn').mockImplementation pattern to suppress test output noise
+- [Phase 34-test-gap-closure]: Factory function tests use vi.resetModules() + vi.stubGlobal('fetch') pattern matching existing index.test.ts conventions
+- [Phase 34-test-gap-closure]: Oscillator frequency:0 test replaced with accurate documentation: 0 is falsy so defaults to 440 via || operator, negative values throw
+- [Phase 34-test-gap-closure]: AudioSprite stop/stopAll tests use per-test createdSources factory to track unique source nodes per play() call
 
 ### Pending Todos
 
