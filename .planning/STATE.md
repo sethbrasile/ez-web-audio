@@ -17,7 +17,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-02-22 — Phase 27 complete (2 plans, 8/8 success criteria verified)
 
-**Progress:** [██████████] 97%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Last activity: 2026-02-22 — Phase 27 complete (2 plans, 8/8 success criteria v
 | Phase 27-package-quality-readme P02 | 2min | 1 tasks | 1 files |
 | Phase 27-package-quality-readme P01 | 2min | 2 tasks | 4 files |
 | Phase 28-documentation-corrections P01 | 8min | 2 tasks | 8 files |
+| Phase 28 P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,8 @@ Recent decisions affecting current work:
 - [Phase 28-documentation-corrections]: percentPlayed is 0-100 — progress bar code updated: no * 100 multiplication needed
 - [Phase 28-documentation-corrections]: createAnalyzer() requires AudioContext as first arg — getAudioContext() added before each call in visualization.md
 - [Phase 28-documentation-corrections]: Effect bypass auto-rewires chain — manual rewireEffects() after bypass toggle removed from docs
+- [Phase 28]: Envelope section placed under ADSR Envelope subsection — logical grouping since Envelope class powers oscillator envelopes
+- [Phase 28]: Preloading Audio section added alongside Cache Management — natural pairing for load/clear workflow
 
 ### Pending Todos
 
