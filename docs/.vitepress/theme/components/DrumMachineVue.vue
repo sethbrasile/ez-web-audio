@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BeatTrack } from 'ez-web-audio'
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
@@ -32,7 +33,7 @@ const trackDefs = [
 const tracks = ref(trackDefs.map(d => ({
   name: d.name,
   beats: makeBeats(d.name),
-  beatTrack: null as any,
+  beatTrack: null as BeatTrack | null,
   muted: false,
   activeStates: new Map<number, boolean>(), // Store active states when muted
 })))

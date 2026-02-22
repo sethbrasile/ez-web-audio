@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Oscillator } from 'ez-web-audio'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
@@ -10,7 +11,7 @@ const currentNote = ref('A4')
 const error = ref('')
 
 let ctx: CanvasRenderingContext2D | null = null
-let oscillator: any = null
+let oscillator: Oscillator | null = null
 let lib: any = null
 
 // Note mapping for frequency to note name

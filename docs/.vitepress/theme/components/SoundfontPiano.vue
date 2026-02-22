@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Font } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
@@ -7,7 +8,7 @@ const loading = ref(false)
 const error = ref('')
 const activeNotes = ref(new Set<string>())
 
-let font: any = null
+let font: Font | null = null
 let lib: any = null
 
 async function initFont() {
@@ -66,10 +67,11 @@ onUnmounted(() => {
   try {
     if (font) {
       // Stop any currently playing notes before disposing
-      const notes = font.notes as any[]
-      for (const note of notes) {
+      for (const note of font.notes) {
         if (note.isPlaying) {
-          try { note.stop() }
+          try {
+            note.stop()
+          }
           catch {}
         }
       }

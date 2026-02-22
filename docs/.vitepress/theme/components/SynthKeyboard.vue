@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Oscillator } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
@@ -23,7 +24,7 @@ const activeNotes = ref(new Set<string>())
 const error = ref('')
 
 // Track active oscillators by note name
-const oscillators = new Map<string, any>()
+const oscillators = new Map<string, Oscillator>()
 
 // ADSR presets
 const presets: Record<string, EnvelopeConfig> = {

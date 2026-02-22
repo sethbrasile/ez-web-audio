@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Sampler } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const loading = ref(false)
@@ -11,9 +12,9 @@ const playCount = ref({
   hihat: 1,
 })
 
-let kickSampler: any = null
-let snareSampler: any = null
-let hihatSampler: any = null
+let kickSampler: Sampler | null = null
+let snareSampler: Sampler | null = null
+let hihatSampler: Sampler | null = null
 let lib: any = null
 
 const pads = [

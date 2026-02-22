@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FilterEffect, Oscillator, Sound } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
@@ -19,10 +20,10 @@ const textureFilterCutoff = ref(800)
 const shimmerFrequency = ref(600)
 
 // Sound instances
-let droneOscillator: any = null
-let textureNoise: any = null
-let textureFilter: any = null
-let shimmerOscillator: any = null
+let droneOscillator: Oscillator | null = null
+let textureNoise: Sound | null = null
+let textureFilter: FilterEffect | null = null
+let shimmerOscillator: Oscillator | null = null
 
 async function togglePlayback() {
   try {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Analyzer, Oscillator } from 'ez-web-audio'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
@@ -17,8 +18,8 @@ const frequencyCanvas = ref<HTMLCanvasElement | null>(null)
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Audio instances
-let oscillator: any = null
-let analyzer: any = null
+let oscillator: Oscillator | null = null
+let analyzer: Analyzer | null = null
 let animationFrameId: number | null = null
 
 onMounted(() => {

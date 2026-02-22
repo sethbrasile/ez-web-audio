@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FilterEffect, Oscillator, Sound } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 const initialized = ref(false)
@@ -14,8 +15,8 @@ const bypassed = ref(false)
 const sourceType = ref<'oscillator' | 'noise'>('oscillator')
 
 let lib: any = null
-let source: any = null
-let filter: any = null
+let source: Sound | Oscillator | null = null
+let filter: FilterEffect | null = null
 
 // Logarithmic frequency mapping: 20 Hz to 20,000 Hz
 const frequency = computed(() => {
