@@ -419,7 +419,10 @@ Plans:
   3. API reference (TypeDoc) regenerated and reflects Phase 32-33 changes
   4. Navigation sidebar, example index, and cross-links all resolve correctly
   5. CHANGELOG.md updated with all Phase 32-35 changes
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 36-01-PLAN.md — Update guide pages with Phase 33 convenience APIs, update CHANGELOG with Phase 32-35 entries
+- [ ] 36-02-PLAN.md — Regenerate TypeDoc API reference, final cross-reference verification
 
 ### Phase 37: Nice-to-Have DX Features
 **Goal**: The library covers all common audio development patterns with ergonomic APIs
