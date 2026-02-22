@@ -283,7 +283,11 @@ Plans:
   8. XYPad height calculation doesn't fall back to clientWidth
   9. Demo components use proper TypeScript types instead of `any` for library instances
   10. SoundfontPiano cleanup stops playing notes before disposing
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 29-01-PLAN.md — Fix SampledDrumKit cleanup, DrumMachineVue BPM watcher, FilterDemo rewireEffects
+- [ ] 29-02-PLAN.md — Fix PianoKeyboard touch sliding, verify AmbientGenerator filter, fix SoundfontPiano cleanup
+- [ ] 29-03-PLAN.md — Add aria-labels, fix volume warnings, fix XYPad height, replace any types
 
 ### Phase 30: Test Coverage Expansion
 **Goal**: All untested modules and missing test scenarios identified in code review are covered
@@ -346,7 +350,7 @@ Plans:
 | 26. Source Code Fixes | 6/6 | Complete    | 2026-02-22 | - |
 | 27. Package Quality & README | 2/2 | Complete    | 2026-02-22 | - |
 | 28. Documentation Corrections | 2/2 | Complete    | 2026-02-22 | - |
-| 29. Demo Component Fixes | v1.0 Stable | 0/? | Pending | - |
+| 29. Demo Component Fixes | v1.0 Stable | 0/3 | Pending | - |
 | 30. Test Coverage Expansion | v1.0 Stable | 0/? | Pending | - |
 | 31. E2E & Integration Test Expansion | v1.0 Stable | 0/? | Pending | - |
 
@@ -356,4 +360,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after Phase 28 planning (2 plans created)*
+*Last updated: 2026-02-22 after Phase 29 planning (3 plans created)*
