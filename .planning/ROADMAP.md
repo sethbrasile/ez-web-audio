@@ -454,7 +454,10 @@ Plans:
   3. Full lint + typecheck + test suite passes
   4. CHANGELOG.md has complete record of all Phases 32-38
   5. Documentation site builds without warnings
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 38-01-PLAN.md — Document Phase 37 APIs in guide pages, audit all public exports for docs coverage
+- [ ] 38-02-PLAN.md — Update CHANGELOG with Phase 37 additions, run full verification suite
 
 ## Progress
 
