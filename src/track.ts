@@ -273,7 +273,7 @@ export class Track extends Sound {
    * Fixes C-4: awaits stop() before setting new offset to prevent race condition.
    *
    * @param amount - The position value (meaning depends on the `.as()` type)
-   * @returns Fluent builder with `.as(type)` method returning Promise<void>
+   * @returns Fluent builder with `.as(type)` method returning `Promise<void>`
    *
    * @example
    * ```typescript
