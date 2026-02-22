@@ -43,7 +43,7 @@ The waveform visualization shows the actual audio signal over time. This is the 
 Here's how to set up audio visualization from scratch:
 
 ```typescript
-import { createAnalyzer, createOscillator } from 'ez-web-audio'
+import { createAnalyzer, createOscillator, getAudioContext } from 'ez-web-audio'
 
 // Create an audio source (oscillator in this case)
 const oscillator = await createOscillator({
@@ -53,7 +53,8 @@ const oscillator = await createOscillator({
 oscillator.changeGainTo(0.3)
 
 // Create an analyzer with FFT size
-const analyzer = createAnalyzer({ fftSize: 1024 })
+const audioContext = await getAudioContext()
+const analyzer = createAnalyzer(audioContext, { fftSize: 1024 })
 
 // Connect the oscillator to the analyzer
 oscillator.setAnalyzer(analyzer)
@@ -139,11 +140,12 @@ drawWaveform()
 The analyzer works with any sound type:
 
 ```typescript
-import { createAnalyzer, createSound } from 'ez-web-audio'
+import { createAnalyzer, createSound, getAudioContext } from 'ez-web-audio'
 
 // Visualize a music track
 const track = await createSound('music.mp3')
-const analyzer = createAnalyzer({ fftSize: 2048 })
+const audioContext = await getAudioContext()
+const analyzer = createAnalyzer(audioContext, { fftSize: 2048 })
 
 track.setAnalyzer(analyzer)
 track.play()

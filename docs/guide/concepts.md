@@ -64,7 +64,7 @@ song.play()
 
 // Track knows its position
 console.log(song.position.string) // "1:23"
-console.log(song.percentPlayed) // 0.35 (35% complete)
+console.log(song.percentPlayed) // 35 (35% complete)
 
 // Control playback
 song.pause()
@@ -92,7 +92,7 @@ console.log(pos.pojo) // { minutes: 1, seconds: 23 }
 
 // Duration information
 console.log(track.duration.string) // "4:30"
-console.log(track.percentPlayed) // 0.31 (31%)
+console.log(track.percentPlayed) // 31 (31%)
 ```
 
 ## Oscillator: Sound Synthesis

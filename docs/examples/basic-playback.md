@@ -51,7 +51,7 @@ async function playMusic() {
 
   // Get current position
   console.log(song.position.string) // '0:30'
-  console.log(song.percentPlayed) // 0.25 (25%)
+  console.log(song.percentPlayed) // 25 (25%)
 }
 ```
 
@@ -128,8 +128,8 @@ console.log(track.duration.pojo) // { minutes: 3, seconds: 0 }
 console.log(track.position.raw) // 45.2 (seconds)
 console.log(track.position.string) // '0:45'
 
-// Progress percentage (0 to 1)
-console.log(track.percentPlayed) // 0.25
+// Progress percentage (0 to 100)
+console.log(track.percentPlayed) // 25
 ```
 
 ## Track Events
@@ -176,7 +176,7 @@ const progressBar = document.getElementById('progress')
 // Update progress during playback
 function updateProgress() {
   if (track.isPlaying) {
-    progressBar.style.width = `${track.percentPlayed * 100}%`
+    progressBar.style.width = `${track.percentPlayed}%`
     requestAnimationFrame(updateProgress)
   }
 }

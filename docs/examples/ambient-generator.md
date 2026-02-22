@@ -65,7 +65,7 @@ drone.changeGainTo(0.4) // Set mix level
 const texture = await createWhiteNoise()
 const lowpass = createFilterEffect('lowpass', {
   frequency: 800,
-  Q: 1.0
+  q: 1.0
 })
 texture.addEffect(lowpass)
 texture.changeGainTo(0.15)
@@ -90,7 +90,7 @@ shimmer.play()
 
 // Update parameters in real-time
 drone.update('frequency').to(100).as('ratio')
-lowpass.frequency.value = 1200
+lowpass.frequency = 1200
 shimmer.update('frequency').to(700).as('ratio')
 
 // Stop all layers
