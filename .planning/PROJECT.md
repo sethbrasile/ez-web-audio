@@ -41,6 +41,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ DX convenience APIs: fadeIn/fadeOut, loop, dispose, context-free createAnalyzer, note-based oscillator, BeatTrack.setPattern — v1.0 stable Phase 33
 - ✓ Test gap closure: factory function tests, oscillator freq:0 fix, AudioSprite stop, gain guards, effects batch, BeatTrack events — v1.0 stable Phase 34
 - ✓ Documentation expansion: concepts split, AudioSprite/LayeredSound/Crossfade examples, React integration guide, API fixes — v1.0 stable Phase 35
+- ✓ Documentation sync: guide pages updated for Phase 33 APIs, TypeDoc regenerated, CHANGELOG updated, stale API sweep clean — v1.0 stable Phase 36
 
 ### Active
 
@@ -121,4 +122,4 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
 
 ---
-*Last updated: 2026-02-22 after Phase 35*
+*Last updated: 2026-02-22 after Phase 36*
