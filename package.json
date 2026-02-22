@@ -10,11 +10,11 @@
     "url": "https://github.com/sethbrasile"
   },
   "license": "MIT",
+  "homepage": "https://sethbrasile.github.io/ez-web-audio",
   "repository": {
     "type": "git",
     "url": "https://github.com/sethbrasile/ez-web-audio.git"
   },
-  "homepage": "https://sethbrasile.github.io/ez-web-audio",
   "bugs": {
     "url": "https://github.com/sethbrasile/ez-web-audio/issues"
   },

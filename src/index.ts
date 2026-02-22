@@ -10,6 +10,8 @@ import type { Playable } from './interfaces/playable'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { SamplerOptions } from '@/sampler'
+import { OscillatorController } from '@controllers/oscillator-controller'
+import { SoundController } from '@controllers/sound-controller'
 import { Beat } from '@/beat'
 import { MusicallyAware } from '@/musical-identity'
 import { Note } from '@/note'
@@ -574,7 +576,7 @@ async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track
   return createSoundFor(type, buffer)
 }
 
-interface Player {
+export interface Player {
   play: () => void
   stop: () => void
 }
@@ -708,6 +710,7 @@ export {
   MusicallyAware,
   Note,
   Oscillator,
+  OscillatorController,
   pauseAll,
   playAll,
   // Synchronized playback
@@ -720,6 +723,7 @@ export {
   // Debug utilities
   setDebugMode,
   Sound,
+  SoundController,
   // Collection utilities
   stopAll,
   Track,
