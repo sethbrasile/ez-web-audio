@@ -191,6 +191,7 @@ onUnmounted(() => {
         <button
           class="play-btn"
           :class="{ active: isPlaying }"
+          :aria-label="isPlaying ? 'Stop ambient playback' : 'Start ambient playback'"
           @click="togglePlayback"
         >
           {{ isPlaying ? 'Stop' : 'Start' }}
@@ -204,6 +205,7 @@ onUnmounted(() => {
             min="0"
             max="1"
             step="0.01"
+            aria-label="Master volume"
             @input="updateMasterVolume"
           >
         </label>
@@ -226,6 +228,7 @@ onUnmounted(() => {
               min="60"
               max="120"
               step="1"
+              aria-label="Drone frequency"
               :disabled="!droneEnabled"
               @input="updateDroneFrequency"
             >
@@ -248,6 +251,7 @@ onUnmounted(() => {
               min="200"
               max="4000"
               step="50"
+              aria-label="Texture filter cutoff"
               :disabled="!textureEnabled"
               @input="updateTextureFilter"
             >
@@ -270,6 +274,7 @@ onUnmounted(() => {
               min="400"
               max="800"
               step="10"
+              aria-label="Shimmer frequency"
               :disabled="!shimmerEnabled"
               @input="updateShimmerFrequency"
             >

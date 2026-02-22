@@ -43,7 +43,7 @@ function drawGrid(x?: number, y?: number) {
     return
 
   const width = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
-  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientWidth
+  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientHeight
 
   // Clear canvas
   ctx.fillStyle = '#1a1a2e'
@@ -126,7 +126,7 @@ function updateFromPosition(x: number, y: number) {
     return
 
   const width = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
-  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientWidth
+  const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientHeight
 
   // X-axis: frequency (100-2000 Hz, logarithmic)
   const ratio = x / width
@@ -279,7 +279,7 @@ onUnmounted(() => {
 <template>
   <div class="xy-pad-demo">
     <div class="volume-warning">
-      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+      <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
     </div>
 
     <div class="canvas-container">

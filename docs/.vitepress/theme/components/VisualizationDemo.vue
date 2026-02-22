@@ -274,6 +274,7 @@ onUnmounted(() => {
         <button
           class="play-btn"
           :class="{ active: isPlaying }"
+          :aria-label="isPlaying ? 'Stop visualization' : 'Start visualization'"
           @click="togglePlayback"
         >
           {{ isPlaying ? 'Stop' : 'Play' }}
@@ -297,6 +298,7 @@ onUnmounted(() => {
             min="100"
             max="2000"
             step="10"
+            aria-label="Oscillator frequency"
             @input="updateFrequency"
           >
         </label>

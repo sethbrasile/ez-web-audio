@@ -116,7 +116,7 @@ onUnmounted(() => {
 <template>
   <div class="synth-keyboard">
     <div class="volume-warning">
-      <strong>⚠️ Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
+      <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
     </div>
 
     <div class="controls-section">
@@ -133,7 +133,7 @@ onUnmounted(() => {
 
         <label>
           Volume: {{ Math.round(masterGain * 100) }}%
-          <input v-model.number="masterGain" type="range" min="0" max="1" step="0.01">
+          <input v-model.number="masterGain" type="range" min="0" max="1" step="0.01" aria-label="Master volume">
         </label>
       </div>
 

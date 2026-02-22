@@ -210,6 +210,7 @@ onUnmounted(() => {
               class="mute-btn"
               :class="{ active: track.muted }"
               title="Mute track"
+              :aria-label="`Mute ${track.name} track`"
               @click="toggleMute(track)"
             >
               M
@@ -218,6 +219,7 @@ onUnmounted(() => {
               class="solo-btn"
               :class="{ active: soloedTrack === track.name }"
               title="Solo track"
+              :aria-label="`Solo ${track.name} track`"
               @click="toggleSolo(track)"
             >
               S
