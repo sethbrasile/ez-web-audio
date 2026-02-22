@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-21
 
 ## Milestones
 
@@ -221,7 +221,14 @@
   16. `mungeSoundFont` validates input and throws descriptive errors
   17. Response cache clone pattern is safe against double-consumption
   18. All low-priority source issues (L-1 through L-9) resolved
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 26-01-PLAN.md — Add missing type exports, fix Connectable and Playable interfaces
+- [ ] 26-02-PLAN.md — Fix BaseSound/Sound/Track playback lifecycle (seek race, onended chain, resume, _isPlaying)
+- [ ] 26-03-PLAN.md — Fix BeatTrack playBeats/playActiveBeats differentiation and resume timing
+- [ ] 26-04-PLAN.md — Fix controller scheduling (exponential ramp, onPlaySet dedup, detune/pan support)
+- [ ] 26-05-PLAN.md — Fix memory leaks (Oscillator GainNode, AudioSprite stop, LayeredSound listeners)
+- [ ] 26-06-PLAN.md — Fix utilities and low-priority issues (mungeSoundFont, response cache, L-1 through L-9)
 
 ### Phase 27: Package Quality & README
 **Goal**: The npm package page is professional, discoverable, and correctly configured for all bundler environments
@@ -330,7 +337,7 @@
 | 23. Demo Example Bugfixes | v1.0 Stable | Complete    | 2026-02-17 | - |
 | 24. Milestone Verification & Release | v1.0 Stable | 0/1 | Pending | - |
 | 25. New Example Pages | v1.0 Stable | 0/? | Pending | - |
-| 26. Source Code Fixes | v1.0 Stable | 0/? | Pending | - |
+| 26. Source Code Fixes | v1.0 Stable | 0/6 | Pending | - |
 | 27. Package Quality & README | v1.0 Stable | 0/? | Pending | - |
 | 28. Documentation Corrections | v1.0 Stable | 0/? | Pending | - |
 | 29. Demo Component Fixes | v1.0 Stable | 0/? | Pending | - |
@@ -343,4 +350,4 @@
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-21 after code review gap closure planning (Phases 26-31)*
+*Last updated: 2026-02-21 after Phase 26 planning (6 plans created)*
