@@ -515,7 +515,7 @@ Plans:
   5. Bundle size claim is verified and accurate
   6. Noise docs accurately describe non-auto-looped Sound instance
   7. Tone.js TypeScript column is factually correct
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 39-01-PLAN.md — Fix createAnalyzer await, React waveType, README Node.js version, noise docs
