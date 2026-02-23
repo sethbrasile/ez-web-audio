@@ -26,7 +26,7 @@ stopAll(sounds) // Stop all sounds
 Play multiple sounds at the exact same AudioContext timestamp. Unlike calling `play()` on each sound sequentially (which introduces tiny timing gaps), `playTogether` schedules all sources to a shared start time slightly in the future:
 
 ```typescript
-import { createSound, createOscillator, playTogether } from 'ez-web-audio'
+import { createOscillator, createSound, playTogether } from 'ez-web-audio'
 
 const bass = await createSound('/audio/bass.mp3')
 const melody = await createSound('/audio/melody.mp3')
@@ -93,7 +93,7 @@ Typical use cases: DJ transitions, ambient scene changes, and background music s
 Cache audio files before they are needed so playback starts instantly:
 
 ```typescript
-import { preload, createSound, isPreloaded } from 'ez-web-audio'
+import { createSound, isPreloaded, preload } from 'ez-web-audio'
 
 // Preload during a loading screen
 await preload(['/audio/level1.mp3', '/audio/level2.mp3', '/audio/boss.mp3'])
@@ -184,7 +184,7 @@ Bind touch and mouse events to a sound for piano-style interactive controls.
 `useInteractionMethods(element, player)` attaches `touchstart`/`mousedown` → `play()` and `touchend`/`mouseup`/`mouseleave` → `stop()`. It returns a cleanup function to remove all listeners:
 
 ```typescript
-import { useInteractionMethods, createOscillator } from 'ez-web-audio'
+import { createOscillator, useInteractionMethods } from 'ez-web-audio'
 
 const synth = await createOscillator({ frequency: 440 })
 const key = document.getElementById('piano-key')!
@@ -199,7 +199,7 @@ cleanup()
 `preventEventDefaults(element)` prevents text selection, context menus, and drag-and-drop on interactive audio elements. It also returns a cleanup function:
 
 ```typescript
-import { preventEventDefaults, useInteractionMethods, createOscillator } from 'ez-web-audio'
+import { createOscillator, preventEventDefaults, useInteractionMethods } from 'ez-web-audio'
 
 const synth = await createOscillator({ frequency: 261.63 }) // C4
 const key = document.getElementById('key-c4')!
@@ -231,7 +231,7 @@ sound.dispose()
 `createAnalyzer()` works without passing an AudioContext — it resolves the shared context automatically:
 
 ```typescript
-const analyzer = createAnalyzer({ fftSize: 2048 })
+const analyzer = await createAnalyzer({ fftSize: 2048 })
 ```
 
 This matches the pattern used by `createFilterEffect()` and `createGainEffect()`, keeping your code consistent without needing to manage context references directly.

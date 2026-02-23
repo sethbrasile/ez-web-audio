@@ -7,6 +7,7 @@ import type { Effect, ExternalEffect, FilterEffectOptions, FilterType } from './
 import type { EnvelopeOptions } from './envelope'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
+import type { LayeredSoundOptions } from './layered-sound'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { SamplerOptions } from '@/sampler'
@@ -35,7 +36,8 @@ import {
 import { Envelope } from './envelope'
 import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
 import { Font } from './font'
-import { clearPreloadCache, isPreloaded, preload, responseCache } from './preload'
+import { LayeredSound } from './layered-sound'
+import { clearPreloadCache, isPreloaded, preload, responseCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
 import { pauseAll, playAll, stopAll } from './utils/collections'
@@ -46,8 +48,21 @@ import { createBrownNoiseBuffer, createPinkNoiseBuffer } from './utils/noise'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import { playTogether } from './utils/play-together'
 import audioContextAwareTimeout from './utils/timeout'
-// @ts-expect-error: don't need types, it's just a function and we're accepting it as-is
 import unmuteIosAudio from './utils/unmute'
+
+/** Dispose handle returned by unmute.js — stored so listeners can be cleaned up */
+let _unmuteDispose: (() => void) | null = null
+
+/**
+ * Clean up global iOS mute workaround listeners.
+ * Call this when audio is confirmed running to remove the 9+ event listeners
+ * that unmute.js registers on window.
+ * @internal
+ */
+export function _disposeUnmute(): void {
+  _unmuteDispose?.()
+  _unmuteDispose = null
+}
 
 /**
  * Optionally initialize the audio system explicitly.
@@ -93,7 +108,10 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
 
   // only run this workaround code once
   if (useIosMuteWorkaround && !iosWorkaround.performed) {
-    unmuteIosAudio(audioContext)
+    const result = unmuteIosAudio(audioContext)
+    if (result && typeof result.dispose === 'function') {
+      _unmuteDispose = result.dispose
+    }
     markIosWorkaroundPerformed()
   }
   // unlockAudioContext handles Safari/iOS where AudioContext starts suspended and requires
@@ -477,12 +495,12 @@ export async function createOscillator(options?: OscillatorOptions): Promise<Osc
  * import { createAnalyzer } from 'ez-web-audio'
  *
  * // Context-free — no AudioContext needed
- * const analyzer = createAnalyzer({ fftSize: 1024 })
+ * const analyzer = await createAnalyzer({ fftSize: 1024 })
  * sound.setAnalyzer(analyzer)
  *
  * // With explicit AudioContext
  * const ctx = await getAudioContext()
- * const analyzer2 = createAnalyzer(ctx, { fftSize: 2048 })
+ * const analyzer2 = await createAnalyzer(ctx, { fftSize: 2048 })
  *
  * function visualize() {
  *   const freqData = analyzer.getFrequencyData()
@@ -492,15 +510,16 @@ export async function createOscillator(options?: OscillatorOptions): Promise<Osc
  * visualize()
  * ```
  */
-export function createAnalyzer(options?: AnalyzerOptions): Analyzer
-export function createAnalyzer(audioContext: AudioContext, options?: AnalyzerOptions): Analyzer
-export function createAnalyzer(
+export async function createAnalyzer(options?: AnalyzerOptions): Promise<Analyzer>
+export async function createAnalyzer(audioContext: AudioContext, options?: AnalyzerOptions): Promise<Analyzer>
+export async function createAnalyzer(
   audioContextOrOptions?: AudioContext | AnalyzerOptions,
   maybeOptions?: AnalyzerOptions,
-): Analyzer {
+): Promise<Analyzer> {
   if (audioContextOrOptions instanceof AudioContext) {
     return new Analyzer(audioContextOrOptions, maybeOptions)
   }
+  await initAudio()
   return new Analyzer(getOrCreateAudioContext(), audioContextOrOptions)
 }
 
@@ -524,10 +543,9 @@ export function createAnalyzer(
  */
 export async function createLayeredSound(
   layers: (Sound | Oscillator)[],
-  opts?: import('./layered-sound').LayeredSoundOptions,
-): Promise<import('./layered-sound').LayeredSound> {
+  opts?: LayeredSoundOptions,
+): Promise<LayeredSound> {
   await initAudio()
-  const { LayeredSound } = await import('./layered-sound')
   return new LayeredSound(getOrCreateAudioContext(), layers, opts)
 }
 
@@ -794,10 +812,13 @@ async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track
   return createSoundFor(type, buffer)
 }
 
-export interface Player {
-  play: () => void
-  stop: () => void
+export interface InteractionTarget {
+  play: () => void | Promise<void>
+  stop: () => void | Promise<void>
 }
+
+/** @deprecated Use `InteractionTarget` instead. */
+export type Player = InteractionTarget
 
 /**
  * Prevent default behavior for common interaction events on an element.
@@ -866,7 +887,7 @@ export function preventEventDefaults(key: HTMLElement): () => void {
  * // Now touching/clicking the element plays the synth
  * ```
  */
-export async function useInteractionMethods(key: HTMLElement, player: Player): Promise<() => void> {
+export async function useInteractionMethods(key: HTMLElement, player: InteractionTarget): Promise<() => void> {
   async function play(): Promise<void> {
     await initAudio()
     player.play()
@@ -939,6 +960,7 @@ export {
   setDebugHandler,
   // Debug utilities
   setDebugMode,
+  setPreloadCacheLimit,
   Sound,
   SoundController,
   // Collection utilities

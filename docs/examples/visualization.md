@@ -54,7 +54,7 @@ oscillator.changeGainTo(0.3)
 
 // Create an analyzer with FFT size
 const audioContext = await getAudioContext()
-const analyzer = createAnalyzer(audioContext, { fftSize: 1024 })
+const analyzer = await createAnalyzer(audioContext, { fftSize: 1024 })
 
 // Connect the oscillator to the analyzer
 oscillator.setAnalyzer(analyzer)
@@ -145,7 +145,7 @@ import { createAnalyzer, createSound, getAudioContext } from 'ez-web-audio'
 // Visualize a music track
 const track = await createSound('music.mp3')
 const audioContext = await getAudioContext()
-const analyzer = createAnalyzer(audioContext, { fftSize: 2048 })
+const analyzer = await createAnalyzer(audioContext, { fftSize: 2048 })
 
 track.setAnalyzer(analyzer)
 track.play()
