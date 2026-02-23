@@ -103,8 +103,8 @@ There are several good audio libraries for the web. Here is how EZ Web Audio fit
 | | **EZ Web Audio** | **Tone.js** | **Howler.js** |
 |---|---|---|---|
 | **Focus** | Simple API for sounds, synthesis, sequencing, and effects | Full music production framework (DAW in browser) | Sound playback and management |
-| **Size** | ~15 KB (zero deps, tree-shakeable) | ~150 KB+ | ~10 KB |
-| **TypeScript** | Written in TypeScript, first-class types | Community @types | Community @types |
+| **Size** | ~37 KB gzipped (zero deps, tree-shakeable) | ~150 KB+ | ~10 KB |
+| **TypeScript** | Written in TypeScript, first-class types | Built-in (TypeScript source) | Community @types |
 | **Synthesis** | Oscillators with ADSR envelopes and filters | Full synth engine, transport, instruments | No synthesis |
 | **Sequencing** | BeatTrack / Beat pattern system | Transport, loops, sequences, parts | No sequencing |
 | **Effects** | Filter, gain, custom effect wrappers | Comprehensive effect library | No effects |
