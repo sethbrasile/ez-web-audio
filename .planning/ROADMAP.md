@@ -502,6 +502,79 @@ Plans:
 | 37. Nice-to-Have DX Features | 3/3 | Complete    | 2026-02-22 | - |
 | 38. Final Documentation Sync | 2/2 | Complete   | 2026-02-22 | - |
 
+### Phase 39: Documentation Code Correctness
+
+**Goal:** Fix all broken/wrong code examples in docs and JSDoc before users copy them
+**Depends on:** Phase 38
+**Requirements:** CR2, HI2, HI3, M9, M10, M11, M12
+**Success Criteria** (what must be TRUE):
+  1. Landing page synthesizer example uses only real exported APIs with correct async/await
+  2. Every `createAnalyzer()` call in docs and JSDoc has `await`
+  3. React oscillator example uses `type`, not `waveType`
+  4. README Node.js version matches package.json engines (18+)
+  5. Bundle size claim is verified and accurate
+  6. Noise docs accurately describe non-auto-looped Sound instance
+  7. Tone.js TypeScript column is factually correct
+**Plans:** 2 plans
+
+Plans:
+- [ ] 39-01-PLAN.md — Fix createAnalyzer await, React waveType, README Node.js version, noise docs
+- [ ] 39-02-PLAN.md — Fix landing page synthesizer example, bundle size claim, Tone.js TypeScript claim
+
+### Phase 40: Build and Type Declaration Fixes
+
+**Goal:** [To be planned]
+**Depends on:** Phase 39
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 40 to break down)
+
+### Phase 41: API Type Safety
+
+**Goal:** [To be planned]
+**Depends on:** Phase 40
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 41 to break down)
+
+### Phase 42: Source Code Correctness Bugs
+
+**Goal:** [To be planned]
+**Depends on:** Phase 41
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 42 to break down)
+
+### Phase 43: Test Coverage Gaps
+
+**Goal:** [To be planned]
+**Depends on:** Phase 42
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 43 to break down)
+
+### Phase 44: Docs Site SEO and Accessibility
+
+**Goal:** [To be planned]
+**Depends on:** Phase 43
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 44 to break down)
+
+### Phase 45: Architecture Improvements
+
+**Goal:** [To be planned]
+**Depends on:** Phase 44
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 45 to break down)
+
 ---
 
 **Archives:**
