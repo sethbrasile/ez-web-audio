@@ -26,12 +26,22 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'EzWebAudio',
       formats: ['es'], // ESM-only per CONTEXT decision
-      fileName: 'index', // Produces index.js
     },
     sourcemap: true, // External source maps
     minify: false, // Don't minify - consumers handle this
     rollupOptions: {
+      // Add barrel files as explicit inputs so they are not tree-shaken away
+      input: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'effects/index': resolve(__dirname, 'src/effects/index.ts'),
+        'errors/index': resolve(__dirname, 'src/errors/index.ts'),
+      },
       external: [], // No dependencies to externalize
+      output: {
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        entryFileNames: '[name].js',
+      },
     },
   },
 })

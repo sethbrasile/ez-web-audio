@@ -11,13 +11,9 @@
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["src/*"],
-      "@app/*": ["src/app/*"],
-      "@common/*": ["src/common/*"],
       "@controllers/*": ["src/controllers/*"],
-      "@components/*": ["src/app/components/*"],
       "@utils/*": ["src/utils/*"],
-      "@interfaces/*": ["src/interfaces/*"],
-      "@test/*": ["src/test/*"]
+      "@interfaces/*": ["src/interfaces/*"]
     },
 
     /* Linting */
