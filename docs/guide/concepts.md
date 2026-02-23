@@ -244,7 +244,7 @@ pink.loop = true
 pink.play()
 ```
 
-All noise types return a looped `Sound` instance. You can also use `createWhiteNoise()` for the single-type shorthand.
+All noise types return a 1-second `Sound` instance. Set `.loop = true` for continuous playback. You can also use `createWhiteNoise()` for the single-type shorthand.
 
 ## Error Classes
 

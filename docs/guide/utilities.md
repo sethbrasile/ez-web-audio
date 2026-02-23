@@ -135,7 +135,7 @@ const pink = await createNoise('pink') // 1/f spectrum — natural ambience
 const brown = await createNoise('brown') // Random walk — deep rumble
 ```
 
-White noise has a flat spectrum (equal energy at all frequencies). Pink noise rolls off 3 dB/octave, sounding more balanced to human ears. Brown noise rolls off 6 dB/octave for a deep, rumbling character. All return a looped `Sound` instance — add effects and control gain like any other sound.
+White noise has a flat spectrum (equal energy at all frequencies). Pink noise rolls off 3 dB/octave, sounding more balanced to human ears. Brown noise rolls off 6 dB/octave for a deep, rumbling character. All return a 1-second `Sound` instance — set `.loop = true` for continuous playback, and add effects and control gain like any other sound.
 
 ## Debug Mode
 

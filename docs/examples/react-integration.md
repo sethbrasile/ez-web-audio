@@ -12,9 +12,9 @@ EZ Web Audio is framework-agnostic and works with any frontend framework. This p
 Use `useRef` to hold audio instances — audio objects are mutable and should not be stored in `useState`. Initialize audio in an event handler to satisfy the browser's user-interaction requirement.
 
 ```tsx
-import { useRef, useState } from 'react'
-import { createSound } from 'ez-web-audio'
 import type { Sound } from 'ez-web-audio'
+import { createSound } from 'ez-web-audio'
+import { useRef, useState } from 'react'
 
 function SoundButton() {
   const soundRef = useRef<Sound | null>(null)
@@ -27,11 +27,13 @@ function SoundButton() {
 
   return (
     <div>
-      {!isLoaded ? (
-        <button onClick={init}>Load Sound</button>
-      ) : (
-        <button onClick={() => soundRef.current?.play()}>Play</button>
-      )}
+      {!isLoaded
+        ? (
+            <button onClick={init}>Load Sound</button>
+          )
+        : (
+            <button onClick={() => soundRef.current?.play()}>Play</button>
+          )}
     </div>
   )
 }
@@ -44,9 +46,9 @@ The first click loads and initializes the `AudioContext` (satisfying browser sec
 For music tracks, poll the `position` property with `requestAnimationFrame` inside a `useEffect`. This gives smooth updates without the drift of `setInterval`.
 
 ```tsx
-import { useRef, useState, useEffect } from 'react'
-import { createTrack } from 'ez-web-audio'
 import type { Track } from 'ez-web-audio'
+import { createTrack } from 'ez-web-audio'
+import { useEffect, useRef, useState } from 'react'
 
 function TrackPlayer() {
   const trackRef = useRef<Track | null>(null)
@@ -56,7 +58,8 @@ function TrackPlayer() {
 
   // Poll position during playback
   useEffect(() => {
-    if (!isPlaying || !trackRef.current) return
+    if (!isPlaying || !trackRef.current)
+      return
 
     function tick() {
       if (trackRef.current) {
@@ -74,7 +77,8 @@ function TrackPlayer() {
   }
 
   async function play() {
-    if (!trackRef.current) await init()
+    if (!trackRef.current)
+      await init()
     await trackRef.current!.play()
     setIsPlaying(true)
   }
@@ -106,9 +110,9 @@ function TrackPlayer() {
 Always stop and dispose audio nodes when a component unmounts. The `useEffect` cleanup function is the right place for this.
 
 ```tsx
-import { useRef, useEffect, useState } from 'react'
-import { createOscillator } from 'ez-web-audio'
 import type { Oscillator } from 'ez-web-audio'
+import { createOscillator } from 'ez-web-audio'
+import { useEffect, useRef, useState } from 'react'
 
 function Synth() {
   const oscRef = useRef<Oscillator | null>(null)
@@ -123,7 +127,7 @@ function Synth() {
 
   async function startNote() {
     if (!oscRef.current) {
-      oscRef.current = await createOscillator({ frequency: 440, waveType: 'sine' })
+      oscRef.current = await createOscillator({ frequency: 440, type: 'sine' })
     }
     await oscRef.current.play()
     setIsPlaying(true)
@@ -147,9 +151,9 @@ function Synth() {
 Extract reusable audio logic into custom hooks for cleaner components.
 
 ```tsx
-import { useRef, useState, useCallback, useEffect } from 'react'
-import { createSound } from 'ez-web-audio'
 import type { Sound } from 'ez-web-audio'
+import { createSound } from 'ez-web-audio'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 function useSound(url: string) {
   const soundRef = useRef<Sound | null>(null)
@@ -179,11 +183,13 @@ function SoundEffect() {
 
   return (
     <div>
-      {!isLoaded ? (
-        <button onClick={load}>Load</button>
-      ) : (
-        <button onClick={() => play()}>Play Click</button>
-      )}
+      {!isLoaded
+        ? (
+            <button onClick={load}>Load</button>
+          )
+        : (
+            <button onClick={() => play()}>Play Click</button>
+          )}
     </div>
   )
 }
