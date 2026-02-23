@@ -523,12 +523,22 @@ Plans:
 
 ### Phase 40: Build and Type Declaration Fixes
 
-**Goal:** [To be planned]
+**Goal:** Ensure published package works for all TS moduleResolution modes; CI catches build failures
 **Depends on:** Phase 39
-**Plans:** 0 plans
+**Requirements:** CR1, HI1, M19, M20, L23, L24, L25, L27
+**Success Criteria** (what must be TRUE):
+  1. Every `.d.ts` barrel file in `dist/` has a corresponding `.js` file (nodenext-compatible)
+  2. CI runs `pnpm build:lib` and catches build failures before merge
+  3. `prepublishOnly` runs typecheck, lint, test, and build
+  4. deploy-docs uses `--frozen-lockfile` for reproducible installs
+  5. No redundant build scripts in package.json
+  6. No stale tsconfig path aliases
+  7. Publish workflow builds library exactly once
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 40 to break down)
+- [ ] 40-01-PLAN.md — Fix dist barrel JS files, clean build scripts, remove stale tsconfig aliases
+- [ ] 40-02-PLAN.md — Add build:lib to CI, fix deploy-docs lockfile, harden prepublishOnly, deduplicate publish
 
 ### Phase 41: API Type Safety
 
