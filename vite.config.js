@@ -32,7 +32,7 @@ export default defineConfig({
     rollupOptions: {
       // Add barrel files as explicit inputs so they are not tree-shaken away
       input: {
-        index: resolve(__dirname, 'src/index.ts'),
+        'index': resolve(__dirname, 'src/index.ts'),
         'effects/index': resolve(__dirname, 'src/effects/index.ts'),
         'errors/index': resolve(__dirname, 'src/errors/index.ts'),
       },
