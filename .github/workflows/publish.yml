@@ -38,10 +38,7 @@ jobs:
       - name: Run unit tests
         run: pnpm test run
 
-      - name: Build library
-        run: pnpm build:lib
-
-      - name: Build full (docs + typedoc)
+      - name: Build library and docs
         run: pnpm build
 
       - name: Install Playwright browsers

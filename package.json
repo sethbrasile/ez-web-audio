@@ -70,7 +70,7 @@
     "lint:fix": "eslint . --fix",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "prepublishOnly": "pnpm build:lib"
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test --run && pnpm build:lib"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^7.4.3",
