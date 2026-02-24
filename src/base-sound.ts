@@ -198,7 +198,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
    */
   public debug?: boolean
 
-  constructor(public audioContext: AudioContext, opts?: BaseSoundOptions) {
+  constructor(public readonly audioContext: AudioContext, opts?: BaseSoundOptions) {
     super()
     const gainNode = audioContext.createGain()
     const pannerNode = audioContext.createStereoPanner()
@@ -254,14 +254,14 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
         if (existingDesc?.get) {
           return existingDesc.get.call(effect)
         }
-        return (effect as any)._bypass ?? false
+        return (effect as Effect & { _bypass?: boolean })._bypass ?? false
       },
       set: (v: boolean) => {
         if (existingDesc?.set) {
           existingDesc.set.call(effect, v)
         }
         else {
-          (effect as any)._bypass = v
+          (effect as Effect & { _bypass?: boolean })._bypass = v
         }
         this.wireEffectChain()
       },
@@ -278,7 +278,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
     const original = this.bypassInterceptions.get(effect)
     if (original) {
       // Delete instance override to expose prototype descriptor again
-      delete (effect as any).bypass
+      delete (effect as unknown as Record<string, unknown>).bypass
       // If original was an own property (not prototype), restore it
       if (Object.getOwnPropertyDescriptor(Object.getPrototypeOf(effect), 'bypass') !== original) {
         Object.defineProperty(effect, 'bypass', original)
@@ -286,7 +286,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
     }
     else {
       // No original found, just delete instance override
-      delete (effect as any).bypass
+      delete (effect as unknown as Record<string, unknown>).bypass
     }
     this.bypassInterceptions.delete(effect)
   }
@@ -980,30 +980,33 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
     const node = this.audioSourceNode
     const currentTime = this.audioContext.currentTime
 
-    const stop = (): void => {
+    if (time <= currentTime) {
+      // Immediate stop
       this._cancelPendingTimeouts()
       if (this._isPlaying) {
         this._isPlaying = false
-
-        // Emit stop event before actually stopping the node
         this.emit('stop', {
           time: this.audioContext.currentTime,
           source: this,
         })
-
-        // Debug log for stop event
         debugEvent(this, 'stop', this.audioContext.currentTime)
-
-        node.stop(time)
+        node.stop()
       }
     }
-
-    if (time === currentTime) {
-      stop()
-    }
     else {
+      // Schedule precise audio stop via Web Audio API (sample-accurate)
+      node.stop(time)
+      // Schedule state cleanup via JS timeout (approximate timing is fine for state/events)
       this._trackedTimeout(() => {
-        stop()
+        this._cancelPendingTimeouts()
+        if (this._isPlaying) {
+          this._isPlaying = false
+          this.emit('stop', {
+            time: this.audioContext.currentTime,
+            source: this,
+          })
+          debugEvent(this, 'stop', this.audioContext.currentTime)
+        }
       }, (time - currentTime) * 1000)
     }
   }

@@ -44,12 +44,16 @@ export class Sampler {
 
   /**
    * Gain level applied to each sample when played.
+   * This value is applied to the underlying Sound on every play() call,
+   * overriding any per-sound gain customization.
    * @default 1
    */
   public gain: number = 1
 
   /**
    * Stereo pan position applied to each sample (-1 = left, 0 = center, 1 = right).
+   * This value is applied to the underlying Sound on every play() call,
+   * overriding any per-sound pan customization.
    * @default 0
    */
   public pan: number = 0
@@ -155,6 +159,12 @@ export class Sampler {
 
   /**
    * Apply the sampler's gain and pan settings to a sound before playing.
+   *
+   * **Note:** This overwrites any per-sound gain/pan customization on every
+   * play cycle. The Sampler applies its own gain and pan uniformly to whichever
+   * sound plays next. If you need individual sound gain/pan, call
+   * `getNextSound()` manually and set gain/pan after retrieval instead of
+   * using `play()`.
    * @internal
    */
   private setGainAndPan(sound: Playable & Connectable): Playable & Connectable {

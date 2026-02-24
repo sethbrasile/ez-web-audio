@@ -50,7 +50,17 @@ export interface BeatTrackOptions extends SamplerOptions {
  * ```
  */
 export class BeatTrack extends Sampler {
-  // EventTarget for event emission
+  /**
+   * BeatTrack uses its own EventTarget rather than TypedEventEmitter because
+   * BeatTrack extends Sampler (for round-robin sample playback), not BaseSound.
+   * TypedEventEmitter is mixed into BaseSound's inheritance chain, but BeatTrack
+   * cannot extend both Sampler and TypedEventEmitter. Composition via a private
+   * EventTarget achieves typed events without multiple inheritance.
+   *
+   * Event handler signatures use CustomEvent with .detail (standard DOM pattern)
+   * matching BeatTrackEventMap types.
+   * @internal
+   */
   private eventTarget: EventTarget = new EventTarget()
 
   // Lookahead scheduler state
@@ -263,6 +273,11 @@ export class BeatTrack extends Sampler {
       this.timerID = null
     }
 
+    // Cancel any pending beat-level timers to prevent post-stop visual flicker
+    for (const beat of this.beats) {
+      beat.cancelPendingTimers()
+    }
+
     this.currentBeatIndex = 0
     this.nextBeatTime = 0
     this.pausedBeatIndex = null
@@ -360,6 +375,13 @@ export class BeatTrack extends Sampler {
    * This pattern checks every 25ms and schedules beats 100ms ahead of current time.
    * It prevents timing gaps from JS event loop jitter while keeping beat triggers
    * close to real-time for UI synchronization.
+   *
+   * Note: The scheduler loop uses `window.setTimeout`, which browsers throttle to
+   * ~1 s intervals when the tab is in the background. This can cause scheduling
+   * drift or missed beats while the tab is hidden. However, the individual beat
+   * playback times are anchored to `audioContext.currentTime` via
+   * `audioContextAwareTimeout`, so beats that *are* scheduled will fire at the
+   * correct audio-clock instant.
    *
    * @internal
    */
