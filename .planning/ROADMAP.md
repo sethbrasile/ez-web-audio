@@ -590,7 +590,7 @@ Plans:
   8. Oscillator `frequency: 0` behavior verified in tests
   9. Envelope negative value handling tested or documented
   10. Preload cache accessor functions tested
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 43-01-PLAN.md — Cache management, AudioContext singleton, and envelope edge case tests
