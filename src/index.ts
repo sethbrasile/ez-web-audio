@@ -50,7 +50,7 @@ import { playTogether } from './utils/play-together'
 import audioContextAwareTimeout from './utils/timeout'
 import unmuteIosAudio from './utils/unmute'
 
-/** Dispose handle returned by unmute.js — stored so listeners can be cleaned up */
+/** Dispose handle returned by unmute.js — stored so listeners can be cleaned up. @internal */
 let _unmuteDispose: (() => void) | null = null
 
 /**

@@ -61,11 +61,22 @@ export class AudioSprite {
   /** Tracks active looping sources by sprite name so they can be stopped via stop(). */
   private activeSources = new Map<string, AudioBufferSourceNode[]>()
 
+  /** Whether this sprite has been disposed. */
+  private _disposed = false
+
+  private audioContext: AudioContext
+  private audioBuffer: AudioBuffer | null
+  private manifest: SpriteManifest
+
   constructor(
-    private audioContext: AudioContext,
-    private audioBuffer: AudioBuffer,
-    private manifest: SpriteManifest,
-  ) {}
+    audioContext: AudioContext,
+    audioBuffer: AudioBuffer,
+    manifest: SpriteManifest,
+  ) {
+    this.audioContext = audioContext
+    this.audioBuffer = audioBuffer
+    this.manifest = manifest
+  }
 
   /**
    * List of available sprite names defined in the manifest.
@@ -142,6 +153,10 @@ export class AudioSprite {
    * ```
    */
   play(name: string, options: SpritePlayOptions = {}): void {
+    if (this._disposed || !this.audioBuffer) {
+      throw new Error('AudioSprite has been disposed')
+    }
+
     const sprite = this.manifest.spritemap[name]
     if (!sprite) {
       throw new Error(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
@@ -162,7 +177,7 @@ export class AudioSprite {
     // Create new source node for this playback
     const source = this.audioContext.createBufferSource()
     source.buffer = this.audioBuffer
-    source.loop = sprite.loop ?? false
+    source.loop = false
 
     // Build the audio routing chain
     let currentNode: AudioNode = source
@@ -195,7 +210,17 @@ export class AudioSprite {
     }
 
     // Start playback
-    source.start(this.audioContext.currentTime, offset, duration)
+    if (sprite.loop) {
+      // Do not pass duration when looping — duration arg stops the source after
+      // that many seconds regardless of the loop property (Web Audio API spec)
+      source.loop = true
+      source.loopStart = offset
+      source.loopEnd = sprite.end
+      source.start(this.audioContext.currentTime, offset)
+    }
+    else {
+      source.start(this.audioContext.currentTime, offset, duration)
+    }
 
     // Cleanup after playback ends
     source.onended = () => {
@@ -265,5 +290,28 @@ export class AudioSprite {
     this.activeSources.forEach((_, name) => {
       this.stop(name)
     })
+  }
+
+  /**
+   * Release the audio buffer and stop all active sources.
+   *
+   * After disposal, calling play() will throw an error.
+   * Use this to free memory when the sprite is no longer needed.
+   *
+   * @example
+   * ```typescript
+   * const sprite = await createSprite('sounds.mp3', manifest)
+   * sprite.play('laser')
+   *
+   * // When done with the sprite
+   * sprite.dispose()
+   * // sprite.play('laser') // throws: AudioSprite has been disposed
+   * ```
+   */
+  dispose(): void {
+    this.stopAll()
+    this.activeSources.clear()
+    this.audioBuffer = null
+    this._disposed = true
   }
 }

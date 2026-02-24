@@ -115,11 +115,26 @@ export class Track extends Sound {
           source: this,
           duration: this.duration.raw,
         })
-        // Clean up position tracking; void the promise since we're in a callback
-        void this.stop()
+        // Reset position tracking state without re-emitting stop event
+        this._resetPosition()
       }
     }
     this.later(this.trackPlayPosition.bind(this))
+  }
+
+  /**
+   * Reset playback position to start and cancel position tracking.
+   * Called on natural completion to clean up state without triggering stop events.
+   * Extracted from onended handler for clarity (review finding M8).
+   * @internal
+   */
+  private _resetPosition(): void {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
+    this._isPaused = false
+    this.startOffset = 0
   }
 
   /**
@@ -245,15 +260,14 @@ export class Track extends Sound {
    * @private
    */
   private trackPlayPosition(): void {
-    const { audioContext, startedPlayingAt, startOffset } = this
-
     const animate = (): void => {
       // Exit early if stopped (defensive check)
       if (!this._isPlaying) {
         this.rafId = null
         return
       }
-      this.startOffset = startOffset + audioContext.currentTime - startedPlayingAt
+      this.startOffset = this.startOffset + this.audioContext.currentTime - this.startedPlayingAt
+      this.startedPlayingAt = this.audioContext.currentTime
       this.rafId = requestAnimationFrame(animate)
     }
 
