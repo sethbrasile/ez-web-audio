@@ -534,7 +534,7 @@ Plans:
   5. No redundant build scripts in package.json
   6. No stale tsconfig path aliases
   7. Publish workflow builds library exactly once
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 40-01-PLAN.md — Fix dist barrel JS files, clean build scripts, remove stale tsconfig aliases
