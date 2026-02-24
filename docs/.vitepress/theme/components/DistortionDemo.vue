@@ -378,6 +378,16 @@ onUnmounted(() => {
   color: var(--vp-c-text-3);
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .effect-controls {
   display: flex;
   flex-direction: column;

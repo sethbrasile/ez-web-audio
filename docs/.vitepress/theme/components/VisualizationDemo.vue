@@ -319,7 +319,7 @@ onUnmounted(() => {
     <div class="visualizations">
       <div class="viz-container">
         <h3>Frequency Spectrum</h3>
-        <canvas ref="frequencyCanvas" class="viz-canvas" />
+        <canvas ref="frequencyCanvas" class="viz-canvas" role="img" aria-label="Frequency spectrum visualization showing audio frequency distribution as a bar graph" />
         <p class="viz-info">
           Shows frequency distribution (FFT analysis)
         </p>
@@ -327,7 +327,7 @@ onUnmounted(() => {
 
       <div class="viz-container">
         <h3>Waveform</h3>
-        <canvas ref="waveformCanvas" class="viz-canvas" />
+        <canvas ref="waveformCanvas" class="viz-canvas" role="img" aria-label="Waveform visualization showing audio signal oscillation pattern" />
         <p class="viz-info">
           Shows time-domain waveform
         </p>
@@ -416,6 +416,17 @@ onUnmounted(() => {
 .play-btn.active {
   background: var(--vp-c-brand);
   color: white;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
 }
 
 .visualizations {

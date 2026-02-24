@@ -246,6 +246,11 @@ onUnmounted(() => {
   transform: scale(1.05);
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .beat-cell.active {
   border-width: 2px;
 }

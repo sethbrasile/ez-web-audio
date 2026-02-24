@@ -337,6 +337,16 @@ onUnmounted(() => {
   border-color: var(--vp-c-brand);
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .status-bar {
   min-height: 1.5rem;
   margin-top: 0.75rem;

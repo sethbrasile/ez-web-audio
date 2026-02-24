@@ -353,6 +353,11 @@ onUnmounted(() => {
   color: white;
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .master-volume {
   display: flex;
   flex-direction: column;

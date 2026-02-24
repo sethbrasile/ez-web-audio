@@ -184,6 +184,17 @@ onUnmounted(() => {
   background: var(--vp-c-danger);
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .params {
   display: flex;
   flex-direction: column;

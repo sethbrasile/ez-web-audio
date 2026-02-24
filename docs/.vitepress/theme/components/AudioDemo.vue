@@ -141,6 +141,11 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
 .sliders {
   display: flex;
   flex-direction: column;

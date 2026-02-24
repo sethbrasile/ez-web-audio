@@ -140,7 +140,8 @@ onUnmounted(() => {
       </div>
       <div class="loop-controls">
         <button
-          :class="['loop-btn', { active: loopingSprite === 'kick' }]"
+          class="loop-btn"
+          :class="{ active: loopingSprite === 'kick' }"
           @click="toggleLoop('kick')"
         >
           {{ loopingSprite === 'kick' ? 'Stop Loop' : 'Loop Full Kick' }}
@@ -271,6 +272,11 @@ onUnmounted(() => {
 .stop-all-btn:hover:not(:disabled) {
   background: var(--vp-c-bg-mute);
   border-color: var(--vp-c-brand);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
 }
 
 .loop-btn.active {
