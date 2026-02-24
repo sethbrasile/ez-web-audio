@@ -575,8 +575,21 @@ Plans:
 
 ### Phase 43: Test Coverage Gaps
 
-**Goal:** [To be planned]
+**Goal:** Cover untested public API functions identified in code review to prevent regressions — cache management, DOM helpers, Sound.loop, note-based oscillators, Sampler.stop, AudioContext singleton, and factory functions
 **Depends on:** Phase 42
+**Requirements:** TCOV-01 through TCOV-13
+**Gap Closure:** Closes review findings M13, M14, M15, M16, M17, M18, L15-L20
+**Success Criteria** (what must be TRUE):
+  1. `setPreloadCacheLimit` and cache eviction have tests for limit setting, eviction, and edge cases
+  2. `preventEventDefaults` and `useInteractionMethods` tested with DOM simulation
+  3. `Sound.loop` property has get/set and lifecycle tests
+  4. `createOscillator({ note: 'A4' })` note lookup path tested
+  5. `Sampler.stop()` has stop propagation and state tests
+  6. `audio-context.ts` has dedicated test file with singleton and recovery tests
+  7. `createNotes()`, `_disposeUnmute()`, context-free `createAnalyzer`, `createLayeredSound` factory functions tested
+  8. Oscillator `frequency: 0` behavior verified in tests
+  9. Envelope negative value handling tested or documented
+  10. Preload cache accessor functions tested
 **Plans:** 0 plans
 
 Plans:

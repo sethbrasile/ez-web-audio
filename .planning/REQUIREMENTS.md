@@ -144,11 +144,27 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Source Code Correctness Bugs (Phase 42)
 
-- [ ] **BUG-01**: Oscillator.setup() preserves user-set gain across plays instead of resetting to defaultValue
-- [ ] **BUG-02**: Sound.setup() calls controller.updateAudioSource() so detune schedules apply to current source node
-- [ ] **BUG-03**: load() calls initAudio() before using AudioContext (fixes iOS silent first-play in cache-hit path)
-- [ ] **BUG-04**: load() and createSprite() call evictIfNeeded() after writing to responseCache
-- [ ] **BUG-05**: responseCache is not directly mutable by consumers — exposed through controlled access only
+- [x] **BUG-01**: Oscillator.setup() preserves user-set gain across plays instead of resetting to defaultValue
+- [x] **BUG-02**: Sound.setup() calls controller.updateAudioSource() so detune schedules apply to current source node
+- [x] **BUG-03**: load() calls initAudio() before using AudioContext (fixes iOS silent first-play in cache-hit path)
+- [x] **BUG-04**: load() and createSprite() call evictIfNeeded() after writing to responseCache
+- [x] **BUG-05**: responseCache is not directly mutable by consumers — exposed through controlled access only
+
+### Test Coverage Gaps (Phase 43)
+
+- [ ] **TCOV-01**: `setPreloadCacheLimit` and `evictIfNeeded()` have tests for setting limit, eviction when exceeded, limit of 0, reducing below current size
+- [ ] **TCOV-02**: `preventEventDefaults` and `useInteractionMethods` tested with DOM simulation — verify listeners registered and cleanup removes them
+- [ ] **TCOV-03**: `Sound.loop` property tested — default value, set/get, persistence through play/stop cycles
+- [ ] **TCOV-04**: `createOscillator({ note: 'A4' })` note-name-to-frequency path tested — A4→440Hz, invalid note handling
+- [ ] **TCOV-05**: `Sampler.stop()` tested — stop propagation, isPlaying state after stop
+- [ ] **TCOV-06**: `audio-context.ts` has dedicated test file — singleton creation, closed-state recreation
+- [ ] **TCOV-07**: `createNotes()` factory function has test coverage
+- [ ] **TCOV-08**: `_disposeUnmute()` has test coverage
+- [ ] **TCOV-09**: `createAnalyzer` context-free overload tested via index.ts factory
+- [ ] **TCOV-10**: `createLayeredSound` factory tested via index.ts
+- [ ] **TCOV-11**: Oscillator `frequency: 0` behavior verified — test confirms resulting frequency value
+- [ ] **TCOV-12**: Envelope validates negative attack/decay/release values (or documents acceptance)
+- [ ] **TCOV-13**: Preload cache accessor functions (`getFromCache`, `setInCache`, `hasInCache`, `getCacheSize`) tested
 
 ## v2 Requirements
 
@@ -275,16 +291,29 @@ Explicitly excluded. Documented to prevent scope creep.
 | SYNC2-03 | Phase 38 | Complete |
 | SYNC2-04 | Phase 38 | Complete |
 
-| BUG-01 | Phase 42 | Pending |
-| BUG-02 | Phase 42 | Pending |
-| BUG-03 | Phase 42 | Pending |
-| BUG-04 | Phase 42 | Pending |
-| BUG-05 | Phase 42 | Pending |
+| BUG-01 | Phase 42 | Complete |
+| BUG-02 | Phase 42 | Complete |
+| BUG-03 | Phase 42 | Complete |
+| BUG-04 | Phase 42 | Complete |
+| BUG-05 | Phase 42 | Complete |
+| TCOV-01 | Phase 43 | Pending |
+| TCOV-02 | Phase 43 | Pending |
+| TCOV-03 | Phase 43 | Pending |
+| TCOV-04 | Phase 43 | Pending |
+| TCOV-05 | Phase 43 | Pending |
+| TCOV-06 | Phase 43 | Pending |
+| TCOV-07 | Phase 43 | Pending |
+| TCOV-08 | Phase 43 | Pending |
+| TCOV-09 | Phase 43 | Pending |
+| TCOV-10 | Phase 43 | Pending |
+| TCOV-11 | Phase 43 | Pending |
+| TCOV-12 | Phase 43 | Pending |
+| TCOV-13 | Phase 43 | Pending |
 
 **Coverage:**
 - v1.0 original requirements: 33 total, 33 completed
-- v1.0 gap closure requirements: 55 total, 41 completed
-- Grand total: 88 requirements mapped to phases
+- v1.0 gap closure requirements: 68 total, 41 completed
+- Grand total: 101 requirements mapped to phases
 
 ---
 *Requirements defined: 2026-02-16*
