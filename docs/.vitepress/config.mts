@@ -1,3 +1,4 @@
+import type { HeadConfig } from 'vitepress'
 import { defineConfig } from 'vitepress'
 
 // Import TypeDoc-generated sidebar (will exist after typedoc runs)
@@ -19,7 +20,14 @@ export default defineConfig({
   description: 'A zero-dependency TypeScript library that makes the Web Audio API easy — play sounds, synthesizers, drum machines, and audio effects with minimal code.',
   base: '/ez-web-audio/',
 
+  sitemap: {
+    hostname: 'https://sethbrasile.github.io/ez-web-audio',
+  },
+
   head: [
+    // Favicon
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/ez-web-audio/favicon.svg' }],
+
     // Basic meta tags
     ['meta', { name: 'keywords', content: 'web audio api, javascript audio library, typescript audio, synthesizer, oscillator, drum machine, audio effects, sound playback, browser audio, audio visualization' }],
     ['meta', { name: 'author', content: 'Seth Brasile' }],
@@ -27,15 +35,15 @@ export default defineConfig({
 
     // OpenGraph tags
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'EZ Web Audio - Simple Web Audio API for JavaScript & TypeScript' }],
-    ['meta', { property: 'og:description', content: 'Zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, create synthesizers, build drum machines, and add audio effects with minimal code.' }],
-    ['meta', { property: 'og:url', content: 'https://sethbrasile.github.io/ez-web-audio/' }],
     ['meta', { property: 'og:site_name', content: 'EZ Web Audio' }],
+    ['meta', { property: 'og:image', content: 'https://sethbrasile.github.io/ez-web-audio/og-image.png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:alt', content: 'EZ Web Audio - Simple Web Audio API for TypeScript' }],
 
     // Twitter Card tags
-    ['meta', { name: 'twitter:card', content: 'summary' }],
-    ['meta', { name: 'twitter:title', content: 'EZ Web Audio - Simple Web Audio API for JavaScript & TypeScript' }],
-    ['meta', { name: 'twitter:description', content: 'Zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, create synthesizers, build drum machines, and add audio effects with minimal code.' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: 'https://sethbrasile.github.io/ez-web-audio/og-image.png' }],
 
     // JSON-LD structured data
     ['script', { type: 'application/ld+json' }, JSON.stringify({
@@ -53,6 +61,8 @@ export default defineConfig({
         'name': 'Seth Brasile',
         'url': 'https://github.com/sethbrasile',
       },
+      'version': '1.0.0',
+      'dateCreated': '2026-01-31',
     })],
   ],
 
