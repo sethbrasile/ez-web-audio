@@ -357,14 +357,13 @@ describe('sound', () => {
       it('update("gain").to(0.5).as("ratio") sets gain', () => {
         const sound = createSound(audioContext)
         sound.update('gain').to(0.5).as('ratio')
-        // Gain should be updated (exact value depends on controller implementation)
-        expect(sound.gainNode.gain.value).toBeDefined()
+        expect(sound.gainNode.gain.value).toBeCloseTo(0.5)
       })
 
       it('update("gain").to(50).as("percent") sets gain', () => {
         const sound = createSound(audioContext)
         sound.update('gain').to(50).as('percent')
-        expect(sound.gainNode.gain.value).toBeDefined()
+        expect(sound.gainNode.gain.value).toBeCloseTo(0.5)
       })
 
       it('update("pan").to(-0.5).as("ratio") sets pan', () => {
@@ -757,6 +756,63 @@ describe('sound', () => {
         await sound.play()
         expect(sound.isPlaying).toBe(true)
       })
+    })
+  })
+
+  describe('controller update on play (BUG-02 regression)', () => {
+    it('calls controller.updateAudioSource with new source node on play()', async () => {
+      const sound = createSound(audioContext)
+      const updateSpy = vi.spyOn(sound['controller'], 'updateAudioSource')
+
+      await sound.play()
+
+      expect(updateSpy).toHaveBeenCalledTimes(1)
+      expect(updateSpy).toHaveBeenCalledWith(sound.audioSourceNode)
+    })
+
+    it('calls controller.updateAudioSource on each play() with new source node', async () => {
+      const sound = createSound(audioContext)
+      const updateSpy = vi.spyOn(sound['controller'], 'updateAudioSource')
+
+      await sound.play()
+      const firstSource = sound.audioSourceNode
+      expect(updateSpy).toHaveBeenCalledWith(firstSource)
+
+      await sound.stop()
+      await sound.play()
+      const secondSource = sound.audioSourceNode
+      expect(updateSpy).toHaveBeenCalledWith(secondSource)
+      expect(secondSource).not.toBe(firstSource)
+      expect(updateSpy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('dispose', () => {
+    it('sets disposed to true', () => {
+      const sound = createSound(audioContext)
+      sound.dispose()
+      expect(sound.disposed).toBe(true)
+    })
+
+    it('play() after dispose throws', async () => {
+      const sound = createSound(audioContext)
+      sound.dispose()
+      await expect(sound.play()).rejects.toThrow()
+    })
+
+    it('is idempotent (calling dispose twice does not throw)', () => {
+      const sound = createSound(audioContext)
+      sound.dispose()
+      expect(() => sound.dispose()).not.toThrow()
+    })
+
+    it('clears effects on dispose', () => {
+      const sound = createSound(audioContext)
+      const gainNode = audioContext.createGain()
+      sound.addEffect({ input: gainNode, output: gainNode, bypass: false })
+      expect(sound.effects.length).toBe(1)
+      sound.dispose()
+      expect(sound.effects.length).toBe(0)
     })
   })
 })

@@ -1,5 +1,5 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
 
 function createMockContext() {
@@ -451,6 +451,61 @@ describe('anti-click fade-out on stop', () => {
     await osc.stop()
     // Second stop on an already-stopped oscillator should not throw
     await expect(osc.stop()).resolves.not.toThrow()
+  })
+})
+
+describe('gain preservation across play() calls (BUG-01 regression)', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('preserves user-set gain across play-stop-play cycle', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    osc.changeGainTo(0.5)
+    expect(osc.gainNode.gain.value).toBeCloseTo(0.5)
+
+    await osc.play()
+    await osc.stop()
+
+    // Second play should preserve gain, not reset to defaultValue (1.0)
+    await osc.play()
+    expect(osc.gainNode.gain.value).toBeCloseTo(0.5)
+  })
+
+  it('preserves gain set via update() across play() calls', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    osc.update('gain').to(0.3).as('ratio')
+    expect(osc.gainNode.gain.value).toBeCloseTo(0.3)
+
+    await osc.play()
+    await osc.stop()
+    await osc.play()
+
+    expect(osc.gainNode.gain.value).toBeCloseTo(0.3)
+  })
+
+  it('preserves gain set via constructor option across play() calls', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440, gain: 0.7 })
+
+    await osc.play()
+    await osc.stop()
+    await osc.play()
+
+    expect(osc.gainNode.gain.value).toBeCloseTo(0.7)
+  })
+
+  it('does not reset gain to 1.0 (defaultValue) on subsequent play()', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    osc.changeGainTo(0.2)
+
+    // Multiple play cycles
+    for (let i = 0; i < 3; i++) {
+      await osc.play()
+      expect(osc.gainNode.gain.value).toBeCloseTo(0.2)
+      await osc.stop()
+    }
   })
 })
 
