@@ -971,6 +971,7 @@ export {
 
 export type {
   AudioEventSource,
+  BaseSoundEventMap,
   BeatEventDetail,
   BeatTrackEventMap,
   EndEventDetail,
@@ -983,6 +984,7 @@ export type {
   SoundEventMap,
   SoundEventType,
   StopEventDetail,
+  TrackEventMap,
   WarningEventDetail,
 } from './events/event-types'
 // Re-export LayeredSound types

@@ -101,24 +101,42 @@ export interface SeekEventDetail {
 }
 
 /**
- * Maps event names to their corresponding CustomEvent types.
- * Use this for type-safe event listeners:
+ * Event map for BaseSound and Sound instances.
+ * These are the only events emitted by Sound — pause/resume/seek are Track-only.
  *
  * @example
  * ```typescript
- * sound.addEventListener('play', (e: SoundEventMap['play']) => {
+ * sound.on('play', (e: BaseSoundEventMap['play']) => {
  *   console.log(e.detail.time);
  * });
  * ```
  */
-export interface SoundEventMap {
+export interface BaseSoundEventMap {
   play: CustomEvent<PlayEventDetail>
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>
+}
+
+/**
+ * Event map for Track instances (extends BaseSoundEventMap with pause/resume/seek).
+ * Only Track emits pause, resume, and seek events.
+ */
+export interface TrackEventMap extends BaseSoundEventMap {
   pause: CustomEvent<PauseEventDetail>
   resume: CustomEvent<ResumeEventDetail>
   seek: CustomEvent<SeekEventDetail>
 }
+
+/**
+ * Full event map including Track-specific events.
+ *
+ * @deprecated Use {@link BaseSoundEventMap} for Sound instances or {@link TrackEventMap} for Track instances.
+ * This type includes pause/resume/seek events that only Track emits — using it on Sound
+ * allows registering listeners for events that will never fire.
+ *
+ * Retained for backward compatibility.
+ */
+export type SoundEventMap = TrackEventMap
 
 /**
  * Union of all valid event names for sound instances.
