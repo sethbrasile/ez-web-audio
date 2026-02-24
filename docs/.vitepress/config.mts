@@ -66,6 +66,32 @@ export default defineConfig({
     })],
   ],
 
+  transformHead(context) {
+    const head: HeadConfig[] = []
+    const canonicalUrl = `https://sethbrasile.github.io/ez-web-audio/${context.pageData.relativePath.replace(/index\.md$/, '').replace(/\.md$/, '')}`
+
+    // Canonical URL
+    head.push(['link', { rel: 'canonical', href: canonicalUrl }])
+
+    // Per-page OG tags (override static defaults)
+    const title = context.pageData.frontmatter.title || context.pageData.title
+    const description = context.pageData.frontmatter.description || context.pageData.description
+
+    if (title) {
+      head.push(['meta', { property: 'og:title', content: `${title} | EZ Web Audio` }])
+      head.push(['meta', { name: 'twitter:title', content: `${title} | EZ Web Audio` }])
+    }
+    if (description) {
+      head.push(['meta', { property: 'og:description', content: description }])
+      head.push(['meta', { name: 'twitter:description', content: description }])
+    }
+
+    // Per-page canonical in OG
+    head.push(['meta', { property: 'og:url', content: canonicalUrl }])
+
+    return head
+  },
+
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
