@@ -751,4 +751,269 @@ describe('factory functions', () => {
       expect(noise.duration.raw).toBeGreaterThan(0)
     })
   })
+
+  describe('createNotes()', () => {
+    it('returns an array of Note objects from default frequency map', async () => {
+      const { createNotes } = await import('./index')
+      const notes = createNotes()
+      expect(Array.isArray(notes)).toBe(true)
+      expect(notes.length).toBeGreaterThan(0)
+      notes.forEach((note) => {
+        expect(note.frequency).toBeDefined()
+      })
+    })
+
+    it('returns notes with correct frequencies from frequency map', async () => {
+      const { createNotes } = await import('./index')
+      const notes = createNotes()
+      const a4 = notes.find(n => n.frequency === 440)
+      expect(a4).toBeDefined()
+    })
+
+    it('accepts custom JSON frequency map', async () => {
+      const { createNotes } = await import('./index')
+      const notes = createNotes({ A4: 440, B4: 493.88 })
+      expect(notes).toHaveLength(2)
+      expect(notes[0].frequency).toBe(440)
+      expect(notes[1].frequency).toBe(493.88)
+    })
+
+    it('returns empty array for empty JSON', async () => {
+      const { createNotes } = await import('./index')
+      const notes = createNotes({})
+      expect(notes).toEqual([])
+    })
+  })
+
+  describe('_disposeUnmute()', () => {
+    it('does not throw when called without prior initAudio', async () => {
+      const { _disposeUnmute } = await import('./index')
+      expect(() => _disposeUnmute()).not.toThrow()
+    })
+
+    it('does not throw when called multiple times', async () => {
+      const { _disposeUnmute } = await import('./index')
+      expect(() => {
+        _disposeUnmute()
+        _disposeUnmute()
+      }).not.toThrow()
+    })
+
+    it('cleans up after initAudio has been called', async () => {
+      const { initAudio, _disposeUnmute } = await import('./index')
+      await initAudio()
+      expect(() => _disposeUnmute()).not.toThrow()
+    })
+  })
+
+  describe('createAnalyzer context-free overload', () => {
+    it('creates Analyzer without AudioContext parameter', async () => {
+      const { createAnalyzer } = await import('./index')
+      const analyzer = await createAnalyzer({ fftSize: 1024 })
+      expect(analyzer).toBeDefined()
+      expect(typeof analyzer.getFrequencyData).toBe('function')
+    })
+
+    it('creates Analyzer with no arguments', async () => {
+      const { createAnalyzer } = await import('./index')
+      const analyzer = await createAnalyzer()
+      expect(analyzer).toBeDefined()
+      expect(typeof analyzer.getFrequencyData).toBe('function')
+    })
+
+    it('creates Analyzer with explicit AudioContext', async () => {
+      const { createAnalyzer } = await import('./index')
+      const analyzer = await createAnalyzer(mockAudioContext, { fftSize: 2048 })
+      expect(analyzer).toBeDefined()
+      expect(typeof analyzer.getFrequencyData).toBe('function')
+    })
+  })
+
+  describe('createLayeredSound()', () => {
+    it('creates LayeredSound from array of Sound instances', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSound, createLayeredSound } = await import('./index')
+
+      const sound1 = await createSound('a.mp3')
+      const sound2 = await createSound('b.mp3')
+      const layered = await createLayeredSound([sound1, sound2])
+
+      expect(layered).toBeDefined()
+      expect(typeof layered.play).toBe('function')
+      expect(typeof layered.stop).toBe('function')
+    })
+
+    it('accepts optional name option', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSound, createLayeredSound } = await import('./index')
+
+      const sound = await createSound('a.mp3')
+      const layered = await createLayeredSound([sound], { name: 'test-layer' })
+
+      expect(layered).toBeDefined()
+      expect(layered.name).toBe('test-layer')
+    })
+
+    it('works with empty layers array', async () => {
+      const { createLayeredSound } = await import('./index')
+      const layered = await createLayeredSound([])
+      expect(layered).toBeDefined()
+    })
+  })
+})
+
+describe('preventEventDefaults', () => {
+  let mockAudioContext: AudioContext
+  let AudioContextConstructor: ReturnType<typeof vi.fn>
+
+  beforeEach(async () => {
+    vi.resetModules()
+    const { AudioContext: MockCtx } = await import('standardized-audio-context-mock')
+    mockAudioContext = new MockCtx() as unknown as AudioContext
+    // eslint-disable-next-line prefer-arrow-callback
+    AudioContextConstructor = vi.fn(function _MockAudioContext() {
+      return mockAudioContext
+    })
+    vi.stubGlobal('AudioContext', AudioContextConstructor)
+    vi.doMock('./utils/unmute', () => ({ default: vi.fn() }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  it('returns a cleanup function', async () => {
+    const { preventEventDefaults } = await import('./index')
+    const div = document.createElement('div')
+    const cleanup = preventEventDefaults(div)
+    expect(typeof cleanup).toBe('function')
+  })
+
+  it('prevents default on mousedown event', async () => {
+    const { preventEventDefaults } = await import('./index')
+    const div = document.createElement('div')
+    preventEventDefaults(div)
+
+    const event = new MouseEvent('mousedown', { cancelable: true })
+    div.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('cleanup removes all event listeners', async () => {
+    const { preventEventDefaults } = await import('./index')
+    const div = document.createElement('div')
+    const cleanup = preventEventDefaults(div)
+
+    cleanup()
+
+    const event = new MouseEvent('mousedown', { cancelable: true })
+    div.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('registers listeners for all expected event types', async () => {
+    const { preventEventDefaults } = await import('./index')
+    const div = document.createElement('div')
+    const addSpy = vi.spyOn(div, 'addEventListener')
+
+    preventEventDefaults(div)
+
+    const expectedEvents = [
+      'touchstart', 'touchend', 'touchcancel', 'touchmove',
+      'mousedown', 'mouseup', 'click', 'contextmenu',
+      'dragstart', 'dragend', 'dragenter', 'dragover',
+      'drag', 'dragleave', 'drop',
+    ]
+
+    expectedEvents.forEach((eventName) => {
+      expect(addSpy).toHaveBeenCalledWith(eventName, expect.any(Function))
+    })
+    expect(addSpy).toHaveBeenCalledTimes(15)
+  })
+})
+
+describe('useInteractionMethods', () => {
+  let mockAudioContext: AudioContext
+  let AudioContextConstructor: ReturnType<typeof vi.fn>
+
+  beforeEach(async () => {
+    vi.resetModules()
+    const { AudioContext: MockCtx } = await import('standardized-audio-context-mock')
+    mockAudioContext = new MockCtx() as unknown as AudioContext
+    // eslint-disable-next-line prefer-arrow-callback
+    AudioContextConstructor = vi.fn(function _MockAudioContext() {
+      return mockAudioContext
+    })
+    vi.stubGlobal('AudioContext', AudioContextConstructor)
+    vi.doMock('./utils/unmute', () => ({ default: vi.fn() }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  it('returns a cleanup function', async () => {
+    const { useInteractionMethods } = await import('./index')
+    const div = document.createElement('div')
+    const player = { play: vi.fn(), stop: vi.fn() }
+
+    const cleanup = await useInteractionMethods(div, player)
+    expect(typeof cleanup).toBe('function')
+  })
+
+  it('calls play on mousedown', async () => {
+    const { useInteractionMethods } = await import('./index')
+    const div = document.createElement('div')
+    const player = { play: vi.fn(), stop: vi.fn() }
+
+    await useInteractionMethods(div, player)
+
+    const event = new MouseEvent('mousedown')
+    div.dispatchEvent(event)
+    // play is called asynchronously (via initAudio), wait a tick
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(player.play).toHaveBeenCalled()
+  })
+
+  it('calls stop on mouseup', async () => {
+    const { useInteractionMethods } = await import('./index')
+    const div = document.createElement('div')
+    const player = { play: vi.fn(), stop: vi.fn() }
+
+    await useInteractionMethods(div, player)
+
+    const event = new MouseEvent('mouseup')
+    div.dispatchEvent(event)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(player.stop).toHaveBeenCalled()
+  })
+
+  it('calls stop on mouseleave', async () => {
+    const { useInteractionMethods } = await import('./index')
+    const div = document.createElement('div')
+    const player = { play: vi.fn(), stop: vi.fn() }
+
+    await useInteractionMethods(div, player)
+
+    const event = new MouseEvent('mouseleave')
+    div.dispatchEvent(event)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(player.stop).toHaveBeenCalled()
+  })
+
+  it('cleanup removes all listeners', async () => {
+    const { useInteractionMethods } = await import('./index')
+    const div = document.createElement('div')
+    const player = { play: vi.fn(), stop: vi.fn() }
+
+    const cleanup = await useInteractionMethods(div, player)
+    cleanup()
+
+    const event = new MouseEvent('mousedown')
+    div.dispatchEvent(event)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(player.play).not.toHaveBeenCalled()
+  })
 })
