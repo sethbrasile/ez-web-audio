@@ -182,12 +182,12 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Architecture Improvements (Phase 45)
 
-- [ ] **ARCH-01**: BeatTrack event system documented with `@internal` note explaining why it uses a separate EventTarget (composition pattern with Sampler inheritance) rather than TypedEventEmitter
-- [ ] **ARCH-02**: Sampler gain/pan override behavior documented with JSDoc warning that per-sound gain/pan is overwritten on each play cycle
-- [ ] **ARCH-03**: Track `_onPlaybackStarted` cleanup extracted into private `_resetPosition()` method for clarity
-- [ ] **ARCH-04**: AudioSprite has a `dispose()` method that releases the AudioBuffer reference and clears active sources
-- [ ] **ARCH-05**: Module-level `_unmuteDispose` mutable state in `src/index.ts` annotated with `@internal` JSDoc
-- [ ] **ARCH-06**: `BaseSound.stopAt()` simplified to use `node.stop(time)` directly instead of double-scheduling with timeout
+- [x] **ARCH-01**: BeatTrack event system documented with `@internal` note explaining why it uses a separate EventTarget (composition pattern with Sampler inheritance) rather than TypedEventEmitter
+- [x] **ARCH-02**: Sampler gain/pan override behavior documented with JSDoc warning that per-sound gain/pan is overwritten on each play cycle
+- [x] **ARCH-03**: Track `_onPlaybackStarted` cleanup extracted into private `_resetPosition()` method for clarity
+- [x] **ARCH-04**: AudioSprite has a `dispose()` method that releases the AudioBuffer reference and clears active sources
+- [x] **ARCH-05**: Module-level `_unmuteDispose` mutable state in `src/index.ts` annotated with `@internal` JSDoc
+- [x] **ARCH-06**: `BaseSound.stopAt()` simplified to use `node.stop(time)` directly instead of double-scheduling with timeout
 
 ## v2 Requirements
 
