@@ -152,19 +152,19 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Test Coverage Gaps (Phase 43)
 
-- [ ] **TCOV-01**: `setPreloadCacheLimit` and `evictIfNeeded()` have tests for setting limit, eviction when exceeded, limit of 0, reducing below current size
-- [ ] **TCOV-02**: `preventEventDefaults` and `useInteractionMethods` tested with DOM simulation — verify listeners registered and cleanup removes them
-- [ ] **TCOV-03**: `Sound.loop` property tested — default value, set/get, persistence through play/stop cycles
-- [ ] **TCOV-04**: `createOscillator({ note: 'A4' })` note-name-to-frequency path tested — A4→440Hz, invalid note handling
-- [ ] **TCOV-05**: `Sampler.stop()` tested — stop propagation, isPlaying state after stop
-- [ ] **TCOV-06**: `audio-context.ts` has dedicated test file — singleton creation, closed-state recreation
-- [ ] **TCOV-07**: `createNotes()` factory function has test coverage
-- [ ] **TCOV-08**: `_disposeUnmute()` has test coverage
-- [ ] **TCOV-09**: `createAnalyzer` context-free overload tested via index.ts factory
-- [ ] **TCOV-10**: `createLayeredSound` factory tested via index.ts
-- [ ] **TCOV-11**: Oscillator `frequency: 0` behavior verified — test confirms resulting frequency value
-- [ ] **TCOV-12**: Envelope validates negative attack/decay/release values (or documents acceptance)
-- [ ] **TCOV-13**: Preload cache accessor functions (`getFromCache`, `setInCache`, `hasInCache`, `getCacheSize`) tested
+- [x] **TCOV-01**: `setPreloadCacheLimit` and `evictIfNeeded()` have tests for setting limit, eviction when exceeded, limit of 0, reducing below current size
+- [x] **TCOV-02**: `preventEventDefaults` and `useInteractionMethods` tested with DOM simulation — verify listeners registered and cleanup removes them
+- [x] **TCOV-03**: `Sound.loop` property tested — default value, set/get, persistence through play/stop cycles
+- [x] **TCOV-04**: `createOscillator({ note: 'A4' })` note-name-to-frequency path tested — A4→440Hz, invalid note handling
+- [x] **TCOV-05**: `Sampler.stop()` tested — stop propagation, isPlaying state after stop
+- [x] **TCOV-06**: `audio-context.ts` has dedicated test file — singleton creation, closed-state recreation
+- [x] **TCOV-07**: `createNotes()` factory function has test coverage
+- [x] **TCOV-08**: `_disposeUnmute()` has test coverage
+- [x] **TCOV-09**: `createAnalyzer` context-free overload tested via index.ts factory
+- [x] **TCOV-10**: `createLayeredSound` factory tested via index.ts
+- [x] **TCOV-11**: Oscillator `frequency: 0` behavior verified — test confirms resulting frequency value
+- [x] **TCOV-12**: Envelope validates negative attack/decay/release values (or documents acceptance)
+- [x] **TCOV-13**: Preload cache accessor functions (`getFromCache`, `setInCache`, `hasInCache`, `getCacheSize`) tested
 
 ## v2 Requirements
 
@@ -296,23 +296,23 @@ Explicitly excluded. Documented to prevent scope creep.
 | BUG-03 | Phase 42 | Complete |
 | BUG-04 | Phase 42 | Complete |
 | BUG-05 | Phase 42 | Complete |
-| TCOV-01 | Phase 43 | Pending |
-| TCOV-02 | Phase 43 | Pending |
-| TCOV-03 | Phase 43 | Pending |
-| TCOV-04 | Phase 43 | Pending |
-| TCOV-05 | Phase 43 | Pending |
-| TCOV-06 | Phase 43 | Pending |
-| TCOV-07 | Phase 43 | Pending |
-| TCOV-08 | Phase 43 | Pending |
-| TCOV-09 | Phase 43 | Pending |
-| TCOV-10 | Phase 43 | Pending |
-| TCOV-11 | Phase 43 | Pending |
-| TCOV-12 | Phase 43 | Pending |
-| TCOV-13 | Phase 43 | Pending |
+| TCOV-01 | Phase 43 | Complete |
+| TCOV-02 | Phase 43 | Complete |
+| TCOV-03 | Phase 43 | Complete |
+| TCOV-04 | Phase 43 | Complete |
+| TCOV-05 | Phase 43 | Complete |
+| TCOV-06 | Phase 43 | Complete |
+| TCOV-07 | Phase 43 | Complete |
+| TCOV-08 | Phase 43 | Complete |
+| TCOV-09 | Phase 43 | Complete |
+| TCOV-10 | Phase 43 | Complete |
+| TCOV-11 | Phase 43 | Complete |
+| TCOV-12 | Phase 43 | Complete |
+| TCOV-13 | Phase 43 | Complete |
 
 **Coverage:**
 - v1.0 original requirements: 33 total, 33 completed
-- v1.0 gap closure requirements: 68 total, 41 completed
+- v1.0 gap closure requirements: 68 total, 54 completed
 - Grand total: 101 requirements mapped to phases
 
 ---
