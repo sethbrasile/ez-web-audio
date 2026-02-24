@@ -37,7 +37,7 @@ import { Envelope } from './envelope'
 import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
 import { Font } from './font'
 import { LayeredSound } from './layered-sound'
-import { clearPreloadCache, isPreloaded, preload, responseCache, setPreloadCacheLimit } from './preload'
+import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
 import { pauseAll, playAll, stopAll } from './utils/collections'
@@ -617,8 +617,8 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
   const audioContext = getOrCreateAudioContext()
   let buffer: AudioBuffer
 
-  if (responseCache.has(audioUrl)) {
-    const res = await responseCache.get(audioUrl)!.clone()
+  if (hasInCache(audioUrl)) {
+    const res = await getFromCache(audioUrl)!.clone()
     buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
   }
   else {
@@ -631,7 +631,8 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
     }
     // Store a clone so the cached response body is always unconsumed.
     // Response.body can only be read once; always store a fresh clone.
-    responseCache.set(audioUrl, response.clone())
+    setInCache(audioUrl, response.clone())
+    evictIfNeeded()
     buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
   }
 
@@ -766,10 +767,11 @@ function createSoundFor(type: 'sound' | 'track', props: AudioBuffer): Sound | Tr
  * @throws {AudioLoadError} If the file cannot be loaded or decoded
  */
 async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track> {
+  await initAudio()
   const audioContext = getOrCreateAudioContext()
 
-  if (responseCache.has(src)) {
-    const res = await responseCache.get(src)!.clone()
+  if (hasInCache(src)) {
+    const res = await getFromCache(src)!.clone()
     const buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
     return createSoundFor(type, buffer)
   }
@@ -794,9 +796,8 @@ async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track
 
   // Store a clone so the cached response body is always unconsumed.
   // Response.body can only be read once; always store a fresh clone.
-  responseCache.set(src, response.clone())
-
-  await initAudio()
+  setInCache(src, response.clone())
+  evictIfNeeded()
 
   let buffer: AudioBuffer
   try {
