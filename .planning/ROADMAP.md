@@ -542,12 +542,18 @@ Plans:
 
 ### Phase 41: API Type Safety
 
-**Goal:** [To be planned]
+**Goal:** Eliminate `any` from published types and fix misleading type contracts
 **Depends on:** Phase 40
-**Plans:** 0 plans
+**Requirements:** TYPE-01, TYPE-02, TYPE-03, TYPE-04
+**Success Criteria** (what must be TRUE):
+  1. `ParamController.updateAudioSource` parameter typed as `OscillatorNode | AudioBufferSourceNode` (no `any`)
+  2. `BaseSoundEventMap` and `TrackEventMap` exported as separate types for precise consumer typing
+  3. `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
+  4. `Playable` interface documents its scope and includes optional convenience method signatures
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 41 to break down)
+- [ ] 41-01-PLAN.md — Fix ParamController any, split event maps, narrow Connectable, expand Playable
 
 ### Phase 42: Source Code Correctness Bugs
 

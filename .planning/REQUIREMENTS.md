@@ -135,6 +135,13 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 - [x] **SYNC2-03**: Full lint + typecheck + test suite passes
 - [x] **SYNC2-04**: CHANGELOG.md has complete Phase 32-38 record
 
+### API Type Safety (Phase 41)
+
+- [ ] **TYPE-01**: `ParamController.updateAudioSource` typed as `(source: OscillatorNode | AudioBufferSourceNode) => void` (no `any`)
+- [ ] **TYPE-02**: `BaseSoundEventMap` (play, stop, end) and `TrackEventMap` (adds pause, resume, seek) exported as separate types; `SoundEventMap` retained as backward-compatible alias
+- [ ] **TYPE-03**: `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
+- [ ] **TYPE-04**: `Playable` interface expanded with `fadeIn`, `fadeOut`, `dispose` as optional members, or documented as minimal contract with JSDoc
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
