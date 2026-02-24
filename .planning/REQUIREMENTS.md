@@ -172,13 +172,13 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 - [x] **SEO-02**: Per-page OG title/description via VitePress `transformHead` hook (not static across all pages)
 - [x] **SEO-03**: Canonical URL per page via `link rel="canonical"` in `transformHead`
 - [x] **SEO-04**: JSON-LD structured data includes `version` and `dateCreated` properties
-- [ ] **A11Y-01**: All interactive demo buttons have visible `:focus-visible` outline styles
-- [ ] **A11Y-02**: Visualization canvases have `role="img"` and descriptive `aria-label`
+- [x] **A11Y-01**: All interactive demo buttons have visible `:focus-visible` outline styles
+- [x] **A11Y-02**: Visualization canvases have `role="img"` and descriptive `aria-label`
 - [x] **A11Y-03**: XY Pad canvas is keyboard operable (arrow key handlers for frequency/gain control)
-- [ ] **A11Y-04**: DrumMachine beat state has secondary visual indicator beyond color alone (WCAG 1.4.1)
-- [ ] **A11Y-05**: DrumMachine 16-step grid has scroll affordance on small mobile viewports
+- [x] **A11Y-04**: DrumMachine beat state has secondary visual indicator beyond color alone (WCAG 1.4.1)
+- [x] **A11Y-05**: DrumMachine 16-step grid has scroll affordance on small mobile viewports
 - [x] **A11Y-06**: Piano keyboard shortcut hint is announced to screen readers
-- [ ] **A11Y-07**: DrumMachine shows loading state on first play while audio initializes
+- [x] **A11Y-07**: DrumMachine shows loading state on first play while audio initializes
 
 ## v2 Requirements
 
