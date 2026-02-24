@@ -137,10 +137,18 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### API Type Safety (Phase 41)
 
-- [ ] **TYPE-01**: `ParamController.updateAudioSource` typed as `(source: OscillatorNode | AudioBufferSourceNode) => void` (no `any`)
-- [ ] **TYPE-02**: `BaseSoundEventMap` (play, stop, end) and `TrackEventMap` (adds pause, resume, seek) exported as separate types; `SoundEventMap` retained as backward-compatible alias
-- [ ] **TYPE-03**: `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
-- [ ] **TYPE-04**: `Playable` interface expanded with `fadeIn`, `fadeOut`, `dispose` as optional members, or documented as minimal contract with JSDoc
+- [x] **TYPE-01**: `ParamController.updateAudioSource` typed as `(source: OscillatorNode | AudioBufferSourceNode) => void` (no `any`)
+- [x] **TYPE-02**: `BaseSoundEventMap` (play, stop, end) and `TrackEventMap` (adds pause, resume, seek) exported as separate types; `SoundEventMap` retained as backward-compatible alias
+- [x] **TYPE-03**: `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
+- [x] **TYPE-04**: `Playable` interface expanded with `fadeIn`, `fadeOut`, `dispose` as optional members, or documented as minimal contract with JSDoc
+
+### Source Code Correctness Bugs (Phase 42)
+
+- [ ] **BUG-01**: Oscillator.setup() preserves user-set gain across plays instead of resetting to defaultValue
+- [ ] **BUG-02**: Sound.setup() calls controller.updateAudioSource() so detune schedules apply to current source node
+- [ ] **BUG-03**: load() calls initAudio() before using AudioContext (fixes iOS silent first-play in cache-hit path)
+- [ ] **BUG-04**: load() and createSprite() call evictIfNeeded() after writing to responseCache
+- [ ] **BUG-05**: responseCache is not directly mutable by consumers — exposed through controlled access only
 
 ## v2 Requirements
 
@@ -267,10 +275,16 @@ Explicitly excluded. Documented to prevent scope creep.
 | SYNC2-03 | Phase 38 | Complete |
 | SYNC2-04 | Phase 38 | Complete |
 
+| BUG-01 | Phase 42 | Pending |
+| BUG-02 | Phase 42 | Pending |
+| BUG-03 | Phase 42 | Pending |
+| BUG-04 | Phase 42 | Pending |
+| BUG-05 | Phase 42 | Pending |
+
 **Coverage:**
 - v1.0 original requirements: 33 total, 33 completed
-- v1.0 gap closure requirements: 50 total, 0 completed
-- Grand total: 83 requirements mapped to phases
+- v1.0 gap closure requirements: 55 total, 41 completed
+- Grand total: 88 requirements mapped to phases
 
 ---
 *Requirements defined: 2026-02-16*
