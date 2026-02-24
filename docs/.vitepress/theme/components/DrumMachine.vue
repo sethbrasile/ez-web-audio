@@ -2,6 +2,7 @@
 import { onUnmounted, reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
+const loading = ref(false)
 const bpm = ref(120)
 const error = ref('')
 
@@ -65,8 +66,11 @@ async function init() {
 }
 
 async function togglePlay() {
-  if (!initialized)
+  if (!initialized) {
+    loading.value = true
     await init()
+    loading.value = false
+  }
   if (!initialized)
     return
 
@@ -97,8 +101,8 @@ onUnmounted(() => {
 <template>
   <div class="drum-machine">
     <div class="controls">
-      <button class="play-btn" @click="togglePlay">
-        {{ playing ? 'Stop' : 'Play' }}
+      <button class="play-btn" :disabled="loading" @click="togglePlay">
+        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
       </button>
 
       <div class="bpm-control">
@@ -131,9 +135,14 @@ onUnmounted(() => {
             @click="beat.active = !beat.active"
           >
             <span class="beat-number">{{ i + 1 }}</span>
+            <span v-if="beat.active" class="beat-active-indicator" aria-hidden="true">&#9679;</span>
           </button>
         </div>
       </div>
+    </div>
+
+    <div class="scroll-hint">
+      Swipe to see all beats &rarr;
     </div>
 
     <div class="status-bar">
@@ -234,6 +243,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.15s;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0;
@@ -301,6 +311,26 @@ button:focus-visible {
   font-weight: 500;
 }
 
+.beat-active-indicator {
+  font-size: 0.5rem;
+  display: block;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.play-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.scroll-hint {
+  display: none;
+  font-size: 0.75rem;
+  color: var(--vp-c-text-3);
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
 .status-bar {
   min-height: 1.5rem;
   margin-top: 0.75rem;
@@ -316,6 +346,7 @@ button:focus-visible {
     gap: 2px;
     overflow-x: auto;
     padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
   }
   .beat-cell {
     min-width: 28px;
@@ -323,6 +354,9 @@ button:focus-visible {
   }
   .track-header {
     flex-wrap: wrap;
+  }
+  .scroll-hint {
+    display: block;
   }
 }
 
