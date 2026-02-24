@@ -621,12 +621,14 @@ Plans:
 
 ### Phase 45: Architecture Improvements
 
-**Goal:** [To be planned]
+**Goal:** Improve internal code clarity by documenting architectural decisions (BeatTrack events, Sampler override), extracting implicit cleanup into named methods (Track._resetPosition), adding resource release (AudioSprite.dispose), annotating internal state, and simplifying stopAt scheduling
 **Depends on:** Phase 44
-**Plans:** 0 plans
+**Requirements:** ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-06
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 45 to break down)
+- [ ] 45-01-PLAN.md — Extract Track _resetPosition, add AudioSprite dispose, annotate _unmuteDispose
+- [ ] 45-02-PLAN.md — Document BeatTrack events, Sampler override warning, simplify stopAt scheduling
 
 ---
 

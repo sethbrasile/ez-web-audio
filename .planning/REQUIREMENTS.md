@@ -180,6 +180,15 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 - [x] **A11Y-06**: Piano keyboard shortcut hint is announced to screen readers
 - [x] **A11Y-07**: DrumMachine shows loading state on first play while audio initializes
 
+### Architecture Improvements (Phase 45)
+
+- [ ] **ARCH-01**: BeatTrack event system documented with `@internal` note explaining why it uses a separate EventTarget (composition pattern with Sampler inheritance) rather than TypedEventEmitter
+- [ ] **ARCH-02**: Sampler gain/pan override behavior documented with JSDoc warning that per-sound gain/pan is overwritten on each play cycle
+- [ ] **ARCH-03**: Track `_onPlaybackStarted` cleanup extracted into private `_resetPosition()` method for clarity
+- [ ] **ARCH-04**: AudioSprite has a `dispose()` method that releases the AudioBuffer reference and clears active sources
+- [ ] **ARCH-05**: Module-level `_unmuteDispose` mutable state in `src/index.ts` annotated with `@internal` JSDoc
+- [ ] **ARCH-06**: `BaseSound.stopAt()` simplified to use `node.stop(time)` directly instead of double-scheduling with timeout
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
