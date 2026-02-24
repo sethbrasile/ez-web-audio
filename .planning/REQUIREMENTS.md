@@ -174,10 +174,10 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 - [ ] **SEO-04**: JSON-LD structured data includes `version` and `dateCreated` properties
 - [ ] **A11Y-01**: All interactive demo buttons have visible `:focus-visible` outline styles
 - [ ] **A11Y-02**: Visualization canvases have `role="img"` and descriptive `aria-label`
-- [ ] **A11Y-03**: XY Pad canvas is keyboard operable (arrow key handlers for frequency/gain control)
+- [x] **A11Y-03**: XY Pad canvas is keyboard operable (arrow key handlers for frequency/gain control)
 - [ ] **A11Y-04**: DrumMachine beat state has secondary visual indicator beyond color alone (WCAG 1.4.1)
 - [ ] **A11Y-05**: DrumMachine 16-step grid has scroll affordance on small mobile viewports
-- [ ] **A11Y-06**: Piano keyboard shortcut hint is announced to screen readers
+- [x] **A11Y-06**: Piano keyboard shortcut hint is announced to screen readers
 - [ ] **A11Y-07**: DrumMachine shows loading state on first play while audio initializes
 
 ## v2 Requirements

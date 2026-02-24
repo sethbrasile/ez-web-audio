@@ -17,7 +17,7 @@ Plan: 2/2
 Status: All plans executed
 Last activity: 2026-02-23 — Phase 39 executed (2 plans, 4 commits)
 
-**Progress:** [██████████] 100%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -82,6 +82,8 @@ Last activity: 2026-02-23 — Phase 39 executed (2 plans, 4 commits)
 | Phase 37-nice-to-have-dx-features P37-03 | 7min | 2 tasks | 5 files |
 | Phase 38-final-documentation-sync P01 | 6min | 2 tasks | 4 files |
 | Phase 38-final-documentation-sync P02 | 1min | 2 tasks | 1 files |
+| Phase 44-docs-site-seo-and-accessibility P03 | 2min | 2 tasks | 3 files |
+| Phase 44-docs-site-seo-and-accessibility P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -201,6 +203,10 @@ Recent decisions affecting current work:
 - [Phase 37-nice-to-have-dx-features]: TypedEventEmitter self-referential constraint avoids requiring index signature on existing SoundEventMap/LayeredSoundEventMap interfaces
 - [Phase 38]: concepts.md trimmed to ~262 lines by condensing ADSR, init, and effect chain sections for 250-line target
 - [Phase 38]: Pre-existing lint errors (43) left unfixed — not introduced by Phase 38; typecheck and 1109 tests pass
+- [Phase 44-docs-site-seo-and-accessibility]: XY Pad oscillator starts on first arrow keydown and stops when all arrow keys released — matches mouse press-and-hold semantics
+- [Phase 44-docs-site-seo-and-accessibility]: canvas:focus and .key:focus updated to :focus-visible — avoids outline appearing on mouse click (modern a11y practice)
+- [Phase 44-docs-site-seo-and-accessibility]: OG image generated with pure Node.js Buffer writes — no external dependencies, valid PNG
+- [Phase 44-docs-site-seo-and-accessibility]: transformHead hook generates per-page og:title, og:description, og:url, canonical link — static duplicates removed from head array
 
 ### Roadmap Evolution
 
