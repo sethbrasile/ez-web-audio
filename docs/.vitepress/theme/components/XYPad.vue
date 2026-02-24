@@ -10,6 +10,14 @@ const currentGain = ref(0.5)
 const currentNote = ref('A4')
 const error = ref('')
 
+// Keyboard-controlled position (start near center of logical canvas ~400px)
+const kbX = ref(200)
+const kbY = ref(200)
+
+// Track held arrow keys to stop oscillator when all released
+const heldKeys = new Set<string>()
+const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+
 let ctx: CanvasRenderingContext2D | null = null
 let oscillator: Oscillator | null = null
 let lib: any = null
@@ -251,6 +259,60 @@ function handleTouchEnd(e: TouchEvent) {
   stopPlaying()
 }
 
+async function handleKeyDown(e: KeyboardEvent) {
+  const step = e.shiftKey ? 20 : 5
+  if (!canvas.value)
+    return
+
+  const logicalWidth = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
+  const logicalHeight = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientHeight
+
+  let x = kbX.value
+  let y = kbY.value
+
+  switch (e.key) {
+    case 'ArrowRight':
+      x = Math.min(logicalWidth, x + step)
+      break
+    case 'ArrowLeft':
+      x = Math.max(0, x - step)
+      break
+    case 'ArrowUp':
+      y = Math.max(0, y - step) // Up = lower y = higher gain
+      break
+    case 'ArrowDown':
+      y = Math.min(logicalHeight, y + step)
+      break
+    case ' ':
+    case 'Escape':
+      stopPlaying()
+      return
+    default:
+      return // Don't prevent default for non-arrow keys
+  }
+
+  e.preventDefault() // Prevent page scroll
+
+  heldKeys.add(e.key)
+  kbX.value = x
+  kbY.value = y
+
+  // Start oscillator if not already playing
+  if (!isPlaying.value) {
+    await startPlaying(x, y)
+  }
+  else {
+    updateFromPosition(x, y)
+  }
+}
+
+function handleKeyUp(e: KeyboardEvent) {
+  heldKeys.delete(e.key)
+  if (arrowKeys.includes(e.key) && !arrowKeys.some(k => heldKeys.has(k))) {
+    stopPlaying()
+  }
+}
+
 onMounted(() => {
   if (canvas.value) {
     // Set canvas size with HiDPI support
@@ -286,7 +348,7 @@ onUnmounted(() => {
     <div class="canvas-container">
       <canvas
         ref="canvas"
-        aria-label="XY Pad - Press and drag to control frequency (horizontal) and gain (vertical). Use mouse or touch."
+        aria-label="XY Pad - Use arrow keys or click and drag to control frequency (horizontal) and gain (vertical). Hold Shift for larger steps. Space or Escape to stop."
         role="application"
         tabindex="0"
         @mousedown="handleMouseDown"
@@ -294,6 +356,9 @@ onUnmounted(() => {
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
+        @keydown="handleKeyDown"
+        @keyup="handleKeyUp"
+        @blur="stopPlaying"
       />
       <div class="keyboard-hint">
         Press and drag to play. X-axis controls frequency (100-2000 Hz), Y-axis controls volume.
@@ -377,7 +442,7 @@ canvas {
   touch-action: none;
 }
 
-canvas:focus {
+canvas:focus-visible {
   outline: 2px solid var(--vp-c-brand);
   outline-offset: 2px;
 }
