@@ -567,7 +567,7 @@ Plans:
   3. load() calls initAudio() before any AudioContext usage including cache-hit path
   4. Cache eviction runs after every responseCache.set() in load() and createSprite()
   5. responseCache is not directly exported as a mutable Map
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 42-01-PLAN.md — Fix Oscillator gain reset and Sound controller update
