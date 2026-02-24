@@ -557,12 +557,21 @@ Plans:
 
 ### Phase 42: Source Code Correctness Bugs
 
-**Goal:** [To be planned]
+**Goal:** Fix real bugs where audio behavior doesn't match user intent — gain reset, stale controller references, iOS init ordering, and cache safety
 **Depends on:** Phase 41
-**Plans:** 0 plans
+**Requirements:** BUG-01, BUG-02, BUG-03, BUG-04, BUG-05
+**Gap Closure:** Closes review findings M1, M2, M3, M4, L9
+**Success Criteria** (what must be TRUE):
+  1. Oscillator preserves user-set gain value across play() calls
+  2. Sound.setup() updates controller with new AudioBufferSourceNode
+  3. load() calls initAudio() before any AudioContext usage including cache-hit path
+  4. Cache eviction runs after every responseCache.set() in load() and createSprite()
+  5. responseCache is not directly exported as a mutable Map
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 42 to break down)
+- [ ] 42-01-PLAN.md — Fix Oscillator gain reset and Sound controller update
+- [ ] 42-02-PLAN.md — Fix load() init ordering, cache eviction, and responseCache encapsulation
 
 ### Phase 43: Test Coverage Gaps
 
