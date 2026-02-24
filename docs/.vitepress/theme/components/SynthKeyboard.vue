@@ -304,4 +304,11 @@ onUnmounted(() => {
 .adsr-row input[type="range"] {
   width: 100%;
 }
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
 </style>

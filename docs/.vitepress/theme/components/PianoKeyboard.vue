@@ -181,10 +181,15 @@ onUnmounted(() => {
 
 <template>
   <div class="piano-keyboard">
-    <div class="keyboard-hint">
+    <div
+      id="keyboard-shortcut-hint"
+      class="keyboard-hint"
+      role="note"
+      aria-label="Keyboard shortcuts: Use keys A through K to play notes. W, E, T, Y, U for sharps."
+    >
       Use keys A-K to play (W, E, T, Y, U for sharps)
     </div>
-    <div class="keys-container">
+    <div class="keys-container" aria-describedby="keyboard-shortcut-hint">
       <div
         v-for="key in keys"
         :key="key.note"
@@ -239,7 +244,7 @@ onUnmounted(() => {
   border: 1px solid var(--vp-c-divider);
 }
 
-.key:focus {
+.key:focus-visible {
   outline: 2px solid var(--vp-c-brand);
   outline-offset: -2px;
   z-index: 3;
