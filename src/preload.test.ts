@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearPreloadCache, getCacheSize, getFromCache, hasInCache, isPreloaded, preload, setInCache } from './preload'
+import { clearPreloadCache, evictIfNeeded, getCacheSize, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 
 describe('preload', () => {
   const mockFetch = vi.fn()
@@ -198,6 +198,147 @@ describe('preload', () => {
 
     it('handles clearing non-existent URL gracefully', () => {
       expect(() => clearPreloadCache('/audio/nonexistent.mp3')).not.toThrow()
+    })
+  })
+
+  describe('setPreloadCacheLimit', () => {
+    it('setting a limit and adding more entries causes eviction', () => {
+      setPreloadCacheLimit(3)
+
+      setInCache('/a.mp3', createMockResponse())
+      setInCache('/b.mp3', createMockResponse())
+      setInCache('/c.mp3', createMockResponse())
+      setInCache('/d.mp3', createMockResponse())
+
+      // After setting 4 entries with limit 3, evictIfNeeded runs on preload but not setInCache directly
+      // setPreloadCacheLimit calls evictIfNeeded, so we set limit after filling
+      setPreloadCacheLimit(3)
+      expect(getCacheSize()).toBe(3)
+      // Oldest entry (/a.mp3) should have been evicted
+      expect(hasInCache('/a.mp3')).toBe(false)
+      expect(hasInCache('/d.mp3')).toBe(true)
+    })
+
+    it('setting limit to 0 evicts all entries', () => {
+
+      setInCache('/a.mp3', createMockResponse())
+      setInCache('/b.mp3', createMockResponse())
+      expect(getCacheSize()).toBe(2)
+
+      setPreloadCacheLimit(0)
+      expect(getCacheSize()).toBe(0)
+    })
+
+    it('reducing limit below current cache size evicts oldest entries', () => {
+
+      setInCache('/a.mp3', createMockResponse())
+      setInCache('/b.mp3', createMockResponse())
+      setInCache('/c.mp3', createMockResponse())
+      setInCache('/d.mp3', createMockResponse())
+      setInCache('/e.mp3', createMockResponse())
+      expect(getCacheSize()).toBe(5)
+
+      setPreloadCacheLimit(2)
+      expect(getCacheSize()).toBe(2)
+      // Oldest 3 evicted
+      expect(hasInCache('/a.mp3')).toBe(false)
+      expect(hasInCache('/b.mp3')).toBe(false)
+      expect(hasInCache('/c.mp3')).toBe(false)
+      // Newest 2 remain
+      expect(hasInCache('/d.mp3')).toBe(true)
+      expect(hasInCache('/e.mp3')).toBe(true)
+    })
+
+    it('default limit (100) allows many entries without eviction', () => {
+      setPreloadCacheLimit(100) // restore default
+      for (let i = 0; i < 50; i++) {
+        setInCache(`/audio-${i}.mp3`, createMockResponse())
+      }
+      expect(getCacheSize()).toBe(50)
+    })
+
+    it('limit does not affect clearPreloadCache behavior', () => {
+      setPreloadCacheLimit(5)
+      setInCache('/a.mp3', createMockResponse())
+      setInCache('/b.mp3', createMockResponse())
+      clearPreloadCache()
+      expect(getCacheSize()).toBe(0)
+    })
+
+    afterEach(() => {
+      setPreloadCacheLimit(100)
+    })
+  })
+
+  describe('evictIfNeeded', () => {
+    it('does not evict when cache size is within limit', () => {
+      setPreloadCacheLimit(5)
+      setInCache('/a.mp3', createMockResponse())
+      setInCache('/b.mp3', createMockResponse())
+
+      evictIfNeeded()
+      expect(getCacheSize()).toBe(2)
+    })
+
+    it('evicts oldest entries first (FIFO) when over limit', () => {
+
+      setInCache('/first.mp3', createMockResponse())
+      setInCache('/second.mp3', createMockResponse())
+      setInCache('/third.mp3', createMockResponse())
+
+      setPreloadCacheLimit(1)
+      expect(getCacheSize()).toBe(1)
+      expect(hasInCache('/first.mp3')).toBe(false)
+      expect(hasInCache('/second.mp3')).toBe(false)
+      expect(hasInCache('/third.mp3')).toBe(true)
+    })
+
+    it('multiple evictions reduce to exactly the limit count', () => {
+
+      for (let i = 0; i < 10; i++) {
+        setInCache(`/audio-${i}.mp3`, createMockResponse())
+      }
+      expect(getCacheSize()).toBe(10)
+
+      setPreloadCacheLimit(3)
+      expect(getCacheSize()).toBe(3)
+    })
+
+    afterEach(() => {
+      setPreloadCacheLimit(100)
+    })
+  })
+
+  describe('cache accessor functions', () => {
+    it('setInCache stores a response retrievable by getFromCache', () => {
+      const response = createMockResponse()
+      setInCache('/test.mp3', response)
+      expect(getFromCache('/test.mp3')).toBe(response)
+    })
+
+    it('getFromCache returns undefined for missing keys', () => {
+      expect(getFromCache('/nonexistent.mp3')).toBeUndefined()
+    })
+
+    it('hasInCache returns true for cached keys', () => {
+      setInCache('/test.mp3', createMockResponse())
+      expect(hasInCache('/test.mp3')).toBe(true)
+    })
+
+    it('hasInCache returns false for missing keys', () => {
+      expect(hasInCache('/nonexistent.mp3')).toBe(false)
+    })
+
+    it('getCacheSize returns correct count after set/clear operations', () => {
+      expect(getCacheSize()).toBe(0)
+      setInCache('/a.mp3', createMockResponse())
+      expect(getCacheSize()).toBe(1)
+      setInCache('/b.mp3', createMockResponse())
+      expect(getCacheSize()).toBe(2)
+      clearPreloadCache('/a.mp3')
+      expect(getCacheSize()).toBe(1)
+      clearPreloadCache()
+      expect(getCacheSize()).toBe(0)
     })
   })
 
