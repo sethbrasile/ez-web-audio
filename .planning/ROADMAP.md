@@ -599,12 +599,25 @@ Plans:
 
 ### Phase 44: Docs Site SEO and Accessibility
 
-**Goal:** [To be planned]
+**Goal:** Ensure the docs site has proper SEO infrastructure (OG images, per-page meta, canonical URLs) and meets WCAG 2.1 AA accessibility standards for all interactive demos
 **Depends on:** Phase 43
-**Plans:** 0 plans
+**Requirements:** SEO-01, SEO-02, SEO-03, SEO-04, A11Y-01, A11Y-02, A11Y-03, A11Y-04, A11Y-05, A11Y-06, A11Y-07
+**Success Criteria** (what must be TRUE):
+  1. OG image is a 1200x630 PNG with proper `og:image:width`/`og:image:height` tags and `twitter:card` is `summary_large_image`
+  2. Each docs page has its own OG title, description, and canonical URL via `transformHead`
+  3. JSON-LD structured data includes `version` and `dateCreated`
+  4. Every interactive demo button has visible `focus-visible` outline styles
+  5. Visualization canvases have `role="img"` and descriptive `aria-label`
+  6. XY Pad canvas is keyboard operable via arrow keys
+  7. DrumMachine active beats have secondary visual indicator beyond color
+  8. DrumMachine grid has mobile scroll affordance and loading state on first play
+  9. Piano keyboard shortcut hint is announced to screen readers
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 44 to break down)
+- [ ] 44-01-PLAN.md — SEO infrastructure: OG image PNG, per-page meta via transformHead, canonical URLs, JSON-LD enrichment
+- [ ] 44-02-PLAN.md — Demo accessibility: focus-visible styles, canvas a11y, DrumMachine beat indicators/scroll/loading
+- [ ] 44-03-PLAN.md — XY Pad keyboard operation, piano keyboard hint screen reader access
 
 ### Phase 45: Architecture Improvements
 
