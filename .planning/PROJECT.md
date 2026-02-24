@@ -43,6 +43,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 - ✓ Documentation expansion: concepts split, AudioSprite/LayeredSound/Crossfade examples, React integration guide, API fixes — v1.0 stable Phase 35
 - ✓ Documentation sync: guide pages updated for Phase 33 APIs, TypeDoc regenerated, CHANGELOG updated, stale API sweep clean — v1.0 stable Phase 36
 - ✓ Nice-to-have DX: AudioInput flexibility, createNoise, volume alias, createTracks, typed events, narrowed ControlType, TypedEventEmitter mixin, onPlaySet docs — v1.0 stable Phase 37
+- ✓ Docs site SEO and accessibility: OG image, per-page meta, canonical URLs, JSON-LD, WCAG focus-visible, canvas ARIA, DrumMachine a11y, XY Pad keyboard operation — v1.0 stable Phase 44
 
 ### Active
 
@@ -80,7 +81,7 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 1038+ tests, published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with structured data. Phases 17-33 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening, test coverage, demo app, demo bugfixes, source code fixes, package quality, documentation corrections, demo fixes, E2E expansion, convenience APIs).
+**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 1038+ tests, published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with per-page OG tags, structured data, and WCAG accessibility improvements. Phases 17-44 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening, test coverage, demo app, demo bugfixes, source code fixes, package quality, documentation corrections, demo fixes, E2E expansion, convenience APIs, docs SEO/a11y).
 
 **Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
 
@@ -123,4 +124,4 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
 
 ---
-*Last updated: 2026-02-22 after Phase 37*
+*Last updated: 2026-02-24 after Phase 44*
