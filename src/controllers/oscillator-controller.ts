@@ -29,7 +29,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
    */
   public triggerRelease(releaseTime: number): void {
     if (this.envelope) {
-      this.envelope.release(this.gainNode.gain, releaseTime)
+      this.envelope.triggerRelease(this.gainNode.gain, releaseTime)
     }
   }
 
@@ -38,8 +38,8 @@ export class OscillatorController extends BaseParamController implements ParamCo
    *
    * @param oscillator - The new OscillatorNode
    */
-  public updateAudioSource(oscillator: OscillatorNode): void {
-    this.oscillator = oscillator
+  public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
+    this.oscillator = source as OscillatorNode
   }
 
   protected _update(type: ControlType, value: number): void {

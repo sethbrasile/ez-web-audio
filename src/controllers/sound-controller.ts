@@ -16,8 +16,8 @@ export class SoundController extends BaseParamController implements ParamControl
    *
    * @param source - The new AudioBufferSourceNode
    */
-  public updateAudioSource(source: AudioBufferSourceNode): void {
-    this.bufferSourceNode = source
+  public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
+    this.bufferSourceNode = source as AudioBufferSourceNode
   }
 
   /**

@@ -9,7 +9,7 @@ import type { RatioType, SoundControlType } from '@controllers/base-param-contro
  */
 export interface Connectable {
   percentGain: number
-  audioSourceNode: AudioNode
+  audioSourceNode: OscillatorNode | AudioBufferSourceNode
   changePanTo: (value: number) => this
   changeGainTo: (value: number) => this
   update: (type: SoundControlType) => {
