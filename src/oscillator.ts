@@ -84,7 +84,7 @@ export interface OscillatorOptions extends BaseSoundOptions {
   envelope?: EnvelopeOptions
 }
 
-const FILTERS = [
+const FILTERS: BiquadFilterType[] = [
   'highpass',
   'bandpass',
   'lowpass',
@@ -195,10 +195,10 @@ export class Oscillator extends BaseSound {
     }
 
     FILTERS.forEach((filter) => {
-      const vals = get<OscillatorFilterOptions | undefined>(options, filter)
+      const vals = options ? get<OscillatorFilterOptions | undefined>(options as Record<string, unknown>, filter) : undefined
       if (vals) {
         const filterNode = audioContext.createBiquadFilter()
-        filterNode.type = filter as any
+        filterNode.type = filter
         filterNode.frequency.setValueAtTime(vals.frequency || 440, audioContext.currentTime)
         filterNode.Q.setValueAtTime(vals.q || 1, audioContext.currentTime)
         this.filters.push(filterNode)
@@ -274,35 +274,24 @@ export class Oscillator extends BaseSound {
   /**
    * Set up a fresh OscillatorNode for playback.
    * Called automatically before each play() since OscillatorNode is single-use.
+   * The GainNode is reused across plays to keep cached references from `getGainNode()` stable.
    * @protected
-   * @remarks
-   * **Warning:** This method replaces the internal GainNode. If you have cached a
-   * reference to the GainNode (e.g. via `getGainNode()`), the cached reference becomes
-   * stale after `play()` is called. Always re-fetch the GainNode after play() if you
-   * need a live reference.
    */
   protected setup(): void {
-    // Create a new oscillator on every play
+    // Create a new oscillator on every play (OscillatorNode is single-use per Web Audio spec)
     const oscillator = this.audioContext.createOscillator()
     oscillator.type = this.type || 'sine'
     oscillator.frequency.setValueAtTime(this.freq || 440, this.audioContext.currentTime)
     this.audioSourceNode = oscillator
 
-    // Disconnect old gain node before replacing to prevent memory leak
-    if (this.gainNode) {
-      try {
-        this.gainNode.disconnect()
-      }
-      catch { /* Already disconnected */ }
-    }
+    // Cancel any scheduled values on the existing gain node instead of replacing it
+    // Preserve current gain value (user may have set via changeGainTo/update) — don't reset to defaultValue
+    const currentGain = this.gainNode.gain.value
+    this.gainNode.gain.cancelScheduledValues(0)
+    this.gainNode.gain.setValueAtTime(currentGain, this.audioContext.currentTime)
 
-    // Create a new gain node on every play and update the effect chain
-    const gainNode = this.audioContext.createGain()
-    this.gainNode = gainNode
-
-    // give the controller the new nodes
+    // give the controller the new oscillator node (gain node is stable)
     this.controller.updateAudioSource(oscillator)
-    this.controller.updateGainNode(gainNode)
 
     // Pass envelope to controller if configured
     if (this.envelope) {
@@ -311,8 +300,6 @@ export class Oscillator extends BaseSound {
 
     // wire everything up (connects source to effect chain)
     this.wireConnections()
-    // Re-wire effect chain with new gain node
-    this.rewireEffects()
     this.controller.setValuesAtTimes()
   }
 

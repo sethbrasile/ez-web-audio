@@ -118,6 +118,9 @@ export class Sound extends BaseSound {
     audioSourceNode.loop = this._loop
     this.audioSourceNode = audioSourceNode
 
+    // Update controller with new source node so scheduled detune/param automation targets the active node
+    this.controller.updateAudioSource(audioSourceNode)
+
     // Connect source to effect chain input
     this.wireConnections()
     this.controller.setValuesAtTimes()
