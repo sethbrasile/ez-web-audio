@@ -1,6 +1,7 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
+import frequencyMap from '@utils/frequency-map'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -281,6 +282,47 @@ describe('oscillator with ADSR envelope', () => {
       await osc.play()
       expect(osc.isPlaying).toBe(true)
     })
+  })
+})
+
+describe('note-based creation', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('note "A4" resolves to frequency 440', () => {
+    const osc = new Oscillator(audioContext, { note: 'A4' })
+    expect(osc).toBeDefined()
+    // Verify A4 = 440 in the frequency map
+    expect(frequencyMap.A4).toBe(440)
+    // Access protected freq to verify it was set correctly
+    expect((osc as any).freq).toBe(440)
+  })
+
+  it('note "C4" resolves to correct frequency', () => {
+    const osc = new Oscillator(audioContext, { note: 'C4' })
+    expect(osc).toBeDefined()
+    // C4 = 261.63 in standard 12-TET
+    expect((osc as any).freq).toBe(frequencyMap.C4)
+  })
+
+  it('invalid note throws descriptive error', () => {
+    expect(() => new Oscillator(audioContext, { note: 'X9' })).toThrow('Unknown note "X9"')
+  })
+
+  it('note takes precedence over frequency when both provided', () => {
+    // A4 = 440, but frequency is set to 220. Note should win.
+    const osc = new Oscillator(audioContext, { note: 'A4', frequency: 220 })
+    expect((osc as any).freq).toBe(440)
+  })
+
+  it('frequency: 0 results in 440Hz (0 is falsy with || operator)', () => {
+    // this.freq = options?.frequency || 440
+    // 0 || 440 = 440, so frequency 0 silently becomes 440
+    const osc = new Oscillator(audioContext, { frequency: 0 })
+    expect((osc as any).freq).toBe(440)
   })
 })
 

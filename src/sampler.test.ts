@@ -359,6 +359,26 @@ describe('sampler', () => {
     })
   })
 
+  describe('stop behavior', () => {
+    it('has no stop() method (one-shot sounds complete naturally)', () => {
+      const sounds = [createMockSound(), createMockSound()]
+      const sampler = new Sampler(sounds)
+      // Sampler intentionally has no stop() because it delegates to one-shot
+      // Sound.play() calls that complete naturally
+      expect((sampler as any).stop).toBeUndefined()
+    })
+
+    it('individual sounds can be stopped via getSounds()', () => {
+      const sounds = [createMockSound(), createMockSound()]
+      const sampler = new Sampler(sounds)
+      const retrieved = sampler.getSounds()
+      // Each sound in the sampler has its own stop method
+      retrieved.forEach((sound) => {
+        expect(typeof sound.stop).toBe('function')
+      })
+    })
+  })
+
   describe('getSounds', () => {
     it('returns all sounds in the sampler', () => {
       const sounds = [createMockSound(), createMockSound(), createMockSound()]

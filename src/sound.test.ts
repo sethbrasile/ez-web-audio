@@ -670,6 +670,43 @@ describe('sound', () => {
     })
   })
 
+  describe('loop property', () => {
+    it('defaults to false', () => {
+      const sound = createSound(audioContext)
+      expect(sound.loop).toBe(false)
+    })
+
+    it('can be set to true', () => {
+      const sound = createSound(audioContext)
+      sound.loop = true
+      expect(sound.loop).toBe(true)
+    })
+
+    it('can be toggled back to false', () => {
+      const sound = createSound(audioContext)
+      sound.loop = true
+      expect(sound.loop).toBe(true)
+      sound.loop = false
+      expect(sound.loop).toBe(false)
+    })
+
+    it('persists through play/stop cycle', async () => {
+      const sound = createSound(audioContext)
+      sound.loop = true
+      await sound.play()
+      await sound.stop()
+      expect(sound.loop).toBe(true)
+    })
+
+    it('loop=true sets AudioBufferSourceNode.loop on play', async () => {
+      const sound = createSound(audioContext)
+      sound.loop = true
+      await sound.play()
+      // After play, setup() creates a new AudioBufferSourceNode with loop property
+      expect(sound.audioSourceNode.loop).toBe(true)
+    })
+  })
+
   describe('edge cases', () => {
     describe('rapid play-stop-play cycles', () => {
       it('handles rapid play-stop-play without errors', async () => {
