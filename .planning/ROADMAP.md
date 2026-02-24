@@ -550,7 +550,7 @@ Plans:
   2. `BaseSoundEventMap` and `TrackEventMap` exported as separate types for precise consumer typing
   3. `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
   4. `Playable` interface documents its scope and includes optional convenience method signatures
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 41-01-PLAN.md — Fix ParamController any, split event maps, narrow Connectable, expand Playable
