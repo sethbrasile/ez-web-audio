@@ -168,10 +168,10 @@ Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes,
 
 ### Docs Site SEO and Accessibility (Phase 44)
 
-- [ ] **SEO-01**: OG image is a 1200x630 PNG (not SVG favicon), `og:image:width`/`og:image:height` meta tags present, `twitter:card` set to `summary_large_image`
-- [ ] **SEO-02**: Per-page OG title/description via VitePress `transformHead` hook (not static across all pages)
-- [ ] **SEO-03**: Canonical URL per page via `link rel="canonical"` in `transformHead`
-- [ ] **SEO-04**: JSON-LD structured data includes `version` and `dateCreated` properties
+- [x] **SEO-01**: OG image is a 1200x630 PNG (not SVG favicon), `og:image:width`/`og:image:height` meta tags present, `twitter:card` set to `summary_large_image`
+- [x] **SEO-02**: Per-page OG title/description via VitePress `transformHead` hook (not static across all pages)
+- [x] **SEO-03**: Canonical URL per page via `link rel="canonical"` in `transformHead`
+- [x] **SEO-04**: JSON-LD structured data includes `version` and `dateCreated` properties
 - [ ] **A11Y-01**: All interactive demo buttons have visible `:focus-visible` outline styles
 - [ ] **A11Y-02**: Visualization canvases have `role="img"` and descriptive `aria-label`
 - [x] **A11Y-03**: XY Pad canvas is keyboard operable (arrow key handlers for frequency/gain control)
