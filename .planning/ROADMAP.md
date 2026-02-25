@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-02-25
 
 ## Milestones
 
@@ -67,6 +67,14 @@
 - [x] **Phase 36: Documentation Sync (Post-Fixes)** - Cross-reference all Phase 32-35 changes against docs, verify every API is accurately documented (completed 2026-02-22)
 - [x] **Phase 37: Nice-to-Have DX Features** - ArrayBuffer/Blob input, noise types, volume alias, createTracks, event type improvements, DRY event system (completed 2026-02-22)
 - [x] **Phase 38: Final Documentation Sync** - Document all Phase 37 additions, final verification pass, CHANGELOG update, release gate (completed 2026-02-22)
+- [x] **Phase 39: Documentation Code Correctness** - Fix all broken/wrong code examples in docs and JSDoc (completed 2026-02-22)
+- [x] **Phase 40: Build and Type Declaration Fixes** - Ensure published package works for all TS moduleResolution modes (completed 2026-02-22)
+- [x] **Phase 41: API Type Safety** - Eliminate `any` from published types and fix misleading type contracts (completed 2026-02-22)
+- [x] **Phase 42: Source Code Correctness Bugs** - Fix gain reset, stale controller, iOS init, cache safety bugs (completed 2026-02-22)
+- [x] **Phase 43: Test Coverage Gaps** - Cover untested public API functions from code review (completed 2026-02-23)
+- [x] **Phase 44: Docs Site SEO and Accessibility** - SEO infrastructure and WCAG 2.1 AA accessibility (completed 2026-02-24)
+- [x] **Phase 45: Architecture Improvements** - Internal code clarity, named methods, resource cleanup (completed 2026-02-24)
+- [ ] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut
 
 ## Phase Details
 
@@ -501,6 +509,14 @@ Plans:
 | 36. Documentation Sync (Post-Fixes) | 2/2 | Complete    | 2026-02-22 | - |
 | 37. Nice-to-Have DX Features | 3/3 | Complete    | 2026-02-22 | - |
 | 38. Final Documentation Sync | 2/2 | Complete   | 2026-02-22 | - |
+| 39. Documentation Code Correctness | 2/2 | Complete | 2026-02-22 | - |
+| 40. Build and Type Declaration Fixes | 2/2 | Complete | 2026-02-22 | - |
+| 41. API Type Safety | 1/1 | Complete | 2026-02-22 | - |
+| 42. Source Code Correctness Bugs | 2/2 | Complete | 2026-02-22 | - |
+| 43. Test Coverage Gaps | 3/3 | Complete | 2026-02-23 | - |
+| 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
+| 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
+| 46. Post-Review Fixes | 0/4 | Pending | - |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -630,10 +646,37 @@ Plans:
 - [ ] 45-01-PLAN.md — Extract Track _resetPosition, add AudioSprite dispose, annotate _unmuteDispose
 - [ ] 45-02-PLAN.md — Document BeatTrack events, Sampler override warning, simplify stopAt scheduling
 
+### Phase 46: Post-Review Fixes
+
+**Goal:** Fix all actionable findings from the 2026-02-25 health check review — build compatibility, core API bugs, broken doc examples, type correctness, and minor leaks
+**Depends on:** Phase 45
+**Gap Closure:** Closes 2026-02-25 deep review findings C1, H1, H2, M1, M2, L1, F5, F6, F7
+**Success Criteria** (what must be TRUE):
+  1. `dist/index.d.ts` is a single bundled declaration file with no cross-file `.d.ts` imports — `moduleResolution: "nodenext"` consumers get zero TS errors
+  2. `onPlayRamp('gain').from(0.5).to(1).in(2)` actually sets gain to 0.5 at time 0, then ramps to 1 — the `from` value is not silently discarded
+  3. Landing page drum machine example uses `createBeatTrack(urls[], opts)` with correct `playBeats()` API
+  4. Landing page effects example uses `createFilterEffect(type, options)` positional signature
+  5. `docs/examples/effects.md` createAnalyzer has `await`, uses Analyzer wrapper API not raw AnalyserNode
+  6. `docs/examples/layered-sound.md` event handlers destructure from `event.detail`
+  7. After `fadeOut()` on Sound/Track, subsequent `play()` produces audio at the expected gain (not silence)
+  8. After Oscillator stop (anti-click fade), subsequent `play()` produces audio at the expected gain
+  9. `Sound` type only exposes events it actually emits — no phantom `pause`/`resume`/`seek` from Track inheritance
+  10. `_disposeUnmute` test asserts dispose handle is actually called (not just "doesn't throw")
+  11. `createNotes()` parses standard note name keys to populate `letter`, `accidental`, and `octave` on Note objects
+  12. `Beat.pendingTimerIds` self-cleans completed timer IDs during playback — no unbounded growth
+  13. L2 (`unmute.js` missing `.d.ts`) verified resolved by C1 rollupTypes fix
+**Plans:** 4 plans
+
+Plans:
+- [ ] 46-01-PLAN.md — Enable rollupTypes for bundled .d.ts output (C1)
+- [ ] 46-02-PLAN.md — Fix onPlayRamp().from() bug and gain restoration after fadeOut/stop (H1, M1)
+- [ ] 46-03-PLAN.md — Fix broken code examples in landing page and doc pages (H2, M2)
+- [ ] 46-04-PLAN.md — Generic BaseSound event map, createNotes parsing, Beat timer cleanup, _disposeUnmute test (L1, F5, F6, F7)
+
 ---
 
 **Archives:**
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-22 after code review gap closure phases 32-38 created*
+*Last updated: 2026-02-25 after planning Phase 46*
