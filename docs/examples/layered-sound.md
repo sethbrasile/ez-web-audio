@@ -86,8 +86,8 @@ await layered.playFor(2)
 Listen for playback lifecycle events:
 
 ```typescript
-layered.on('play', ({ time }) => {
-  console.log(`Started at audioContext time: ${time}`)
+layered.on('play', (event) => {
+  console.log(`Started at audioContext time: ${event.detail.time}`)
 })
 
 layered.on('stop', () => {
@@ -99,8 +99,8 @@ layered.on('end', () => {
   console.log('All layers finished naturally')
 })
 
-layered.on('warning', ({ message, failedLayers }) => {
-  console.warn(`LayeredSound warning: ${message}`)
+layered.on('warning', (event) => {
+  console.warn(`LayeredSound warning: ${event.detail.message}`)
 })
 ```
 

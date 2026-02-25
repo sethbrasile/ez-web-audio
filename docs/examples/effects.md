@@ -306,18 +306,15 @@ const filter = createFilterEffect('lowpass', { frequency: 2000 })
 sound.addEffect(filter)
 
 // Create and attach analyzer
-const analyzer = createAnalyzer(ctx, {
+const analyzer = await createAnalyzer(ctx, {
   fftSize: 2048,
   smoothingTimeConstant: 0.8
 })
 sound.setAnalyzer(analyzer)
 
-// Get frequency data for visualization
-const dataArray = new Uint8Array(analyzer.frequencyBinCount)
-
 function draw() {
   requestAnimationFrame(draw)
-  analyzer.getByteFrequencyData(dataArray)
+  const dataArray = analyzer.getFrequencyData()
   // Use dataArray to draw visualization
 }
 
