@@ -17,7 +17,7 @@ Plan: 1/3
 Status: Plan 01 complete — OG image, transformHead per-page meta, canonical URLs, JSON-LD enrichment
 Last activity: 2026-02-24 — Phase 44 Plan 01 executed (2 tasks, 2 commits)
 
-**Progress:** [██████████] 99%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ Last activity: 2026-02-24 — Phase 44 Plan 01 executed (2 tasks, 2 commits)
 | Phase 46-post-review-fixes P03 | 2min | 2 tasks | 3 files |
 | Phase 46-post-review-fixes P01 | 2min | 2 tasks | 1 files |
 | Phase 46-post-review-fixes P02 | 5min | 2 tasks | 8 files |
+| Phase 46-post-review-fixes P04 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -218,6 +219,8 @@ Recent decisions affecting current work:
 - [Phase 46-02]: onPlayRamp.in() pushes startValue directly to valuesAtTime at time 0 (bypasses onPlaySet dedup)
 - [Phase 46-02]: _targetGain tracks user intent; Oscillator.update() and BaseSound.update() both intercept 'gain' to sync it
 - [Phase 46-02]: volume getter returns _targetGain not gainNode.gain.value to reflect user intent not transient fade state
+- [Phase 46-post-review-fixes]: BaseSound<TMap> constraint uses intersection BaseSoundEventMap & {[K in keyof TMap]: CustomEvent<unknown>} to satisfy TypedEventEmitter self-referential constraint
+- [Phase 46-post-review-fixes]: createNotes() regex runs after frequency setter — provides coverage for custom maps with non-standard frequencies; Beat.trackedTimeout wraps fn to self-remove ID before invoking callback
 
 ### Roadmap Evolution
 
