@@ -1,5 +1,5 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BaseParamController } from './base-param-controller'
 
 function createMockContext() {
@@ -196,25 +196,43 @@ describe('baseParamController', () => {
   })
 
   describe('onPlayRamp() scheduling', () => {
-    it('onPlayRamp("gain").from(0).to(1).in(0.5) schedules ramp end value', () => {
+    it('onPlayRamp("gain").from(0.5).to(1).in(2) stores from value in valuesAtTime at time 0', () => {
+      controller.onPlayRamp('gain').from(0.5).to(1).in(2)
+      const valuesAtTime = controller.getValuesAtTime()
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0.5, time: 0 })
+    })
+
+    it('onPlayRamp stores from value in valuesAtTime and end value in ramp arrays', () => {
+      controller.onPlayRamp('gain', 'linear').from(0.5).to(1).in(2)
+      const startingValues = controller.getStartingValues()
+      const valuesAtTime = controller.getValuesAtTime()
+      const linearValues = controller.getLinearValues()
+      // startValue goes directly to valuesAtTime (not startingValues)
+      expect(startingValues).toHaveLength(0)
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0.5, time: 0 })
+      expect(linearValues).toContainEqual({ type: 'gain', value: 1, time: 2 })
+    })
+
+    it('onPlayRamp("gain").from(0).to(1).in(0.5) stores start value in valuesAtTime', () => {
       controller.onPlayRamp('gain').from(0).to(1).in(0.5)
       const startingValues = controller.getStartingValues()
+      const valuesAtTime = controller.getValuesAtTime()
       const exponentialValues = controller.getExponentialValues()
-      // onPlayRamp calls onPlaySet twice with the same type; the second call (endValue)
-      // deduplicates the first (startValue) from startingValues, then endingAt() moves
-      // endValue to exponentialValues. startingValues is empty after the ramp is scheduled.
+      // startValue is in valuesAtTime at time 0, not startingValues
       expect(startingValues).toHaveLength(0)
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0, time: 0 })
       // End value is in exponentialValues (default ramp type)
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'gain', value: 1, time: 0.5 })
     })
 
-    it('onPlayRamp with linear ramp type', () => {
+    it('onPlayRamp with linear ramp type stores start in valuesAtTime', () => {
       controller.onPlayRamp('gain', 'linear').from(1).to(0).in(1.0)
       const startingValues = controller.getStartingValues()
+      const valuesAtTime = controller.getValuesAtTime()
       const linearValues = controller.getLinearValues()
-      // Same deduplication: startValue removed when endValue is pushed
       expect(startingValues).toHaveLength(0)
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 1, time: 0 })
       expect(linearValues).toHaveLength(1)
       expect(linearValues[0]).toEqual({ type: 'gain', value: 0, time: 1.0 })
     })
@@ -222,8 +240,10 @@ describe('baseParamController', () => {
     it('onPlayRamp for detune', () => {
       controller.onPlayRamp('detune').from(-100).to(100).in(2.0)
       const startingValues = controller.getStartingValues()
+      const valuesAtTime = controller.getValuesAtTime()
       const exponentialValues = controller.getExponentialValues()
       expect(startingValues).toHaveLength(0)
+      expect(valuesAtTime).toContainEqual({ type: 'detune', value: -100, time: 0 })
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'detune', value: 100, time: 2.0 })
     })
@@ -231,11 +251,43 @@ describe('baseParamController', () => {
     it('onPlayRamp for pan', () => {
       controller.onPlayRamp('pan').from(-1).to(1).in(0.5)
       const startingValues = controller.getStartingValues()
+      const valuesAtTime = controller.getValuesAtTime()
       const exponentialValues = controller.getExponentialValues()
-      // startValue deduped out; only the end value in exponentialValues
       expect(startingValues).toHaveLength(0)
+      expect(valuesAtTime).toContainEqual({ type: 'pan', value: -1, time: 0 })
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'pan', value: 1, time: 0.5 })
+    })
+
+    it('setValueAtTime(startValue) is called before ramp when setValuesAtTimes-like logic runs', () => {
+      // Integration-style: verify the param receives setValueAtTime(startValue) before the ramp.
+      // We spy on the gainNode's AudioParam methods to verify call order.
+      const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+      controller.onPlayRamp('gain', 'linear').from(0.5).to(1).in(2)
+
+      // Simulate what setValuesAtTimes does: apply valuesAtTime entries then ramp entries
+      const startTime = 0
+      const valuesAtTime = controller.getValuesAtTime()
+      const linearValues = controller.getLinearValues()
+
+      for (const v of valuesAtTime) {
+        if (v.type === 'gain')
+          gainNode.gain.setValueAtTime(v.value, startTime + v.time)
+      }
+      for (const v of linearValues) {
+        if (v.type === 'gain')
+          gainNode.gain.linearRampToValueAtTime(v.value, startTime + v.time)
+      }
+
+      expect(setValueSpy).toHaveBeenCalledWith(0.5, startTime)
+      expect(linearRampSpy).toHaveBeenCalledWith(1, startTime + 2)
+
+      // Verify setValueAtTime was called before linearRampToValueAtTime
+      const setValueOrder = setValueSpy.mock.invocationCallOrder[0]
+      const linearRampOrder = linearRampSpy.mock.invocationCallOrder[0]
+      expect(setValueOrder).toBeLessThan(linearRampOrder)
     })
   })
 

@@ -260,8 +260,12 @@ export class BaseParamController {
           to: (endValue: number) => {
             return {
               in: (endTime: number) => {
-                this.onPlaySet(type).to(startValue)
-                this.onPlaySet(type).to(endValue).endingAt(endTime, rampType)
+                // Push startValue directly to valuesAtTime (time 0) so it is
+                // not filtered out by the dedup logic in onPlaySet().
+                // This ensures setValueAtTime(startValue, startTime) is called
+                // before the ramp when setValuesAtTimes() runs.
+                this.valuesAtTime.push({ type, value: startValue, time: 0 })
+                this.addRampValue({ type, value: endValue, time: endTime }, rampType ?? 'exponential')
               },
             }
           },
