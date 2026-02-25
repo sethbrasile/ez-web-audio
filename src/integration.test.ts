@@ -9,8 +9,8 @@ import { LayeredSound } from './layered-sound'
 import { Oscillator } from './oscillator'
 import { Sampler } from './sampler'
 import { Sound } from './sound'
-import { Track } from './track'
 import { settle } from './test/helpers'
+import { Track } from './track'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -274,7 +274,7 @@ describe('soundfont workflow', () => {
   })
 })
 
-describe('Track + effects integration', () => {
+describe('track + effects integration', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -288,7 +288,7 @@ describe('Track + effects integration', () => {
     return new Track(audioContext, audioBuffer)
   }
 
-  it('Track can add effect and play — effect persists, isPlaying becomes true', async () => {
+  it('track can add effect and play — effect persists, isPlaying becomes true', async () => {
     const track = createTrack()
     const externalEffect = { connect: vi.fn() }
     const effect = new EffectWrapper(audioContext, externalEffect)
@@ -301,7 +301,7 @@ describe('Track + effects integration', () => {
     expect(track.isPlaying).toBe(true)
   })
 
-  it('Track with effect can stop and resume — effect still attached after stop', async () => {
+  it('track with effect can stop and resume — effect still attached after stop', async () => {
     const track = createTrack()
     const effect = new EffectWrapper(audioContext, { connect: vi.fn() })
 
@@ -317,7 +317,7 @@ describe('Track + effects integration', () => {
     expect(track.getEffects()[0]).toBe(effect)
   })
 
-  it('Track with multiple effects maintains chain order', () => {
+  it('track with multiple effects maintains chain order', () => {
     const track = createTrack()
     const effect1 = new EffectWrapper(audioContext, { connect: vi.fn() })
     const effect2 = new EffectWrapper(audioContext, { connect: vi.fn() })
@@ -334,7 +334,7 @@ describe('Track + effects integration', () => {
     expect(effects[2]).toBe(effect3)
   })
 
-  it('Track with analyzer can play and analyzer persists', async () => {
+  it('track with analyzer can play and analyzer persists', async () => {
     const track = createTrack()
     const analyzer = new Analyzer(audioContext, { fftSize: 512 })
     const effect = new EffectWrapper(audioContext, { connect: vi.fn() })
@@ -349,7 +349,7 @@ describe('Track + effects integration', () => {
   })
 })
 
-describe('BeatTrack + effects integration', () => {
+describe('beatTrack + effects integration', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -363,7 +363,7 @@ describe('BeatTrack + effects integration', () => {
     return new Sound(audioContext, audioBuffer)
   }
 
-  it('Sound instances inside BeatTrack can have effects added to them', () => {
+  it('sound instances inside BeatTrack can have effects added to them', () => {
     const sound1 = createSoundInstance()
     const sound2 = createSoundInstance()
     const effect1 = new EffectWrapper(audioContext, { connect: vi.fn() })
@@ -383,7 +383,7 @@ describe('BeatTrack + effects integration', () => {
     expect(sounds[1].getEffects()[0]).toBe(effect2)
   })
 
-  it('BeatTrack effects on sounds persist through stop()', () => {
+  it('beatTrack effects on sounds persist through stop()', () => {
     const sound = createSoundInstance()
     const effect = new EffectWrapper(audioContext, { connect: vi.fn() })
     sound.addEffect(effect)
@@ -398,13 +398,13 @@ describe('BeatTrack + effects integration', () => {
     expect(sounds[0].getEffects()[0]).toBe(effect)
   })
 
-  it('BeatTrack with empty sounds array throws on play()', () => {
+  it('beatTrack with empty sounds array throws on play()', () => {
     // BeatTrack delegates play() to Sampler which requires at least one sound
     const beatTrack = new BeatTrack(audioContext, [], { numBeats: 4, duration: 100 })
     expect(() => beatTrack.play()).toThrow()
   })
 
-  it('BeatTrack creates correct number of beats', () => {
+  it('beatTrack creates correct number of beats', () => {
     const sound = createSoundInstance()
     const beatTrack = new BeatTrack(audioContext, [sound], { numBeats: 8, duration: 100 })
     expect(beatTrack.beats).toHaveLength(8)
@@ -500,7 +500,7 @@ describe('cleanup/dispose pattern', () => {
     return new Sound(audioContext, audioBuffer)
   }
 
-  it('Sound cleanup after stop — isPlaying is false', async () => {
+  it('sound cleanup after stop — isPlaying is false', async () => {
     const sound = createSoundBuffer()
     const effect = new EffectWrapper(audioContext, { connect: vi.fn() })
     sound.addEffect(effect)
@@ -512,7 +512,7 @@ describe('cleanup/dispose pattern', () => {
     expect(sound.isPlaying).toBe(false)
   })
 
-  it('Effect removal cleans up chain — getEffects() is empty after removing all effects', () => {
+  it('effect removal cleans up chain — getEffects() is empty after removing all effects', () => {
     const sound = createSoundBuffer()
     const effect1 = new EffectWrapper(audioContext, { connect: vi.fn() })
     const effect2 = new EffectWrapper(audioContext, { connect: vi.fn() })
@@ -526,7 +526,7 @@ describe('cleanup/dispose pattern', () => {
     expect(sound.getEffects()).toHaveLength(0)
   })
 
-  it('Effect removal — sound still plays after all effects removed', async () => {
+  it('effect removal — sound still plays after all effects removed', async () => {
     const sound = createSoundBuffer()
     const effect1 = new EffectWrapper(audioContext, { connect: vi.fn() })
     const effect2 = new EffectWrapper(audioContext, { connect: vi.fn() })
@@ -542,7 +542,7 @@ describe('cleanup/dispose pattern', () => {
     expect(sound.isPlaying).toBe(true)
   })
 
-  it('Oscillator cleanup after stop — isPlaying is false and can play again', async () => {
+  it('oscillator cleanup after stop — isPlaying is false and can play again', async () => {
     const osc = new Oscillator(audioContext, { frequency: 440 })
     await osc.play()
     expect(osc.isPlaying).toBe(true)
@@ -555,7 +555,7 @@ describe('cleanup/dispose pattern', () => {
     expect(osc.isPlaying).toBe(true)
   })
 
-  it('Repeated play/stop cycles do not cause errors — 5 cycles', async () => {
+  it('repeated play/stop cycles do not cause errors — 5 cycles', async () => {
     const sound = createSoundBuffer()
 
     for (let i = 0; i < 5; i++) {
@@ -567,7 +567,7 @@ describe('cleanup/dispose pattern', () => {
     expect(sound.isPlaying).toBe(false)
   })
 
-  it('Analyzer detached via setAnalyzer(null) — getAnalyzer() returns null', async () => {
+  it('analyzer detached via setAnalyzer(null) — getAnalyzer() returns null', async () => {
     const sound = createSoundBuffer()
     const analyzer = new Analyzer(audioContext, { fftSize: 512 })
 
@@ -583,7 +583,7 @@ describe('cleanup/dispose pattern', () => {
     await sound.stop()
   })
 
-  it('Track stop resets position to zero', async () => {
+  it('track stop resets position to zero', async () => {
     const sampleRate = 44100
     const audioBuffer = audioContext.createBuffer(1, sampleRate * 2, sampleRate)
     const track = new Track(audioContext, audioBuffer)
@@ -596,14 +596,14 @@ describe('cleanup/dispose pattern', () => {
   })
 })
 
-describe('Oscillator + filters integration', () => {
+describe('oscillator + filters integration', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
     audioContext = new Mock() as unknown as AudioContext
   })
 
-  it('Oscillator with lowpass filter — getFilters() returns filter after construction', () => {
+  it('oscillator with lowpass filter — getFilters() returns filter after construction', () => {
     // OscillatorOptions uses named filter properties: lowpass, highpass, bandpass, etc.
     const osc = new Oscillator(audioContext, {
       frequency: 440,
@@ -615,7 +615,7 @@ describe('Oscillator + filters integration', () => {
     expect(filters[0].type).toBe('lowpass')
   })
 
-  it('Oscillator with multiple filters — all filters present and in order', () => {
+  it('oscillator with multiple filters — all filters present and in order', () => {
     // OscillatorOptions uses named filter properties; FILTERS array order is:
     // ['highpass', 'bandpass', 'lowpass', ...] — highpass comes before lowpass
     const osc = new Oscillator(audioContext, {
@@ -630,7 +630,7 @@ describe('Oscillator + filters integration', () => {
     expect(filters[1].type).toBe('lowpass')
   })
 
-  it('Oscillator with filter can play and stop without error', async () => {
+  it('oscillator with filter can play and stop without error', async () => {
     const osc = new Oscillator(audioContext, {
       frequency: 440,
       lowpass: { frequency: 2000, q: 1 },
@@ -643,7 +643,7 @@ describe('Oscillator + filters integration', () => {
     expect(osc.isPlaying).toBe(false)
   })
 
-  it('Oscillator with filters can stop and restart — filters preserved', async () => {
+  it('oscillator with filters can stop and restart — filters preserved', async () => {
     const osc = new Oscillator(audioContext, {
       frequency: 440,
       bandpass: { frequency: 1000, q: 2 },
@@ -662,7 +662,7 @@ describe('Oscillator + filters integration', () => {
   })
 })
 
-describe('Sampler integration', () => {
+describe('sampler integration', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -676,7 +676,7 @@ describe('Sampler integration', () => {
     return new Sound(audioContext, audioBuffer)
   }
 
-  it('Sampler round-robin plays each sound in sequence', () => {
+  it('sampler round-robin plays each sound in sequence', () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     const sound3 = createSoundBuffer()
@@ -697,7 +697,7 @@ describe('Sampler integration', () => {
     expect(playSpy3).toHaveBeenCalledTimes(1)
   })
 
-  it('Sampler getSounds() returns all sounds — integration check', () => {
+  it('sampler getSounds() returns all sounds — integration check', () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     // Sampler constructor: (sounds[], opts?) — no audioContext
@@ -709,7 +709,7 @@ describe('Sampler integration', () => {
     expect(sounds[1]).toBe(sound2)
   })
 
-  it('Sampler with effects on individual sounds — effects persist through sampler play', () => {
+  it('sampler with effects on individual sounds — effects persist through sampler play', () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     const externalEffect = { connect: vi.fn() }
@@ -726,14 +726,14 @@ describe('Sampler integration', () => {
     expect((sampler.getSounds()[0] as Sound).getEffects()[0]).toBe(effect)
   })
 
-  it('Sampler play() with empty sounds throws clear error', () => {
+  it('sampler play() with empty sounds throws clear error', () => {
     // Sampler constructor: (sounds[], opts?) — no audioContext
     const sampler = new Sampler([])
     expect(() => sampler.play()).toThrow()
   })
 })
 
-describe('LayeredSound integration', () => {
+describe('layeredSound integration', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -747,7 +747,7 @@ describe('LayeredSound integration', () => {
     return new Sound(audioContext, audioBuffer)
   }
 
-  it('LayeredSound with two Sound layers — layerCount is 2', () => {
+  it('layeredSound with two Sound layers — layerCount is 2', () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     // LayeredSound constructor: (audioContext, layers[], opts?)
@@ -756,7 +756,7 @@ describe('LayeredSound integration', () => {
     expect(layered.layerCount).toBe(2)
   })
 
-  it('LayeredSound play() calls playAt on all layers', async () => {
+  it('layeredSound play() calls playAt on all layers', async () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     // LayeredSound.play() calls layer.playAt(startTime) for exact sync — spy on playAt
@@ -771,7 +771,7 @@ describe('LayeredSound integration', () => {
     expect(playAtSpy2).toHaveBeenCalledTimes(1)
   })
 
-  it('LayeredSound stop() stops all layers', async () => {
+  it('layeredSound stop() stops all layers', async () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     const stopSpy1 = vi.spyOn(sound1, 'stop')
@@ -786,7 +786,7 @@ describe('LayeredSound integration', () => {
     expect(stopSpy2).toHaveBeenCalledTimes(1)
   })
 
-  it('LayeredSound getLayer() returns correct layer by index', () => {
+  it('layeredSound getLayer() returns correct layer by index', () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     // LayeredSound constructor: (audioContext, layers[], opts?)
@@ -797,7 +797,7 @@ describe('LayeredSound integration', () => {
     expect(layered.getLayer(2)).toBeUndefined()
   })
 
-  it('LayeredSound with Sound layer that has effect — effect preserved through layered play', async () => {
+  it('layeredSound with Sound layer that has effect — effect preserved through layered play', async () => {
     const sound1 = createSoundBuffer()
     const sound2 = createSoundBuffer()
     const externalEffect = { connect: vi.fn() }

@@ -75,7 +75,7 @@ describe('oscillatorController', () => {
 
   describe('envelope integration', () => {
     it('setEnvelope stores envelope reference', () => {
-      const envelope = new Envelope({ attackTime: 0.1, sustainLevel: 0.7 })
+      const envelope = new Envelope({ attack: 0.1, sustain: 0.7 })
       controller.setEnvelope(envelope)
       // Envelope is stored internally - verify by calling setValuesAtTimes
       const spy = vi.spyOn(envelope, 'applyTo')
@@ -84,20 +84,20 @@ describe('oscillatorController', () => {
     })
 
     it('setValuesAtTimes applies envelope first via envelope.applyTo', () => {
-      const envelope = new Envelope({ attackTime: 0.1, sustainLevel: 0.7 })
+      const envelope = new Envelope({ attack: 0.1, sustain: 0.7 })
       const applyToSpy = vi.spyOn(envelope, 'applyTo')
       controller.setEnvelope(envelope)
       controller.setValuesAtTimes()
       expect(applyToSpy).toHaveBeenCalledWith(gainNode.gain, audioContext.currentTime)
     })
 
-    it('triggerRelease calls envelope.release', () => {
-      const envelope = new Envelope({ releaseTime: 0.3 })
-      const releaseSpy = vi.spyOn(envelope, 'release')
+    it('triggerRelease calls envelope.triggerRelease', () => {
+      const envelope = new Envelope({ release: 0.3 })
+      const releaseSpy = vi.spyOn(envelope, 'triggerRelease')
       controller.setEnvelope(envelope)
-      const releaseTime = 1.5
-      controller.triggerRelease(releaseTime)
-      expect(releaseSpy).toHaveBeenCalledWith(gainNode.gain, releaseTime)
+      const release = 1.5
+      controller.triggerRelease(release)
+      expect(releaseSpy).toHaveBeenCalledWith(gainNode.gain, release)
     })
 
     it('no envelope - setValuesAtTimes still works without error', () => {
@@ -214,7 +214,7 @@ describe('oscillatorController', () => {
 
   describe('envelope + other scheduling coexistence', () => {
     it('envelope applied first', () => {
-      const envelope = new Envelope({ attackTime: 0.1, sustainLevel: 0.7 })
+      const envelope = new Envelope({ attack: 0.1, sustain: 0.7 })
       const applyToSpy = vi.spyOn(envelope, 'applyTo')
       const freqSpy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       controller.setEnvelope(envelope)
@@ -227,7 +227,7 @@ describe('oscillatorController', () => {
     })
 
     it('then startingValues, valuesAtTime, ramps applied', () => {
-      const envelope = new Envelope({ attackTime: 0.05 })
+      const envelope = new Envelope({ attack: 0.05 })
       controller.setEnvelope(envelope)
       // Each onPlaySet for the same type deduplicates the previous startingValues entry.
       // to(440) → startingValues: [{freq,440}]
@@ -245,7 +245,7 @@ describe('oscillatorController', () => {
     })
 
     it('envelope controls gain while frequency controlled separately', () => {
-      const envelope = new Envelope({ attackTime: 0.1, sustainLevel: 0.8 })
+      const envelope = new Envelope({ attack: 0.1, sustain: 0.8 })
       const envelopeApplySpy = vi.spyOn(envelope, 'applyTo')
       const freqSpy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       controller.setEnvelope(envelope)
@@ -258,7 +258,7 @@ describe('oscillatorController', () => {
     })
 
     it('multiple setValuesAtTimes calls re-apply envelope', () => {
-      const envelope = new Envelope({ attackTime: 0.1 })
+      const envelope = new Envelope({ attack: 0.1 })
       const spy = vi.spyOn(envelope, 'applyTo')
       controller.setEnvelope(envelope)
       controller.setValuesAtTimes()
@@ -370,13 +370,13 @@ describe('oscillatorController', () => {
     })
 
     it('envelope with zero attack time', () => {
-      const envelope = new Envelope({ attackTime: 0, sustainLevel: 1 })
+      const envelope = new Envelope({ attack: 0, sustain: 1 })
       controller.setEnvelope(envelope)
       expect(() => controller.setValuesAtTimes()).not.toThrow()
     })
 
     it('envelope with zero release time', () => {
-      const envelope = new Envelope({ releaseTime: 0 })
+      const envelope = new Envelope({ release: 0 })
       controller.setEnvelope(envelope)
       expect(() => controller.triggerRelease(1.0)).not.toThrow()
     })

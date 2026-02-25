@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import audioContextAwareTimeout from '@utils/timeout'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Create a minimal AudioContext-like object with mutable currentTime
 function createMockAudioContext(initialTime = 0): AudioContext {

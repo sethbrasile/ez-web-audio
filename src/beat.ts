@@ -27,6 +27,7 @@ export interface BeatOptions {
   playIn: (time: number) => void
   play: () => void
   setTimeout?: (fn: () => void, delayMillis: number) => number
+  clearTimeout?: (id: number) => void
 }
 
 export class Beat {
@@ -37,16 +38,20 @@ export class Beat {
 
     if (opts.setTimeout) {
       this.setTimeout = opts.setTimeout
+      this.clearTimeoutFn = opts.clearTimeout ?? (() => {})
     }
     else {
-      const { setTimeout } = audioContextAwareTimeout(audioContext)
-      this.setTimeout = setTimeout
+      const timer = audioContextAwareTimeout(audioContext)
+      this.setTimeout = timer.setTimeout
+      this.clearTimeoutFn = timer.clearTimeout
     }
   }
 
   private parentPlayIn: ((time: number) => void)
   private parentPlay: (() => void)
   private setTimeout: (fn: () => void, delayMillis: number) => number
+  private clearTimeoutFn: (id: number) => void
+  private pendingTimerIds: number[] = []
 
   /**
    * Whether this beat should play when triggered.
@@ -96,11 +101,11 @@ export class Beat {
 
     this.parentPlayIn(offset)
 
-    this.setTimeout(() => {
+    this.trackedTimeout(() => {
       this.isPlaying = true
       this.currentTimeIsPlaying = true
       // Schedule reset after duration elapses (matching markPlaying/markCurrentTimePlaying pattern)
-      this.setTimeout(() => {
+      this.trackedTimeout(() => {
         this.isPlaying = false
         this.currentTimeIsPlaying = false
       }, this.duration)
@@ -120,10 +125,10 @@ export class Beat {
 
     if (this.active) {
       this.parentPlayIn(offset)
-      this.setTimeout(() => this.markPlaying(), msOffset)
+      this.trackedTimeout(() => this.markPlaying(), msOffset)
     }
 
-    this.setTimeout(() => this.markCurrentTimePlaying(), msOffset)
+    this.trackedTimeout(() => this.markCurrentTimePlaying(), msOffset)
   }
 
   /**
@@ -164,7 +169,7 @@ export class Beat {
    */
   private markPlaying(): void {
     this.isPlaying = true
-    this.setTimeout(() => this.isPlaying = false, this.duration)
+    this.trackedTimeout(() => this.isPlaying = false, this.duration)
   }
 
   /**
@@ -173,7 +178,30 @@ export class Beat {
    */
   private markCurrentTimePlaying(): void {
     this.currentTimeIsPlaying = true
-    this.setTimeout(() => this.currentTimeIsPlaying = false, this.duration)
+    this.trackedTimeout(() => this.currentTimeIsPlaying = false, this.duration)
+  }
+
+  /**
+   * Schedule a callback and track its ID for later cancellation.
+   * @internal
+   */
+  private trackedTimeout(fn: () => void, delay: number): number {
+    const id = this.setTimeout(fn, delay)
+    this.pendingTimerIds.push(id)
+    return id
+  }
+
+  /**
+   * Cancel all pending timers and reset visual state.
+   * Called by BeatTrack.stop() to prevent stale callbacks.
+   */
+  public cancelPendingTimers(): void {
+    for (const id of this.pendingTimerIds) {
+      this.clearTimeoutFn(id)
+    }
+    this.pendingTimerIds = []
+    this.isPlaying = false
+    this.currentTimeIsPlaying = false
   }
 }
 

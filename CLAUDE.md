@@ -56,7 +56,7 @@ Sampler          - Round-robin playback of multiple Sounds
 **Fluent API for Parameter Control**:
 ```typescript
 // Immediate update
-sound.update('gain').to(0.5).from('ratio')
+sound.update('gain').to(0.5).as('ratio')
 
 // Schedule on next play
 sound.onPlaySet('gain').to(0).endingAt(1, 'exponential') // fade in over 1 sec

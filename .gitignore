@@ -28,6 +28,9 @@ docs/.vitepress/dist/
 !docs/examples/
 !docs/public/
 
+# Environment files
+.env*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

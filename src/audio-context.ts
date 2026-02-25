@@ -22,7 +22,7 @@ let _audioContext: AudioContext | null = null
  * @internal
  */
 export function getOrCreateAudioContext(): AudioContext {
-  if (!_audioContext) {
+  if (!_audioContext || _audioContext.state === 'closed') {
     _audioContext = new AudioContext()
   }
   return _audioContext

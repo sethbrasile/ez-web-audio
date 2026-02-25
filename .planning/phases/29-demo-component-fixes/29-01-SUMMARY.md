@@ -100,5 +100,15 @@ None - no external service configuration required.
 - Ready for Phase 29 Plan 02 (if any) or Phase 30
 
 ---
+## Self-Check: PASSED
+
+- FOUND: docs/.vitepress/theme/components/SampledDrumKit.vue
+- FOUND: docs/.vitepress/theme/components/DrumMachineVue.vue
+- FOUND: docs/.vitepress/theme/components/FilterDemo.vue
+- FOUND: 29-01-SUMMARY.md
+- FOUND: commit 4753d43 (Task 1)
+- FOUND: commit c3135ce (Task 2)
+
+---
 *Phase: 29-demo-component-fixes*
 *Completed: 2026-02-22*

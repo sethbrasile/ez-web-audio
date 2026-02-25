@@ -1,13 +1,13 @@
+import { playTogether } from '@utils/play-together'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getOrCreateAudioContext } from '@/audio-context'
 
 // Mock the audio-context module before importing play-together
 vi.mock('@/audio-context', () => ({
   getOrCreateAudioContext: vi.fn(),
 }))
-
-import { getOrCreateAudioContext } from '@/audio-context'
-import { playTogether } from '@utils/play-together'
 
 // Stub AudioContext globally so hasAudioContext's instanceof check works
 // play-together.ts uses `instanceof AudioContext` to detect audio-context-bearing playables

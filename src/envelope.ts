@@ -1,16 +1,16 @@
 /**
  * Options for configuring an ADSR envelope.
  *
- * @property attackTime - Duration in seconds to ramp from 0 to peak (1.0). Default: 0.01
- * @property decayTime - Duration in seconds to ramp from peak to sustain level. Default: 0.1
- * @property sustainLevel - Amplitude level (0-1) held during sustain phase. Default: 0.7
- * @property releaseTime - Duration in seconds for release to silence. Default: 0.3
+ * @property attack - Duration in seconds to ramp from 0 to peak (1.0). Default: 0.01
+ * @property decay - Duration in seconds to ramp from peak to sustain level. Default: 0.1
+ * @property sustain - Amplitude level (0-1) held during sustain phase. Default: 0.7
+ * @property release - Duration in seconds for release to silence. Default: 0.3
  */
 export interface EnvelopeOptions {
-  attackTime?: number
-  decayTime?: number
-  sustainLevel?: number
-  releaseTime?: number
+  attack?: number
+  decay?: number
+  sustain?: number
+  release?: number
 }
 
 /**
@@ -44,33 +44,33 @@ type AudioParamWithCancelAndHold = AudioParam & {
  * @example
  * ```typescript
  * const envelope = new Envelope({
- *   attackTime: 0.05,
- *   decayTime: 0.1,
- *   sustainLevel: 0.7,
- *   releaseTime: 0.3
+ *   attack: 0.05,
+ *   decay: 0.1,
+ *   sustain: 0.7,
+ *   release: 0.3
  * })
  *
  * // Apply on note start
  * envelope.applyTo(gainNode.gain, audioContext.currentTime)
  *
  * // Release on note end
- * envelope.release(gainNode.gain, audioContext.currentTime)
+ * envelope.triggerRelease(gainNode.gain, audioContext.currentTime)
  * ```
  */
 export class Envelope {
   /** Duration in seconds to ramp from 0 to peak (1.0) */
-  readonly attackTime: number
+  readonly attack: number
 
   /** Duration in seconds to ramp from peak to sustain level */
-  readonly decayTime: number
+  readonly decay: number
 
   /** Amplitude level (0-1) held during sustain phase */
-  readonly sustainLevel: number
+  readonly sustain: number
 
   /** Duration in seconds for release to silence */
-  readonly releaseTime: number
+  readonly release: number
 
-  /** Whether the envelope is currently active (between applyTo and release) */
+  /** Whether the envelope is currently active (between applyTo and triggerRelease) */
   private _isActive: boolean = false
 
   /** The time when the current attack phase started */
@@ -85,10 +85,10 @@ export class Envelope {
    * @param options - ADSR configuration options
    */
   constructor(options: EnvelopeOptions = {}) {
-    this.attackTime = options.attackTime ?? 0.01
-    this.decayTime = options.decayTime ?? 0.1
-    this.sustainLevel = clamp(options.sustainLevel ?? 0.7, 0, 1)
-    this.releaseTime = options.releaseTime ?? 0.3
+    this.attack = options.attack ?? 0.01
+    this.decay = options.decay ?? 0.1
+    this.sustain = clamp(options.sustain ?? 0.7, 0, 1)
+    this.release = options.release ?? 0.3
   }
 
   /**
@@ -119,15 +119,15 @@ export class Envelope {
       return 0
     }
 
-    const attackEndTime = this.attackTime
-    const decayEndTime = attackEndTime + this.decayTime
+    const attackEndTime = this.attack
+    const decayEndTime = attackEndTime + this.decay
 
     // During attack phase
     if (timeSinceStart < attackEndTime) {
-      if (this.attackTime === 0) {
+      if (this.attack === 0) {
         return 1
       }
-      const attackProgress = timeSinceStart / this.attackTime
+      const attackProgress = timeSinceStart / this.attack
       // Linear interpolation from start value to peak (1)
       return (
         this._attackStartValue + (1 - this._attackStartValue) * attackProgress
@@ -136,16 +136,16 @@ export class Envelope {
 
     // During decay phase
     if (timeSinceStart < decayEndTime) {
-      if (this.decayTime === 0) {
-        return this.sustainLevel
+      if (this.decay === 0) {
+        return this.sustain
       }
-      const decayProgress = (timeSinceStart - attackEndTime) / this.decayTime
+      const decayProgress = (timeSinceStart - attackEndTime) / this.decay
       // Linear interpolation from peak (1) to sustain level
-      return 1 - (1 - this.sustainLevel) * decayProgress
+      return 1 - (1 - this.sustain) * decayProgress
     }
 
     // Sustain phase
-    return this.sustainLevel
+    return this.sustain
   }
 
   /**
@@ -190,14 +190,14 @@ export class Envelope {
     this._attackStartValue = startValue
 
     // Attack: ramp to peak (1.0)
-    const attackEndTime = startTime + this.attackTime
+    const attackEndTime = startTime + this.attack
     gainParam.linearRampToValueAtTime(1, attackEndTime)
 
     // Decay: ramp to sustain level
-    const decayEndTime = attackEndTime + this.decayTime
-    gainParam.linearRampToValueAtTime(this.sustainLevel, decayEndTime)
+    const decayEndTime = attackEndTime + this.decay
+    gainParam.linearRampToValueAtTime(this.sustain, decayEndTime)
 
-    // Sustain: held at sustainLevel until release() called
+    // Sustain: held at sustain level until triggerRelease() called
   }
 
   /**
@@ -210,10 +210,10 @@ export class Envelope {
    * @param gainParam - The AudioParam to schedule the release on
    * @param startTime - The audio context time to start the release phase
    */
-  release(gainParam: AudioParam, startTime: number): void {
+  triggerRelease(gainParam: AudioParam, startTime: number): void {
     // Use setTargetAtTime for smooth exponential decay to zero
-    // Time constant = releaseTime/5 gives ~99% completion in releaseTime seconds
-    const timeConstant = this.releaseTime / 5
+    // Time constant = release/5 gives ~99% completion in release seconds
+    const timeConstant = this.release / 5
     gainParam.setTargetAtTime(0, startTime, timeConstant)
 
     // Mark envelope as inactive

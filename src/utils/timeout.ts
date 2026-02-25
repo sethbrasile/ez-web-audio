@@ -6,9 +6,63 @@ interface Task {
   fn: () => void
 }
 
+interface SharedScheduler {
+  tasks: Task[]
+  nextTaskId: number
+  rafId: number | null
+  now: () => number
+  tick: () => void
+}
+
+type ContextLike = AudioContext | BaseAudioContext | AudioContextMock
+
+// One shared scheduler per AudioContext — prevents N independent RAF loops
+const schedulers = new WeakMap<object, SharedScheduler>()
+
+function getOrCreateScheduler(audioContext: ContextLike): SharedScheduler {
+  let scheduler = schedulers.get(audioContext)
+  if (scheduler)
+    return scheduler
+
+  scheduler = {
+    tasks: [],
+    nextTaskId: 1,
+    rafId: null,
+    now() {
+      return audioContext.currentTime * 1000
+    },
+    tick() {
+      const currentTime = scheduler!.now()
+
+      // Call due tasks
+      scheduler!.tasks.forEach((task) => {
+        if (task.due <= currentTime)
+          task.fn()
+      })
+
+      // Remove completed tasks
+      scheduler!.tasks = scheduler!.tasks.filter(task => task.due > currentTime)
+
+      // Keep running only if tasks remain
+      if (scheduler!.tasks.length > 0) {
+        scheduler!.rafId = window.requestAnimationFrame(scheduler!.tick)
+      }
+      else {
+        scheduler!.rafId = null
+      }
+    },
+  }
+
+  schedulers.set(audioContext, scheduler)
+  return scheduler
+}
+
 /**
  * Create AudioContext-aware `setTimeout` and `clearTimeout` functions that use
  * `audioContext.currentTime` and `requestAnimationFrame` instead of native timers.
+ *
+ * Uses a shared singleton scheduler per AudioContext so that multiple sounds/beats
+ * share one RAF loop instead of each creating their own.
  *
  * Browser tabs that are backgrounded or hidden can have native `setTimeout` throttled
  * to fire as infrequently as once per second, causing visual beat indicators and other
@@ -47,7 +101,7 @@ interface Task {
  * clearTimeout(id)
  * ```
  */
-export default function audioContextAwareTimeout(audioContext: AudioContext | BaseAudioContext | AudioContextMock): {
+export default function audioContextAwareTimeout(audioContext: ContextLike): {
   setTimeout: (fn: () => void, delayMillis: number) => number
   clearTimeout: (id: number) => void
 } {
@@ -61,47 +115,25 @@ is behaving as you'd hope, you can safely ignore this message.`)
     }
   }
 
-  let tasks: Task[] = []
-  let nextTaskId = 1
-
-  function now(): number {
-    return audioContext.currentTime * 1000
-  }
-
-  function scheduler(): void {
-    const currentTime = now()
-
-    // Call due tasks
-    tasks.forEach((task) => {
-      if (task.due <= currentTime)
-        task.fn()
-    })
-
-    // Then remove them from the list.
-    tasks = tasks.filter(task => task.due > currentTime)
-
-    // More tasks pending, keep calling the scheduler.
-    if (tasks.length > 0) {
-      window.requestAnimationFrame(scheduler)
-    }
-  }
+  const scheduler = getOrCreateScheduler(audioContext)
 
   return {
     setTimeout(fn: () => void, delayMillis: number) {
-      const id = nextTaskId
-      nextTaskId += 1
-      tasks.push({
+      const id = scheduler.nextTaskId
+      scheduler.nextTaskId += 1
+      scheduler.tasks.push({
         id,
-        due: now() + delayMillis,
+        due: scheduler.now() + delayMillis,
         fn,
       })
-      if (tasks.length === 1) {
-        window.requestAnimationFrame(scheduler)
+      // Start the RAF loop if not already running
+      if (scheduler.rafId === null) {
+        scheduler.rafId = window.requestAnimationFrame(scheduler.tick)
       }
       return id
     },
     clearTimeout(id: number) {
-      tasks = tasks.filter(t => t.id !== id)
+      scheduler.tasks = scheduler.tasks.filter(t => t.id !== id)
     },
   }
 }

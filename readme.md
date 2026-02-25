@@ -82,7 +82,7 @@ setTimeout(() => synth.stop(), 1000)
 
 ## ESM Only
 
-This package is ESM-only. It requires Node.js 16+ or a modern bundler (Vite, Webpack 5+, Rollup, esbuild). If using TypeScript, set `"moduleResolution": "bundler"` or `"node16"` in your `tsconfig.json`.
+This package is ESM-only. It requires Node.js 18+ or a modern bundler (Vite, Webpack 5+, Rollup, esbuild). If using TypeScript, set `"moduleResolution": "bundler"` or `"node16"` in your `tsconfig.json`.
 
 ## Documentation
 

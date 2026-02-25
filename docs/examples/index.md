@@ -234,6 +234,4 @@ just like on desktop.
 
 ## Source Code
 
-Each example includes its full source code. Click "View Source" on any example
-to see how it works, or browse the examples in the
-[GitHub repository](https://github.com/sethbrasile/ez-web-audio/tree/main/docs/examples).
+Each example includes its full source code. You can browse the source files for all examples on [GitHub](https://github.com/sethbrasile/ez-web-audio/tree/main/docs/examples).

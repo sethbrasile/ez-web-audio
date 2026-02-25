@@ -1,6 +1,6 @@
+import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 
 describe('applyEqualPowerCrossfade', () => {
   let audioContext: AudioContext

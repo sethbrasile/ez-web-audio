@@ -2,56 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.0.0] - 2026-02-23
 
 ### Breaking Changes
 
 - **`EnvelopeOptions` property names shortened** — `attackTime` renamed to `attack`, `decayTime` to `decay`, `sustainLevel` to `sustain`, `releaseTime` to `release`. The `Envelope.release()` method renamed to `Envelope.triggerRelease()` to avoid collision with the new `release` property.
-
-### Added
-
-- **`fadeIn(duration)`** — Play with gain ramping from 0 to current gain over specified duration
-- **`fadeOut(duration)`** — Ramp gain to 0 and stop; returns a Promise that resolves when complete
-- **`loop` property** on Sound and Track — enables native `AudioBufferSourceNode.loop` without timing gaps
-- **`dispose()`** on BaseSound — disconnects all audio nodes, removes event listeners, marks instance as disposed (idempotent)
-- **`createOscillator({ note: 'A4' })`** — accepts note name from built-in frequency map
-- **`createAnalyzer()` overload** — works without AudioContext parameter (resolves shared context internally)
-- **`BeatTrack.setPattern([1,0,1,0])`** — set beat active states from a numeric/boolean array
-- **`createSound()` / `createTrack()` accept `ArrayBuffer`, `Blob`, or `File`** — not just URL strings; use the `AudioInput` type
-- **`createNoise('white' | 'pink' | 'brown')`** — unified noise generation factory (pink uses Voss-McCartney algorithm, brown uses random walk)
-- **`volume` getter/setter** on BaseSound — alias for `changeGainTo()` with same validation
-- **`createTracks(urls[], onProgress?)`** — batch Track loader matching `createSounds()` pattern
-- **Typed event sources** — event detail `source` field typed as `AudioEventSource` (was `unknown`)
-- **Narrowed `ControlType` per class** — `Sound.update()` accepts `SoundControlType` (`'gain' | 'pan' | 'detune'`); `Oscillator.update()` accepts full `ControlType` (including `'frequency'`)
-- **Event map types exported** — `SoundEventMap`, `BeatTrackEventMap`, `LayeredSoundEventMap`, `AudioEventSource`, `SoundEventType`, and all detail types
-- **`TypedEventEmitter<TMap>`** — shared base class for typed event systems, exported for advanced consumers
-- **`onPlaySet()` / `onPlayRamp()` consume-once behavior** prominently documented in JSDoc
-- AudioSprite interactive example page
-- LayeredSound interactive example page
-- Crossfade interactive example page
-- React integration example with hooks patterns
-- `docs/guide/parameter-control.md` and `docs/guide/utilities.md` split from oversized `concepts.md`
-
-### Fixed
-
-- **AudioSprite `loop: true`** now actually loops — duration arg no longer passed to `source.start()` when looping
-- **Stale setTimeout** can no longer corrupt `_isPlaying` across rapid play/stop cycles — timeout IDs tracked and cancelled
-- **`Playable` interface** return types match async implementations (`Promise<void>`)
-- **`Sound` constructor** `opts` parameter typed as `BaseSoundOptions` (was `any`)
-- **`createFont()`** validates `response.ok` and wraps fetch in try/catch with descriptive errors
-- **`CLAUDE.md`** uses `.as('ratio')` (was `.from('ratio')`)
-- **Oscillator `setup()`** documents GainNode replacement risk in JSDoc
-- `synthesis.md` uses `update('frequency')` instead of removed `changeFrequencyTo()`
-- `audio-routing.md` uses 1-arg `wrapEffect(node)` instead of 2-arg form
-
-### Changed
-
-- `BaseSound` and `LayeredSound` now extend `TypedEventEmitter` (DRY refactor, ~120 lines removed)
-- Test count: 1038+ unit tests (up from 937)
-
-## [1.0.0] - 2026-02-17
-
-### Breaking Changes
 
 #### Method Renames
 
@@ -116,6 +71,27 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`fadeIn(duration)`** — Play with gain ramping from 0 to current gain over specified duration
+- **`fadeOut(duration)`** — Ramp gain to 0 and stop; returns a Promise that resolves when complete
+- **`loop` property** on Sound and Track — enables native `AudioBufferSourceNode.loop` without timing gaps
+- **`dispose()`** on BaseSound — disconnects all audio nodes, removes event listeners, marks instance as disposed (idempotent)
+- **`createOscillator({ note: 'A4' })`** — accepts note name from built-in frequency map
+- **`createAnalyzer()` overload** — works without AudioContext parameter (resolves shared context internally)
+- **`BeatTrack.setPattern([1,0,1,0])`** — set beat active states from a numeric/boolean array
+- **`createSound()` / `createTrack()` accept `ArrayBuffer`, `Blob`, or `File`** — not just URL strings; use the `AudioInput` type
+- **`createNoise('white' | 'pink' | 'brown')`** — unified noise generation factory (pink uses Voss-McCartney algorithm, brown uses random walk)
+- **`volume` getter/setter** on BaseSound — alias for `changeGainTo()` with same validation
+- **`createTracks(urls[], onProgress?)`** — batch Track loader matching `createSounds()` pattern
+- **Typed event sources** — event detail `source` field typed as `AudioEventSource` (was `unknown`)
+- **Narrowed `ControlType` per class** — `Sound.update()` accepts `SoundControlType` (`'gain' | 'pan' | 'detune'`); `Oscillator.update()` accepts full `ControlType` (including `'frequency'`)
+- **Event map types exported** — `SoundEventMap`, `BeatTrackEventMap`, `LayeredSoundEventMap`, `AudioEventSource`, `SoundEventType`, and all detail types
+- **`TypedEventEmitter<TMap>`** — shared base class for typed event systems, exported for advanced consumers
+- **`onPlaySet()` / `onPlayRamp()` consume-once behavior** prominently documented in JSDoc
+- AudioSprite interactive example page
+- LayeredSound interactive example page
+- Crossfade interactive example page
+- React integration example with hooks patterns
+- `docs/guide/parameter-control.md` and `docs/guide/utilities.md` split from oversized `concepts.md`
 - `getGainNode()` public accessor on BaseSound for controlled access to the GainNode
 - Comprehensive JSDoc on all public methods with `@param`, `@returns`, `@throws`, and `@example` tags
 - **Effect bypass auto-rewire** -- toggling `effect.bypass` automatically rewires the audio chain, removing the effect from the signal path without removing it from the effect list
@@ -133,10 +109,23 @@ All notable changes to this project will be documented in this file.
 - **`clearScheduledValues` consume-once semantics** -- `onPlaySet()` and `onPlayRamp()` schedules are cleared after each `play()` call; re-schedule before each play for repeated automation
 - Integration tests covering full effect chains and soundfont workflows
 - Concurrent operation tests (play-while-playing, rapid seek, double-stop scenarios)
-- 937 unit tests + 20 E2E tests
+- 1038+ unit tests + 20 E2E tests
+
+### Fixed
+
+- **AudioSprite `loop: true`** now actually loops — duration arg no longer passed to `source.start()` when looping
+- **Stale setTimeout** can no longer corrupt `_isPlaying` across rapid play/stop cycles — timeout IDs tracked and cancelled
+- **`Playable` interface** return types match async implementations (`Promise<void>`)
+- **`Sound` constructor** `opts` parameter typed as `BaseSoundOptions` (was `any`)
+- **`createFont()`** validates `response.ok` and wraps fetch in try/catch with descriptive errors
+- **`CLAUDE.md`** uses `.as('ratio')` (was `.from('ratio')`)
+- **Oscillator `setup()`** documents GainNode replacement risk in JSDoc
+- `synthesis.md` uses `update('frequency')` instead of removed `changeFrequencyTo()`
+- `audio-routing.md` uses 1-arg `wrapEffect(node)` instead of 2-arg form
 
 ### Changed
 
+- `BaseSound` and `LayeredSound` now extend `TypedEventEmitter` (DRY refactor, ~120 lines removed)
 - Dependencies upgraded: Vite 7, Vitest 4, TypeScript 5.9, ESLint 10
 - Test files split by concern for maintainability (e.g., `base-sound.test.ts` split into events, effects, debug, and analyzer focused files)
 - Controller parameter arrays cleared between plays (memory optimization -- prevents unbounded growth with repeated plays)

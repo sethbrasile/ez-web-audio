@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sethbrasile.github.io/ez-web-audio/sitemap.xml
