@@ -183,10 +183,17 @@ export class Beat {
 
   /**
    * Schedule a callback and track its ID for later cancellation.
+   * The ID is removed from pendingTimerIds when the callback completes,
+   * so the array only holds IDs for active (pending) timers.
    * @internal
    */
   private trackedTimeout(fn: () => void, delay: number): number {
-    const id = this.setTimeout(fn, delay)
+    const id = this.setTimeout(() => {
+      // Remove this timer ID from pending list since it has completed
+      const idx = this.pendingTimerIds.indexOf(id)
+      if (idx !== -1) this.pendingTimerIds.splice(idx, 1)
+      fn()
+    }, delay)
     this.pendingTimerIds.push(id)
     return id
   }
