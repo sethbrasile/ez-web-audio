@@ -1,5 +1,6 @@
 import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
+import type { BaseSoundEventMap } from './events/event-types'
 import createTimeObject from '@utils/create-time-object'
 import { BaseSound } from './base-sound'
 import { SoundController } from './controllers/sound-controller'
@@ -30,7 +31,7 @@ import { SoundController } from './controllers/sound-controller'
  * sound.play()
  * ```
  */
-export class Sound extends BaseSound {
+export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomEvent<unknown> } = BaseSoundEventMap> extends BaseSound<TMap> {
   /** The underlying AudioBufferSourceNode that plays the audio. */
   public audioSourceNode: AudioBufferSourceNode
 

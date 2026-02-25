@@ -4,7 +4,7 @@ import type { Playable } from '@interfaces/playable'
 import type { TimeObject } from '@utils/create-time-object'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
-import type { SoundEventMap } from './events/event-types'
+import type { BaseSoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
 import { debugConnection, debugEvent } from './debug'
 import { TypedEventEmitter } from './events/typed-event-emitter'
@@ -77,7 +77,7 @@ export interface BaseSoundOptions {
  * sound.on('end', () => console.log('Finished'))
  * ```
  */
-export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> implements Connectable, Playable {
+export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomEvent<unknown> } = BaseSoundEventMap> extends TypedEventEmitter<TMap> implements Connectable, Playable {
   protected _isPlaying = false
   private _disposed = false
 
@@ -94,6 +94,14 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
   protected clearTimeout: (id: number) => void
   private _pendingTimeoutIds: number[] = []
   protected startedPlayingAt: number = 0
+
+  /**
+   * The user's intended gain level (0–1). Tracks the last value set via
+   * changeGainTo() / volume setter so that gain can be restored after a
+   * fadeOut() or Oscillator anti-click stop that ramps gainNode.gain to 0.
+   * @protected
+   */
+  protected _targetGain: number = 1
 
   /**
    * Wrap setTimeout to track the returned ID for later cancellation.
@@ -648,6 +656,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
     if (value > 1) {
       console.warn(`ez-web-audio: Gain value ${value} exceeds 1.0. Values above 1 amplify the signal and may cause distortion.`)
     }
+    this._targetGain = value
     this.controller.update('gain').to(value).as('ratio')
     return this
   }
@@ -1073,7 +1082,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
    * ```
    */
   public get volume(): number {
-    return this.gainNode.gain.value
+    return this._targetGain
   }
 
   public set volume(value: number) {
@@ -1125,7 +1134,7 @@ export abstract class BaseSound extends TypedEventEmitter<SoundEventMap> impleme
    * ```
    */
   public async fadeIn(duration: number): Promise<void> {
-    const targetGain = this.gainNode.gain.value
+    const targetGain = this._targetGain
     this.onPlaySet('gain').to(0).at(0)
     this.onPlaySet('gain').to(targetGain).endingAt(duration, 'linear')
     await this.play()

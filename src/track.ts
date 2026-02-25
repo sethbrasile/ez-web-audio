@@ -1,5 +1,6 @@
 import type { TimeObject } from '@utils/create-time-object'
 import type { SeekType } from './controllers/base-param-controller'
+import type { TrackEventMap } from './events/event-types'
 import createTimeObject from '@utils/create-time-object'
 import { Sound } from './sound'
 import withinRange from './utils/within-range'
@@ -34,7 +35,7 @@ import withinRange from './utils/within-range'
  * console.log(track.percentPlayed) // 15.5
  * ```
  */
-export class Track extends Sound {
+export class Track extends Sound<TrackEventMap> {
   /** Stores the requestAnimationFrame ID for position tracking cleanup. */
   private rafId: number | null = null
 
