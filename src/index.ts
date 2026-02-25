@@ -10,6 +10,7 @@ import type { Playable } from './interfaces/playable'
 import type { LayeredSoundOptions } from './layered-sound'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import type { Accidental, NoteLetter, Octave } from '@/musical-identity'
 import type { SamplerOptions } from '@/sampler'
 import { OscillatorController } from '@controllers/oscillator-controller'
 import { SoundController } from '@controllers/sound-controller'
@@ -169,6 +170,15 @@ export function createNotes(json?: Record<string, number>): Note[] {
     const note = json[key]
     const noteObject = new Note()
     noteObject.frequency = note
+
+    // Parse standard note names like "A4", "Bb3", "C#5", "Db2"
+    const match = key.match(/^([A-G])(b|#)?(\d)$/)
+    if (match) {
+      noteObject.letter = match[1] as NoteLetter
+      noteObject.accidental = (match[2] || '') as Accidental
+      noteObject.octave = match[3] as Octave
+    }
+
     notes.push(noteObject)
   }
   return notes

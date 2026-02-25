@@ -783,6 +783,49 @@ describe('factory functions', () => {
       const notes = createNotes({})
       expect(notes).toEqual([])
     })
+
+    describe('note name parsing', () => {
+      it('populates letter, accidental, and octave from standard note name keys', async () => {
+        const { createNotes } = await import('./index')
+        // Use a custom frequency map with arbitrary frequencies that are NOT in the built-in map
+        // This ensures letter/accidental/octave come from key parsing, not the frequency setter
+        const customMap = { 'A4': 999.1, 'Bb3': 999.2, 'C#5': 999.3 }
+        const notes = createNotes(customMap)
+
+        const a4 = notes[0]
+        expect(a4.letter).toBe('A')
+        expect(a4.accidental).toBe('')
+        expect(a4.octave).toBe('4')
+
+        const bb3 = notes[1]
+        expect(bb3.letter).toBe('B')
+        expect(bb3.accidental).toBe('b')
+        expect(bb3.octave).toBe('3')
+
+        const cs5 = notes[2]
+        expect(cs5.letter).toBe('C')
+        expect(cs5.accidental).toBe('#')
+        expect(cs5.octave).toBe('5')
+      })
+
+      it('leaves identity fields at defaults for non-standard keys', async () => {
+        const { createNotes } = await import('./index')
+        // Use a numeric key that cannot be parsed as a note name
+        const notes = createNotes({ 'CUSTOM': 999.9 })
+        // letter/accidental/octave remain at constructor defaults (frequency not in built-in map)
+        expect(notes[0].letter).toBe('A')
+        expect(notes[0].accidental).toBe('')
+        expect(notes[0].octave).toBe('0')
+      })
+
+      it('parses notes from default frequency map', async () => {
+        const { createNotes } = await import('./index')
+        const notes = createNotes()
+        // A4 is in the frequency map — letter/octave/accidental should all be populated
+        const a4 = notes.find(n => n.letter === 'A' && n.octave === '4' && n.accidental === '')
+        expect(a4).toBeDefined()
+      })
+    })
   })
 
   describe('_disposeUnmute()', () => {
@@ -800,9 +843,34 @@ describe('factory functions', () => {
     })
 
     it('cleans up after initAudio has been called', async () => {
+      // Arrange: mock unmute to return a dispose function we can spy on
+      const mockDispose = vi.fn()
+      vi.doMock('./utils/unmute', () => ({
+        default: vi.fn().mockReturnValue({ dispose: mockDispose }),
+      }))
       const { initAudio, _disposeUnmute } = await import('./index')
+
+      // Act: init to register the dispose handle, then dispose
       await initAudio()
-      expect(() => _disposeUnmute()).not.toThrow()
+      _disposeUnmute()
+
+      // Assert: the actual dispose handle was called
+      expect(mockDispose).toHaveBeenCalledOnce()
+    })
+
+    it('clears the dispose handle so a second call is a no-op', async () => {
+      const mockDispose = vi.fn()
+      vi.doMock('./utils/unmute', () => ({
+        default: vi.fn().mockReturnValue({ dispose: mockDispose }),
+      }))
+      const { initAudio, _disposeUnmute } = await import('./index')
+
+      await initAudio()
+      _disposeUnmute()
+      _disposeUnmute() // second call should be no-op
+
+      // dispose should only have been called once
+      expect(mockDispose).toHaveBeenCalledOnce()
     })
   })
 
