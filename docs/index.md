@@ -56,12 +56,11 @@ synth.play()
 ### Build a Drum Machine
 
 ```typescript
-import { createBeatTrack, createSound } from 'ez-web-audio'
+import { createBeatTrack } from 'ez-web-audio'
 
-const kick = await createSound('/audio/kick.wav')
-const track = createBeatTrack(kick, 8) // 8-step pattern
+const track = await createBeatTrack(['/audio/kick.wav'], { numBeats: 8 })
 track.setPattern([1, 0, 0, 1, 0, 0, 1, 0])
-track.playLoop(120) // 120 BPM
+track.playBeats(120, 1 / 4) // 120 BPM, quarter notes
 ```
 
 ### Apply Effects
@@ -70,7 +69,7 @@ track.playLoop(120) // 120 BPM
 import { createFilterEffect, createSound } from 'ez-web-audio'
 
 const sound = await createSound('/audio/guitar.mp3')
-const lowpass = createFilterEffect({ type: 'lowpass', frequency: 800 })
+const lowpass = createFilterEffect('lowpass', { frequency: 800 })
 sound.addEffect(lowpass)
 sound.play()
 ```
