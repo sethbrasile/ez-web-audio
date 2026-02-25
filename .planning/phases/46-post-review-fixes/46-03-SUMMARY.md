@@ -92,3 +92,12 @@ None — no external service configuration required.
 ---
 *Phase: 46-post-review-fixes*
 *Completed: 2026-02-25*
+
+## Self-Check: PASSED
+
+- docs/index.md: FOUND
+- docs/examples/effects.md: FOUND
+- docs/examples/layered-sound.md: FOUND
+- 46-03-SUMMARY.md: FOUND
+- Commit bd07864: FOUND
+- Commit fa69a42: FOUND
