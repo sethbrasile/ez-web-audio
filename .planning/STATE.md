@@ -17,7 +17,7 @@ Plan: 1/3
 Status: Plan 01 complete — OG image, transformHead per-page meta, canonical URLs, JSON-LD enrichment
 Last activity: 2026-02-24 — Phase 44 Plan 01 executed (2 tasks, 2 commits)
 
-**Progress:** [██████████] 98%
+**Progress:** [██████████] 99%
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ Last activity: 2026-02-24 — Phase 44 Plan 01 executed (2 tasks, 2 commits)
 | Phase 44-docs-site-seo-and-accessibility P02 | 4min | 2 tasks | 15 files |
 | Phase 46-post-review-fixes P03 | 2min | 2 tasks | 3 files |
 | Phase 46-post-review-fixes P01 | 2min | 2 tasks | 1 files |
+| Phase 46-post-review-fixes P02 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -214,6 +215,9 @@ Recent decisions affecting current work:
 - [Phase 44-02]: DrumMachine beat-cell uses flex-direction:column to stack beat-number and beat-active-indicator vertically
 - [Phase 46-03]: Build failure pre-existed in base-sound.ts TypeScript constraint — unrelated to doc changes, confirmed via stash test
 - [Phase 46-01]: rollupTypes: true in vite-plugin-dts bundles all declarations into dist/index.d.ts, eliminating TS2835 errors for moduleResolution: nodenext consumers
+- [Phase 46-02]: onPlayRamp.in() pushes startValue directly to valuesAtTime at time 0 (bypasses onPlaySet dedup)
+- [Phase 46-02]: _targetGain tracks user intent; Oscillator.update() and BaseSound.update() both intercept 'gain' to sync it
+- [Phase 46-02]: volume getter returns _targetGain not gainNode.gain.value to reflect user intent not transient fade state
 
 ### Roadmap Evolution
 

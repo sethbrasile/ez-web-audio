@@ -74,7 +74,7 @@
 - [x] **Phase 43: Test Coverage Gaps** - Cover untested public API functions from code review (completed 2026-02-23)
 - [x] **Phase 44: Docs Site SEO and Accessibility** - SEO infrastructure and WCAG 2.1 AA accessibility (completed 2026-02-24)
 - [x] **Phase 45: Architecture Improvements** - Internal code clarity, named methods, resource cleanup (completed 2026-02-24)
-- [ ] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut
+- [x] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut (completed 2026-02-25)
 
 ## Phase Details
 
@@ -516,7 +516,7 @@ Plans:
 | 43. Test Coverage Gaps | 3/3 | Complete | 2026-02-23 | - |
 | 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
 | 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
-| 46. Post-Review Fixes | 2/4 | In Progress|  |
+| 46. Post-Review Fixes | 4/4 | Complete   | 2026-02-25 |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -665,7 +665,7 @@ Plans:
   11. `createNotes()` parses standard note name keys to populate `letter`, `accidental`, and `octave` on Note objects
   12. `Beat.pendingTimerIds` self-cleans completed timer IDs during playback — no unbounded growth
   13. L2 (`unmute.js` missing `.d.ts`) verified resolved by C1 rollupTypes fix
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 46-01-PLAN.md — Enable rollupTypes for bundled .d.ts output (C1)
