@@ -516,7 +516,7 @@ Plans:
 | 43. Test Coverage Gaps | 3/3 | Complete | 2026-02-23 | - |
 | 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
 | 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
-| 46. Post-Review Fixes | 0/4 | Pending | - |
+| 46. Post-Review Fixes | 1/4 | In Progress|  |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -665,7 +665,7 @@ Plans:
   11. `createNotes()` parses standard note name keys to populate `letter`, `accidental`, and `octave` on Note objects
   12. `Beat.pendingTimerIds` self-cleans completed timer IDs during playback — no unbounded growth
   13. L2 (`unmute.js` missing `.d.ts`) verified resolved by C1 rollupTypes fix
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 - [ ] 46-01-PLAN.md — Enable rollupTypes for bundled .d.ts output (C1)
