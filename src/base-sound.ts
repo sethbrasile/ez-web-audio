@@ -611,6 +611,29 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
       as: (method: RatioType) => void
     }
   } {
+    // Intercept gain updates to keep _targetGain in sync so that
+    // setup() on the next play() restores the correct gain level.
+    if (type === 'gain') {
+      return {
+        to: (value: number) => {
+          return {
+            as: (method: RatioType) => {
+              this.controller.update(type).to(value).as(method)
+              // Mirror the resolved gain in _targetGain
+              if (method === 'ratio') {
+                this._targetGain = value
+              }
+              else if (method === 'percent') {
+                this._targetGain = value / 100
+              }
+              else if (method === 'inverseRatio') {
+                this._targetGain = 1 - value
+              }
+            },
+          }
+        },
+      }
+    }
     return this.controller.update(type)
   }
 

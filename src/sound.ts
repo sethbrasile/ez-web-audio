@@ -119,6 +119,10 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
     audioSourceNode.loop = this._loop
     this.audioSourceNode = audioSourceNode
 
+    // Restore the user's intended gain level in case a fadeOut() or other ramp
+    // left gainNode.gain at 0 from the previous playback cycle.
+    this.gainNode.gain.setValueAtTime(this._targetGain, this.audioContext.currentTime)
+
     // Update controller with new source node so scheduled detune/param automation targets the active node
     this.controller.updateAudioSource(audioSourceNode)
 

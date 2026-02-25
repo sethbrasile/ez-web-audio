@@ -268,36 +268,36 @@ describe('oscillatorController', () => {
   })
 
   describe('onPlayRamp integration', () => {
-    it('onPlayRamp for frequency schedules ramp end value', () => {
-      // onPlayRamp calls onPlaySet twice: startValue is deduped by endValue's push.
-      // Only the end value (880) ends up in exponentialValues; no setValueAtTime for 440.
+    it('onPlayRamp for frequency schedules both start setValueAtTime and ramp end value', () => {
+      // onPlayRamp stores startValue in valuesAtTime at time 0 and endValue in ramp arrays.
+      // Both setValueAtTime (for start) and exponentialRampToValueAtTime (for end) are called.
       controller.onPlayRamp('frequency').from(440).to(880).in(0.5)
       const spy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       const rampSpy = vi.spyOn(oscillatorNode.frequency, 'exponentialRampToValueAtTime')
       controller.setValuesAtTimes()
-      expect(spy).not.toHaveBeenCalled()
+      expect(spy).toHaveBeenCalledWith(440, expect.any(Number))
       expect(rampSpy).toHaveBeenCalledWith(880, expect.any(Number))
     })
 
-    it('onPlayRamp for gain with linear type', () => {
-      // Same: startValue deduped, only end value in linearValues
+    it('onPlayRamp for gain with linear type schedules both start and end', () => {
+      // startValue stored in valuesAtTime at time 0; endValue in linearValues
       controller.onPlayRamp('gain', 'linear').from(1).to(0).in(1.0)
       const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')
       const rampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
       controller.setValuesAtTimes()
-      expect(spy).not.toHaveBeenCalled()
+      expect(spy).toHaveBeenCalledWith(1, expect.any(Number))
       expect(rampSpy).toHaveBeenCalledWith(0, expect.any(Number))
     })
   })
 
   describe('frequency ramp scheduling', () => {
-    it('onPlayRamp("frequency", "linear") schedules linear ramp from start to end value', () => {
+    it('onPlayRamp("frequency", "linear") schedules both start setValueAtTime and linear ramp', () => {
       controller.onPlayRamp('frequency', 'linear').from(220).to(440).in(0.5)
       const setValueSpy = vi.spyOn(oscillatorNode.frequency, 'setValueAtTime')
       const linearRampSpy = vi.spyOn(oscillatorNode.frequency, 'linearRampToValueAtTime')
       controller.setValuesAtTimes()
-      // onPlayRamp deduplicates: start value (220) is removed; only end value (440) remains in linearValues
-      expect(setValueSpy).not.toHaveBeenCalled()
+      // startValue (220) stored in valuesAtTime at time 0; end value (440) in linearValues
+      expect(setValueSpy).toHaveBeenCalledWith(220, expect.any(Number))
       expect(linearRampSpy).toHaveBeenCalledWith(440, expect.any(Number))
     })
 

@@ -226,6 +226,28 @@ export class Oscillator extends BaseSound {
       as: (method: RatioType) => void
     }
   } {
+    // Intercept gain updates to keep _targetGain in sync (same as BaseSound.update override).
+    // This ensures Oscillator.setup() restores the correct gain on subsequent play() calls.
+    if (type === 'gain') {
+      return {
+        to: (value: number) => {
+          return {
+            as: (method: RatioType) => {
+              this.controller.update(type).to(value).as(method)
+              if (method === 'ratio') {
+                this._targetGain = value
+              }
+              else if (method === 'percent') {
+                this._targetGain = value / 100
+              }
+              else if (method === 'inverseRatio') {
+                this._targetGain = 1 - value
+              }
+            },
+          }
+        },
+      }
+    }
     return this.controller.update(type)
   }
 
@@ -284,11 +306,11 @@ export class Oscillator extends BaseSound {
     oscillator.frequency.setValueAtTime(this.freq || 440, this.audioContext.currentTime)
     this.audioSourceNode = oscillator
 
-    // Cancel any scheduled values on the existing gain node instead of replacing it
-    // Preserve current gain value (user may have set via changeGainTo/update) — don't reset to defaultValue
-    const currentGain = this.gainNode.gain.value
+    // Cancel any scheduled values on the existing gain node instead of replacing it.
+    // Restore _targetGain (user's intended gain) rather than gainNode.gain.value which
+    // may be 0 after an anti-click fade-out from a previous stop().
     this.gainNode.gain.cancelScheduledValues(0)
-    this.gainNode.gain.setValueAtTime(currentGain, this.audioContext.currentTime)
+    this.gainNode.gain.setValueAtTime(this._targetGain, this.audioContext.currentTime)
 
     // give the controller the new oscillator node (gain node is stable)
     this.controller.updateAudioSource(oscillator)

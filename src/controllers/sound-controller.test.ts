@@ -169,14 +169,14 @@ describe('soundController', () => {
       expect(spy).toHaveBeenCalledTimes(1)
     })
 
-    it('onPlayRamp schedules ramp end value', () => {
-      // onPlayRamp calls onPlaySet twice: startValue is deduped by endValue's push.
-      // Only the end value (0.9) ends up in exponentialValues; setValueAtTime not called.
+    it('onPlayRamp schedules both start setValueAtTime and ramp end value', () => {
+      // onPlayRamp stores startValue in valuesAtTime at time 0 and endValue in ramp arrays.
+      // Both setValueAtTime (for start) and exponentialRampToValueAtTime (for end) are called.
       controller.onPlayRamp('gain').from(0.1).to(0.9).in(1.0)
       const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
       const rampSpy = vi.spyOn(gainNode.gain, 'exponentialRampToValueAtTime')
       controller.setValuesAtTimes()
-      expect(setValueSpy).not.toHaveBeenCalled()
+      expect(setValueSpy).toHaveBeenCalledWith(0.1, expect.any(Number))
       expect(rampSpy).toHaveBeenCalledWith(0.9, expect.any(Number))
     })
 
