@@ -705,7 +705,9 @@ Plans:
   1. `pnpm build:lib` produces declarations that do not reference `standardized-audio-context-mock`
   2. A TypeScript consumer project with `moduleResolution: "nodenext"` can import `ez-web-audio` without seeing test-mock types in `ContextLike`
   3. `timeout.ts` compiles correctly using only production-safe types for its `AudioContext`-like parameter
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 47-01-PLAN.md — Remove mock type import from timeout.ts and verify clean declarations
 
 ### Phase 48: Safety & Correctness
 **Goal**: Fire-and-forget play methods handle errors, dispose properly cleans up nodes, and divide-by-zero and race conditions are eliminated
