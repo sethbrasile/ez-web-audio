@@ -531,7 +531,7 @@ Plans:
 | 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
 | 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
 | 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
-| 47. Ship-Blocker Fix | 1/1 | Complete   | 2026-02-27 | - |
+| 47. Ship-Blocker Fix | 1/1 | Complete    | 2026-02-27 | - |
 | 48. Safety & Correctness | Deep Review Hardening | 0/? | Not started | - |
 | 49. Export Cleanup | Deep Review Hardening | 0/? | Not started | - |
 | 50. Performance | Deep Review Hardening | 0/? | Not started | - |
