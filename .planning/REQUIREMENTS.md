@@ -1,343 +1,111 @@
-# Requirements: EZ Audio
+# Requirements: EZ Audio — Deep Review Hardening
 
-**Defined:** 2026-02-16
+**Defined:** 2026-02-26
 **Core Value:** Make the Web Audio API easy to use
+**Source:** `.planning/reviews/2026-02-26-deep-review.md`
 
-## v1.0 Requirements — First Stable Release
+## Requirements
 
-**Defined:** 2026-02-16
+28 findings from the 2026-02-26 deep review, filtered to exclude 4 already-fixed/intentionally-kept items (H2, M7, M9, L5).
 
-Implement all deferred audit improvements, breaking API cleanup (free pre-1.0), dependency security upgrades, convenience APIs, defensive hardening, test expansion, and documentation updates. Ship as npm 1.0.0.
+### Ship-Blocker
 
-### Breaking API Changes
+- [ ] **SHIP-01**: Published type declarations do not import test-only dependencies (`standardized-audio-context-mock` removed from `ContextLike` in `timeout.ts`)
 
-- [x] **API-01**: Fluent API `.from()` method renamed to `.as()` on `update().to()` and `seek()` chains
-- [x] **API-02**: `ifActivePlayIn()` renamed to `playInIfActive()` for naming consistency with `playIfActive()`
-- [x] **API-03**: `gainNode`, `pannerNode`, `effectChainInput` changed from public to protected on BaseSound
-- [x] **API-04**: `startOffset` changed from public to protected on BaseSound (remains accessible on Track)
-- [x] **API-05**: Deprecated `connections` API removed entirely (`addConnection`, `removeConnection`, `getConnection`, `getNodeFrom`, `connections` array)
-- [x] **API-06**: Deprecated type aliases removed (`OscillatorOpts`, `OscillatorOptsFilterValues`) — only `OscillatorOptions` and `OscillatorFilterOptions` remain
-- [x] **API-07**: Commented-out `stopAfter` removed from Playable interface
+### Safety & Correctness
 
-### DX Improvements
+- [ ] **SAFE-01**: Fire-and-forget play methods (`playFor`, `playIn`, `playInAndStopAfter`, `Sampler.play`, `Track.resume`) handle rejected promises instead of discarding them
+- [ ] **SAFE-02**: `dispose()` disconnects `audioSourceNode` and nullifies its `onended` handler
+- [ ] **SAFE-03**: `BeatTrack` has a `dispose()` method that stops playback, disposes sounds, clears beats, and releases resources
+- [ ] **SAFE-04**: `Track.percentPlayed` returns 0 when duration is 0 (no divide-by-zero)
+- [ ] **SAFE-05**: `Track.seek()` guards against concurrent seeks overwriting `startOffset` (race condition fix)
+- [ ] **SAFE-06**: `LayeredSound.play()` uses `Promise.allSettled()` so one layer failure doesn't abort all layers
 
-- [x] **DX-01**: Effect chain auto-rewires when `effect.bypass` is toggled (no manual `rewireEffects()` call needed)
-- [x] **DX-02**: Effect factory functions (`createFilterEffect`, `createGainEffect`) work without requiring AudioContext argument (auto-create internally)
-- [x] **DX-03**: `addEffects(effects[])` convenience method on BaseSound for batch effect addition
-- [x] **DX-04**: `playTogether(playables[])` utility function syncs multiple sounds to same AudioContext start time
-- [x] **DX-05**: `createSounds(urls[])` batch loader with progress events
-- [x] **DX-06**: `getFilters()` accessor on Oscillator returns readonly filter nodes for advanced users
-- [x] **DX-07**: `getSounds()` accessor on Sampler returns readonly sound list for inspection
-- [x] **DX-08**: `ControlType` made extensible via mapped type for future parameter additions
+### Export Cleanup
 
-### Defensive Code
+- [ ] **EXPORT-01**: `_disposeUnmute` is not a public export (removed from `export` or moved to testing entry point)
+- [ ] **EXPORT-02**: `createFont` failure throws `AudioLoadError` (not plain `Error`); unknown oscillator note throws `InvalidNoteError`
 
-- [x] **DEF-01**: Null checks added to effect/filter/sound iterations to prevent crashes from null entries
-- [x] **DEF-02**: `addEffect()` position parameter validated (no negative values)
-- [x] **DEF-03**: Sampler `play()` guards against empty sounds set with clear error
-- [x] **DEF-04**: Controller parameter arrays cleared between plays to prevent memory leak
-- [x] **DEF-05**: `unlockAudioContext` necessity documented with explanatory comment (resolves TODO)
+### Performance
 
-### Dependency Security
+- [ ] **PERF-01**: Preload cache stores decoded `AudioBuffer` objects, avoiding redundant `decodeAudioData()` calls on cache hits
+- [ ] **PERF-02**: `duration` getter has a lightweight numeric path (`durationRaw` or cached `TimeObject`) to avoid allocation in hot paths
+- [ ] **PERF-03**: Scheduler `tick()` combines execute and filter into a single pass (no double iteration per frame)
+- [ ] **PERF-04**: `audioContext.resume()` only called when `audioContext.state === 'suspended'` (not on every play)
 
-- [x] **SEC-01**: happy-dom upgraded from 15.x to 20.6.1 (Phase 17-01)
-- [x] **SEC-02**: vitest upgraded from 2.x to 4.0.18 (Phase 17-01)
-- [x] **SEC-03**: vite upgraded from 5.x to 7.3.1 (Phase 17-01)
-- [x] **SEC-04**: eslint upgraded from 9.x to 10.0.0 and @antfu/eslint-config from 2.x to 7.4.3 (Phase 17-02)
-- [x] **SEC-05**: TypeScript upgraded from 5.6 to 5.9.3 (Phase 17-03)
-- [x] **SEC-06**: Unused dependencies removed (@dotenvx/dotenvx, concurrently) (Phase 17-01)
+### Documentation Fixes
 
-### Test Coverage
+- [ ] **DOCS-01**: Vibrato example in `docs/guide/parameter-control.md` either works correctly or has a caveat about consume-once semantics
+- [ ] **DOCS-02**: README `await song.seek(30).as('seconds')` corrected — `seek().as()` returns void, not a Promise
 
-- [x] **TEST-01**: Integration tests added for Sound→Effect→Analyzer chain and full soundfont workflow
-- [x] **TEST-02**: `base-sound.test.ts` split by concern (events, effects, debug, analyzer)
-- [x] **TEST-03**: Concurrent operation tests added (play while playing, rapid seek, double stop)
+### Test Strengthening
 
-### Documentation
+- [ ] **TEST-01**: `onPlaySet`/`onPlayRamp` tests verify scheduled values are applied during playback (not just no-throw)
+- [ ] **TEST-02**: `Sound` class has dedicated `end` event test for natural playback completion
+- [ ] **TEST-03**: Event listeners stop firing after `dispose()` is called (cleanup verification test)
 
-- [x] **DOC-01**: All JSDoc updated for renamed methods (`.from()` → `.as()`, `ifActivePlayIn` → `playInIfActive`)
-- [x] **DOC-02**: Demo app Vue components updated for all API changes (protected properties, removed deprecated APIs, new convenience methods)
-- [x] **DOC-03**: Guide pages (Getting Started, Core Concepts) updated with new convenience APIs and renamed methods
-- [x] **DOC-04**: TypeDoc/API reference reflects new protected visibility and removed deprecated exports
+### Build & Refactoring
 
-## v1.0 Gap Closure Requirements — Code Review (2026-02-22)
-
-Comprehensive 5-agent code review identified bugs, DX gaps, test coverage holes, and documentation issues.
-
-### Critical Fixes (Phase 32)
-
-- [ ] **FIX-01**: MIT LICENSE file exists at project root
-- [ ] **FIX-02**: AudioSprite `loop: true` actually loops (duration arg not passed to `source.start()` when looping)
-- [ ] **FIX-03**: `EnvelopeOptions` uses short ADSR property names (`attack`, `decay`, `sustain`, `release`)
-- [ ] **FIX-04**: `Playable` interface return types match implementations (`Promise<void>` for async methods)
-- [ ] **FIX-05**: Stale setTimeout cannot corrupt `_isPlaying` across play cycles
-- [ ] **FIX-06**: `Sound` constructor `opts` parameter typed (not `any`)
-- [ ] **FIX-07**: `createFont()` validates response status and handles fetch errors
-- [ ] **FIX-08**: `CLAUDE.md` uses current API (`.as()` not `.from()`)
-- [ ] **FIX-09**: Oscillator GainNode replacement documented or mitigated
-
-### DX Convenience APIs (Phase 33)
-
-- [x] **DX2-01**: `fadeIn(duration)` / `fadeOut(duration)` convenience methods on BaseSound
-- [x] **DX2-02**: `loop` property on Sound and Track for native looping
-- [x] **DX2-03**: `dispose()` cleanup method on BaseSound
-- [x] **DX2-04**: `createAnalyzer()` overload without AudioContext parameter
-- [x] **DX2-05**: `createOscillator({ note: 'A4' })` accepts note name
-- [x] **DX2-06**: `BeatTrack.setPattern([1,0,1,0])` convenience method
-
-### Test Gap Closure (Phase 34)
-
-- [x] **TEST2-01**: Factory functions have dedicated tests including error paths
-- [x] **TEST2-02**: Oscillator `frequency: 0` behavior consistent (contradiction resolved)
-- [x] **TEST2-03**: `AudioSprite.stop()` and `stopAll()` tested
-- [x] **TEST2-04**: `changeGainTo()` negative value and gain > 1 warning tested
-- [x] **TEST2-05**: `getGainNode()` tested
-- [x] **TEST2-06**: `addEffects()` happy path tested
-- [x] **TEST2-07**: `BeatTrack.on()`/`.off()`/`.once()` tested
-- [x] **TEST2-08**: `Envelope.estimateCurrentValue()` and `isActive` tested
-- [x] **TEST2-09**: `Analyzer.fftSize` setter validation tested
-
-### Documentation Expansion (Phase 35)
-
-- [x] **DOC2-01**: AudioSprite interactive example page
-- [x] **DOC2-02**: LayeredSound interactive example page
-- [x] **DOC2-03**: Crossfade interactive demo page
-- [x] **DOC2-04**: React integration example
-- [x] **DOC2-05**: `concepts.md` split into focused pages
-- [x] **DOC2-06**: `changeFrequencyTo()` corrected in synthesis.md
-- [x] **DOC2-07**: `audio-routing.md` uses recommended `wrapEffect()` form
-- [x] **DOC2-08**: Example pages have proper `<script setup>` imports
-- [x] **DOC2-09**: Integration patterns listed on examples index page
-
-### Documentation Sync (Phase 36)
-
-- [x] **SYNC-01**: Every API method signature in guides matches implementation
-- [x] **SYNC-02**: Every code example compiles against current TypeScript types
-- [x] **SYNC-03**: TypeDoc API reference regenerated for Phase 32-33 changes
-- [x] **SYNC-04**: CHANGELOG.md updated with Phase 32-35 changes
-
-### Nice-to-Have DX (Phase 37)
-
-- [x] **DX3-01**: `createSound()`/`createTrack()` accept ArrayBuffer, Blob, or File input
-- [x] **DX3-02**: `createNoise('pink' | 'brown' | 'white')` factory
-- [x] **DX3-03**: `volume` alias property for gain on BaseSound
-- [x] **DX3-04**: `createTracks(urls[], onProgress?)` batch loader
-- [x] **DX3-05**: Event detail `source` typed as union (not `unknown`)
-- [x] **DX3-06**: `ControlType` narrowed per class
-- [x] **DX3-07**: Event map types (`SoundEventType`, `BeatTrackEventMap`, etc.) exported
-- [x] **DX3-08**: Event system `on/off/once/emit` extracted into shared mixin (DRY)
-- [x] **DX3-09**: `onPlaySet()` schedule consumption behavior prominently documented
-
-### Final Documentation Sync (Phase 38)
-
-- [x] **SYNC2-01**: All Phase 37 APIs documented with examples
-- [x] **SYNC2-02**: Every public export in `index.ts` mentioned in guides
-- [x] **SYNC2-03**: Full lint + typecheck + test suite passes
-- [x] **SYNC2-04**: CHANGELOG.md has complete Phase 32-38 record
-
-### API Type Safety (Phase 41)
-
-- [x] **TYPE-01**: `ParamController.updateAudioSource` typed as `(source: OscillatorNode | AudioBufferSourceNode) => void` (no `any`)
-- [x] **TYPE-02**: `BaseSoundEventMap` (play, stop, end) and `TrackEventMap` (adds pause, resume, seek) exported as separate types; `SoundEventMap` retained as backward-compatible alias
-- [x] **TYPE-03**: `Connectable.audioSourceNode` typed as `OscillatorNode | AudioBufferSourceNode` (not `AudioNode`)
-- [x] **TYPE-04**: `Playable` interface expanded with `fadeIn`, `fadeOut`, `dispose` as optional members, or documented as minimal contract with JSDoc
-
-### Source Code Correctness Bugs (Phase 42)
-
-- [x] **BUG-01**: Oscillator.setup() preserves user-set gain across plays instead of resetting to defaultValue
-- [x] **BUG-02**: Sound.setup() calls controller.updateAudioSource() so detune schedules apply to current source node
-- [x] **BUG-03**: load() calls initAudio() before using AudioContext (fixes iOS silent first-play in cache-hit path)
-- [x] **BUG-04**: load() and createSprite() call evictIfNeeded() after writing to responseCache
-- [x] **BUG-05**: responseCache is not directly mutable by consumers — exposed through controlled access only
-
-### Test Coverage Gaps (Phase 43)
-
-- [x] **TCOV-01**: `setPreloadCacheLimit` and `evictIfNeeded()` have tests for setting limit, eviction when exceeded, limit of 0, reducing below current size
-- [x] **TCOV-02**: `preventEventDefaults` and `useInteractionMethods` tested with DOM simulation — verify listeners registered and cleanup removes them
-- [x] **TCOV-03**: `Sound.loop` property tested — default value, set/get, persistence through play/stop cycles
-- [x] **TCOV-04**: `createOscillator({ note: 'A4' })` note-name-to-frequency path tested — A4→440Hz, invalid note handling
-- [x] **TCOV-05**: `Sampler.stop()` tested — stop propagation, isPlaying state after stop
-- [x] **TCOV-06**: `audio-context.ts` has dedicated test file — singleton creation, closed-state recreation
-- [x] **TCOV-07**: `createNotes()` factory function has test coverage
-- [x] **TCOV-08**: `_disposeUnmute()` has test coverage
-- [x] **TCOV-09**: `createAnalyzer` context-free overload tested via index.ts factory
-- [x] **TCOV-10**: `createLayeredSound` factory tested via index.ts
-- [x] **TCOV-11**: Oscillator `frequency: 0` behavior verified — test confirms resulting frequency value
-- [x] **TCOV-12**: Envelope validates negative attack/decay/release values (or documents acceptance)
-- [x] **TCOV-13**: Preload cache accessor functions (`getFromCache`, `setInCache`, `hasInCache`, `getCacheSize`) tested
-
-### Docs Site SEO and Accessibility (Phase 44)
-
-- [x] **SEO-01**: OG image is a 1200x630 PNG (not SVG favicon), `og:image:width`/`og:image:height` meta tags present, `twitter:card` set to `summary_large_image`
-- [x] **SEO-02**: Per-page OG title/description via VitePress `transformHead` hook (not static across all pages)
-- [x] **SEO-03**: Canonical URL per page via `link rel="canonical"` in `transformHead`
-- [x] **SEO-04**: JSON-LD structured data includes `version` and `dateCreated` properties
-- [x] **A11Y-01**: All interactive demo buttons have visible `:focus-visible` outline styles
-- [x] **A11Y-02**: Visualization canvases have `role="img"` and descriptive `aria-label`
-- [x] **A11Y-03**: XY Pad canvas is keyboard operable (arrow key handlers for frequency/gain control)
-- [x] **A11Y-04**: DrumMachine beat state has secondary visual indicator beyond color alone (WCAG 1.4.1)
-- [x] **A11Y-05**: DrumMachine 16-step grid has scroll affordance on small mobile viewports
-- [x] **A11Y-06**: Piano keyboard shortcut hint is announced to screen readers
-- [x] **A11Y-07**: DrumMachine shows loading state on first play while audio initializes
-
-### Architecture Improvements (Phase 45)
-
-- [x] **ARCH-01**: BeatTrack event system documented with `@internal` note explaining why it uses a separate EventTarget (composition pattern with Sampler inheritance) rather than TypedEventEmitter
-- [x] **ARCH-02**: Sampler gain/pan override behavior documented with JSDoc warning that per-sound gain/pan is overwritten on each play cycle
-- [x] **ARCH-03**: Track `_onPlaybackStarted` cleanup extracted into private `_resetPosition()` method for clarity
-- [x] **ARCH-04**: AudioSprite has a `dispose()` method that releases the AudioBuffer reference and clears active sources
-- [x] **ARCH-05**: Module-level `_unmuteDispose` mutable state in `src/index.ts` annotated with `@internal` JSDoc
-- [x] **ARCH-06**: `BaseSound.stopAt()` simplified to use `node.stop(time)` directly instead of double-scheduling with timeout
-
-## v2 Requirements
-
-Deferred to future release. Tracked but not in current roadmap.
-
-### Spatial Audio
-
-- **SPATIAL-01**: User can position sounds in 3D space
-- **SPATIAL-02**: Listener position is configurable
-- **SPATIAL-03**: Distance attenuation models available
-
-### Advanced Audio
-
-- **ADV-01**: Ducking/sidechain compression (auto-lower music when voice plays)
-- **ADV-02**: Recording/capture to audio file
-- **ADV-03**: Microphone input processing
-
-### Framework Bindings
-
-- **REACT-01**: React hooks package (useSound, useTrack, useOscillator)
-- **VUE-01**: Vue composables package
+- [ ] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
+- [ ] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
+- [ ] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
+- [ ] **SAFE-07**: AudioContext replacement logs a warning when creating a new context after the previous one closed (orphaned sounds awareness)
+- [ ] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
+- [ ] **SAFE-08**: `dispose()` clears event listeners (or documents that consumers must call `off()` before `dispose()`)
+- [ ] **SAFE-09**: `LayeredSound` has a `dispose()` method that stops and disposes all layers
+- [ ] **SAFE-10**: `changePanTo()` warns when value is outside [-1, 1] range
+- [ ] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
+- [ ] **PERF-05**: AudioSprite skips gain/panner node creation when at default values (gain=1, pan=0)
+- [ ] **PERF-06**: Crossfade curve arrays cached at module level (mathematically constant, no regeneration per call)
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| New audio capabilities | v1.0 is API polish + security, not new audio features |
-| Spatial audio | Requires multi-AudioContext, deferred to v2 |
-| Configurable BeatTrack lookahead timing | Low priority, current 100ms/25ms works well |
-| Beat flag renaming (active→enabled, isPlaying→playing) | Naming is functional, change risks breaking existing demos |
-| Volume presets (sound.setVolume('quiet')) | Over-abstraction for simple gain values |
-| Preset effect factories (createReverbEffect, createEchoEffect) | Effects adapter pattern is correct — users bring own effects |
-| Connectable interface refactoring | Renaming to Adjustable/Controllable adds churn without value |
-| SampledNote.name shadow fix | Architectural decision needs more thought, defer |
+| New audio capabilities | This milestone is fixes and hardening only |
+| Web Worker offloading for soundfont parsing | M14 recommends documenting the limitation for now |
+| `contextchanged` event system | M5 only requires a console warning, not a full event system |
+| `removeAllListeners()` on TypedEventEmitter | L1 can be addressed with documentation or basic cleanup in dispose |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 17-01 | Complete |
-| SEC-02 | Phase 17-01 | Complete |
-| SEC-03 | Phase 17-01 | Complete |
-| SEC-04 | Phase 17-02 | Complete |
-| SEC-05 | Phase 17-03 | Complete |
-| SEC-06 | Phase 17-01 | Complete |
-| API-01 | Phase 18 (verified: Phase 24) | Complete |
-| API-02 | Phase 18 (verified: Phase 24) | Complete |
-| API-03 | Phase 18 (verified: Phase 24) | Complete |
-| API-04 | Phase 18 (verified: Phase 24) | Complete |
-| API-05 | Phase 18 (verified: Phase 24) | Complete |
-| API-06 | Phase 18 (verified: Phase 24) | Complete |
-| API-07 | Phase 18 (verified: Phase 24) | Complete |
-| DOC-01 | Phase 18 (verified: Phase 24) | Complete |
-| DX-01 | Phase 19 (verified: Phase 24) | Complete |
-| DX-02 | Phase 19 (verified: Phase 24) | Complete |
-| DX-03 | Phase 19 (verified: Phase 24) | Complete |
-| DX-04 | Phase 19 (verified: Phase 24) | Complete |
-| DX-05 | Phase 19 (verified: Phase 24) | Complete |
-| DX-06 | Phase 19 (verified: Phase 24) | Complete |
-| DX-07 | Phase 19 (verified: Phase 24) | Complete |
-| DX-08 | Phase 19 (verified: Phase 24) | Complete |
-| DOC-03 | Phase 19 (verified: Phase 24) | Complete |
-| DEF-05 | Phase 19 (verified: Phase 24) | Complete |
-| DEF-01 | Phase 20 | Complete |
-| DEF-02 | Phase 20 | Complete |
-| DEF-03 | Phase 20 | Complete |
-| DEF-04 | Phase 20 | Complete |
-| TEST-01 | Phase 21 | Complete |
-| TEST-02 | Phase 21 | Complete |
-| TEST-03 | Phase 21 | Complete |
-| DOC-02 | Phase 22 | Complete |
-| DOC-04 | Phase 22 | Complete |
-
-| FIX-01 | Phase 32 | Pending |
-| FIX-02 | Phase 32 | Pending |
-| FIX-03 | Phase 32 | Pending |
-| FIX-04 | Phase 32 | Pending |
-| FIX-05 | Phase 32 | Pending |
-| FIX-06 | Phase 32 | Pending |
-| FIX-07 | Phase 32 | Pending |
-| FIX-08 | Phase 32 | Pending |
-| FIX-09 | Phase 32 | Pending |
-| DX2-01 | Phase 33 | Complete |
-| DX2-02 | Phase 33 | Complete |
-| DX2-03 | Phase 33 | Complete |
-| DX2-04 | Phase 33 | Complete |
-| DX2-05 | Phase 33 | Complete |
-| DX2-06 | Phase 33 | Complete |
-| TEST2-01 | Phase 34 | Complete |
-| TEST2-02 | Phase 34 | Complete |
-| TEST2-03 | Phase 34 | Complete |
-| TEST2-04 | Phase 34 | Complete |
-| TEST2-05 | Phase 34 | Complete |
-| TEST2-06 | Phase 34 | Complete |
-| TEST2-07 | Phase 34 | Complete |
-| TEST2-08 | Phase 34 | Complete |
-| TEST2-09 | Phase 34 | Complete |
-| DOC2-01 | Phase 35 | Complete |
-| DOC2-02 | Phase 35 | Complete |
-| DOC2-03 | Phase 35 | Complete |
-| DOC2-04 | Phase 35 | Complete |
-| DOC2-05 | Phase 35 | Complete |
-| DOC2-06 | Phase 35 | Complete |
-| DOC2-07 | Phase 35 | Complete |
-| DOC2-08 | Phase 35 | Complete |
-| DOC2-09 | Phase 35 | Complete |
-| SYNC-01 | Phase 36 | Complete |
-| SYNC-02 | Phase 36 | Complete |
-| SYNC-03 | Phase 36 | Complete |
-| SYNC-04 | Phase 36 | Complete |
-| DX3-01 | Phase 37 | Complete |
-| DX3-02 | Phase 37 | Complete |
-| DX3-03 | Phase 37 | Complete |
-| DX3-04 | Phase 37 | Complete |
-| DX3-05 | Phase 37 | Complete |
-| DX3-06 | Phase 37 | Complete |
-| DX3-07 | Phase 37 | Complete |
-| DX3-08 | Phase 37 | Complete |
-| DX3-09 | Phase 37 | Complete |
-| SYNC2-01 | Phase 38 | Complete |
-| SYNC2-02 | Phase 38 | Complete |
-| SYNC2-03 | Phase 38 | Complete |
-| SYNC2-04 | Phase 38 | Complete |
-
-| BUG-01 | Phase 42 | Complete |
-| BUG-02 | Phase 42 | Complete |
-| BUG-03 | Phase 42 | Complete |
-| BUG-04 | Phase 42 | Complete |
-| BUG-05 | Phase 42 | Complete |
-| TCOV-01 | Phase 43 | Complete |
-| TCOV-02 | Phase 43 | Complete |
-| TCOV-03 | Phase 43 | Complete |
-| TCOV-04 | Phase 43 | Complete |
-| TCOV-05 | Phase 43 | Complete |
-| TCOV-06 | Phase 43 | Complete |
-| TCOV-07 | Phase 43 | Complete |
-| TCOV-08 | Phase 43 | Complete |
-| TCOV-09 | Phase 43 | Complete |
-| TCOV-10 | Phase 43 | Complete |
-| TCOV-11 | Phase 43 | Complete |
-| TCOV-12 | Phase 43 | Complete |
-| TCOV-13 | Phase 43 | Complete |
+| SHIP-01 | — | Pending |
+| SAFE-01 | — | Pending |
+| SAFE-02 | — | Pending |
+| SAFE-03 | — | Pending |
+| SAFE-04 | — | Pending |
+| SAFE-05 | — | Pending |
+| SAFE-06 | — | Pending |
+| EXPORT-01 | — | Pending |
+| EXPORT-02 | — | Pending |
+| PERF-01 | — | Pending |
+| PERF-02 | — | Pending |
+| PERF-03 | — | Pending |
+| PERF-04 | — | Pending |
+| DOCS-01 | — | Pending |
+| DOCS-02 | — | Pending |
+| TEST-01 | — | Pending |
+| TEST-02 | — | Pending |
+| TEST-03 | — | Pending |
+| BUILD-01 | — | Pending |
+| REFAC-01 | — | Pending |
+| REFAC-02 | — | Pending |
+| SAFE-07 | — | Pending |
+| DOCS-03 | — | Pending |
+| SAFE-08 | — | Pending |
+| SAFE-09 | — | Pending |
+| SAFE-10 | — | Pending |
+| DX-01 | — | Pending |
+| PERF-05 | — | Pending |
+| PERF-06 | — | Pending |
 
 **Coverage:**
-- v1.0 original requirements: 33 total, 33 completed
-- v1.0 gap closure requirements: 68 total, 54 completed
-- Grand total: 101 requirements mapped to phases
+- Requirements: 29 total
+- Mapped to phases: 0
+- Unmapped: 29 (pending roadmap creation)
 
 ---
-*Requirements defined: 2026-02-16*
-*Last updated: 2026-02-22 after code review gap closure (phases 32-38)*
+*Requirements defined: 2026-02-26*
+*Last updated: 2026-02-26 after initial definition*
