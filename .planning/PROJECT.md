@@ -60,34 +60,32 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 - **MIDI support** — specialized, can be a separate package
 - **Audio worklets** — too low-level for "easy" API
 
-## Current Milestone: v1.0 First Stable Release
+## Current Milestone: Deep Review Hardening
 
-**Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, and update all documentation. Ship as first stable npm 1.0.0 release.
+**Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
 
-**Target features:**
-- Breaking API cleanup: rename `.from()` → `.as()`, `ifActivePlayIn` → `playInIfActive`, make internal nodes protected, remove deprecated `connections` API
-- Auto-rewire effect chain on bypass toggle (remove footgun)
-- Effect factories without AudioContext arg (reduce boilerplate)
-- Convenience APIs: `addEffects([])`, `playTogether([])`, `createSounds([])` with progress
-- Defensive code: null/bounds checks, controller array cleanup, ControlType extensibility
-- New accessors: `getFilters()`, `getSounds()`
-- Dependency security upgrades (happy-dom, vitest, vite, eslint)
-- Integration test suite and test file reorganization
-- All JSDoc and demo app documentation updated for every change
+**Target improvements:**
+- Ship-blocker: remove test-only mock type from published declarations
+- Safety: guard unhandled promise rejections, add missing dispose() methods, fix divide-by-zero and race conditions
+- Exports: remove internal function exports, use domain error classes
+- Performance: cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
+- Docs: fix misleading vibrato example, correct await usage in README
+- Tests: strengthen weak assertions, add missing end event and dispose cleanup tests
+- Build: add publish tag verification, extract duplicated logic, document known limitations
 
-**Vision:** Ship a stable, secure, well-documented 1.0.0 that developers can depend on without hitting API footguns or security warnings.
+**Note:** This is pre-release work. The library ships to npm 1.0.0 when it's ready — no rush.
 
 ## Context
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** Internal milestones v1.0-MVP and v1.1-Quality&Polish complete. TypeScript library with 1038+ tests, published to npm as `ez-web-audio@0.1.0`. VitePress docs site with 11+ interactive demos, SEO-optimized with per-page OG tags, structured data, and WCAG accessibility improvements. Phases 17-44 of v1.0 Stable complete (deps, API cleanup, DX, defensive hardening, test coverage, demo app, demo bugfixes, source code fixes, package quality, documentation corrections, demo fixes, E2E expansion, convenience APIs, docs SEO/a11y).
+**Current state:** Pre-release. Internal milestones v1.0-MVP, v1.1-Quality&Polish, and v1.0-Stable (phases 17-46) complete. TypeScript library with 1038+ tests, published to npm as `ez-web-audio@0.1.0` (pre-release). VitePress docs site with 11+ interactive demos, SEO-optimized with per-page OG tags, structured data, and WCAG accessibility improvements. Now addressing deep review findings for production readiness.
 
 **Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
 
 **Bundle:** 125 kB (30.4 kB gzipped), tree-shakeable ESM-only.
 
-**Note:** npm 0.1.0 is the only public release. Internal planning milestones v1.0/v1.1 were project phases, not npm versions. This milestone ships the actual npm 1.0.0.
+**Note:** npm 0.1.0 is the only public release. Internal milestones (v1.0 MVP, v1.1, v1.0 Stable) are project phases, not npm versions. The npm 1.0.0 release happens when the library is ready — no timeline pressure.
 
 ## Constraints
 
@@ -124,4 +122,4 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 after Phase 44*
+*Last updated: 2026-02-26 after Deep Review Hardening milestone started*
