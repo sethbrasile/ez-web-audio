@@ -13,8 +13,8 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (50-02 complete — AudioParam spy tests, end event test, dispose cleanup test, publish tag guard)
-**Current Focus:** Phase 50 — Code Quality (TEST-01, TEST-02, TEST-03, BUILD-01)
+**Last Updated:** 2026-02-27 (51-02 complete — AudioContext orphan warning, dispose event silencing, LayeredSound.dispose(), changePanTo validation)
+**Current Focus:** Phase 51 — Performance & Safety (plans 01+02 complete)
 
 ## Project Reference
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 50 of 54 (Code Quality)
-Plan: 2 of 2+ in current phase (complete)
-Status: Phase 50 Plan 02 complete — ready for next plan
-Last activity: 2026-02-27 — 50-02 complete (TEST-01, TEST-02, TEST-03, BUILD-01)
+Phase: 51 of 52 (Performance & Safety)
+Plan: 02 of 02 complete
+Status: Phase 51 complete — SAFE-07 through SAFE-10 addressed, PERF-02 through PERF-06 addressed
+Last activity: 2026-02-27 — Phase 51 Plan 02 complete (SAFE-07, SAFE-08, SAFE-09, SAFE-10)
 
-Progress: [████████████████████░░░░░░░░░░] 65% (phases 1-50-02 complete)
+Progress: [████████████████████████░░░░░░] 87% (phases 47-51 complete, 52 remaining)
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Recent decisions affecting current work:
 - Phase 49-01: Renamed _disposeUnmute to private disposeUnmute called within initAudio; createFont and Oscillator now throw typed domain errors (AudioLoadError, InvalidNoteError)
 - Phase 50-01: Oscillator.update() delegates non-frequency to super (BaseSound owns _targetGain sync); resolveParam() template method in BaseParamController eliminates duplicate applyValues/applyRampValues switch blocks
 - [Phase 50-code-quality]: Used vi.spyOn on AudioParam methods to verify scheduled values in onPlaySet/onPlayRamp tests rather than mocking the controller
+- Phase 51-02: Override dispatchEvent = () => false on dispose — EventTarget has no removeAllListeners(), this is cleanest no-op; LayeredSound dispose guards throw errors (not silent no-op) to make use-after-dispose immediately obvious
 
 ### Roadmap Evolution
 
@@ -75,5 +76,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 50 Plan 02 — Test Strengthening (TEST-01, TEST-02, TEST-03, BUILD-01)
+Stopped at: Completed Phase 51 Plan 02 — Safety Gap Closure (SAFE-07, SAFE-08, SAFE-09, SAFE-10)
 Resume file: None
