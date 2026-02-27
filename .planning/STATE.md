@@ -13,8 +13,8 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (47-01 complete — ship blocker SHIP-01 resolved)
-**Current Focus:** Phase 47 — Ship-Blocker Fix
+**Last Updated:** 2026-02-27 (48-01, 48-02 complete — safety & correctness fixes)
+**Current Focus:** Phase 48 — Safety & Correctness
 
 ## Project Reference
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 47 of 54 (Ship-Blocker Fix)
-Plan: 1 of 1 in current phase (complete)
-Status: Phase 47 complete — ready for Phase 48
-Last activity: 2026-02-27 — 47-01 complete, SHIP-01 resolved
+Phase: 48 of 54 (Safety & Correctness)
+Plan: 2 of 2 in current phase (complete)
+Status: Phase 48 complete — ready for Phase 49
+Last activity: 2026-02-27 — 48-01, 48-02 complete (SAFE-01 through SAFE-06)
 
 Progress: [████████████████████░░░░░░░░░░] 62% (phases 1-46 complete)
 
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - Phase 46-01: rollupTypes bundles declarations (separate from SHIP-01 mock import issue)
 - Deep Review: SHIP-01 is the only true blocker; all other phases are hardening work
 - Phase 47-01: Removed AudioContextMock from ContextLike union — mock satisfies AudioContext structurally, no test changes needed
+- Phase 48-01: Used Promise.resolve() wrapping in Sampler for backward compat with mocks; _seekId counter for seek race prevention
+- Phase 48-02: Set numBeats=0 in BeatTrack.dispose() to prevent lazy re-creation; emit end immediately when all layers fail
 
 ### Roadmap Evolution
 
@@ -70,5 +72,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 47-01-PLAN.md — Phase 47 complete, ready for Phase 48
+Stopped at: Completed Phase 48 — Safety & Correctness, ready for Phase 49
 Resume file: None
