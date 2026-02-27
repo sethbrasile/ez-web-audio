@@ -1,4 +1,4 @@
-import type { ControlType, RampType, RatioType } from '@controllers/base-param-controller'
+import type { ControlType, RampType, RatioType, SoundControlType } from '@controllers/base-param-controller'
 import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
 import type { EnvelopeOptions } from './envelope'
@@ -228,29 +228,12 @@ export class Oscillator extends BaseSound {
       as: (method: RatioType) => void
     }
   } {
-    // Intercept gain updates to keep _targetGain in sync (same as BaseSound.update override).
-    // This ensures Oscillator.setup() restores the correct gain on subsequent play() calls.
-    if (type === 'gain') {
-      return {
-        to: (value: number) => {
-          return {
-            as: (method: RatioType) => {
-              this.controller.update(type).to(value).as(method)
-              if (method === 'ratio') {
-                this._targetGain = value
-              }
-              else if (method === 'percent') {
-                this._targetGain = value / 100
-              }
-              else if (method === 'inverseRatio') {
-                this._targetGain = 1 - value
-              }
-            },
-          }
-        },
-      }
+    // 'frequency' is oscillator-specific; everything else (gain, pan, detune) delegates to
+    // BaseSound.update() which handles _targetGain interception for 'gain'.
+    if (type === 'frequency') {
+      return this.controller.update(type)
     }
-    return this.controller.update(type)
+    return super.update(type as SoundControlType)
   }
 
   /**
