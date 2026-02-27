@@ -1,5 +1,5 @@
 import type { Envelope } from '../envelope'
-import type { ControlType, ParamController, ParamValue, ValueAtTime } from './base-param-controller'
+import type { ControlType, ParamController } from './base-param-controller'
 import { BaseParamController } from './base-param-controller'
 
 /**
@@ -40,6 +40,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
    */
   public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
     this.oscillator = source as OscillatorNode
+    this.audioSource = this.oscillator
   }
 
   protected _update(type: ControlType, value: number): void {
@@ -72,48 +73,18 @@ export class OscillatorController extends BaseParamController implements ParamCo
     this.clearScheduledValues()
   }
 
-  private applyValues(values: ParamValue[], currentTime: number): void {
-    const { oscillator, gainNode, pannerNode } = this
-    values.forEach((item) => {
-      switch (item.type) {
-        case 'frequency':
-          oscillator.frequency.setValueAtTime(item.value, currentTime)
-          break
-        case 'gain':
-          gainNode.gain.setValueAtTime(item.value, currentTime)
-          break
-        case 'detune':
-          oscillator.detune.setValueAtTime(item.value, currentTime)
-          break
-        case 'pan':
-          pannerNode.pan.setValueAtTime(item.value, currentTime)
-          break
-        default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency', 'detune', 'pan'.`)
-      }
-    })
-  }
-
-  private applyRampValues(values: ValueAtTime[], currentTime: number, rampType: 'exponential' | 'linear'): void {
-    const { oscillator, gainNode, pannerNode } = this
-    values.forEach((item) => {
-      const time = currentTime + item.time
-      switch (item.type) {
-        case 'frequency':
-          this.applyRampToParam(oscillator.frequency, item.value, time, rampType)
-          break
-        case 'gain':
-          this.applyRampToParam(gainNode.gain, item.value, time, rampType)
-          break
-        case 'detune':
-          this.applyRampToParam(oscillator.detune, item.value, time, rampType)
-          break
-        case 'pan':
-          this.applyRampToParam(pannerNode.pan, item.value, time, rampType)
-          break
-        default:
-          throw new Error(`Unsupported control type: '${item.type}'. Supported types for OscillatorController: 'gain', 'frequency', 'detune', 'pan'.`)
-      }
-    })
+  /**
+   * Resolve a control type to its corresponding AudioParam.
+   * Extends BaseParamController.resolveParam() with 'frequency' support.
+   *
+   * @param type - The control type to resolve
+   * @returns The AudioParam corresponding to the control type
+   * @protected
+   */
+  protected override resolveParam(type: ControlType): AudioParam {
+    if (type === 'frequency') {
+      return this.oscillator.frequency
+    }
+    return super.resolveParam(type)
   }
 }

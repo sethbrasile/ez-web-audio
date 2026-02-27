@@ -79,13 +79,8 @@ export interface ParamController {
  * The `frequency` property is optional because only OscillatorNode has it.
  */
 interface AudioSource {
-  detune: {
-    value: number
-  }
-  frequency?: {
-    value: number
-  }
-  // Add other properties as needed
+  detune: AudioParam
+  frequency?: AudioParam
 }
 
 /**
@@ -271,6 +266,58 @@ export class BaseParamController {
           },
         }
       },
+    }
+  }
+
+  /**
+   * Resolve a control type to its corresponding AudioParam.
+   * Override in subclasses to add type-specific params (e.g., frequency for Oscillator).
+   *
+   * @param type - The control type to resolve
+   * @returns The AudioParam corresponding to the control type
+   * @throws Error if the type is not supported by this controller
+   * @protected
+   */
+  protected resolveParam(type: ControlType): AudioParam {
+    switch (type) {
+      case 'gain':
+        return this.gainNode.gain
+      case 'pan':
+        return this.pannerNode.pan
+      case 'detune':
+        return this.audioSource.detune
+      default:
+        throw new Error(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune'.`)
+    }
+  }
+
+  /**
+   * Apply a list of immediate parameter values at the current time.
+   * Uses resolveParam() to map control types to AudioParams.
+   *
+   * @param values - Array of ParamValue to apply
+   * @param currentTime - The audio context current time
+   * @protected
+   */
+  protected applyValues(values: ParamValue[], currentTime: number): void {
+    for (const item of values) {
+      this.resolveParam(item.type).setValueAtTime(item.value, currentTime)
+    }
+  }
+
+  /**
+   * Apply a list of ramped parameter values relative to the current time.
+   * Uses resolveParam() to map control types to AudioParams.
+   *
+   * @param values - Array of ValueAtTime to apply
+   * @param currentTime - The audio context current time
+   * @param rampType - The ramp curve type ('exponential' or 'linear')
+   * @protected
+   */
+  protected applyRampValues(values: ValueAtTime[], currentTime: number, rampType: 'exponential' | 'linear'): void {
+    for (const item of values) {
+      const time = currentTime + item.time
+      this.applyRampToParam(this.resolveParam(item.type), item.value, time, rampType)
     }
   }
 
