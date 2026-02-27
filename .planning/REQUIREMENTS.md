@@ -10,7 +10,7 @@
 
 ### Ship-Blocker
 
-- [ ] **SHIP-01**: Published type declarations do not import test-only dependencies (`standardized-audio-context-mock` removed from `ContextLike` in `timeout.ts`)
+- [x] **SHIP-01**: Published type declarations do not import test-only dependencies (`standardized-audio-context-mock` removed from `ContextLike` in `timeout.ts`)
 
 ### Safety & Correctness
 
@@ -71,7 +71,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHIP-01 | Phase 47 | Pending |
+| SHIP-01 | Phase 47 | Complete |
 | SAFE-01 | Phase 48 | Pending |
 | SAFE-02 | Phase 48 | Pending |
 | SAFE-03 | Phase 48 | Pending |

@@ -81,7 +81,7 @@
 
 **Milestone Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
 
-- [ ] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations
+- [x] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations (completed 2026-02-27)
 - [ ] **Phase 48: Safety & Correctness** - Guard unhandled rejections, add missing dispose() methods, fix divide-by-zero and race conditions
 - [ ] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes
 - [ ] **Phase 50: Performance** - Cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
@@ -531,7 +531,7 @@ Plans:
 | 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
 | 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
 | 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
-| 47. Ship-Blocker Fix | Deep Review Hardening | 0/? | Not started | - |
+| 47. Ship-Blocker Fix | 1/1 | Complete   | 2026-02-27 | - |
 | 48. Safety & Correctness | Deep Review Hardening | 0/? | Not started | - |
 | 49. Export Cleanup | Deep Review Hardening | 0/? | Not started | - |
 | 50. Performance | Deep Review Hardening | 0/? | Not started | - |
