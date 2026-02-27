@@ -1,5 +1,3 @@
-import type { AudioContext as AudioContextMock } from 'standardized-audio-context-mock'
-
 interface Task {
   id: number
   due: number
@@ -14,7 +12,7 @@ interface SharedScheduler {
   tick: () => void
 }
 
-type ContextLike = AudioContext | BaseAudioContext | AudioContextMock
+type ContextLike = AudioContext | BaseAudioContext
 
 // One shared scheduler per AudioContext — prevents N independent RAF loops
 const schedulers = new WeakMap<object, SharedScheduler>()
