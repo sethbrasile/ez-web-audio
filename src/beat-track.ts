@@ -525,8 +525,9 @@ export class BeatTrack extends Sampler {
     }
     this.sounds.clear()
 
-    // Clear beats array
+    // Clear beats array and set numBeats to 0 to prevent lazy re-creation
     this._beats = []
+    this.numBeats = 0
 
     // Clear event target by replacing it (no removeAllListeners on EventTarget)
     this.eventTarget = new EventTarget()

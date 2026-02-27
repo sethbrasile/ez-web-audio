@@ -358,4 +358,107 @@ describe('layeredSound', () => {
       expect(playListener).not.toHaveBeenCalled()
     })
   })
+
+  describe('play() layer failure resilience (SAFE-06)', () => {
+    it('other layers still play when one layer fails', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+      const sound3 = new Sound(audioContext, buffer)
+
+      // Mock sound2 to reject on playAt
+      vi.spyOn(sound2, 'playAt').mockRejectedValue(new Error('context closed'))
+      const playAtSpy1 = vi.spyOn(sound1, 'playAt')
+      const playAtSpy3 = vi.spyOn(sound3, 'playAt')
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2, sound3])
+
+      // Should not throw
+      await layered.play()
+
+      // The other layers should have been called
+      expect(playAtSpy1).toHaveBeenCalled()
+      expect(playAtSpy3).toHaveBeenCalled()
+    })
+
+    it('emits warning event when a layer fails to play', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+
+      vi.spyOn(sound2, 'playAt').mockRejectedValue(new Error('context closed'))
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+      const warningListener = vi.fn()
+      layered.on('warning', warningListener)
+
+      await layered.play()
+
+      expect(warningListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.objectContaining({
+            message: expect.stringContaining('1 layer(s) failed to play'),
+            failedLayers: expect.arrayContaining([
+              expect.objectContaining({ index: 1 }),
+            ]),
+          }),
+        }),
+      )
+    })
+
+    it('emits end event based on successful layers only', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.1, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+      const sound3 = new Sound(audioContext, buffer)
+
+      // Layer 0 fails
+      vi.spyOn(sound1, 'playAt').mockRejectedValue(new Error('failed'))
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2, sound3])
+      const endListener = vi.fn()
+      layered.on('end', endListener)
+
+      await layered.play()
+
+      // Only 2 layers should be tracked for end
+      // Trigger end on sound2 — not all done yet
+      sound2.audioSourceNode.onended?.({} as Event)
+      expect(endListener).not.toHaveBeenCalled()
+
+      // Trigger end on sound3 — now all successful layers done
+      sound3.audioSourceNode.onended?.({} as Event)
+      expect(endListener).toHaveBeenCalledTimes(1)
+    })
+
+    it('all layers failing still resolves play() without throwing', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+
+      vi.spyOn(sound1, 'playAt').mockRejectedValue(new Error('failed 1'))
+      vi.spyOn(sound2, 'playAt').mockRejectedValue(new Error('failed 2'))
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+      const warningListener = vi.fn()
+      const endListener = vi.fn()
+      layered.on('warning', warningListener)
+      layered.on('end', endListener)
+
+      // Should not throw
+      await layered.play()
+
+      // Warning should be emitted with all failures
+      expect(warningListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.objectContaining({
+            message: '2 layer(s) failed to play',
+          }),
+        }),
+      )
+
+      // End should be emitted immediately since no layers to track
+      expect(endListener).toHaveBeenCalledTimes(1)
+    })
+  })
 })
