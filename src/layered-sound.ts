@@ -107,14 +107,41 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
     const startTime = this.audioContext.currentTime
 
     // All layers start at EXACTLY same time (exact sync)
-    await Promise.all(
+    // Use allSettled so one failing layer does not abort others (SAFE-06)
+    const results = await Promise.allSettled(
       this.layers.map(layer => layer.playAt(startTime)),
     )
 
+    // Track which layers failed during this play call
+    const playFailures = results
+      .map((result, index) => ({ result, index }))
+      .filter((item): item is { result: PromiseRejectedResult, index: number } =>
+        item.result.status === 'rejected',
+      )
+      .map(({ result, index }) => ({
+        index,
+        error: result.reason instanceof Error ? result.reason : new Error(String(result.reason)),
+      }))
+
+    if (playFailures.length > 0) {
+      this.emit('warning', {
+        message: `${playFailures.length} layer(s) failed to play`,
+        failedLayers: playFailures,
+        source: this,
+      })
+    }
+
     this.emit('play', { time: startTime, source: this })
 
-    // Track when each layer ends
-    this.setupLayerEndTracking()
+    // Track when each layer ends — only track successfully started layers
+    const successfulLayers = new Set(
+      results
+        .map((result, index) => ({ result, index }))
+        .filter(item => item.result.status === 'fulfilled')
+        .map(item => this.layers[item.index]),
+    )
+
+    this.setupLayerEndTracking(successfulLayers)
   }
 
   /**
@@ -168,7 +195,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    *
    * Creates a fresh Set per play() call to support multiple playbacks.
    */
-  private setupLayerEndTracking(): void {
+  private setupLayerEndTracking(activeLayers?: Set<Sound | Oscillator>): void {
     // Remove all previously registered 'end' handlers before adding new ones.
     // Without this, repeated play() calls accumulate listeners that fire spurious 'end' events.
     this.layerEndHandlers.forEach((handler, layer) => {
@@ -176,16 +203,31 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
     })
     this.layerEndHandlers.clear()
 
+    // Only track layers that successfully started (or all layers if not specified)
+    const trackableLayers = activeLayers
+      ? this.layers.filter(l => activeLayers.has(l))
+      : this.layers
+
+    // If no layers to track (all failed), emit end immediately
+    if (trackableLayers.length === 0) {
+      this.emit('end', {
+        time: this.audioContext.currentTime,
+        source: this,
+        duration: 0,
+      })
+      return
+    }
+
     const endedLayers = new Set<Sound | Oscillator>()
 
     const handleEnd = (layer: Sound | Oscillator): void => {
       endedLayers.add(layer)
       this.layerEndHandlers.delete(layer)
 
-      // Emit when last layer finishes
-      if (endedLayers.size === this.layers.length) {
-        // Calculate max duration from all layers
-        const durations = this.layers.map(l => l.duration.raw)
+      // Emit when last trackable layer finishes
+      if (endedLayers.size === trackableLayers.length) {
+        // Calculate max duration from trackable layers
+        const durations = trackableLayers.map(l => l.duration.raw)
         const maxDuration = Math.max(...durations)
 
         this.emit('end', {
@@ -196,7 +238,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
       }
     }
 
-    this.layers.forEach((layer) => {
+    trackableLayers.forEach((layer) => {
       const handler = (): void => handleEnd(layer)
       this.layerEndHandlers.set(layer, handler)
       layer.once('end', handler)

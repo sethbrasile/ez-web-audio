@@ -500,6 +500,39 @@ export class BeatTrack extends Sampler {
   }
 
   /**
+   * Dispose this BeatTrack, stopping playback, clearing beats,
+   * and releasing all audio resources.
+   *
+   * After disposal, the BeatTrack should not be used. Create a new instance instead.
+   *
+   * @example
+   * ```typescript
+   * const track = await createBeatTrack(['kick.mp3'], { numBeats: 8 })
+   * track.playBeats(120, 1/4)
+   * // When done:
+   * track.dispose()
+   * ```
+   */
+  public dispose(): void {
+    // Stop playback (clears timerID, resets beat index, cancels beat timers)
+    this.stop()
+
+    // Dispose all underlying sounds in the sampler
+    for (const sound of this.sounds) {
+      if ('dispose' in sound && typeof (sound as any).dispose === 'function') {
+        (sound as any).dispose()
+      }
+    }
+    this.sounds.clear()
+
+    // Clear beats array
+    this._beats = []
+
+    // Clear event target by replacing it (no removeAllListeners on EventTarget)
+    this.eventTarget = new EventTarget()
+  }
+
+  /**
    * Subscribe to an event. Supports chaining.
    *
    * @param type - Event type: 'beat', 'stop', 'pause', 'resume'
