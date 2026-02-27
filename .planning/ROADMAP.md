@@ -3,13 +3,14 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-25
+**Last Updated:** 2026-02-26
 
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-11 (shipped 2026-02-14)
 - ✅ **v1.1 Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
-- 🚧 **v1.0 First Stable Release** — Phases 17-23 (in progress)
+- ✅ **v1.0 Stable** — Phases 17-46 (complete)
+- 📋 **Deep Review Hardening** — Phases 47-54 (planned)
 
 ## Phases
 
@@ -75,6 +76,19 @@
 - [x] **Phase 44: Docs Site SEO and Accessibility** - SEO infrastructure and WCAG 2.1 AA accessibility (completed 2026-02-24)
 - [x] **Phase 45: Architecture Improvements** - Internal code clarity, named methods, resource cleanup (completed 2026-02-24)
 - [x] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut (completed 2026-02-25)
+
+### 📋 Deep Review Hardening (Phases 47-54)
+
+**Milestone Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
+
+- [ ] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations
+- [ ] **Phase 48: Safety & Correctness** - Guard unhandled rejections, add missing dispose() methods, fix divide-by-zero and race conditions
+- [ ] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes
+- [ ] **Phase 50: Performance** - Cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
+- [ ] **Phase 51: Documentation Fixes** - Fix misleading vibrato example, correct await usage in README
+- [ ] **Phase 52: Test Strengthening** - Strengthen weak assertions, add missing end event and dispose cleanup tests
+- [ ] **Phase 53: Build & Refactoring** - Add publish tag verification, extract duplicated gain-interception and controller logic
+- [ ] **Phase 54: Remaining Safety, DX & Performance** - Context warning, event listener cleanup, LayeredSound dispose, pan validation, AudioInput flexibility, node optimization
 
 ## Phase Details
 
@@ -517,6 +531,14 @@ Plans:
 | 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
 | 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
 | 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
+| 47. Ship-Blocker Fix | Deep Review Hardening | 0/? | Not started | - |
+| 48. Safety & Correctness | Deep Review Hardening | 0/? | Not started | - |
+| 49. Export Cleanup | Deep Review Hardening | 0/? | Not started | - |
+| 50. Performance | Deep Review Hardening | 0/? | Not started | - |
+| 51. Documentation Fixes | Deep Review Hardening | 0/? | Not started | - |
+| 52. Test Strengthening | Deep Review Hardening | 0/? | Not started | - |
+| 53. Build & Refactoring | Deep Review Hardening | 0/? | Not started | - |
+| 54. Remaining Safety, DX & Performance | Deep Review Hardening | 0/? | Not started | - |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -673,10 +695,100 @@ Plans:
 - [ ] 46-03-PLAN.md — Fix broken code examples in landing page and doc pages (H2, M2)
 - [ ] 46-04-PLAN.md — Generic BaseSound event map, createNotes parsing, Beat timer cleanup, _disposeUnmute test (L1, F5, F6, F7)
 
+
+
+### Phase 47: Ship-Blocker Fix
+**Goal**: Published type declarations no longer import test-only dependencies
+**Depends on**: Phase 46
+**Requirements**: SHIP-01
+**Success Criteria** (what must be TRUE):
+  1. `pnpm build:lib` produces declarations that do not reference `standardized-audio-context-mock`
+  2. A TypeScript consumer project with `moduleResolution: "nodenext"` can import `ez-web-audio` without seeing test-mock types in `ContextLike`
+  3. `timeout.ts` compiles correctly using only production-safe types for its `AudioContext`-like parameter
+**Plans**: TBD
+
+### Phase 48: Safety & Correctness
+**Goal**: Fire-and-forget play methods handle errors, dispose properly cleans up nodes, and divide-by-zero and race conditions are eliminated
+**Depends on**: Phase 47
+**Requirements**: SAFE-01, SAFE-02, SAFE-03, SAFE-04, SAFE-05, SAFE-06
+**Success Criteria** (what must be TRUE):
+  1. Calling `playFor()`, `playIn()`, `playInAndStopAfter()`, `Sampler.play()`, and `Track.resume()` — if the underlying play rejects — the error is caught and does not surface as an unhandled promise rejection
+  2. After `dispose()` on a Sound, the `audioSourceNode` is disconnected and its `onended` handler is null
+  3. After `BeatTrack.dispose()`, playback has stopped, all beats are cleared, and no audio resources remain referenced
+  4. `Track.percentPlayed` returns 0 when duration is 0 (no NaN, no divide-by-zero exception)
+  5. Rapid sequential calls to `Track.seek()` do not corrupt `startOffset` (last seek wins, no race condition)
+  6. When one layer of a `LayeredSound` fails to play, the other layers still play to completion
+**Plans**: TBD
+
+### Phase 49: Export Cleanup
+**Goal**: The public API surface is free of internal test helpers, and error paths throw domain-specific error types
+**Depends on**: Phase 48
+**Requirements**: EXPORT-01, EXPORT-02
+**Success Criteria** (what must be TRUE):
+  1. `_disposeUnmute` is not importable from the public `ez-web-audio` package entry point
+  2. When `createFont()` fails to load a soundfont, the thrown error is an `AudioLoadError` instance (not a plain `Error`)
+  3. When an oscillator is created with an unrecognized note name, the thrown error is an `InvalidNoteError` instance
+**Plans**: TBD
+
+### Phase 50: Performance
+**Goal**: Hot-path audio operations avoid redundant work — decoded buffers are cached, TimeObject allocation is skippable, the scheduler iterates only once per frame, and AudioContext.resume() is not called unnecessarily
+**Depends on**: Phase 49
+**Requirements**: PERF-01, PERF-02, PERF-03, PERF-04
+**Success Criteria** (what must be TRUE):
+  1. Playing a preloaded Sound a second time does not call `decodeAudioData()` — the decoded `AudioBuffer` is returned from cache
+  2. A hot-path caller using `durationRaw` (or equivalent numeric accessor) gets a number directly without constructing a `TimeObject`
+  3. The scheduler `tick()` combines beat execution and array filtering into a single pass over the scheduled beats array
+  4. `audioContext.resume()` is only called when `audioContext.state === 'suspended'` — calling `play()` on an already-running context does not invoke `resume()`
+**Plans**: TBD
+
+### Phase 51: Documentation Fixes
+**Goal**: All documentation examples are correct and non-misleading for the patterns they demonstrate
+**Depends on**: Phase 50
+**Requirements**: DOCS-01, DOCS-02
+**Success Criteria** (what must be TRUE):
+  1. The vibrato example in `docs/guide/parameter-control.md` either works correctly with consume-once semantics or clearly explains that `onPlaySet`/`onPlayRamp` must be re-scheduled before each play
+  2. The README `song.seek(30)` example does not show `await` — `seek().as()` returns void and is not a Promise
+**Plans**: TBD
+
+### Phase 52: Test Strengthening
+**Goal**: Critical test assertions verify actual audio behavior, not just that functions do not throw
+**Depends on**: Phase 51
+**Requirements**: TEST-01, TEST-02, TEST-03
+**Success Criteria** (what must be TRUE):
+  1. `onPlaySet` and `onPlayRamp` tests assert that the scheduled parameter value is actually applied to the audio node during playback (not just that the call completes without error)
+  2. A dedicated test verifies that the `end` event fires on a `Sound` instance when natural playback completes (not just when `stop()` is called)
+  3. A test verifies that event listeners registered before `dispose()` stop firing after `dispose()` is called
+**Plans**: TBD
+
+### Phase 53: Build & Refactoring
+**Goal**: The publish workflow prevents version mismatches, and duplicated gain-interception and controller logic is extracted into shared helpers
+**Depends on**: Phase 52
+**Requirements**: BUILD-01, REFAC-01, REFAC-02
+**Success Criteria** (what must be TRUE):
+  1. The publish workflow fails fast when the git tag does not match `package.json` version — publishing with a mismatched tag is not possible
+  2. The `_targetGain` syncing logic exists in exactly one place on `BaseSound` — `base-sound.ts` and `oscillator.ts` do not each maintain their own copy
+  3. The `applyValues` and `applyRampValues` shared logic exists in exactly one place in `BaseParamController` — `SoundController` and `OscillatorController` do not each maintain their own copy
+**Plans**: TBD
+
+### Phase 54: Remaining Safety, DX & Performance
+**Goal**: All lower-priority safety gaps, DX limitations, and performance opportunities from the deep review are addressed
+**Depends on**: Phase 53
+**Requirements**: SAFE-07, SAFE-08, SAFE-09, SAFE-10, DOCS-03, DX-01, PERF-05, PERF-06
+**Success Criteria** (what must be TRUE):
+  1. Creating a new `AudioContext` after a previous one closed logs a console warning identifying any orphaned sounds
+  2. After `dispose()`, event listeners registered on a sound no longer fire (or the docs explicitly state consumers must call `off()` before `dispose()`)
+  3. `LayeredSound.dispose()` stops and disposes all layers
+  4. Calling `changePanTo()` with a value outside `[-1, 1]` logs a console warning
+  5. Soundfont parsing is documented with a note that large files (5-20 MB) may cause a UI freeze on mobile
+  6. `createBeatTrack()` and `createSampler()` accept `AudioInput[]` (not just `string[]`), or their limitation is documented
+  7. `AudioSprite` skips gain or panner node creation when the value is at its default (gain=1, pan=0)
+  8. Crossfade curve arrays are cached at module level and not regenerated on every call
+**Plans**: TBD
+
 ---
 
 **Archives:**
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-25 after planning Phase 46*
+*Last updated: 2026-02-26 after Deep Review Hardening roadmap created*

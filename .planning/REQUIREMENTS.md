@@ -71,41 +71,41 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHIP-01 | — | Pending |
-| SAFE-01 | — | Pending |
-| SAFE-02 | — | Pending |
-| SAFE-03 | — | Pending |
-| SAFE-04 | — | Pending |
-| SAFE-05 | — | Pending |
-| SAFE-06 | — | Pending |
-| EXPORT-01 | — | Pending |
-| EXPORT-02 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| PERF-03 | — | Pending |
-| PERF-04 | — | Pending |
-| DOCS-01 | — | Pending |
-| DOCS-02 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| BUILD-01 | — | Pending |
-| REFAC-01 | — | Pending |
-| REFAC-02 | — | Pending |
-| SAFE-07 | — | Pending |
-| DOCS-03 | — | Pending |
-| SAFE-08 | — | Pending |
-| SAFE-09 | — | Pending |
-| SAFE-10 | — | Pending |
-| DX-01 | — | Pending |
-| PERF-05 | — | Pending |
-| PERF-06 | — | Pending |
+| SHIP-01 | Phase 47 | Pending |
+| SAFE-01 | Phase 48 | Pending |
+| SAFE-02 | Phase 48 | Pending |
+| SAFE-03 | Phase 48 | Pending |
+| SAFE-04 | Phase 48 | Pending |
+| SAFE-05 | Phase 48 | Pending |
+| SAFE-06 | Phase 48 | Pending |
+| EXPORT-01 | Phase 49 | Pending |
+| EXPORT-02 | Phase 49 | Pending |
+| PERF-01 | Phase 50 | Pending |
+| PERF-02 | Phase 50 | Pending |
+| PERF-03 | Phase 50 | Pending |
+| PERF-04 | Phase 50 | Pending |
+| DOCS-01 | Phase 51 | Pending |
+| DOCS-02 | Phase 51 | Pending |
+| TEST-01 | Phase 52 | Pending |
+| TEST-02 | Phase 52 | Pending |
+| TEST-03 | Phase 52 | Pending |
+| BUILD-01 | Phase 53 | Pending |
+| REFAC-01 | Phase 53 | Pending |
+| REFAC-02 | Phase 53 | Pending |
+| SAFE-07 | Phase 54 | Pending |
+| SAFE-08 | Phase 54 | Pending |
+| SAFE-09 | Phase 54 | Pending |
+| SAFE-10 | Phase 54 | Pending |
+| DOCS-03 | Phase 54 | Pending |
+| DX-01 | Phase 54 | Pending |
+| PERF-05 | Phase 54 | Pending |
+| PERF-06 | Phase 54 | Pending |
 
 **Coverage:**
 - Requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 (pending roadmap creation)
+- Mapped to phases: 29
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after initial definition*
+*Last updated: 2026-02-26 after roadmap creation — all requirements mapped*
