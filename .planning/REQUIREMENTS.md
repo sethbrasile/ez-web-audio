@@ -47,8 +47,8 @@
 ### Build & Refactoring
 
 - [ ] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
-- [ ] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
-- [ ] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
+- [x] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
+- [x] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
 
 ### Remaining Safety
 
@@ -99,8 +99,8 @@
 | TEST-02 | Phase 50 | Pending |
 | TEST-03 | Phase 50 | Pending |
 | BUILD-01 | Phase 50 | Pending |
-| REFAC-01 | Phase 50 | Pending |
-| REFAC-02 | Phase 50 | Pending |
+| REFAC-01 | Phase 50 | Complete |
+| REFAC-02 | Phase 50 | Complete |
 | SAFE-07 | Phase 51 | Pending |
 | SAFE-08 | Phase 51 | Pending |
 | SAFE-09 | Phase 51 | Pending |

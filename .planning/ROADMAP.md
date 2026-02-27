@@ -84,7 +84,7 @@
 - [x] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations (completed 2026-02-27)
 - [x] **Phase 48: Safety & Correctness** - Guard unhandled rejections, add missing dispose() methods, fix divide-by-zero and race conditions (completed 2026-02-27)
 - [x] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes (completed 2026-02-27)
-- [ ] **Phase 50: Code Quality** - Extract duplicated gain-interception and controller logic, strengthen test assertions, add publish tag verification
+- [x] **Phase 50: Code Quality** - Extract duplicated gain-interception and controller logic, strengthen test assertions, add publish tag verification (completed 2026-02-27)
 - [ ] **Phase 51: Performance & Safety** - Guard audioContext.resume(), add durationRaw accessor, pan validation, crossfade cache, AudioSprite node optimization, context warning, dispose cleanup, LayeredSound dispose
 - [ ] **Phase 52: Documentation & Examples** - Fix vibrato example, correct README seek await, document soundfont blocking, document AudioInput limitation, add playTogether example page
 
@@ -532,7 +532,7 @@ Plans:
 | 47. Ship-Blocker Fix | 1/1 | Complete    | 2026-02-27 | - |
 | 48. Safety & Correctness | 2/2 | Complete   | 2026-02-27 | - |
 | 49. Export Cleanup | 1/1 | Complete    | 2026-02-27 | - |
-| 50. Performance | Deep Review Hardening | 0/? | Not started | - |
+| 50. Performance | 2/2 | Complete   | 2026-02-27 | - |
 | 51. Documentation Fixes | Deep Review Hardening | 0/? | Not started | - |
 | 52. Test Strengthening | Deep Review Hardening | 0/? | Not started | - |
 | 53. Build & Refactoring | Deep Review Hardening | 0/? | Not started | - |

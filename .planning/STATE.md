@@ -13,8 +13,8 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (49-01 complete — export cleanup, typed errors)
-**Current Focus:** Phase 49 — Export Cleanup
+**Last Updated:** 2026-02-27 (50-01 complete — gain-interception dedup, applyValues/applyRampValues dedup)
+**Current Focus:** Phase 50 — Code Quality (REFAC-01, REFAC-02)
 
 ## Project Reference
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 49 of 54 (Export Cleanup)
-Plan: 1 of 1 in current phase (complete)
-Status: Phase 49 complete — ready for Phase 50
-Last activity: 2026-02-27 — 49-01 complete (EXPORT-01, EXPORT-02)
+Phase: 50 of 54 (Code Quality)
+Plan: 1 of 1+ in current phase (complete)
+Status: Phase 50 Plan 01 complete — ready for next plan
+Last activity: 2026-02-27 — 50-01 complete (REFAC-01, REFAC-02)
 
-Progress: [████████████████████░░░░░░░░░░] 62% (phases 1-46 complete)
+Progress: [████████████████████░░░░░░░░░░] 64% (phases 1-50-01 complete)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Recent decisions affecting current work:
 - Phase 48-01: Used Promise.resolve() wrapping in Sampler for backward compat with mocks; _seekId counter for seek race prevention
 - Phase 48-02: Set numBeats=0 in BeatTrack.dispose() to prevent lazy re-creation; emit end immediately when all layers fail
 - Phase 49-01: Renamed _disposeUnmute to private disposeUnmute called within initAudio; createFont and Oscillator now throw typed domain errors (AudioLoadError, InvalidNoteError)
+- Phase 50-01: Oscillator.update() delegates non-frequency to super (BaseSound owns _targetGain sync); resolveParam() template method in BaseParamController eliminates duplicate applyValues/applyRampValues switch blocks
 
 ### Roadmap Evolution
 
@@ -73,5 +74,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 49 — Export Cleanup (49-01), ready for Phase 50
+Stopped at: Completed Phase 50 Plan 01 — Code Quality (REFAC-01, REFAC-02)
 Resume file: None
