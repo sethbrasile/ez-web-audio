@@ -90,7 +90,8 @@ export class Track extends Sound<TrackEventMap> {
    */
   public get percentPlayed(): number {
     const duration = this.duration.raw
-    if (duration === 0) return 0
+    if (duration === 0)
+      return 0
     return (this.startOffset / duration) * 100
   }
 
@@ -325,7 +326,8 @@ export class Track extends Sound<TrackEventMap> {
 
       if (_isPlaying) {
         await this.stop() // await ensures startOffset=0 completes before new offset is set (C-4)
-        if (seekId !== this._seekId) return // superseded by newer seek
+        if (seekId !== this._seekId)
+          return // superseded by newer seek
         this.startOffset = adjustedOffset
         this.later(() => this.play())
       }

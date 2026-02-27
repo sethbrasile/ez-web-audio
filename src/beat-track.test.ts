@@ -782,16 +782,13 @@ describe('dispose() (SAFE-03)', () => {
     const sound = createSound()
     track.addSound(sound)
 
-    let eventFired = false
-    track.on('stop', () => { eventFired = false })
+    const _eventFired = vi.fn()
+    track.on('stop', _eventFired)
 
     track.dispose()
 
-    // The stop event from dispose() is expected, but after dispose,
-    // new events on the replaced eventTarget should not reach old listeners
-    eventFired = false
-    // Manually emitting should not reach old listener since eventTarget was replaced
-    // This is tested by verifying the track works after dispose
+    // After dispose, the eventTarget was replaced so old listeners are detached
+    // Verify dispose worked correctly by checking beats are cleared
     expect(track.beats.length).toBe(0)
   })
 })
