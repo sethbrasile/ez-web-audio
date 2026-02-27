@@ -13,8 +13,8 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (48-01, 48-02 complete — safety & correctness fixes)
-**Current Focus:** Phase 48 — Safety & Correctness
+**Last Updated:** 2026-02-27 (49-01 complete — export cleanup, typed errors)
+**Current Focus:** Phase 49 — Export Cleanup
 
 ## Project Reference
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 48 of 54 (Safety & Correctness)
-Plan: 2 of 2 in current phase (complete)
-Status: Phase 48 complete — ready for Phase 49
-Last activity: 2026-02-27 — 48-01, 48-02 complete (SAFE-01 through SAFE-06)
+Phase: 49 of 54 (Export Cleanup)
+Plan: 1 of 1 in current phase (complete)
+Status: Phase 49 complete — ready for Phase 50
+Last activity: 2026-02-27 — 49-01 complete (EXPORT-01, EXPORT-02)
 
 Progress: [████████████████████░░░░░░░░░░] 62% (phases 1-46 complete)
 
@@ -53,6 +53,7 @@ Recent decisions affecting current work:
 - Phase 47-01: Removed AudioContextMock from ContextLike union — mock satisfies AudioContext structurally, no test changes needed
 - Phase 48-01: Used Promise.resolve() wrapping in Sampler for backward compat with mocks; _seekId counter for seek race prevention
 - Phase 48-02: Set numBeats=0 in BeatTrack.dispose() to prevent lazy re-creation; emit end immediately when all layers fail
+- Phase 49-01: Renamed _disposeUnmute to private disposeUnmute called within initAudio; createFont and Oscillator now throw typed domain errors (AudioLoadError, InvalidNoteError)
 
 ### Roadmap Evolution
 
@@ -72,5 +73,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 48 — Safety & Correctness, ready for Phase 49
+Stopped at: Completed Phase 49 — Export Cleanup (49-01), ready for Phase 50
 Resume file: None

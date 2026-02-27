@@ -23,8 +23,8 @@
 
 ### Export Cleanup
 
-- [ ] **EXPORT-01**: `_disposeUnmute` is not a public export (removed from `export` or moved to testing entry point)
-- [ ] **EXPORT-02**: `createFont` failure throws `AudioLoadError` (not plain `Error`); unknown oscillator note throws `InvalidNoteError`
+- [x] **EXPORT-01**: `_disposeUnmute` is not a public export (removed from `export` or moved to testing entry point)
+- [x] **EXPORT-02**: `createFont` failure throws `AudioLoadError` (not plain `Error`); unknown oscillator note throws `InvalidNoteError`
 
 ### Performance
 
@@ -78,8 +78,8 @@
 | SAFE-04 | Phase 48 | Pending |
 | SAFE-05 | Phase 48 | Pending |
 | SAFE-06 | Phase 48 | Pending |
-| EXPORT-01 | Phase 49 | Pending |
-| EXPORT-02 | Phase 49 | Pending |
+| EXPORT-01 | Phase 49 | Complete |
+| EXPORT-02 | Phase 49 | Complete |
 | PERF-01 | Phase 50 | Pending |
 | PERF-02 | Phase 50 | Pending |
 | PERF-03 | Phase 50 | Pending |

@@ -83,7 +83,7 @@
 
 - [x] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations (completed 2026-02-27)
 - [x] **Phase 48: Safety & Correctness** - Guard unhandled rejections, add missing dispose() methods, fix divide-by-zero and race conditions (completed 2026-02-27)
-- [ ] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes
+- [x] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes (completed 2026-02-27)
 - [ ] **Phase 50: Performance** - Cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
 - [ ] **Phase 51: Documentation Fixes** - Fix misleading vibrato example, correct await usage in README
 - [ ] **Phase 52: Test Strengthening** - Strengthen weak assertions, add missing end event and dispose cleanup tests
@@ -533,7 +533,7 @@ Plans:
 | 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
 | 47. Ship-Blocker Fix | 1/1 | Complete    | 2026-02-27 | - |
 | 48. Safety & Correctness | 2/2 | Complete   | 2026-02-27 | - |
-| 49. Export Cleanup | Deep Review Hardening | 0/? | Not started | - |
+| 49. Export Cleanup | 1/1 | Complete   | 2026-02-27 | - |
 | 50. Performance | Deep Review Hardening | 0/? | Not started | - |
 | 51. Documentation Fixes | Deep Review Hardening | 0/? | Not started | - |
 | 52. Test Strengthening | Deep Review Hardening | 0/? | Not started | - |
