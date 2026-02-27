@@ -178,6 +178,12 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
   public abstract audioSourceNode: OscillatorNode | AudioBufferSourceNode
 
   /**
+   * Get the duration in seconds without allocating a TimeObject.
+   * Subclasses must implement this.
+   */
+  public abstract get durationRaw(): number
+
+  /**
    * @property duration
    *
    * The duration of this sound. This is used to schedule the stop method to be called after the sound has finished playing. Not all
@@ -653,6 +659,12 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public changePanTo(value: number): this {
+    if (value < -1 || value > 1) {
+      console.warn(
+        `ez-web-audio: Pan value ${value} is outside the [-1, 1] range. `
+        + 'Values are clamped by the Web Audio API. Use -1 (left) to 1 (right).',
+      )
+    }
     this.controller.update('pan').to(value).as('ratio')
     return this
   }
@@ -1202,6 +1214,10 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    *
    * Dispose is idempotent — calling it multiple times is safe.
    *
+   * After disposal, event listeners registered via `on()` / `addEventListener()` will
+   * no longer fire. To free listener references for garbage collection, call `off()` for
+   * each listener before calling `dispose()`.
+   *
    * @example
    * ```typescript
    * const sound = await createSound('click.mp3')
@@ -1255,6 +1271,10 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
 
     // Detach analyzer
     this._analyzer = null
+
+    // Silence future event dispatch so listeners cannot fire on a disposed instance.
+    // EventTarget has no removeAllListeners(), so we override dispatchEvent instead.
+    this.dispatchEvent = () => false
 
     this._disposed = true
   }

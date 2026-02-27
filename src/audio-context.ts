@@ -23,6 +23,12 @@ let _audioContext: AudioContext | null = null
  */
 export function getOrCreateAudioContext(): AudioContext {
   if (!_audioContext || _audioContext.state === 'closed') {
+    if (_audioContext?.state === 'closed') {
+      console.warn(
+        'ez-web-audio: Previous AudioContext was closed. Creating a new one. '
+        + 'Any sounds created with the old context are now orphaned and should be disposed.',
+      )
+    }
     _audioContext = new AudioContext()
   }
   return _audioContext

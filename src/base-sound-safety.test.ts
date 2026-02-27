@@ -40,6 +40,27 @@ describe('fire-and-forget play methods handle errors (SAFE-01)', () => {
   })
 })
 
+describe('dispose() silences events (SAFE-08)', () => {
+  it('event listeners do not fire after dispose', () => {
+    const context = createMockContext()
+    const sound = createSound(context)
+    const handler = vi.fn()
+    sound.on('play', handler)
+    sound.dispose()
+    // Manually try to dispatch — should be silenced
+    sound.dispatchEvent(new CustomEvent('play', { detail: {} }))
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('dispatchEvent returns false after dispose', () => {
+    const context = createMockContext()
+    const sound = createSound(context)
+    sound.dispose()
+    const result = sound.dispatchEvent(new CustomEvent('play', { detail: {} }))
+    expect(result).toBe(false)
+  })
+})
+
 describe('dispose() cleans up audioSourceNode (SAFE-02)', () => {
   it('disconnects audioSourceNode after dispose', () => {
     const context = createMockContext()

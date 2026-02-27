@@ -36,6 +36,28 @@ describe('audio-context', () => {
       expect(second).not.toBe(first)
     })
 
+    it('warns when creating AudioContext after previous one closed (SAFE-07)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const ctx1 = getOrCreateAudioContext()
+      // Simulate closing
+      Object.defineProperty(ctx1, 'state', { get: () => 'closed', configurable: true })
+      const ctx2 = getOrCreateAudioContext()
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Previous AudioContext was closed'),
+      )
+      expect(ctx2).not.toBe(ctx1)
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn on first AudioContext creation (SAFE-07)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // Fresh state — no previous context
+      _resetAudioContext()
+      getOrCreateAudioContext()
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
     it('returns an AudioContext even without prior initAudio()', () => {
       // Fresh state, no initAudio call
       _resetAudioContext()
