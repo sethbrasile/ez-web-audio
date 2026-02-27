@@ -170,20 +170,40 @@ describe('audioSprite', () => {
       expect(mockPannerNode.pan.value).toBe(-0.5)
     })
 
-    it('uses default gain=1 when no options provided', () => {
+    it('skips gain node creation when gain is default (1)', () => {
       const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
 
       sprite.play('laser')
 
-      expect(mockGainNode.gain.value).toBe(1)
+      // Gain is 1 (default) — no GainNode should be created
+      expect(audioContext.createGain).not.toHaveBeenCalled()
     })
 
-    it('uses default pan=0 when no options provided', () => {
+    it('skips panner node creation when pan is default (0)', () => {
       const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
 
       sprite.play('laser')
 
-      expect(mockPannerNode.pan.value).toBe(0)
+      // Pan is 0 (default) — no StereoPannerNode should be created
+      expect(audioContext.createStereoPanner).not.toHaveBeenCalled()
+    })
+
+    it('creates gain node when gain is not default', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser', { gain: 0.5 })
+
+      expect(audioContext.createGain).toHaveBeenCalled()
+      expect(mockGainNode.gain.value).toBe(0.5)
+    })
+
+    it('creates panner node when pan is not default', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser', { pan: -0.5 })
+
+      expect(audioContext.createStereoPanner).toHaveBeenCalled()
+      expect(mockPannerNode.pan.value).toBe(-0.5)
     })
 
     it('sets loop property from sprite definition', () => {
@@ -202,10 +222,19 @@ describe('audioSprite', () => {
       expect(mockSourceNode.loop).toBe(false)
     })
 
-    it('wires nodes correctly: source -> gain -> pan -> destination', () => {
+    it('wires nodes correctly: source -> destination (at defaults)', () => {
       const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
 
       sprite.play('laser')
+
+      // With default gain=1 and pan=0, source connects directly to destination
+      expect(mockSourceNode.connect).toHaveBeenCalledWith(audioContext.destination)
+    })
+
+    it('wires nodes correctly: source -> gain -> pan -> destination (with non-default options)', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser', { gain: 0.5, pan: -0.5 })
 
       // Source connects to gain
       expect(mockSourceNode.connect).toHaveBeenCalledWith(mockGainNode)
@@ -249,10 +278,26 @@ describe('audioSprite', () => {
       expect(mockSourceNode.onended).toBeTypeOf('function')
     })
 
-    it('disconnects nodes when onended fires', () => {
+    it('disconnects source node when onended fires (default gain/pan)', () => {
       const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
 
-      sprite.play('laser')
+      sprite.play('laser') // default gain=1 and pan=0 — no GainNode or PannerNode created
+
+      // Trigger the onended callback
+      const onended = mockSourceNode.onended as () => void
+      onended()
+
+      // Source is always disconnected
+      expect(mockSourceNode.disconnect).toHaveBeenCalled()
+      // GainNode and PannerNode were never created, so no disconnect calls on them
+      expect(mockGainNode.disconnect).not.toHaveBeenCalled()
+      expect(mockPannerNode.disconnect).not.toHaveBeenCalled()
+    })
+
+    it('disconnects gain and panner nodes when onended fires (non-default options)', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser', { gain: 0.5, pan: -0.5 })
 
       // Trigger the onended callback
       const onended = mockSourceNode.onended as () => void

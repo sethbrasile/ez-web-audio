@@ -179,20 +179,24 @@ export class AudioSprite {
     source.buffer = this.audioBuffer
     source.loop = false
 
-    // Build the audio routing chain
+    // Build the audio routing chain — skip nodes at default values
     let currentNode: AudioNode = source
+    let gainNode: GainNode | null = null
+    let pannerNode: StereoPannerNode | null = null
 
-    // Create GainNode if gain is not default
-    const gainNode = this.audioContext.createGain()
-    gainNode.gain.value = gain
-    currentNode.connect(gainNode)
-    currentNode = gainNode
+    if (gain !== 1) {
+      gainNode = this.audioContext.createGain()
+      gainNode.gain.value = gain
+      currentNode.connect(gainNode)
+      currentNode = gainNode
+    }
 
-    // Create StereoPannerNode if pan is not default
-    const pannerNode = this.audioContext.createStereoPanner()
-    pannerNode.pan.value = pan
-    currentNode.connect(pannerNode)
-    currentNode = pannerNode
+    if (pan !== 0) {
+      pannerNode = this.audioContext.createStereoPanner()
+      pannerNode.pan.value = pan
+      currentNode.connect(pannerNode)
+      currentNode = pannerNode
+    }
 
     // Connect to destination
     currentNode.connect(this.audioContext.destination)
@@ -238,8 +242,8 @@ export class AudioSprite {
 
       try {
         source.disconnect()
-        gainNode.disconnect()
-        pannerNode.disconnect()
+        if (gainNode) gainNode.disconnect()
+        if (pannerNode) pannerNode.disconnect()
       }
       catch {
         // Already disconnected

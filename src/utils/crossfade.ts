@@ -55,6 +55,11 @@ export function generateEqualPowerCurve(
  * // track1 is now stopped, track2 is playing
  * ```
  */
+/** Module-level cached crossfade curves (256 samples, mathematically constant). */
+const CURVE_LENGTH = 256
+const _cachedFadeOutCurve = generateEqualPowerCurve('out', CURVE_LENGTH)
+const _cachedFadeInCurve = generateEqualPowerCurve('in', CURVE_LENGTH)
+
 export async function crossfade(
   fromTrack: Track,
   toTrack: Track,
@@ -64,9 +69,8 @@ export async function crossfade(
   const audioContext = fromTrack.audioContext
   const startTime = audioContext.currentTime
 
-  const curveLength = 256
-  const fadeOutCurve = generateEqualPowerCurve('out', curveLength)
-  const fadeInCurve = generateEqualPowerCurve('in', curveLength)
+  const fadeOutCurve = _cachedFadeOutCurve
+  const fadeInCurve = _cachedFadeInCurve
 
   // Fade out source track from current gain value
   const fromGain = fromTrack.getGainNode().gain
