@@ -13,8 +13,8 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (51-02 complete — AudioContext orphan warning, dispose event silencing, LayeredSound.dispose(), changePanTo validation)
-**Current Focus:** Phase 51 — Performance & Safety (plans 01+02 complete)
+**Last Updated:** 2026-02-27 (51-01 complete — durationRaw getter, resume guard, AudioSprite node skip, crossfade curve cache)
+**Current Focus:** Phase 51 — Performance & Safety (both plans complete)
 
 ## Project Reference
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 Phase: 51 of 52 (Performance & Safety)
 Plan: 02 of 02 complete
 Status: Phase 51 complete — SAFE-07 through SAFE-10 addressed, PERF-02 through PERF-06 addressed
-Last activity: 2026-02-27 — Phase 51 Plan 02 complete (SAFE-07, SAFE-08, SAFE-09, SAFE-10)
+Last activity: 2026-02-27 — Phase 51 Plan 01 complete (PERF-02, PERF-04, PERF-05, PERF-06)
 
 Progress: [████████████████████████░░░░░░] 87% (phases 47-51 complete, 52 remaining)
 
@@ -57,6 +57,7 @@ Recent decisions affecting current work:
 - Phase 50-01: Oscillator.update() delegates non-frequency to super (BaseSound owns _targetGain sync); resolveParam() template method in BaseParamController eliminates duplicate applyValues/applyRampValues switch blocks
 - [Phase 50-code-quality]: Used vi.spyOn on AudioParam methods to verify scheduled values in onPlaySet/onPlayRamp tests rather than mocking the controller
 - Phase 51-02: Override dispatchEvent = () => false on dispose — EventTarget has no removeAllListeners(), this is cleanest no-op; LayeredSound dispose guards throw errors (not silent no-op) to make use-after-dispose immediately obvious
+- Phase 51-01: durationRaw abstract getter avoids TimeObject allocation in hot paths; resume() guarded by state check; AudioSprite skips nodes at defaults; crossfade curves cached at module level (setValueCurveAtTime copies arrays internally)
 
 ### Roadmap Evolution
 
@@ -76,5 +77,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 51 Plan 02 — Safety Gap Closure (SAFE-07, SAFE-08, SAFE-09, SAFE-10)
+Stopped at: Completed Phase 51 Plan 01 — Performance Optimizations (PERF-02, PERF-04, PERF-05, PERF-06)
 Resume file: None

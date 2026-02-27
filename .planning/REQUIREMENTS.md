@@ -29,9 +29,9 @@
 ### Performance
 
 - [x] **PERF-01**: Preload cache stores decoded `AudioBuffer` objects, avoiding redundant `decodeAudioData()` calls on cache hits
-- [ ] **PERF-02**: `duration` getter has a lightweight numeric path (`durationRaw` or cached `TimeObject`) to avoid allocation in hot paths
+- [x] **PERF-02**: `duration` getter has a lightweight numeric path (`durationRaw` or cached `TimeObject`) to avoid allocation in hot paths
 - ~~**PERF-03**: Scheduler `tick()` combines execute and filter into a single pass~~ _(N/A — scheduler already uses single iteration, no separate filter pass exists)_
-- [ ] **PERF-04**: `audioContext.resume()` only called when `audioContext.state === 'suspended'` (not on every play)
+- [x] **PERF-04**: `audioContext.resume()` only called when `audioContext.state === 'suspended'` (not on every play)
 
 ### Documentation Fixes
 
@@ -52,10 +52,10 @@
 
 ### Remaining Safety
 
-- [ ] **SAFE-07**: AudioContext replacement logs a warning when creating a new context after the previous one closed (orphaned sounds awareness)
-- [ ] **SAFE-08**: `dispose()` clears event listeners (or documents that consumers must call `off()` before `dispose()`)
-- [ ] **SAFE-09**: `LayeredSound` has a `dispose()` method that stops and disposes all layers
-- [ ] **SAFE-10**: `changePanTo()` warns when value is outside [-1, 1] range
+- [x] **SAFE-07**: AudioContext replacement logs a warning when creating a new context after the previous one closed (orphaned sounds awareness)
+- [x] **SAFE-08**: `dispose()` clears event listeners (or documents that consumers must call `off()` before `dispose()`)
+- [x] **SAFE-09**: `LayeredSound` has a `dispose()` method that stops and disposes all layers
+- [x] **SAFE-10**: `changePanTo()` warns when value is outside [-1, 1] range
 
 ### Documentation & DX
 
@@ -64,8 +64,8 @@
 
 ### Remaining Performance
 
-- [ ] **PERF-05**: AudioSprite skips gain/panner node creation when at default values (gain=1, pan=0)
-- [ ] **PERF-06**: Crossfade curve arrays cached at module level (mathematically constant, no regeneration per call)
+- [x] **PERF-05**: AudioSprite skips gain/panner node creation when at default values (gain=1, pan=0)
+- [x] **PERF-06**: Crossfade curve arrays cached at module level (mathematically constant, no regeneration per call)
 
 ## Out of Scope
 
@@ -90,9 +90,9 @@
 | EXPORT-01 | Phase 49 | Complete |
 | EXPORT-02 | Phase 49 | Complete |
 | PERF-01 | _(pre-existing)_ | Complete |
-| PERF-02 | Phase 51 | Pending |
+| PERF-02 | Phase 51 | Complete |
 | PERF-03 | _(N/A)_ | Removed |
-| PERF-04 | Phase 51 | Pending |
+| PERF-04 | Phase 51 | Complete |
 | DOCS-01 | Phase 52 | Pending |
 | DOCS-02 | Phase 52 | Pending |
 | TEST-01 | Phase 50 | Complete |
@@ -101,14 +101,14 @@
 | BUILD-01 | Phase 50 | Complete |
 | REFAC-01 | Phase 50 | Complete |
 | REFAC-02 | Phase 50 | Complete |
-| SAFE-07 | Phase 51 | Pending |
-| SAFE-08 | Phase 51 | Pending |
-| SAFE-09 | Phase 51 | Pending |
-| SAFE-10 | Phase 51 | Pending |
+| SAFE-07 | Phase 51 | Complete |
+| SAFE-08 | Phase 51 | Complete |
+| SAFE-09 | Phase 51 | Complete |
+| SAFE-10 | Phase 51 | Complete |
 | DOCS-03 | Phase 52 | Pending |
 | DX-01 | Phase 52 | Pending |
-| PERF-05 | Phase 51 | Pending |
-| PERF-06 | Phase 51 | Pending |
+| PERF-05 | Phase 51 | Complete |
+| PERF-06 | Phase 51 | Complete |
 
 **Coverage:**
 - Requirements: 29 total (1 removed as N/A)
