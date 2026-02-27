@@ -1,6 +1,7 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
+import { InvalidNoteError } from './errors'
 import frequencyMap from '@utils/frequency-map'
 
 function createMockContext() {
@@ -308,8 +309,16 @@ describe('note-based creation', () => {
     expect((osc as any).freq).toBe(frequencyMap.C4)
   })
 
-  it('invalid note throws descriptive error', () => {
-    expect(() => new Oscillator(audioContext, { note: 'X9' })).toThrow('Unknown note "X9"')
+  it('invalid note throws InvalidNoteError with identifier', () => {
+    expect(() => new Oscillator(audioContext, { note: 'X9' })).toThrow(InvalidNoteError)
+    try {
+      new Oscillator(audioContext, { note: 'X9' })
+    }
+    catch (e) {
+      expect(e).toBeInstanceOf(InvalidNoteError)
+      expect((e as InvalidNoteError).identifier).toBe('X9')
+      expect((e as InvalidNoteError).message).toContain('Unknown note "X9"')
+    }
   })
 
   it('note takes precedence over frequency when both provided', () => {

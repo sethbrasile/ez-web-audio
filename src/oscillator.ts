@@ -8,6 +8,7 @@ import { get } from '@utils/prop-access'
 import { BaseSound } from './base-sound'
 import { OscillatorController } from './controllers/oscillator-controller'
 import { Envelope } from './envelope'
+import { InvalidNoteError } from './errors'
 
 /**
  * Filter configuration for oscillator frequency shaping.
@@ -166,9 +167,10 @@ export class Oscillator extends BaseSound {
     if (options?.note) {
       const freq = (frequencyMap as Record<string, number>)[options.note]
       if (freq === undefined) {
-        throw new Error(
+        throw new InvalidNoteError(
           `Unknown note "${options.note}". Valid notes: C0-B8 with accidentals (e.g., A4, Db3, Eb5). `
           + `Use flat notation (Db, Eb, Gb, Ab, Bb) not sharp notation.`,
+          options.note,
         )
       }
       this.freq = freq
