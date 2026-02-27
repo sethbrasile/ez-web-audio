@@ -39,6 +39,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   private setTimeout: (fn: () => void, delayMillis: number) => number
   /** Tracks 'end' handlers per layer so they can be removed before adding new ones. */
   private layerEndHandlers: Map<Sound | Oscillator, () => void> = new Map()
+  private _disposed = false
   public name: string
 
   constructor(
@@ -81,6 +82,13 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   }
 
   /**
+   * Whether this LayeredSound has been disposed.
+   */
+  get disposed(): boolean {
+    return this._disposed
+  }
+
+  /**
    * Get a layer by index for individual control.
    *
    * @param index - The layer index (0-based)
@@ -102,6 +110,10 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * This ensures perfect synchronization across all layers.
    */
   async play(): Promise<void> {
+    if (this._disposed) {
+      throw new Error('Cannot play a disposed LayeredSound. Create a new instance.')
+    }
+
     // CRITICAL: Capture startTime FIRST, then pass same value to all layers
     // This is the exact sync pattern from RESEARCH.md Pattern 1
     const startTime = this.audioContext.currentTime
@@ -156,6 +168,9 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * ```
    */
   async playFor(duration: number): Promise<void> {
+    if (this._disposed) {
+      throw new Error('Cannot play a disposed LayeredSound. Create a new instance.')
+    }
     await this.play()
     this.setTimeout(() => this.stop(), duration * 1000)
   }
@@ -164,6 +179,9 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * Stop all layers.
    */
   async stop(): Promise<void> {
+    if (this._disposed) {
+      throw new Error('Cannot stop a disposed LayeredSound.')
+    }
     await Promise.all(this.layers.map(layer => layer.stop()))
     this.emit('stop', {
       time: this.audioContext.currentTime,
@@ -177,6 +195,9 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * @param value - The gain value (0-1 range typical)
    */
   setGain(value: number): void {
+    if (this._disposed) {
+      throw new Error('Cannot set gain on a disposed LayeredSound.')
+    }
     this.layers.forEach(layer => layer.changeGainTo(value))
   }
 
@@ -186,7 +207,61 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * @param value - The pan value (-1 to 1, where -1 is full left, 1 is full right)
    */
   setPan(value: number): void {
+    if (this._disposed) {
+      throw new Error('Cannot set pan on a disposed LayeredSound.')
+    }
     this.layers.forEach(layer => layer.changePanTo(value))
+  }
+
+  /**
+   * Stop all layers and dispose them. Releases resources and prevents further use.
+   *
+   * After disposal, calling play() will throw an error.
+   * Dispose is idempotent — calling it multiple times is safe.
+   *
+   * @example
+   * ```typescript
+   * const layered = await createLayeredSound([bass, melody])
+   * layered.play()
+   * // When done:
+   * layered.dispose()
+   * ```
+   */
+  dispose(): void {
+    if (this._disposed)
+      return
+
+    // Stop all layers
+    this.layers.forEach((layer) => {
+      try {
+        layer.stop()
+      }
+      catch {
+        // Already stopped
+      }
+    })
+
+    // Dispose all layers
+    this.layers.forEach((layer) => {
+      if ('dispose' in layer && typeof layer.dispose === 'function') {
+        layer.dispose()
+      }
+    })
+
+    // Clean up layer end tracking
+    this.layerEndHandlers.forEach((handler, layer) => {
+      layer.off('end', handler)
+    })
+    this.layerEndHandlers.clear()
+
+    // Clear layers array
+    this.layers = []
+    this.failedLayers = []
+
+    // Silence future events
+    this.dispatchEvent = () => false
+
+    this._disposed = true
   }
 
   /**

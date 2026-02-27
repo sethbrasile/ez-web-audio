@@ -475,6 +475,38 @@ describe('sound', () => {
       })
     })
 
+    describe('changePanTo() validation (SAFE-10)', () => {
+      it('warns when pan value exceeds 1', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const sound = createSound(audioContext)
+        sound.changePanTo(1.5)
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('outside the [-1, 1] range'),
+        )
+        warnSpy.mockRestore()
+      })
+
+      it('warns when pan value is below -1', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const sound = createSound(audioContext)
+        sound.changePanTo(-1.5)
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('outside the [-1, 1] range'),
+        )
+        warnSpy.mockRestore()
+      })
+
+      it('does not warn for values within [-1, 1]', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const sound = createSound(audioContext)
+        sound.changePanTo(-1)
+        sound.changePanTo(0)
+        sound.changePanTo(1)
+        expect(warnSpy).not.toHaveBeenCalled()
+        warnSpy.mockRestore()
+      })
+    })
+
     describe('percentGain', () => {
       it('returns gain as percentage', () => {
         const sound = createSound(audioContext)

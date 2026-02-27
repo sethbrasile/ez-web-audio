@@ -461,4 +461,67 @@ describe('layeredSound', () => {
       expect(endListener).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('dispose() (SAFE-09)', () => {
+    it('stops and disposes all layers', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+
+      const stopSpy1 = vi.spyOn(sound1, 'stop')
+      const stopSpy2 = vi.spyOn(sound2, 'stop')
+      const disposeSpy1 = vi.spyOn(sound1, 'dispose')
+      const disposeSpy2 = vi.spyOn(sound2, 'dispose')
+
+      layered.dispose()
+
+      expect(stopSpy1).toHaveBeenCalled()
+      expect(stopSpy2).toHaveBeenCalled()
+      expect(disposeSpy1).toHaveBeenCalled()
+      expect(disposeSpy2).toHaveBeenCalled()
+    })
+
+    it('prevents play after dispose', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      layered.dispose()
+      await expect(layered.play()).rejects.toThrow('disposed')
+    })
+
+    it('is idempotent', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      layered.dispose()
+      expect(() => layered.dispose()).not.toThrow()
+    })
+
+    it('sets disposed flag', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      expect(layered.disposed).toBe(false)
+      layered.dispose()
+      expect(layered.disposed).toBe(true)
+    })
+
+    it('clears layer end handlers and layers array', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      layered.dispose()
+      // layerEndHandlers cleared, layers array cleared — verified by layerCount = 0
+      expect(layered.layerCount).toBe(0)
+    })
+
+    it('silences future events after dispose', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      const handler = vi.fn()
+      layered.on('play', handler)
+      layered.dispose()
+      const result = layered.dispatchEvent(new CustomEvent('play', { detail: {} }))
+      expect(result).toBe(false)
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
 })
