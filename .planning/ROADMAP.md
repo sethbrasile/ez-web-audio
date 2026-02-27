@@ -533,7 +533,7 @@ Plans:
 | 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
 | 47. Ship-Blocker Fix | 1/1 | Complete    | 2026-02-27 | - |
 | 48. Safety & Correctness | 2/2 | Complete   | 2026-02-27 | - |
-| 49. Export Cleanup | 1/1 | Complete   | 2026-02-27 | - |
+| 49. Export Cleanup | 1/1 | Complete    | 2026-02-27 | - |
 | 50. Performance | Deep Review Hardening | 0/? | Not started | - |
 | 51. Documentation Fixes | Deep Review Hardening | 0/? | Not started | - |
 | 52. Test Strengthening | Deep Review Hardening | 0/? | Not started | - |
