@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: First Stable Release
 status: unknown
-last_updated: "2026-02-27T15:25:57.230Z"
+last_updated: "2026-02-27T16:03:00.873Z"
 progress:
-  total_phases: 43
-  completed_phases: 43
-  total_plans: 126
-  completed_plans: 126
+  total_phases: 44
+  completed_phases: 44
+  total_plans: 128
+  completed_plans: 128
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (50-01 complete — gain-interception dedup, applyValues/applyRampValues dedup)
-**Current Focus:** Phase 50 — Code Quality (REFAC-01, REFAC-02)
+**Last Updated:** 2026-02-27 (50-02 complete — AudioParam spy tests, end event test, dispose cleanup test, publish tag guard)
+**Current Focus:** Phase 50 — Code Quality (TEST-01, TEST-02, TEST-03, BUILD-01)
 
 ## Project Reference
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 50 of 54 (Code Quality)
-Plan: 1 of 1+ in current phase (complete)
-Status: Phase 50 Plan 01 complete — ready for next plan
-Last activity: 2026-02-27 — 50-01 complete (REFAC-01, REFAC-02)
+Plan: 2 of 2+ in current phase (complete)
+Status: Phase 50 Plan 02 complete — ready for next plan
+Last activity: 2026-02-27 — 50-02 complete (TEST-01, TEST-02, TEST-03, BUILD-01)
 
-Progress: [████████████████████░░░░░░░░░░] 64% (phases 1-50-01 complete)
+Progress: [████████████████████░░░░░░░░░░] 65% (phases 1-50-02 complete)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 - Phase 48-02: Set numBeats=0 in BeatTrack.dispose() to prevent lazy re-creation; emit end immediately when all layers fail
 - Phase 49-01: Renamed _disposeUnmute to private disposeUnmute called within initAudio; createFont and Oscillator now throw typed domain errors (AudioLoadError, InvalidNoteError)
 - Phase 50-01: Oscillator.update() delegates non-frequency to super (BaseSound owns _targetGain sync); resolveParam() template method in BaseParamController eliminates duplicate applyValues/applyRampValues switch blocks
+- [Phase 50-code-quality]: Used vi.spyOn on AudioParam methods to verify scheduled values in onPlaySet/onPlayRamp tests rather than mocking the controller
 
 ### Roadmap Evolution
 
@@ -74,5 +75,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 50 Plan 01 — Code Quality (REFAC-01, REFAC-02)
+Stopped at: Completed Phase 50 Plan 02 — Test Strengthening (TEST-01, TEST-02, TEST-03, BUILD-01)
 Resume file: None

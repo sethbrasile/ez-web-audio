@@ -40,13 +40,13 @@
 
 ### Test Strengthening
 
-- [ ] **TEST-01**: `onPlaySet`/`onPlayRamp` tests verify scheduled values are applied during playback (not just no-throw)
-- [ ] **TEST-02**: `Sound` class has dedicated `end` event test for natural playback completion
-- [ ] **TEST-03**: Event listeners stop firing after `dispose()` is called (cleanup verification test)
+- [x] **TEST-01**: `onPlaySet`/`onPlayRamp` tests verify scheduled values are applied during playback (not just no-throw)
+- [x] **TEST-02**: `Sound` class has dedicated `end` event test for natural playback completion
+- [x] **TEST-03**: Event listeners stop firing after `dispose()` is called (cleanup verification test)
 
 ### Build & Refactoring
 
-- [ ] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
+- [x] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
 - [x] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
 - [x] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
 
@@ -95,10 +95,10 @@
 | PERF-04 | Phase 51 | Pending |
 | DOCS-01 | Phase 52 | Pending |
 | DOCS-02 | Phase 52 | Pending |
-| TEST-01 | Phase 50 | Pending |
-| TEST-02 | Phase 50 | Pending |
-| TEST-03 | Phase 50 | Pending |
-| BUILD-01 | Phase 50 | Pending |
+| TEST-01 | Phase 50 | Complete |
+| TEST-02 | Phase 50 | Complete |
+| TEST-03 | Phase 50 | Complete |
+| BUILD-01 | Phase 50 | Complete |
 | REFAC-01 | Phase 50 | Complete |
 | REFAC-02 | Phase 50 | Complete |
 | SAFE-07 | Phase 51 | Pending |
