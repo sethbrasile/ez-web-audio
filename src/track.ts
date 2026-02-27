@@ -39,6 +39,9 @@ export class Track extends Sound<TrackEventMap> {
   /** Stores the requestAnimationFrame ID for position tracking cleanup. */
   private rafId: number | null = null
 
+  /** Counter for seek race condition prevention — last seek wins. */
+  private _seekId = 0
+
   /**
    * Tracks whether the track was paused (vs. stopped).
    * Used by resume() to distinguish a paused state from a stopped state.
@@ -86,8 +89,9 @@ export class Track extends Sound<TrackEventMap> {
    * ```
    */
   public get percentPlayed(): number {
-    const ratio = this.startOffset / this.duration.raw
-    return ratio * 100
+    const duration = this.duration.raw
+    if (duration === 0) return 0
+    return (this.startOffset / duration) * 100
   }
 
   /**
@@ -219,7 +223,7 @@ export class Track extends Sound<TrackEventMap> {
       })
 
       // Use inherited play which will use startOffset
-      this.play()
+      void this.play().catch(() => {})
     }
   }
 
@@ -311,6 +315,7 @@ export class Track extends Sound<TrackEventMap> {
     const previousPosition = this.startOffset
 
     const moveToOffset = async (offset: number): Promise<void> => {
+      const seekId = ++this._seekId
       const _isPlaying = this._isPlaying
       const adjustedOffset = withinRange(offset, 0, duration)
 
@@ -320,6 +325,7 @@ export class Track extends Sound<TrackEventMap> {
 
       if (_isPlaying) {
         await this.stop() // await ensures startOffset=0 completes before new offset is set (C-4)
+        if (seekId !== this._seekId) return // superseded by newer seek
         this.startOffset = adjustedOffset
         this.later(() => this.play())
       }

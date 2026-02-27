@@ -816,7 +816,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public playIn(when: number): void {
-    this.playAt(this.audioContext.currentTime + when)
+    void this.playAt(this.audioContext.currentTime + when).catch(() => {})
   }
 
   /**
@@ -831,7 +831,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public playFor(duration: number): void {
-    this.playAt(this.audioContext.currentTime)
+    void this.playAt(this.audioContext.currentTime).catch(() => {})
     this._trackedTimeout(() => this.stop(), duration * 1000)
   }
 
@@ -1229,6 +1229,15 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
       }
       this._isPlaying = false
     }
+
+    // Disconnect audio source node and clear its onended handler
+    try {
+      this.audioSourceNode.disconnect()
+    }
+    catch {
+      // Already disconnected
+    }
+    this.audioSourceNode.onended = null
 
     // Cancel all pending timeouts
     this._cancelPendingTimeouts()

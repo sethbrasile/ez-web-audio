@@ -81,7 +81,7 @@ export class Sampler {
    * ```
    */
   public play(): void {
-    this.getNextSound().play()
+    void Promise.resolve(this.getNextSound().play()).catch(() => {})
   }
 
   /**
@@ -110,7 +110,7 @@ export class Sampler {
    * ```
    */
   public playAt(time: number): void {
-    this.getNextSound().playAt(time)
+    void Promise.resolve(this.getNextSound().playAt(time)).catch(() => {})
   }
 
   /**
