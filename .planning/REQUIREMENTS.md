@@ -14,12 +14,12 @@
 
 ### Safety & Correctness
 
-- [ ] **SAFE-01**: Fire-and-forget play methods (`playFor`, `playIn`, `playInAndStopAfter`, `Sampler.play`, `Track.resume`) handle rejected promises instead of discarding them
-- [ ] **SAFE-02**: `dispose()` disconnects `audioSourceNode` and nullifies its `onended` handler
-- [ ] **SAFE-03**: `BeatTrack` has a `dispose()` method that stops playback, disposes sounds, clears beats, and releases resources
-- [ ] **SAFE-04**: `Track.percentPlayed` returns 0 when duration is 0 (no divide-by-zero)
-- [ ] **SAFE-05**: `Track.seek()` guards against concurrent seeks overwriting `startOffset` (race condition fix)
-- [ ] **SAFE-06**: `LayeredSound.play()` uses `Promise.allSettled()` so one layer failure doesn't abort all layers
+- [x] **SAFE-01**: Fire-and-forget play methods (`playFor`, `playIn`, `playInAndStopAfter`, `Sampler.play`, `Track.resume`) handle rejected promises instead of discarding them
+- [x] **SAFE-02**: `dispose()` disconnects `audioSourceNode` and nullifies its `onended` handler
+- [x] **SAFE-03**: `BeatTrack` has a `dispose()` method that stops playback, disposes sounds, clears beats, and releases resources
+- [x] **SAFE-04**: `Track.percentPlayed` returns 0 when duration is 0 (no divide-by-zero)
+- [x] **SAFE-05**: `Track.seek()` guards against concurrent seeks overwriting `startOffset` (race condition fix)
+- [x] **SAFE-06**: `LayeredSound.play()` uses `Promise.allSettled()` so one layer failure doesn't abort all layers
 
 ### Export Cleanup
 
@@ -28,9 +28,9 @@
 
 ### Performance
 
-- [ ] **PERF-01**: Preload cache stores decoded `AudioBuffer` objects, avoiding redundant `decodeAudioData()` calls on cache hits
+- [x] **PERF-01**: Preload cache stores decoded `AudioBuffer` objects, avoiding redundant `decodeAudioData()` calls on cache hits
 - [ ] **PERF-02**: `duration` getter has a lightweight numeric path (`durationRaw` or cached `TimeObject`) to avoid allocation in hot paths
-- [ ] **PERF-03**: Scheduler `tick()` combines execute and filter into a single pass (no double iteration per frame)
+- ~~**PERF-03**: Scheduler `tick()` combines execute and filter into a single pass~~ _(N/A — scheduler already uses single iteration, no separate filter pass exists)_
 - [ ] **PERF-04**: `audioContext.resume()` only called when `audioContext.state === 'suspended'` (not on every play)
 
 ### Documentation Fixes
@@ -49,12 +49,21 @@
 - [ ] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
 - [ ] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
 - [ ] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
+
+### Remaining Safety
+
 - [ ] **SAFE-07**: AudioContext replacement logs a warning when creating a new context after the previous one closed (orphaned sounds awareness)
-- [ ] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
 - [ ] **SAFE-08**: `dispose()` clears event listeners (or documents that consumers must call `off()` before `dispose()`)
 - [ ] **SAFE-09**: `LayeredSound` has a `dispose()` method that stops and disposes all layers
 - [ ] **SAFE-10**: `changePanTo()` warns when value is outside [-1, 1] range
+
+### Documentation & DX
+
+- [ ] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
 - [ ] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
+
+### Remaining Performance
+
 - [ ] **PERF-05**: AudioSprite skips gain/panner node creation when at default values (gain=1, pan=0)
 - [ ] **PERF-06**: Crossfade curve arrays cached at module level (mathematically constant, no regeneration per call)
 
@@ -72,40 +81,41 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SHIP-01 | Phase 47 | Complete |
-| SAFE-01 | Phase 48 | Pending |
-| SAFE-02 | Phase 48 | Pending |
-| SAFE-03 | Phase 48 | Pending |
-| SAFE-04 | Phase 48 | Pending |
-| SAFE-05 | Phase 48 | Pending |
-| SAFE-06 | Phase 48 | Pending |
+| SAFE-01 | Phase 48 | Complete |
+| SAFE-02 | Phase 48 | Complete |
+| SAFE-03 | Phase 48 | Complete |
+| SAFE-04 | Phase 48 | Complete |
+| SAFE-05 | Phase 48 | Complete |
+| SAFE-06 | Phase 48 | Complete |
 | EXPORT-01 | Phase 49 | Complete |
 | EXPORT-02 | Phase 49 | Complete |
-| PERF-01 | Phase 50 | Pending |
-| PERF-02 | Phase 50 | Pending |
-| PERF-03 | Phase 50 | Pending |
-| PERF-04 | Phase 50 | Pending |
-| DOCS-01 | Phase 51 | Pending |
-| DOCS-02 | Phase 51 | Pending |
-| TEST-01 | Phase 52 | Pending |
-| TEST-02 | Phase 52 | Pending |
-| TEST-03 | Phase 52 | Pending |
-| BUILD-01 | Phase 53 | Pending |
-| REFAC-01 | Phase 53 | Pending |
-| REFAC-02 | Phase 53 | Pending |
-| SAFE-07 | Phase 54 | Pending |
-| SAFE-08 | Phase 54 | Pending |
-| SAFE-09 | Phase 54 | Pending |
-| SAFE-10 | Phase 54 | Pending |
-| DOCS-03 | Phase 54 | Pending |
-| DX-01 | Phase 54 | Pending |
-| PERF-05 | Phase 54 | Pending |
-| PERF-06 | Phase 54 | Pending |
+| PERF-01 | _(pre-existing)_ | Complete |
+| PERF-02 | Phase 51 | Pending |
+| PERF-03 | _(N/A)_ | Removed |
+| PERF-04 | Phase 51 | Pending |
+| DOCS-01 | Phase 52 | Pending |
+| DOCS-02 | Phase 52 | Pending |
+| TEST-01 | Phase 50 | Pending |
+| TEST-02 | Phase 50 | Pending |
+| TEST-03 | Phase 50 | Pending |
+| BUILD-01 | Phase 50 | Pending |
+| REFAC-01 | Phase 50 | Pending |
+| REFAC-02 | Phase 50 | Pending |
+| SAFE-07 | Phase 51 | Pending |
+| SAFE-08 | Phase 51 | Pending |
+| SAFE-09 | Phase 51 | Pending |
+| SAFE-10 | Phase 51 | Pending |
+| DOCS-03 | Phase 52 | Pending |
+| DX-01 | Phase 52 | Pending |
+| PERF-05 | Phase 51 | Pending |
+| PERF-06 | Phase 51 | Pending |
 
 **Coverage:**
-- Requirements: 29 total
-- Mapped to phases: 29
+- Requirements: 29 total (1 removed as N/A)
+- Completed: 10
+- Pending: 18
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after roadmap creation — all requirements mapped*
+*Last updated: 2026-02-27 — consolidated phases 50-54 into 50-52, marked Phase 48/49 requirements complete, removed PERF-03 as N/A*

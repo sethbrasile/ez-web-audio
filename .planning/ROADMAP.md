@@ -53,15 +53,15 @@
 - [x] **Phase 21: Test Coverage** - Add integration tests, split test files by concern, add concurrent operation tests (completed 2026-02-17)
 - [x] **Phase 22: Demo App & Release** - Update demo Vue components for all API changes, update TypeDoc, publish npm 1.0.0 (completed 2026-02-17)
 - [x] **Phase 23: Demo Example Bugfixes** - Fix runtime API bugs, design issues, and polish in all VitePress demo components (completed 2026-02-17)
-- [ ] **Phase 24: Milestone Verification & Release Documentation** - Create missing VERIFICATION.md for phases 18 and 19, fix stale JSDoc, update CHANGELOG, clean up tracking docs, and trigger npm 1.0.0 publish
-- [ ] **Phase 25: New Example Pages** - Add interactive examples for AudioSprite, crossfade, and playTogether — features with no demo coverage
+- [x] **Phase 24: Milestone Verification & Release Documentation** _(2026-02-27)_ - Create missing VERIFICATION.md for phases 18 and 19, fix stale JSDoc, update CHANGELOG, clean up tracking docs ~~and trigger npm 1.0.0 publish~~
+- [x] **Phase 25: New Example Pages** _(2026-02-27)_ - AudioSprite + Crossfade examples completed via Phase 35; playTogether example deferred to consolidated phase
 - [x] **Phase 26: Source Code Fixes** - Fix all runtime bugs, race conditions, memory leaks, and validation gaps found in code review (completed 2026-02-22)
 - [x] **Phase 27: Package Quality & README** - Write proper README, fix package.json config, add CI quality gates (completed 2026-02-22)
 - [x] **Phase 28: Documentation Corrections** - Fix all incorrect docs, add missing feature documentation (completed 2026-02-22)
 - [x] **Phase 29: Demo Component Fixes** - Fix demo bugs, accessibility issues, and polish (completed 2026-02-22)
 - [x] **Phase 30: Test Coverage Expansion** - Add tests for untested modules and missing scenarios (completed 2026-02-22)
 - [x] **Phase 31: E2E & Integration Test Expansion** - Add interaction E2E tests, integration coverage, mobile viewport testing (completed 2026-02-22)
-- [ ] **Phase 32: Critical Fixes & API Contract Corrections** - Fix bugs, type contract violations, and safety issues found in comprehensive code review
+- [x] **Phase 32: Critical Fixes & API Contract Corrections** _(2026-02-22)_ - Fix bugs, type contract violations, and safety issues found in comprehensive code review
 - [x] **Phase 33: DX Convenience APIs** - Add fadeIn/fadeOut, loop, dispose, note-based oscillators, and pattern-setting convenience methods (completed 2026-02-22)
 - [x] **Phase 34: Test Gap Closure** - Add tests for untested factory functions, guards, cleanup methods, and edge cases (completed 2026-02-22)
 - [x] **Phase 35: Documentation Expansion & Fixes** - Add missing example pages, fix incorrect code examples, split oversized guide pages (completed 2026-02-22)
@@ -84,11 +84,9 @@
 - [x] **Phase 47: Ship-Blocker Fix** - Remove test-only mock type from published declarations (completed 2026-02-27)
 - [x] **Phase 48: Safety & Correctness** - Guard unhandled rejections, add missing dispose() methods, fix divide-by-zero and race conditions (completed 2026-02-27)
 - [x] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes (completed 2026-02-27)
-- [ ] **Phase 50: Performance** - Cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
-- [ ] **Phase 51: Documentation Fixes** - Fix misleading vibrato example, correct await usage in README
-- [ ] **Phase 52: Test Strengthening** - Strengthen weak assertions, add missing end event and dispose cleanup tests
-- [ ] **Phase 53: Build & Refactoring** - Add publish tag verification, extract duplicated gain-interception and controller logic
-- [ ] **Phase 54: Remaining Safety, DX & Performance** - Context warning, event listener cleanup, LayeredSound dispose, pan validation, AudioInput flexibility, node optimization
+- [ ] **Phase 50: Code Quality** - Extract duplicated gain-interception and controller logic, strengthen test assertions, add publish tag verification
+- [ ] **Phase 51: Performance & Safety** - Guard audioContext.resume(), add durationRaw accessor, pan validation, crossfade cache, AudioSprite node optimization, context warning, dispose cleanup, LayeredSound dispose
+- [ ] **Phase 52: Documentation & Examples** - Fix vibrato example, correct README seek await, document soundfont blocking, document AudioInput limitation, add playTogether example page
 
 ## Phase Details
 
@@ -197,7 +195,7 @@
 - [x] 23-01-PLAN.md — Export audioContextAwareTimeout, fix critical API bugs: createAnalyzer, .as('number'), uppercase Q, wrapEffect
 - [x] 23-02-PLAN.md — Fix design issues: OscillatorDemo gaps, XYPad mouseup, TimingDemo uses exported timeout, SynthKeyboard release
 - [x] 23-03-PLAN.md — Fix minor issues: canvas DPI, filter property access, distortion internals, final validation
-- [ ] 23-04-PLAN.md — Gap closure: fix XYPad HiDPI logical dimension reads in drawGrid and updateFromPosition
+- [x] 23-04-PLAN.md — Gap closure: fix XYPad HiDPI logical dimension reads in drawGrid and updateFromPosition
 
 ### Phase 24: Milestone Verification & Release Documentation
 **Goal**: All phases are formally verified, all documentation is accurate, and npm 1.0.0 is published
@@ -211,9 +209,9 @@
   4. CHANGELOG.md 1.0.0 entry includes `audioContextAwareTimeout` as a new export
   5. All 27 REQUIREMENTS.md checkboxes marked `[x]` for completed requirements
   6. Stale `docs/classes/` directory removed from git tracking
-  7. npm `ez-web-audio@1.0.0` is published (human gate: `git tag v1.0.0 && git push origin v1.0.0`)
+  7. ~~npm `ez-web-audio@1.0.0` is published~~ _(deferred — publish when owner decides milestone is complete)_
 **Plans**: 1 plan
-- [ ] 24-01-PLAN.md — Verification docs, doc fixes, tracking cleanup, npm publish trigger
+- [x] 24-01-PLAN.md — Verification docs, doc fixes, tracking cleanup _(npm publish deferred)_
 
 ### Phase 25: New Example Pages
 **Goal**: Every significant library feature has an interactive example on the docs site — no feature is "hidden" from developers browsing examples
@@ -734,59 +732,44 @@ Plans:
   3. When an oscillator is created with an unrecognized note name, the thrown error is an `InvalidNoteError` instance
 **Plans**: TBD
 
-### Phase 50: Performance
-**Goal**: Hot-path audio operations avoid redundant work — decoded buffers are cached, TimeObject allocation is skippable, the scheduler iterates only once per frame, and AudioContext.resume() is not called unnecessarily
+### Phase 50: Code Quality
+**Goal**: Duplicated logic is extracted, test assertions verify real behavior, and the publish CI prevents version mismatches
 **Depends on**: Phase 49
-**Requirements**: PERF-01, PERF-02, PERF-03, PERF-04
+**Requirements**: REFAC-01, REFAC-02, TEST-01, TEST-02, TEST-03, BUILD-01
 **Success Criteria** (what must be TRUE):
-  1. Playing a preloaded Sound a second time does not call `decodeAudioData()` — the decoded `AudioBuffer` is returned from cache
-  2. A hot-path caller using `durationRaw` (or equivalent numeric accessor) gets a number directly without constructing a `TimeObject`
-  3. The scheduler `tick()` combines beat execution and array filtering into a single pass over the scheduled beats array
-  4. `audioContext.resume()` is only called when `audioContext.state === 'suspended'` — calling `play()` on an already-running context does not invoke `resume()`
+  1. The `_targetGain` syncing logic exists in exactly one place on `BaseSound` — `base-sound.ts` and `oscillator.ts` do not each maintain their own copy
+  2. The `applyValues` and `applyRampValues` shared logic exists in exactly one place in `BaseParamController` — `SoundController` and `OscillatorController` do not each maintain their own copy
+  3. `onPlaySet` and `onPlayRamp` tests assert that the scheduled parameter value is actually applied to the audio node during playback (not just that the call completes without error)
+  4. A dedicated test verifies that the `end` event fires on a `Sound` instance when natural playback completes (not just when `stop()` is called)
+  5. A test verifies that event listeners registered before `dispose()` stop firing after `dispose()` is called
+  6. The publish workflow fails fast when the git tag does not match `package.json` version — publishing with a mismatched tag is not possible
 **Plans**: TBD
 
-### Phase 51: Documentation Fixes
-**Goal**: All documentation examples are correct and non-misleading for the patterns they demonstrate
+### Phase 51: Performance & Safety
+**Goal**: Hot-path audio operations avoid redundant work, and remaining safety gaps from the deep review are closed
 **Depends on**: Phase 50
-**Requirements**: DOCS-01, DOCS-02
+**Requirements**: PERF-02, PERF-04, SAFE-07, SAFE-08, SAFE-09, SAFE-10, PERF-05, PERF-06
+**Success Criteria** (what must be TRUE):
+  1. A hot-path caller using `durationRaw` (or equivalent numeric accessor) gets a number directly without constructing a `TimeObject`
+  2. `audioContext.resume()` is only called when `audioContext.state === 'suspended'` — calling `play()` on an already-running context does not invoke `resume()`
+  3. Creating a new `AudioContext` after a previous one closed logs a console warning identifying any orphaned sounds
+  4. After `dispose()`, event listeners registered on a sound no longer fire (or the docs explicitly state consumers must call `off()` before `dispose()`)
+  5. `LayeredSound.dispose()` stops and disposes all layers
+  6. Calling `changePanTo()` with a value outside `[-1, 1]` logs a console warning
+  7. `AudioSprite` skips gain or panner node creation when the value is at its default (gain=1, pan=0)
+  8. Crossfade curve arrays are cached at module level and not regenerated on every call
+**Plans**: TBD
+
+### Phase 52: Documentation & Examples
+**Goal**: All documentation examples are correct, limitations are documented, and every significant feature has an interactive example
+**Depends on**: Phase 51
+**Requirements**: DOCS-01, DOCS-02, DOCS-03, DX-01
 **Success Criteria** (what must be TRUE):
   1. The vibrato example in `docs/guide/parameter-control.md` either works correctly with consume-once semantics or clearly explains that `onPlaySet`/`onPlayRamp` must be re-scheduled before each play
   2. The README `song.seek(30)` example does not show `await` — `seek().as()` returns void and is not a Promise
-**Plans**: TBD
-
-### Phase 52: Test Strengthening
-**Goal**: Critical test assertions verify actual audio behavior, not just that functions do not throw
-**Depends on**: Phase 51
-**Requirements**: TEST-01, TEST-02, TEST-03
-**Success Criteria** (what must be TRUE):
-  1. `onPlaySet` and `onPlayRamp` tests assert that the scheduled parameter value is actually applied to the audio node during playback (not just that the call completes without error)
-  2. A dedicated test verifies that the `end` event fires on a `Sound` instance when natural playback completes (not just when `stop()` is called)
-  3. A test verifies that event listeners registered before `dispose()` stop firing after `dispose()` is called
-**Plans**: TBD
-
-### Phase 53: Build & Refactoring
-**Goal**: The publish workflow prevents version mismatches, and duplicated gain-interception and controller logic is extracted into shared helpers
-**Depends on**: Phase 52
-**Requirements**: BUILD-01, REFAC-01, REFAC-02
-**Success Criteria** (what must be TRUE):
-  1. The publish workflow fails fast when the git tag does not match `package.json` version — publishing with a mismatched tag is not possible
-  2. The `_targetGain` syncing logic exists in exactly one place on `BaseSound` — `base-sound.ts` and `oscillator.ts` do not each maintain their own copy
-  3. The `applyValues` and `applyRampValues` shared logic exists in exactly one place in `BaseParamController` — `SoundController` and `OscillatorController` do not each maintain their own copy
-**Plans**: TBD
-
-### Phase 54: Remaining Safety, DX & Performance
-**Goal**: All lower-priority safety gaps, DX limitations, and performance opportunities from the deep review are addressed
-**Depends on**: Phase 53
-**Requirements**: SAFE-07, SAFE-08, SAFE-09, SAFE-10, DOCS-03, DX-01, PERF-05, PERF-06
-**Success Criteria** (what must be TRUE):
-  1. Creating a new `AudioContext` after a previous one closed logs a console warning identifying any orphaned sounds
-  2. After `dispose()`, event listeners registered on a sound no longer fire (or the docs explicitly state consumers must call `off()` before `dispose()`)
-  3. `LayeredSound.dispose()` stops and disposes all layers
-  4. Calling `changePanTo()` with a value outside `[-1, 1]` logs a console warning
-  5. Soundfont parsing is documented with a note that large files (5-20 MB) may cause a UI freeze on mobile
-  6. `createBeatTrack()` and `createSampler()` accept `AudioInput[]` (not just `string[]`), or their limitation is documented
-  7. `AudioSprite` skips gain or panner node creation when the value is at its default (gain=1, pan=0)
-  8. Crossfade curve arrays are cached at module level and not regenerated on every call
+  3. Soundfont parsing is documented with a note that large files (5-20 MB) may cause a UI freeze on mobile
+  4. `createBeatTrack()` and `createSampler()` accept `AudioInput[]` (not just `string[]`), or their limitation is documented
+  5. A playTogether example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
 **Plans**: TBD
 
 ---
