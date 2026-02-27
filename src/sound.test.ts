@@ -520,6 +520,45 @@ describe('sound', () => {
         // Should not throw
         expect(() => sound.onPlaySet('gain').to(0).endingAt(1, 'exponential')).not.toThrow()
       })
+
+      it('applies scheduled gain value to gainNode during playback (TEST-01)', async () => {
+        const sound = createSound(audioContext)
+        const setValueSpy = vi.spyOn(sound.getGainNode().gain, 'setValueAtTime')
+
+        sound.onPlaySet('gain').to(0.5).at(0.1)
+        await sound.play()
+
+        // setValueAtTime should have been called with 0.5 at some point
+        // (it's also called by setup() with _targetGain, so check that 0.5 appears)
+        const calls = setValueSpy.mock.calls
+        const hasScheduledValue = calls.some(([value]) => value === 0.5)
+        expect(hasScheduledValue).toBe(true)
+      })
+
+      it('applies scheduled linear ramp to gainNode during playback (TEST-01)', async () => {
+        const sound = createSound(audioContext)
+        const linearRampSpy = vi.spyOn(sound.getGainNode().gain, 'linearRampToValueAtTime')
+
+        sound.onPlaySet('gain').to(0.8).endingAt(1, 'linear')
+        await sound.play()
+
+        expect(linearRampSpy).toHaveBeenCalled()
+        const calls = linearRampSpy.mock.calls
+        const hasRamp = calls.some(([value]) => value === 0.8)
+        expect(hasRamp).toBe(true)
+      })
+
+      it('applies scheduled exponential ramp to gainNode during playback (TEST-01)', async () => {
+        const sound = createSound(audioContext)
+        const expRampSpy = vi.spyOn(sound.getGainNode().gain, 'exponentialRampToValueAtTime')
+
+        sound.onPlaySet('gain').to(0.5).endingAt(1, 'exponential')
+        await sound.play()
+
+        expect(expRampSpy).toHaveBeenCalled()
+        // Value may be 0.5 or near-zero safe value depending on implementation
+        expect(expRampSpy.mock.calls.length).toBeGreaterThan(0)
+      })
     })
 
     describe('onPlayRamp()', () => {
@@ -545,6 +584,38 @@ describe('sound', () => {
         const sound = createSound(audioContext)
         // Should not throw
         expect(() => sound.onPlayRamp('gain').from(0).to(1).in(0.5)).not.toThrow()
+      })
+
+      it('applies ramp start and end values to gainNode during playback (TEST-01)', async () => {
+        const sound = createSound(audioContext)
+        const setValueSpy = vi.spyOn(sound.getGainNode().gain, 'setValueAtTime')
+        const linearRampSpy = vi.spyOn(sound.getGainNode().gain, 'linearRampToValueAtTime')
+
+        sound.onPlayRamp('gain', 'linear').from(0.2).to(0.8).in(0.5)
+        await sound.play()
+
+        // Start value (0.2) should be set via setValueAtTime
+        const hasStartValue = setValueSpy.mock.calls.some(([value]) => value === 0.2)
+        expect(hasStartValue).toBe(true)
+
+        // End value (0.8) should be ramped via linearRampToValueAtTime
+        const hasEndValue = linearRampSpy.mock.calls.some(([value]) => value === 0.8)
+        expect(hasEndValue).toBe(true)
+      })
+
+      it('applies pan ramp values during playback (TEST-01)', async () => {
+        const sound = createSound(audioContext)
+        const panNode = (sound as unknown as { pannerNode: StereoPannerNode }).pannerNode
+        const setValueSpy = vi.spyOn(panNode.pan, 'setValueAtTime')
+        const linearRampSpy = vi.spyOn(panNode.pan, 'linearRampToValueAtTime')
+
+        sound.onPlayRamp('pan', 'linear').from(-1).to(1).in(1)
+        await sound.play()
+
+        const hasStartPan = setValueSpy.mock.calls.some(([value]) => value === -1)
+        expect(hasStartPan).toBe(true)
+        const hasEndPan = linearRampSpy.mock.calls.some(([value]) => value === 1)
+        expect(hasEndPan).toBe(true)
       })
     })
   })
@@ -667,6 +738,65 @@ describe('sound', () => {
       await sound.play()
       await sound.stop()
       expect(handler).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('end event on natural playback completion (TEST-02)', () => {
+    it('fires end event when playback completes naturally', async () => {
+      const sound = createSound(audioContext, 0.01) // very short buffer
+      const endHandler = vi.fn()
+      sound.on('end', endHandler)
+
+      await sound.play()
+
+      // Simulate natural completion by triggering onended callback
+      // The mock doesn't auto-fire onended, so we trigger it manually
+      const onended = sound.audioSourceNode.onended
+      expect(onended).not.toBeNull()
+      if (onended) {
+        onended(new Event('ended'))
+      }
+
+      expect(endHandler).toHaveBeenCalledTimes(1)
+      const event = endHandler.mock.calls[0][0] as CustomEvent
+      expect(event.detail).toHaveProperty('source', sound)
+      expect(event.detail).toHaveProperty('duration')
+    })
+
+    it('end event includes duration in detail', async () => {
+      const sound = createSound(audioContext, 2) // 2 second buffer
+      const endHandler = vi.fn()
+      sound.on('end', endHandler)
+
+      await sound.play()
+
+      // Trigger onended
+      if (sound.audioSourceNode.onended) {
+        sound.audioSourceNode.onended(new Event('ended'))
+      }
+
+      expect(endHandler).toHaveBeenCalledTimes(1)
+      const detail = (endHandler.mock.calls[0][0] as CustomEvent).detail
+      expect(detail.duration).toBeCloseTo(2, 0)
+    })
+
+    it('end event does not fire after stop() (stop event fires instead)', async () => {
+      const sound = createSound(audioContext, 1)
+      const endHandler = vi.fn()
+      const stopHandler = vi.fn()
+      sound.on('end', endHandler)
+      sound.on('stop', stopHandler)
+
+      await sound.play()
+      await sound.stop()
+
+      // After stop(), _isPlaying is false, so even if onended fires, 'end' won't emit
+      if (sound.audioSourceNode.onended) {
+        sound.audioSourceNode.onended(new Event('ended'))
+      }
+
+      expect(stopHandler).toHaveBeenCalled()
+      expect(endHandler).not.toHaveBeenCalled()
     })
   })
 
