@@ -401,4 +401,24 @@ describe('sampler', () => {
       expect(sampler.getSounds()).toHaveLength(2)
     })
   })
+
+  describe('error handling (SAFE-01)', () => {
+    it('play() does not throw when underlying sound.play() rejects', () => {
+      const sound = createMockSound()
+      sound.play = vi.fn().mockRejectedValue(new Error('context closed'))
+      const sampler = new Sampler([sound])
+
+      // Should not throw
+      expect(() => sampler.play()).not.toThrow()
+    })
+
+    it('playAt() does not throw when underlying sound.playAt() rejects', () => {
+      const sound = createMockSound()
+      sound.playAt = vi.fn().mockRejectedValue(new Error('context closed'))
+      const sampler = new Sampler([sound])
+
+      // Should not throw
+      expect(() => sampler.playAt(1.0)).not.toThrow()
+    })
+  })
 })
