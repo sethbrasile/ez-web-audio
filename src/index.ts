@@ -54,13 +54,8 @@ import unmuteIosAudio from './utils/unmute'
 /** Dispose handle returned by unmute.js — stored so listeners can be cleaned up. @internal */
 let _unmuteDispose: (() => void) | null = null
 
-/**
- * Clean up global iOS mute workaround listeners.
- * Call this when audio is confirmed running to remove the 9+ event listeners
- * that unmute.js registers on window.
- * @internal
- */
-export function _disposeUnmute(): void {
+/** Clean up global iOS mute workaround listeners. @internal */
+function disposeUnmute(): void {
   _unmuteDispose?.()
   _unmuteDispose = null
 }
@@ -109,6 +104,7 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
 
   // only run this workaround code once
   if (useIosMuteWorkaround && !iosWorkaround.performed) {
+    disposeUnmute() // Clean up any previous listeners before re-registering
     const result = unmuteIosAudio(audioContext)
     if (result && typeof result.dispose === 'function') {
       _unmuteDispose = result.dispose
@@ -587,7 +583,10 @@ export async function createFont(url: string): Promise<Font> {
   try {
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to load soundfont from "${url}": HTTP ${response.status} ${response.statusText}`)
+      throw new AudioLoadError(
+        `Failed to load soundfont from "${url}": HTTP ${response.status} ${response.statusText}`,
+        url,
+      )
     }
     const text = await response.text()
     const audioData = mungeSoundFont(text)
@@ -598,10 +597,13 @@ export async function createFont(url: string): Promise<Font> {
     return new Font(notes)
   }
   catch (error) {
-    if (error instanceof Error && error.message.includes('Failed to load soundfont')) {
+    if (error instanceof AudioLoadError) {
       throw error
     }
-    throw new Error(`Failed to load soundfont from "${url}": ${error instanceof Error ? error.message : String(error)}`)
+    throw new AudioLoadError(
+      `Failed to load soundfont from "${url}": ${error instanceof Error ? error.message : String(error)}`,
+      url,
+    )
   }
 }
 

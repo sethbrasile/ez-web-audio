@@ -828,52 +828,6 @@ describe('factory functions', () => {
     })
   })
 
-  describe('_disposeUnmute()', () => {
-    it('does not throw when called without prior initAudio', async () => {
-      const { _disposeUnmute } = await import('./index')
-      expect(() => _disposeUnmute()).not.toThrow()
-    })
-
-    it('does not throw when called multiple times', async () => {
-      const { _disposeUnmute } = await import('./index')
-      expect(() => {
-        _disposeUnmute()
-        _disposeUnmute()
-      }).not.toThrow()
-    })
-
-    it('cleans up after initAudio has been called', async () => {
-      // Arrange: mock unmute to return a dispose function we can spy on
-      const mockDispose = vi.fn()
-      vi.doMock('./utils/unmute', () => ({
-        default: vi.fn().mockReturnValue({ dispose: mockDispose }),
-      }))
-      const { initAudio, _disposeUnmute } = await import('./index')
-
-      // Act: init to register the dispose handle, then dispose
-      await initAudio()
-      _disposeUnmute()
-
-      // Assert: the actual dispose handle was called
-      expect(mockDispose).toHaveBeenCalledOnce()
-    })
-
-    it('clears the dispose handle so a second call is a no-op', async () => {
-      const mockDispose = vi.fn()
-      vi.doMock('./utils/unmute', () => ({
-        default: vi.fn().mockReturnValue({ dispose: mockDispose }),
-      }))
-      const { initAudio, _disposeUnmute } = await import('./index')
-
-      await initAudio()
-      _disposeUnmute()
-      _disposeUnmute() // second call should be no-op
-
-      // dispose should only have been called once
-      expect(mockDispose).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('createAnalyzer context-free overload', () => {
     it('creates Analyzer without AudioContext parameter', async () => {
       const { createAnalyzer } = await import('./index')
