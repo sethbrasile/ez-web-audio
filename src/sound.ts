@@ -143,6 +143,17 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
   }
 
   /**
+   * Get the duration of the audio buffer in seconds.
+   *
+   * Use this instead of `duration.raw` in performance-sensitive code paths
+   * to avoid allocating a TimeObject.
+   */
+  public get durationRaw(): number {
+    const buffer = this.audioSourceNode.buffer
+    return buffer === null ? 0 : buffer.duration
+  }
+
+  /**
    * Get the duration of the audio buffer.
    *
    * Returns a TimeObject with the duration in multiple formats:
@@ -159,12 +170,11 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
    * ```
    */
   public get duration(): TimeObject {
-    const buffer = this.audioSourceNode.buffer
-    if (buffer === null)
+    const raw = this.durationRaw
+    if (raw === 0)
       return createTimeObject(0, 0, 0)
-    const { duration } = buffer
-    const min = Math.floor(duration / 60)
-    const sec = duration % 60
-    return createTimeObject(duration, min, sec)
+    const min = Math.floor(raw / 60)
+    const sec = raw % 60
+    return createTimeObject(raw, min, sec)
   }
 }

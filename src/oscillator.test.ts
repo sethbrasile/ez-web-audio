@@ -594,4 +594,9 @@ describe('wireConnections with filters', () => {
     await expect(osc.play()).resolves.not.toThrow()
     expect(osc.getFilters()).toHaveLength(0)
   })
+
+  it('durationRaw returns Infinity (PERF-02)', () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    expect(osc.durationRaw).toBe(Infinity)
+  })
 })

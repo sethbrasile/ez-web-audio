@@ -895,12 +895,14 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
 
     const { audioContext } = this
     const { currentTime } = audioContext
-    const duration = this.duration.raw
+    const duration = this.durationRaw
 
     // Cancel stale timeouts from any previous play cycle to prevent _isPlaying corruption
     this._cancelPendingTimeouts()
 
-    await audioContext.resume()
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume()
+    }
 
     // Warn if AudioContext remains suspended after resume attempt
     if (audioContext.state === 'suspended' && !BaseSound._hasWarnedAboutSuspended) {
@@ -958,10 +960,10 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
         this.emit('end', {
           time: this.audioContext.currentTime,
           source: this,
-          duration: this.duration.raw,
+          duration: this.durationRaw,
         })
         // Debug log for end event
-        debugEvent(this, 'end', this.audioContext.currentTime, { duration: this.duration.raw })
+        debugEvent(this, 'end', this.audioContext.currentTime, { duration: this.durationRaw })
       }
     }
 
@@ -1019,7 +1021,9 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public async stopAt(time: number): Promise<void> {
-    await this.audioContext.resume()
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume()
+    }
 
     const node = this.audioSourceNode
     const currentTime = this.audioContext.currentTime

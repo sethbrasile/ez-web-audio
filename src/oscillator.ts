@@ -360,6 +360,14 @@ export class Oscillator extends BaseSound {
   }
 
   /**
+   * Get the duration in seconds without allocating a TimeObject.
+   * Oscillators have infinite duration.
+   */
+  public get durationRaw(): number {
+    return Infinity
+  }
+
+  /**
    * Get the duration of the oscillator.
    *
    * Oscillators have no inherent duration - they play indefinitely until stopped.

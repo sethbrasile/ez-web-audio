@@ -89,7 +89,7 @@ export class Track extends Sound<TrackEventMap> {
    * ```
    */
   public get percentPlayed(): number {
-    const duration = this.duration.raw
+    const duration = this.durationRaw
     if (duration === 0)
       return 0
     return (this.startOffset / duration) * 100
@@ -119,7 +119,7 @@ export class Track extends Sound<TrackEventMap> {
         this.emit('end', {
           time: this.audioContext.currentTime,
           source: this,
-          duration: this.duration.raw,
+          duration: this.durationRaw,
         })
         // Reset position tracking state without re-emitting stop event
         this._resetPosition()
@@ -312,7 +312,7 @@ export class Track extends Sound<TrackEventMap> {
    * ```
    */
   public seek(amount: number): { as: (type: SeekType) => Promise<void> } {
-    const duration = this.duration.raw
+    const duration = this.durationRaw
     const previousPosition = this.startOffset
 
     const moveToOffset = async (offset: number): Promise<void> => {
