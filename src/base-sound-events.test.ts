@@ -7,8 +7,10 @@ function createMockContext() {
   return new Mock() as unknown as AudioContext
 }
 
-function createSound(context: AudioContext) {
-  const audioBuffer = context.createBuffer(1, 1, 1)
+function createSound(context: AudioContext, bufferDuration?: number) {
+  const sampleRate = 44100
+  const length = bufferDuration ? Math.floor(bufferDuration * sampleRate) : sampleRate
+  const audioBuffer = context.createBuffer(1, length, sampleRate)
   return new Sound(context, audioBuffer)
 }
 
@@ -129,6 +131,56 @@ describe('event System', () => {
           }),
         }),
       )
+    })
+  })
+
+  describe('dispose() event cleanup (TEST-03)', () => {
+    it('event listeners do not fire after dispose()', async () => {
+      const sound = createSound(audioContext)
+      const playHandler = vi.fn()
+      sound.on('play', playHandler)
+
+      // First play — listener fires
+      await sound.play()
+      expect(playHandler).toHaveBeenCalledTimes(1)
+
+      await sound.stop()
+
+      // Dispose
+      sound.dispose()
+
+      // Attempting to play after dispose throws, so the listener can't fire via play()
+      await expect(sound.play()).rejects.toThrow('Cannot play a disposed sound')
+
+      // Verify handler was NOT called again
+      expect(playHandler).toHaveBeenCalledTimes(1)
+    })
+
+    it('onended does not emit end event after dispose()', async () => {
+      const sound = createSound(audioContext)
+      const endHandler = vi.fn()
+      sound.on('end', endHandler)
+
+      await sound.play()
+
+      // Get reference to audioSourceNode before dispose nullifies onended
+      const sourceNode = sound.audioSourceNode
+
+      sound.dispose()
+
+      // onended was set to null by dispose(), so triggering it is a no-op
+      expect(sourceNode.onended).toBeNull()
+      expect(endHandler).not.toHaveBeenCalled()
+    })
+
+    it('stop event does not fire on dispose if not playing', () => {
+      const sound = createSound(audioContext)
+      const stopHandler = vi.fn()
+      sound.on('stop', stopHandler)
+
+      // Dispose without playing — should not emit stop
+      sound.dispose()
+      expect(stopHandler).not.toHaveBeenCalled()
     })
   })
 })
