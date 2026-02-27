@@ -720,7 +720,9 @@ Plans:
   4. `Track.percentPlayed` returns 0 when duration is 0 (no NaN, no divide-by-zero exception)
   5. Rapid sequential calls to `Track.seek()` do not corrupt `startOffset` (last seek wins, no race condition)
   6. When one layer of a `LayeredSound` fails to play, the other layers still play to completion
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 48-01-PLAN.md — Fire-and-forget error handling, dispose cleanup, divide-by-zero guard, seek race condition fix
+- [ ] 48-02-PLAN.md — BeatTrack.dispose(), LayeredSound.play() allSettled resilience
 
 ### Phase 49: Export Cleanup
 **Goal**: The public API surface is free of internal test helpers, and error paths throw domain-specific error types
