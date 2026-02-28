@@ -31,6 +31,7 @@ A soundfont is a collection of pre-recorded instrument samples mapped to differe
 **Trade-offs:**
 - Larger file size (the piano soundfont is 1.4MB)
 - Loading time on slower connections
+- **Synchronous parsing** — soundfont data is decoded on the main thread; files over 5 MB may briefly freeze the UI on mobile devices
 - Fixed timbre (can't drastically change the sound like synthesis)
 
 ## How It Works
