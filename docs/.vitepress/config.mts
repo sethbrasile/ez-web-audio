@@ -162,6 +162,7 @@ export default defineConfig({
           items: [
             { text: 'Audio Sprite', link: '/examples/audio-sprite' },
             { text: 'Layered Sound', link: '/examples/layered-sound' },
+            { text: 'Play Together', link: '/examples/play-together' },
             { text: 'Crossfade', link: '/examples/crossfade' },
           ],
         },
