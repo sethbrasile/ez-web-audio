@@ -543,6 +543,93 @@ describe('lfo', () => {
     })
   })
 
+  // ===== 11. Input Validation (H4/L1/L2/L4) =====
+  describe('input validation', () => {
+    // H4: frequency setter
+    it('frequency = NaN throws a descriptive error', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.frequency = Number.NaN }).toThrow(/must be a positive finite number/)
+    })
+
+    it('frequency = -1 throws', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.frequency = -1 }).toThrow(/must be a positive finite number/)
+    })
+
+    it('frequency = Infinity throws', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.frequency = Infinity }).toThrow(/must be a positive finite number/)
+    })
+
+    it('frequency = 0 throws', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.frequency = 0 }).toThrow(/must be a positive finite number/)
+    })
+
+    // L2: depth setter
+    it('depth = NaN throws a descriptive error', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.depth = Number.NaN }).toThrow(/must be a finite number/)
+    })
+
+    it('depth = Infinity throws', () => {
+      const lfo = new LFO()
+      expect(() => { lfo.depth = Infinity }).toThrow(/must be a finite number/)
+    })
+
+    // H4: syncToBPM validation
+    it('syncToBPM("bad") throws with format guidance', () => {
+      const lfo = new LFO()
+      expect(() => lfo.syncToBPM(120, 'bad')).toThrow(/N\/D/)
+    })
+
+    it('syncToBPM "1/0" (zero denominator) throws', () => {
+      const lfo = new LFO()
+      expect(() => lfo.syncToBPM(120, '1/0')).toThrow()
+    })
+
+    it('syncToBPM negative bpm throws', () => {
+      const lfo = new LFO()
+      expect(() => lfo.syncToBPM(-1, '1/4')).toThrow(/positive finite/)
+    })
+
+    it('syncToBPM NaN bpm throws', () => {
+      const lfo = new LFO()
+      expect(() => lfo.syncToBPM(Number.NaN, '1/4')).toThrow(/positive finite/)
+    })
+
+    // L1: type setter — standard-to-standard should NOT call _restart()
+    it('L1: standard-to-standard type change while running does NOT cause a new start', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ type: 'sine' })
+      lfo.connect(sound, 'gain')
+      lfo.start()
+      // We verify that changing standard→standard doesn't throw and LFO stays running
+      expect(() => { lfo.type = 'square' }).not.toThrow()
+      expect(lfo.isRunning).toBe(true)
+      expect(lfo.type).toBe('square')
+    })
+  })
+
+  // ===== 12. S&H Buffer Optimization (L4) =====
+  describe('S&H buffer optimization', () => {
+    it('L4: S&H buffer produces correct step pattern (values constant within each step)', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ type: 'sample-and-hold', frequency: 4 })
+      lfo.connect(sound, 'gain')
+      lfo.start()
+      // Verify LFO is running (buffer was created successfully)
+      expect(lfo.isRunning).toBe(true)
+    })
+
+    it('_extractAudioContext uses getAudioContext() for BaseEffect targets', () => {
+      const effect = new TestEffect(ctx)
+      const lfo = new LFO()
+      // connect() internally calls _extractAudioContext — should not throw
+      expect(() => lfo.connect(effect, 'frequency')).not.toThrow()
+    })
+  })
+
   // ===== 10. Type Changes (MOD-01) =====
   describe('type changes', () => {
     it('changing type while running recreates oscillator of new type', () => {

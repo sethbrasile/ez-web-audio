@@ -97,6 +97,9 @@ export class LFO {
   }
 
   set frequency(value: number) {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`LFO frequency must be a positive finite number, got ${value}`)
+    }
     this._frequency = value
     if (this._oscillatorNode) {
       if (this._isSampleAndHold()) {
@@ -117,6 +120,9 @@ export class LFO {
   }
 
   set depth(value: number) {
+    if (!Number.isFinite(value)) {
+      throw new Error(`LFO depth must be a finite number, got ${value}`)
+    }
     this._depth = value
     this._updateAllDepthGains()
   }
@@ -131,13 +137,19 @@ export class LFO {
     this._type = value
     const isSH = this._isSampleAndHold()
 
-    if (this._isRunning && (wasSH !== isSH || (!wasSH && !isSH))) {
-      // Type changed while running — must recreate source node
+    if (!this._isRunning) return
+
+    if (wasSH !== isSH) {
+      // Switching between S&H and standard — must recreate node
       this._restart()
     }
-    else if (this._isRunning && !wasSH && !isSH && this._oscillatorNode) {
-      // Standard to standard — just change the type on the existing oscillator
+    else if (!wasSH && !isSH && this._oscillatorNode) {
+      // Standard to standard — cheap type update, no restart needed
       (this._oscillatorNode as OscillatorNode).type = value as OscillatorType
+    }
+    else {
+      // S&H to S&H — must regenerate buffer
+      this._restart()
     }
   }
 
@@ -379,9 +391,18 @@ export class LFO {
    * @returns this for chaining
    */
   syncToBPM(bpm: number, noteLength: string): this {
+    if (!Number.isFinite(bpm) || bpm <= 0) {
+      throw new Error(`syncToBPM: bpm must be a positive finite number, got ${bpm}`)
+    }
     const parts = noteLength.split('/')
+    if (parts.length !== 2) {
+      throw new Error(`syncToBPM: noteLength must be "N/D" format (e.g., "1/4"), got "${noteLength}"`)
+    }
     const numerator = Number.parseInt(parts[0], 10)
     const denominator = Number.parseInt(parts[1], 10)
+    if (!Number.isFinite(numerator) || numerator <= 0 || !Number.isFinite(denominator) || denominator <= 0) {
+      throw new Error(`syncToBPM: noteLength "${noteLength}" has invalid numerator or denominator`)
+    }
     // Quarter note at given BPM: bpm/60 Hz
     // Eighth note: (bpm/60) * 2 Hz, etc.
     // General: (bpm/60) * (denominator / 4) * numerator
@@ -442,8 +463,8 @@ export class LFO {
     if (this._isBaseSound(target)) {
       return target.audioContext
     }
-    // BaseEffect — audioContext is protected, access via cast
-    return (target as unknown as { audioContext: AudioContext }).audioContext
+    // BaseEffect — use public accessor (added in Plan 02)
+    return (target as BaseEffect).getAudioContext()
   }
 
   private _resolveAudioParam(target: LFOTarget, paramName: string): AudioParam {
@@ -602,14 +623,12 @@ export class LFO {
     // Number of steps per second = frequency
     const samplesPerStep = Math.max(1, Math.floor(sampleRate / frequency))
 
-    for (let i = 0; i < bufferLength; i++) {
-      if (i % samplesPerStep === 0) {
-        // New random value at each step
-        const value = Math.random() * 2 - 1 // -1 to 1
-        // Fill this step
-        for (let j = i; j < Math.min(i + samplesPerStep, bufferLength); j++) {
-          data[j] = value
-        }
+    // Step directly by samplesPerStep (O(bufferLength) not O(bufferLength * samplesPerStep))
+    for (let i = 0; i < bufferLength; i += samplesPerStep) {
+      const value = Math.random() * 2 - 1 // -1 to 1
+      const end = Math.min(i + samplesPerStep, bufferLength)
+      for (let j = i; j < end; j++) {
+        data[j] = value
       }
     }
 
