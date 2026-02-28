@@ -99,7 +99,7 @@
 - [x] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface (completed 2026-02-28)
 - [x] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation (completed 2026-02-28)
 - [x] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization (completed 2026-02-28)
-- [ ] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport
+- [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [ ] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus
 - [ ] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters
 
@@ -797,7 +797,9 @@ Plans:
   1. Developer can call `sequence.at('1m', callback)` and `sequence.at('2:2', callback)` — callbacks fire at the correct musical positions when the Transport is running
   2. Developer can use musical time strings `"4n"` (quarter note), `"8t"` (eighth triplet), `"2m"` (two bars) — all parse correctly and schedule at the right beat offset relative to current BPM
   3. Changing `transport.bpm` during playback causes subsequent beat scheduling to use the new BPM without needing to call `sequence.reschedule()` or restart the Transport
-**Plans**: TBD
+**Plans**:
+- [x] 56-01-PLAN.md — Musical time parser utility (TDD, Wave 1)
+- [x] 56-02-PLAN.md — Sequence class + Transport integration (Wave 2)
 
 ### Phase 57: PolySynth
 **Goal**: Developers can play multiple simultaneous notes through a single PolySynth instance without manual voice management — chords and rapid melodic passages play cleanly with no clicks when voices are stolen
