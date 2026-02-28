@@ -201,7 +201,7 @@ export class Sequence {
     timeSignature: [number, number],
     ticksPerBeat: number,
   ): void {
-    if (this._disposed || this.events.length === 0 || !this._started) return
+    if (this._disposed || !this._started) return
 
     const beatsPerSecond = bpm / 60
     const beatsPerBar = timeSignature[0]
@@ -226,16 +226,19 @@ export class Sequence {
 
     const windowEndBeat = currentSeqBeat + lookaheadBeats
 
-    // Check for loop wrap
-    if (this._loop && windowEndBeat >= this.lengthInBeats) {
-      const newIteration = Math.floor(elapsedBeats / this.lengthInBeats) + 1
-      if (newIteration > this.loopIteration) {
-        this.loopIteration = newIteration
+    // Check for loop wrap — detect when we've entered a new loop iteration
+    if (this._loop) {
+      const currentIteration = Math.floor(elapsedBeats / this.lengthInBeats)
+      if (currentIteration > this.loopIteration) {
+        this.loopIteration = currentIteration
         this.emit('loop', { iteration: this.loopIteration, source: this })
         // Reset lastScheduledBeat so events fire again in new loop
         this.lastScheduledBeat = -1
       }
     }
+
+    // No events to schedule
+    if (this.events.length === 0) return
 
     // Schedule events in window
     for (const event of this.events) {
