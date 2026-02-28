@@ -817,6 +817,19 @@ Plans:
   3. After calling `sound.dispose()`, the LFO connected to that sound stops running and releases all AudioNode references (no memory leak, no zombie OscillatorNode)
 **Plans**: TBD
 
+### Phase 54.1: Effects and LFO Deep Review Fixes (INSERTED)
+
+**Goal:** Fix all LFO lifecycle bugs, complete BaseEffect API surface, add input validation to all parameter setters, and apply performance optimizations identified in the 2026-02-28 deep review of Phases 53-54
+**Requirements**: C1, H1, H2, H3, H4, M1, M2, M3, M4, M5, M6, M7, M8, M9, L1, L2, L3, L4, L8
+**Depends on:** Phase 54
+**Plans:** 4 plans
+
+Plans:
+- [ ] 54.1-01-PLAN.md — LFO lifecycle: event-based dispose, mutual exclusion, error handling (C1, H1, H2, M1)
+- [ ] 54.1-02-PLAN.md — BaseEffect completeness: JSDoc, getAudioContext(), dispose(), export (H3, M2, M3, M4)
+- [ ] 54.1-03-PLAN.md — Validation and performance: input guards, clamping, curve optimization, smooth transitions (H4, M5-M9, L1-L4)
+- [ ] 54.1-04-PLAN.md — Test coverage: disconnect-all, getParam, convolution URL, edge cases (L8)
+
 ### Phase 55: Transport + BeatTrack Sync
 **Goal**: Developers can create a global Transport clock that multiple BeatTracks lock to, enabling perfect multi-track synchronization that survives background tab throttling
 **Depends on**: Phase 54
