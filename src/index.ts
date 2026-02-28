@@ -28,6 +28,7 @@ import { getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unl
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
+  BaseEffect,
   CompressorEffect,
   createCompressor,
   createDelay,
@@ -1014,6 +1015,7 @@ export {
   AudioLoadError,
   // Audio Sprites
   AudioSprite,
+  BaseEffect,
   Beat,
   BeatTrack,
   clearPreloadCache,
