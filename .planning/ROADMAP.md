@@ -551,7 +551,7 @@ Plans:
 | 51. Documentation Fixes | 2/2 | Complete    | 2026-02-27 | - |
 | 52. Test Strengthening | 3/3 | Complete    | 2026-02-28 | - |
 | 53. Built-in Effects | Effects & Transport | 0/? | Not started | - |
-| 54. LFO | Effects & Transport | 0/? | Not started | - |
+| 54. LFO | 1/2 | In Progress|  | - |
 | 55. Transport + BeatTrack Sync | Effects & Transport | 0/? | Not started | - |
 | 56. Sequencer + Musical Time | Effects & Transport | 0/? | Not started | - |
 | 57. PolySynth | Effects & Transport | 0/? | Not started | - |
