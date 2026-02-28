@@ -8,6 +8,7 @@
 import type { BaseSound } from '../base-sound'
 import type { BeatTrack } from '../beat-track'
 import type { LayeredSound } from '../layered-sound'
+import type { Transport } from '../transport'
 
 /**
  * Union of all classes that emit events in ez-web-audio.
@@ -24,7 +25,7 @@ import type { LayeredSound } from '../layered-sound'
  * })
  * ```
  */
-export type AudioEventSource = BaseSound | BeatTrack | LayeredSound
+export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | Transport
 
 /**
  * Detail for 'play' events, fired when audio playback starts.
@@ -215,4 +216,44 @@ export interface LayeredSoundEventMap {
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>
   warning: CustomEvent<WarningEventDetail>
+}
+
+// ─── Transport Events ────────────────────────────────────────────────
+
+/**
+ * Detail for Transport 'tick' events, fired on every beat subdivision.
+ * Contains the current position in musical time.
+ */
+export interface TransportTickDetail {
+  /** Current bar number (1-indexed) */
+  bar: number
+  /** Current beat within bar (1-indexed) */
+  beat: number
+  /** Current tick within beat (0-indexed) */
+  tick: number
+  /** Elapsed time in seconds since transport started */
+  seconds: number
+  /** The Transport instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
+ * Detail for Transport lifecycle events (start, stop, pause, resume).
+ */
+export interface TransportLifecycleDetail {
+  /** The audioContext.currentTime when the event occurred */
+  time: number
+  /** The Transport instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
+ * Maps Transport event names to their corresponding CustomEvent types.
+ */
+export interface TransportEventMap {
+  start: CustomEvent<TransportLifecycleDetail>
+  stop: CustomEvent<TransportLifecycleDetail>
+  pause: CustomEvent<TransportLifecycleDetail>
+  resume: CustomEvent<TransportLifecycleDetail>
+  tick: CustomEvent<TransportTickDetail>
 }

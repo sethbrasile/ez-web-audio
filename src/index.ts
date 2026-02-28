@@ -12,6 +12,7 @@ import type { LFOConnectOptions, LFOOptions, LFOWaveform } from './lfo'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { CrossfadeOptions } from './utils/crossfade'
+import type { TransportOptions, TransportPosition } from './transport'
 import type { Accidental, NoteLetter, Octave } from '@/musical-identity'
 import type { SamplerOptions } from '@/sampler'
 import { OscillatorController } from '@controllers/oscillator-controller'
@@ -52,6 +53,7 @@ import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from 
 import { Font } from './font'
 import { LayeredSound } from './layered-sound'
 import { LFO } from './lfo'
+import { formatPosition, Transport } from './transport'
 import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
@@ -601,6 +603,35 @@ export function createLFO(options?: LFOOptions): LFO {
 }
 
 /**
+ * Create a global Transport clock for multi-track synchronization.
+ *
+ * The Transport provides a Worker-backed clock that multiple BeatTracks can lock to,
+ * enabling perfect multi-track synchronization that survives background tab throttling.
+ *
+ * @param options - Transport configuration (bpm, timeSignature, ticksPerBeat)
+ * @returns Promise resolving to a Transport instance
+ *
+ * @example
+ * ```typescript
+ * import { createTransport, createBeatTrack } from 'ez-web-audio'
+ *
+ * const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
+ * const kick = await createBeatTrack(['kick.mp3'], { numBeats: 4 })
+ *
+ * kick.syncTo(transport, { noteType: 1/4 })
+ * transport.start()
+ *
+ * transport.on('tick', (e) => {
+ *   console.log(`Position: ${e.detail.bar}:${e.detail.beat}:${e.detail.tick}`)
+ * })
+ * ```
+ */
+export async function createTransport(options: TransportOptions): Promise<Transport> {
+  await initAudio()
+  return new Transport(getOrCreateAudioContext(), options)
+}
+
+/**
  * Create a LayeredSound that plays multiple Sound/Oscillator instances simultaneously.
  * All layers start at exactly the same audioContext.currentTime for perfect sync.
  *
@@ -1067,6 +1098,9 @@ export {
   // Collection utilities
   stopAll,
   Track,
+  // Transport
+  Transport,
+  formatPosition,
   wrapEffect,
 }
 
@@ -1086,6 +1120,9 @@ export type {
   SoundEventType,
   StopEventDetail,
   TrackEventMap,
+  TransportEventMap,
+  TransportLifecycleDetail,
+  TransportTickDetail,
   WarningEventDetail,
 } from './events/event-types'
 // Re-export LayeredSound types
@@ -1126,5 +1163,7 @@ export type {
   SpriteDefinition,
   SpriteManifest,
   SpritePlayOptions,
+  TransportOptions,
+  TransportPosition,
   TimeObject,
 }
