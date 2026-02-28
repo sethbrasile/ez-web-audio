@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: First Stable Release
 status: unknown
-last_updated: "2026-02-28T16:54:51.057Z"
+last_updated: "2026-02-28T16:55:56.024Z"
 progress:
   total_phases: 49
   completed_phases: 48
   total_plans: 143
-  completed_plans: 140
+  completed_plans: 141
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 53 completed)
-**Current Focus:** Phase 54 — LFO
+**Last Updated:** 2026-02-28 (Phase 54.1 Plan 01 completed)
+**Current Focus:** Phase 54.1 — Effects and LFO Deep Review Fixes
 
 ## Project Reference
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 54.1 of 58 (Effects and LFO Deep Review Fixes)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-02-28 — Phase 54 completed (2 plans, 52 LFO tests)
+Plan: 01 complete, 02 next
+Status: In progress
+Last activity: 2026-02-28 — Plan 54.1-01 completed (2 tasks, 57 LFO tests, event-based dispose cleanup)
 
 Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 
@@ -45,12 +45,12 @@ Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 53. Built-in Effects | 4/4 | 210 tests | 52.5 |
-| 54. LFO | TBD | - | - |
+| 54. LFO | 2/2 | 52 tests | - |
+| 54.1. Deep Review Fixes | 1/4 complete | 57 LFO tests | - |
 | 55. Transport + BeatTrack Sync | TBD | - | - |
 | 56. Sequencer + Musical Time | TBD | - | - |
 | 57. PolySynth | TBD | - | - |
 | 58. GrainPlayer | TBD | - | - |
-| Phase 54.1 P02 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -71,6 +71,9 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
 - [Phase 54.1-02]: dispose() uses try/catch per-node for safe teardown of audio nodes including feedback loops
 - [Phase 54.1-02]: getAudioContext() public accessor pattern avoids unsafe casts in LFO and external tools
+- [Phase 54.1-01]: Event-based LFO dispose cleanup: replaced _patchDispose() monkey-patching with addEventListener('dispose') — multiple LFOs on same target each get independent listeners
+- [Phase 54.1-01]: BaseSound now emits 'dispose' CustomEvent before silencing dispatchEvent — enables event-based cleanup patterns
+- [Phase 54.1-01]: LFO connect() throws on syncLifecycle+retrigger combination (mutually exclusive options)
 
 ### Roadmap Evolution
 
@@ -88,5 +91,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Phase 53 complete — ready to plan Phase 54
+Stopped at: Completed 54.1-01-PLAN.md — ready for 54.1-02
 Resume file: None
