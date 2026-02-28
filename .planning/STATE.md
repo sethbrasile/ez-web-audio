@@ -6,15 +6,15 @@ status: ready_to_plan
 last_updated: "2026-02-28"
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Effects & Transport roadmap created)
-**Current Focus:** Phase 53 — Built-in Effects
+**Last Updated:** 2026-02-28 (Phase 53 completed)
+**Current Focus:** Phase 54 — LFO
 
 ## Project Reference
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 53 of 58 (Built-in Effects)
+Phase: 54 of 58 (LFO)
 Plan: — (not yet planned)
 Status: Ready to plan
-Last activity: 2026-02-28 — Roadmap created for Effects & Transport milestone
+Last activity: 2026-02-28 — Phase 53 completed (4 plans, 210 effect tests)
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases complete)
+Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 53. Built-in Effects | TBD | - | - |
+| 53. Built-in Effects | 4/4 | 210 tests | 52.5 |
 | 54. LFO | TBD | - | - |
 | 55. Transport + BeatTrack Sync | TBD | - | - |
 | 56. Sequencer + Musical Time | TBD | - | - |
@@ -57,8 +57,15 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete)
 
 See .planning/PROJECT.md Key Decisions table for full history.
 
-**Effects & Transport design decisions to make before coding:**
-- Phase 53: Reverb API shape — `createReverb(url)` vs `createReverb({ decay, preDelay })` (affects Phase 53 plan)
+**Phase 53 decisions made:**
+- BaseEffect abstract class pattern for shared wet/dry, bypass, rampTo()
+- Duck-typing for AudioContext detection in factory functions (not instanceof)
+- Reverb smart factory: string=convolution, object=algorithmic, no-args=algorithmic defaults
+- Distortion: 4 built-in curve types + custom, post-distortion tone control (lowpass)
+- Compressor: 1:1 mapping to DynamicsCompressorNode with reduction metering
+- EQ: 3-band (lowshelf + peaking + highshelf) with configurable crossover frequencies
+
+**Effects & Transport design decisions remaining:**
 - Phase 54: LFO depth unit API — raw native units vs typed connect helpers like `createTremolo(sound, { depth })` (breaking-change risk if wrong)
 - Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
 
@@ -74,5 +81,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Roadmap created — ready to plan Phase 53
+Stopped at: Phase 53 complete — ready to plan Phase 54
 Resume file: None

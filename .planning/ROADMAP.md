@@ -96,7 +96,7 @@
 
 **Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
-- [ ] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface
+- [x] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface (completed 2026-02-28)
 - [ ] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation
 - [ ] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization
 - [ ] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport
@@ -801,7 +801,11 @@ Plans:
   3. Developer can call `createDistortion({ amount: 50, mix: 0.6 })` and the WaveShaper curve distorts the signal at the configured amount
   4. Developer can call `createCompressor({ threshold: -24, ratio: 4, knee: 30, attack: 0.003, release: 0.25 })` and the DynamicsCompressorNode reduces dynamic range
   5. Developer can call `createEQ({ low: 3, mid: -2, high: 4 })` and the three-band filter adjusts frequency balance
-**Plans**: TBD
+**Plans**: 4 plans
+- [x] 53-01-PLAN.md — BaseEffect + FilterEffect refactor + DelayEffect
+- [x] 53-02-PLAN.md — Distortion + Compressor effects
+- [x] 53-03-PLAN.md — Reverb (algorithmic + convolution)
+- [x] 53-04-PLAN.md — EQ (three-band equalizer)
 
 ### Phase 54: LFO
 **Goal**: Developers can create a low-frequency oscillator and connect it to any audio parameter on any sound, enabling tremolo, vibrato, auto-filter, and auto-pan effects with no memory leaks
