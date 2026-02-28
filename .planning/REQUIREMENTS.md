@@ -38,9 +38,9 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
 ### Sequencer
 
-- [ ] **SEQ-01**: Developer can create a Sequence that schedules arbitrary callbacks at musical time divisions
-- [ ] **SEQ-02**: Developer can use musical time notation ("4n", "8t", "2m") to specify timing
-- [ ] **SEQ-03**: Sequences respond to live BPM changes without re-scheduling
+- [x] **SEQ-01**: Developer can create a Sequence that schedules arbitrary callbacks at musical time divisions
+- [x] **SEQ-02**: Developer can use musical time notation ("4n", "8t", "2m") to specify timing
+- [x] **SEQ-03**: Sequences respond to live BPM changes without re-scheduling
 
 ## Future Requirements
 
@@ -94,9 +94,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRANS-02 | Phase 55 | Pending |
 | TRANS-03 | Phase 55 | Pending |
 | TRANS-04 | Phase 55 | Pending |
-| SEQ-01 | Phase 56 | Pending |
-| SEQ-02 | Phase 56 | Pending |
-| SEQ-03 | Phase 56 | Pending |
+| SEQ-01 | Phase 56 | Complete |
+| SEQ-02 | Phase 56 | Complete |
+| SEQ-03 | Phase 56 | Complete |
 
 **Coverage:**
 - Milestone requirements: 19 total
