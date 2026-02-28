@@ -223,6 +223,23 @@ async function loadFromBuffer(
 }
 
 /**
+ * Resolve an AudioInput to a Sound instance.
+ * Handles string URLs via load() and ArrayBuffer/Blob/File via loadFromBuffer().
+ * @private
+ */
+async function resolveSound(input: AudioInput): Promise<Sound> {
+  if (typeof input === 'string') {
+    return load(input, 'sound') as Promise<Sound>
+  }
+  if (input instanceof ArrayBuffer) {
+    return loadFromBuffer(input, 'sound') as Promise<Sound>
+  }
+  // Blob or File
+  const buffer = await input.arrayBuffer()
+  return loadFromBuffer(buffer, 'sound') as Promise<Sound>
+}
+
+/**
  * Create a Sound from an audio file URL, ArrayBuffer, Blob, or File.
  *
  * Sound is for one-shot audio playback (sound effects, UI sounds). Each call to
@@ -255,15 +272,7 @@ async function loadFromBuffer(
  * ```
  */
 export async function createSound(input: AudioInput): Promise<Sound> {
-  if (typeof input === 'string') {
-    return load(input, 'sound') as Promise<Sound>
-  }
-  if (input instanceof ArrayBuffer) {
-    return loadFromBuffer(input, 'sound') as Promise<Sound>
-  }
-  // Blob or File
-  const buffer = await input.arrayBuffer()
-  return loadFromBuffer(buffer, 'sound') as Promise<Sound>
+  return resolveSound(input)
 }
 
 /**
@@ -391,7 +400,7 @@ export async function createTracks(
  * A BeatTrack manages a sequence of Beats, where each Beat can be active (plays sound)
  * or inactive (rest). Sounds are played in round-robin fashion to prevent overlapping.
  *
- * @param urls - Array of audio file URLs to load as sound sources
+ * @param inputs - Array of audio file URLs, ArrayBuffers, Blobs, or Files to load as sound sources
  * @param opts - Optional BeatTrack configuration
  * @returns Promise resolving to a BeatTrack instance
  * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
@@ -400,8 +409,11 @@ export async function createTracks(
  * ```typescript
  * import { createBeatTrack } from 'ez-web-audio'
  *
- * // Create a kick drum track with 3 sounds for round-robin
+ * // From URLs
  * const kick = await createBeatTrack(['kick1.mp3', 'kick2.mp3', 'kick3.mp3'])
+ *
+ * // From mixed inputs (URLs, ArrayBuffers, Files)
+ * const snare = await createBeatTrack([snareUrl, snareBuffer, snareFile])
  *
  * // Set up a 4/4 beat pattern (kick on 1 and 3)
  * kick.beats[0].active = true  // Beat 1
@@ -411,8 +423,8 @@ export async function createTracks(
  * kick.play()
  * ```
  */
-export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): Promise<BeatTrack> {
-  const sounds = await Promise.all(urls.map(async url => load(url, 'sound') as Promise<Sound>))
+export async function createBeatTrack(inputs: AudioInput[], opts?: BeatTrackOptions): Promise<BeatTrack> {
+  const sounds = await Promise.all(inputs.map(resolveSound))
   return new BeatTrack(getOrCreateAudioContext(), sounds, opts)
 }
 
@@ -423,7 +435,7 @@ export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): 
  * providing natural variation and preventing the "machine gun" effect of
  * identical sounds played rapidly.
  *
- * @param urls - Array of audio file URLs to load as sound sources
+ * @param inputs - Array of audio file URLs, ArrayBuffers, Blobs, or Files to load as sound sources
  * @param opts - Optional Sampler configuration
  * @returns Promise resolving to a Sampler instance
  * @throws {AudioLoadError} If any audio file cannot be loaded or decoded
@@ -432,10 +444,13 @@ export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): 
  * ```typescript
  * import { createSampler } from 'ez-web-audio'
  *
- * // Create a sampler with multiple gunshot variations
+ * // From URLs
  * const gunshot = await createSampler([
  *   'shot1.mp3', 'shot2.mp3', 'shot3.mp3'
  * ])
+ *
+ * // From mixed inputs (URLs, ArrayBuffers, Files)
+ * const snare = await createSampler([snareUrl, snareBuffer, snareFile])
  *
  * // Each play uses the next sound in rotation
  * gunshot.play() // shot1
@@ -444,8 +459,8 @@ export async function createBeatTrack(urls: string[], opts?: BeatTrackOptions): 
  * gunshot.play() // shot1 (wraps around)
  * ```
  */
-export async function createSampler(urls: string[], opts?: SamplerOptions): Promise<Sampler> {
-  const sounds = await Promise.all(urls.map(async url => load(url, 'sound') as Promise<Sound>))
+export async function createSampler(inputs: AudioInput[], opts?: SamplerOptions): Promise<Sampler> {
+  const sounds = await Promise.all(inputs.map(resolveSound))
   await initAudio()
   return new Sampler(sounds, opts)
 }
