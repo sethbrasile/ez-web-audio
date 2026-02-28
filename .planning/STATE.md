@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: First Stable Release
-status: unknown
+milestone: "5"
+milestone_name: Effects & Transport
+status: in_progress
 last_updated: "2026-02-28T17:13:40.256Z"
 progress:
-  total_phases: 49
-  completed_phases: 49
-  total_plans: 143
-  completed_plans: 143
+  total_phases: 6
+  completed_phases: 3
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # Project State: EZ Audio
@@ -21,24 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Make the Web Audio API easy to use
-**Current focus:** Effects & Transport milestone (Phases 53-58)
+**Current milestone:** Milestone 5 — Effects & Transport (Phases 53-58)
 
 ## Current Position
 
-Phase: 54.1 of 58 COMPLETE (Effects and LFO Deep Review Fixes)
-Plan: 04 complete — all 4 plans done, phase complete
-Status: Phase 54.1 complete, ready for Phase 55
+Phase: 55 of 58 — next up (Transport + BeatTrack Sync)
+Status: Phases 53, 54, 54.1 complete. Phase 55 not yet planned.
 Last activity: 2026-02-28 — Plan 54.1-04 completed (1 task, 14 new coverage gap tests)
 
-Progress: [██░░░░░░░░] 17% (1/6 phases complete)
+Progress: [█████░░░░░] 50% (3/6 phases complete in Milestone 5)
 
 ## Performance Metrics
 
 **Prior milestones:**
-- v1.0 MVP: Phases 1-11 (48 plans)
-- v1.1 Quality & Polish: Phases 12-16 (20 plans)
-- v1.0 Stable: Phases 17-46 (52+ plans)
-- Deep Review Hardening: Phases 47-52 (13 plans)
+- Milestone 1 (MVP): Phases 1-11 (48 plans)
+- Milestone 2 (Quality & Polish): Phases 12-16 (20 plans)
+- Milestone 3 (Stable Release): Phases 17-46 (52+ plans)
+- Milestone 4 (Deep Review Hardening): Phases 47-52 (13 plans)
 
 **By Phase (this milestone):**
 
@@ -51,8 +50,6 @@ Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 | 56. Sequencer + Musical Time | TBD | - | - |
 | 57. PolySynth | TBD | - | - |
 | 58. GrainPlayer | TBD | - | - |
-| Phase 54.1 P03 | 6 | 2 tasks | 12 files |
-| Phase 54.1 P04 | 2 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -68,23 +65,24 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Compressor: 1:1 mapping to DynamicsCompressorNode with reduction metering
 - EQ: 3-band (lowshelf + peaking + highshelf) with configurable crossover frequencies
 
-**Effects & Transport design decisions remaining:**
-- Phase 54: LFO depth unit API — raw native units vs typed connect helpers like `createTremolo(sound, { depth })` (breaking-change risk if wrong)
+**Phase 54/54.1 decisions made:**
+- Event-based LFO dispose cleanup: addEventListener('dispose') instead of monkey-patching
+- BaseSound emits 'dispose' CustomEvent before silencing dispatchEvent
+- LFO connect() throws on syncLifecycle+retrigger combination (mutually exclusive)
+- LFO frequency validation: positive finite only (zero invalid)
+- CURVE_SAMPLES=1024 for DistortionEffect (43x memory reduction, industry standard)
+- ReverbEffect decay/damping use setTargetAtTime for click-free transitions
+- dispose() uses try/catch per-node for safe teardown including feedback loops
+- getAudioContext() public accessor pattern avoids unsafe casts
+
+**Design decisions remaining:**
 - Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
-- [Phase 54.1-02]: dispose() uses try/catch per-node for safe teardown of audio nodes including feedback loops
-- [Phase 54.1-02]: getAudioContext() public accessor pattern avoids unsafe casts in LFO and external tools
-- [Phase 54.1-01]: Event-based LFO dispose cleanup: replaced _patchDispose() monkey-patching with addEventListener('dispose') — multiple LFOs on same target each get independent listeners
-- [Phase 54.1-01]: BaseSound now emits 'dispose' CustomEvent before silencing dispatchEvent — enables event-based cleanup patterns
-- [Phase 54.1-01]: LFO connect() throws on syncLifecycle+retrigger combination (mutually exclusive options)
-- [Phase 54.1]: LFO frequency validation: positive finite only (zero invalid — produces silence)
-- [Phase 54.1]: CURVE_SAMPLES=1024 for DistortionEffect: WaveShaper interpolates, 1024 is industry-standard with 43x memory reduction
-- [Phase 54.1]: ReverbEffect decay/damping use setTargetAtTime with timeConstant=0.01/3 for click-free transitions
-- [Phase 54.1-04]: vi.spyOn(globalThis, 'fetch') for mock fetch testing — restores cleanly, avoids global state leakage
-- [Phase 54.1-04]: mockRestore() called inline after fetch mock tests — avoids afterEach blocks and test pollution
 
 ### Roadmap Evolution
 
-- Phase 54.1 inserted after Phase 54: Effects and LFO Deep Review Fixes (URGENT)
+- Phase 54.1 inserted after Phase 54: Effects and LFO Deep Review Fixes
+- Milestone naming changed from version-based (v1.0, v1.1) to numbered (Milestone 1-5)
+- Phases 1-11 archived to .planning/milestones/mvp-phases/
 
 ### Pending Todos
 
