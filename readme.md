@@ -42,7 +42,7 @@ song.pause()
 song.resume()
 
 // Seek to 30 seconds
-await song.seek(30).as('seconds')
+song.seek(30).as('seconds')
 
 // Read current position
 console.log(song.position.string) // '0:30'
