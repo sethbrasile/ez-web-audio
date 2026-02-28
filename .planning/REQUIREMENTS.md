@@ -35,8 +35,8 @@
 
 ### Documentation Fixes
 
-- [ ] **DOCS-01**: Vibrato example in `docs/guide/parameter-control.md` either works correctly or has a caveat about consume-once semantics
-- [ ] **DOCS-02**: README `await song.seek(30).as('seconds')` corrected — `seek().as()` returns void, not a Promise
+- [x] **DOCS-01**: Vibrato example in `docs/guide/parameter-control.md` either works correctly or has a caveat about consume-once semantics
+- [x] **DOCS-02**: README `await song.seek(30).as('seconds')` corrected — `seek().as()` returns void, not a Promise
 
 ### Test Strengthening
 
@@ -59,9 +59,9 @@
 
 ### Documentation & DX
 
-- [ ] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
+- [x] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
 - [ ] **DOCS-04**: A `playTogether` example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
-- [ ] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
+- [x] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
 
 ### Remaining Performance
 
@@ -94,8 +94,8 @@
 | PERF-02 | Phase 51 | Complete |
 | PERF-03 | _(N/A)_ | Removed |
 | PERF-04 | Phase 51 | Complete |
-| DOCS-01 | Phase 52 | Pending |
-| DOCS-02 | Phase 52 | Pending |
+| DOCS-01 | Phase 52 | Complete |
+| DOCS-02 | Phase 52 | Complete |
 | TEST-01 | Phase 50 | Complete |
 | TEST-02 | Phase 50 | Complete |
 | TEST-03 | Phase 50 | Complete |
@@ -106,9 +106,9 @@
 | SAFE-08 | Phase 51 | Complete |
 | SAFE-09 | Phase 51 | Complete |
 | SAFE-10 | Phase 51 | Complete |
-| DOCS-03 | Phase 52 | Pending |
+| DOCS-03 | Phase 52 | Complete |
 | DOCS-04 | Phase 52 | Pending |
-| DX-01 | Phase 52 | Pending |
+| DX-01 | Phase 52 | Complete |
 | PERF-05 | Phase 51 | Complete |
 | PERF-06 | Phase 51 | Complete |
 

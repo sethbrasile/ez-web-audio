@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: First Stable Release
 status: unknown
-last_updated: "2026-02-27T23:30:27.038Z"
+last_updated: "2026-02-28T00:43:32.500Z"
 progress:
-  total_phases: 45
-  completed_phases: 45
-  total_plans: 130
-  completed_plans: 130
+  total_phases: 46
+  completed_phases: 46
+  total_plans: 133
+  completed_plans: 133
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-27 (51-01 complete — durationRaw getter, resume guard, AudioSprite node skip, crossfade curve cache)
-**Current Focus:** Phase 51 — Performance & Safety (both plans complete)
+**Last Updated:** 2026-02-28 (52-03 complete — playTogether example page with Vue demo component)
+**Current Focus:** Phase 52 — Documentation & Examples (all 3 plans complete)
 
 ## Project Reference
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 51 of 52 (Performance & Safety)
-Plan: 02 of 02 complete
-Status: Phase 51 complete — SAFE-07 through SAFE-10 addressed, PERF-02 through PERF-06 addressed
-Last activity: 2026-02-27 — Phase 51 Plan 01 complete (PERF-02, PERF-04, PERF-05, PERF-06)
+Phase: 52 of 52 (Documentation & Examples)
+Plan: 02 of 03 complete
+Status: Phase 52 in progress — DX-01 complete (AudioInput[] widening for all factory functions)
+Last activity: 2026-02-28 — Phase 52 Plan 02 complete (DX-01: createBeatTrack/createSampler accept AudioInput[])
 
-Progress: [████████████████████████░░░░░░] 87% (phases 47-51 complete, 52 remaining)
+Progress: [█████████████████████████░░░░░] 90% (phases 47-51 complete, 52 in progress)
 
 ## Performance Metrics
 
@@ -58,6 +58,10 @@ Recent decisions affecting current work:
 - [Phase 50-code-quality]: Used vi.spyOn on AudioParam methods to verify scheduled values in onPlaySet/onPlayRamp tests rather than mocking the controller
 - Phase 51-02: Override dispatchEvent = () => false on dispose — EventTarget has no removeAllListeners(), this is cleanest no-op; LayeredSound dispose guards throw errors (not silent no-op) to make use-after-dispose immediately obvious
 - Phase 51-01: durationRaw abstract getter avoids TimeObject allocation in hot paths; resume() guarded by state check; AudioSprite skips nodes at defaults; crossfade curves cached at module level (setValueCurveAtTime copies arrays internally)
+- [Phase 52-documentation-examples]: resolveSound() helper centralizes AudioInput dispatch for createSound/createBeatTrack/createSampler
+- [Phase 52-01]: Consume-once warning uses bold inline text in body for grep-compatible verification alongside title-case callout heading
+- [Phase 52]: Play Together sidebar placed in Composition section after Layered Sound — related feature grouping
+- [Phase 52]: Sequential demo uses await-in-loop with 150ms gap to contrast synchronized playTogether
 
 ### Roadmap Evolution
 
@@ -76,6 +80,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed Phase 51 Plan 01 — Performance Optimizations (PERF-02, PERF-04, PERF-05, PERF-06)
+Last session: 2026-02-28
+Stopped at: Completed Phase 52 Plan 02 — Widen createBeatTrack and createSampler to accept AudioInput[] (DX-01)
 Resume file: None
