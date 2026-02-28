@@ -97,7 +97,7 @@
 **Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
 - [x] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface (completed 2026-02-28)
-- [ ] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation
+- [x] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation (completed 2026-02-28)
 - [ ] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization
 - [ ] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport
 - [ ] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus
@@ -551,7 +551,7 @@ Plans:
 | 51. Documentation Fixes | 2/2 | Complete    | 2026-02-27 | - |
 | 52. Test Strengthening | 3/3 | Complete    | 2026-02-28 | - |
 | 53. Built-in Effects | Effects & Transport | 0/? | Not started | - |
-| 54. LFO | 1/2 | In Progress|  | - |
+| 54. LFO | 2/2 | Complete   | 2026-02-28 | - |
 | 55. Transport + BeatTrack Sync | Effects & Transport | 0/? | Not started | - |
 | 56. Sequencer + Musical Time | Effects & Transport | 0/? | Not started | - |
 | 57. PolySynth | Effects & Transport | 0/? | Not started | - |
