@@ -163,6 +163,11 @@ export class LFO {
 
     const opts: LFOConnectOptions = options ?? {}
 
+    // H1: Mutual exclusion guard — syncLifecycle and retrigger are incompatible
+    if (opts.syncLifecycle && opts.retrigger) {
+      throw new Error('LFO connect(): "syncLifecycle" and "retrigger" are mutually exclusive — use one or the other.')
+    }
+
     // Extract AudioContext from target
     if (!this._audioContext) {
       this._audioContext = this._extractAudioContext(target)
@@ -295,11 +300,16 @@ export class LFO {
     try {
       this._oscillatorNode!.start()
     }
-    catch {
-      // Already started — recreate
-      this._initNodes()
-      this._rewireConnections()
-      this._oscillatorNode!.start()
+    catch (e) {
+      if (e instanceof DOMException && e.name === 'InvalidStateError') {
+        // Already started — recreate and rewire
+        this._initNodes()
+        this._rewireConnections()
+        this._oscillatorNode!.start()
+      }
+      else {
+        throw e
+      }
     }
 
     this._isRunning = true
@@ -319,8 +329,13 @@ export class LFO {
     try {
       this._oscillatorNode?.stop()
     }
-    catch {
-      // Already stopped
+    catch (e) {
+      if (e instanceof DOMException && e.name === 'InvalidStateError') {
+        // Already stopped — ignore
+      }
+      else {
+        throw e
+      }
     }
 
     this._oscillatorNode = null
@@ -525,18 +540,14 @@ export class LFO {
         this._oscillatorNode?.stop()
       }
       catch {
-        // Already stopped
+        // Already stopped — expected for disposed nodes
       }
     }
     this._oscillatorNode = null
     this._initNodes()
     this._rewireConnections()
-    try {
-      this._oscillatorNode!.start()
-    }
-    catch {
-      // Handle edge cases
-    }
+    // No try/catch — let real errors (e.g. closed AudioContext) propagate
+    this._oscillatorNode!.start()
     this._isRunning = true
   }
 
