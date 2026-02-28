@@ -86,7 +86,7 @@
 - [x] **Phase 49: Export Cleanup** - Remove internal function exports, use domain error classes (completed 2026-02-27)
 - [x] **Phase 50: Code Quality** - Extract duplicated gain-interception and controller logic, strengthen test assertions, add publish tag verification (completed 2026-02-27)
 - [x] **Phase 51: Performance & Safety** - Guard audioContext.resume(), add durationRaw accessor, pan validation, crossfade cache, AudioSprite node optimization, context warning, dispose cleanup, LayeredSound dispose (completed 2026-02-27)
-- [ ] **Phase 52: Documentation & Examples** - Fix vibrato example, correct README seek await, document soundfont blocking, document AudioInput limitation, add playTogether example page
+- [ ] **Phase 52: Documentation & Examples** - Fix vibrato example, correct README seek await, document soundfont blocking, add playTogether example page, widen AudioInput signatures
 
 ## Phase Details
 
@@ -763,7 +763,7 @@ Plans:
 ### Phase 52: Documentation & Examples
 **Goal**: All documentation examples are correct, limitations are documented, and every significant feature has an interactive example
 **Depends on**: Phase 51
-**Requirements**: DOCS-01, DOCS-02, DOCS-03, DX-01
+**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DX-01
 **Success Criteria** (what must be TRUE):
   1. The vibrato example in `docs/guide/parameter-control.md` either works correctly with consume-once semantics or clearly explains that `onPlaySet`/`onPlayRamp` must be re-scheduled before each play
   2. The README `song.seek(30)` example does not show `await` — `seek().as()` returns void and is not a Promise

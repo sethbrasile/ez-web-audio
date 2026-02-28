@@ -60,6 +60,7 @@
 ### Documentation & DX
 
 - [ ] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
+- [ ] **DOCS-04**: A `playTogether` example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
 - [ ] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
 
 ### Remaining Performance
@@ -106,14 +107,15 @@
 | SAFE-09 | Phase 51 | Complete |
 | SAFE-10 | Phase 51 | Complete |
 | DOCS-03 | Phase 52 | Pending |
+| DOCS-04 | Phase 52 | Pending |
 | DX-01 | Phase 52 | Pending |
 | PERF-05 | Phase 51 | Complete |
 | PERF-06 | Phase 51 | Complete |
 
 **Coverage:**
-- Requirements: 29 total (1 removed as N/A)
+- Requirements: 30 total (1 removed as N/A)
 - Completed: 10
-- Pending: 18
+- Pending: 19
 - Unmapped: 0
 
 ---
