@@ -7,16 +7,16 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** — Phases 1-11 (shipped 2026-02-14)
-- ✅ **v1.1 Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
-- ✅ **v1.0 Stable** — Phases 17-46 (complete)
-- ✅ **Deep Review Hardening** — Phases 47-52 (complete)
-- 📋 **Effects & Transport** — Phases 53-58 (planned)
+- ✅ **Milestone 1: MVP** — Phases 1-11 (shipped 2026-02-14)
+- ✅ **Milestone 2: Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
+- ✅ **Milestone 3: Stable Release** — Phases 17-46 (complete)
+- ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
+- 📋 **Milestone 5: Effects & Transport** — Phases 53-58 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-11) — SHIPPED 2026-02-14</summary>
+<summary>✅ Milestone 1: MVP (Phases 1-11) — SHIPPED 2026-02-14</summary>
 
 - [x] Phase 1: Foundation (4/4 plans) — completed 2026-02-01
 - [x] Phase 2: ADSR Envelopes (4/4 plans) — completed 2026-02-02
@@ -33,7 +33,7 @@
 </details>
 
 <details>
-<summary>✅ v1.1 Quality & Polish (Phases 12-16) — SHIPPED 2026-02-16</summary>
+<summary>✅ Milestone 2: Quality & Polish (Phases 12-16) — SHIPPED 2026-02-16</summary>
 
 - [x] Phase 12: Comprehensive Audit (5/5 plans) — completed 2026-02-16
 - [x] Phase 13: Code Quality Implementation (3/3 plans) — completed 2026-02-16
@@ -43,9 +43,9 @@
 
 </details>
 
-### 🚧 v1.0 First Stable Release (Phases 17-38)
+### Milestone 3: Stable Release (Phases 17-46)
 
-**Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues (free pre-1.0), upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, update all documentation, and ship as npm 1.0.0.
+**Milestone Goal:** Implement all deferred audit improvements, fix breaking API issues, upgrade dependencies for security, add convenience APIs, harden defensive code, expand test coverage, and update all documentation.
 
 - [x] **Phase 17: Dependency Security Upgrades** - Upgrade all vulnerable dependencies before any code changes (completed 2026-02-17)
 - [x] **Phase 18: Breaking API Cleanup** - Rename fluent API methods, enforce encapsulation, remove deprecated APIs, update JSDoc (completed 2026-02-17)
@@ -79,7 +79,7 @@
 - [x] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut (completed 2026-02-25)
 
 <details>
-<summary>✅ Deep Review Hardening (Phases 47-52) — COMPLETE 2026-02-28</summary>
+<summary>✅ Milestone 4: Deep Review Hardening (Phases 47-52) — COMPLETE 2026-02-28</summary>
 
 **Milestone Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
 
@@ -92,13 +92,13 @@
 
 </details>
 
-### 📋 Effects & Transport (Phases 53-58)
+### 📋 Milestone 5: Effects & Transport (Phases 53-58)
 
 **Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
 - [x] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface (completed 2026-02-28)
 - [x] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation (completed 2026-02-28)
-- [ ] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization
+- [x] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization (completed 2026-02-28)
 - [ ] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport
 - [ ] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus
 - [ ] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters
@@ -216,7 +216,7 @@
 **Goal**: All phases are formally verified, all documentation is accurate, and npm 1.0.0 is published
 **Depends on**: Phase 23
 **Requirements**: API-01–07, DOC-01, DX-01–08, DEF-05, DOC-03 (verification docs only — code complete)
-**Gap Closure**: Closes gaps from v1.0 milestone audit
+**Gap Closure**: Closes gaps from Milestone 3 audit
 **Success Criteria** (what must be TRUE):
   1. `18-VERIFICATION.md` exists and confirms all 8 Phase 18 requirements satisfied via code inspection
   2. `19-VERIFICATION.md` exists and confirms all 10 Phase 19 requirements satisfied via code inspection
@@ -228,17 +228,8 @@
 **Plans**: 1 plan
 - [x] 24-01-PLAN.md — Verification docs, doc fixes, tracking cleanup _(npm publish deferred)_
 
-### Phase 25: New Example Pages
-**Goal**: Every significant library feature has an interactive example on the docs site — no feature is "hidden" from developers browsing examples
-**Depends on**: Phase 24 (or can run in parallel with review fix phases)
-**Success Criteria** (what must be TRUE):
-  1. An AudioSprite example page exists at `docs/examples/audio-sprite.md` with a Vue component demonstrating sprite loading, named segment playback, and overlapping plays
-  2. A Crossfade example page exists at `docs/examples/crossfade.md` with a Vue component demonstrating smooth transition between two tracks (e.g., DJ crossfader or ambient scene transition)
-  3. A playTogether example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering (e.g., chord builder or layered SFX)
-  4. All three examples appear in `docs/examples/index.md` with descriptions
-  5. All three examples appear in the VitePress sidebar navigation
-  6. All example code uses the current 1.0 API correctly
-**Plans**: TBD (created during `/gsd:plan-phase`)
+### ~~Phase 25~~ — New Example Pages (CONSOLIDATED into Phase 35)
+**Status**: Completed via Phase 35 (Documentation Expansion). No separate directory — work was merged into Phase 35 plans.
 
 ### Phase 26: Source Code Fixes
 **Goal**: All runtime bugs, race conditions, memory leaks, and API contract violations identified in code review are fixed
@@ -496,66 +487,19 @@ Plans:
 
 ## Progress
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Foundation | v1.0 MVP | 4/4 | Complete | 2026-02-01 |
-| 2. ADSR Envelopes | v1.0 MVP | 4/4 | Complete | 2026-02-02 |
-| 3. Utility Features | v1.0 MVP | 3/3 | Complete | 2026-02-03 |
-| 4. Composition Features | v1.0 MVP | 3/3 | Complete | 2026-02-04 |
-| 5. Effects & Advanced | v1.0 MVP | 4/4 | Complete | 2026-02-05 |
-| 6. Testing | v1.0 MVP | 4/4 | Complete | 2026-02-06 |
-| 7. Documentation & Demo | v1.0 MVP | 7/7 | Complete | 2026-02-08 |
-| 8. Build & Distribution | v1.0 MVP | 3/3 | Complete | 2026-02-09 |
-| 9. Interactive Examples | v1.0 MVP | 10/10 | Complete | 2026-02-12 |
-| 10. Lazy AudioContext | v1.0 MVP | 4/4 | Complete | 2026-02-13 |
-| 11. Drum Machine Examples | v1.0 MVP | 2/2 | Complete | 2026-02-14 |
-| 12. Comprehensive Audit | v1.1 | 5/5 | Complete | 2026-02-16 |
-| 13. Code Quality | v1.1 | 3/3 | Complete | 2026-02-16 |
-| 14. Docs & Examples Polish | v1.1 | 6/6 | Complete | 2026-02-16 |
-| 15. Test Coverage | v1.1 | 4/4 | Complete | 2026-02-16 |
-| 16. SEO & Discoverability | v1.1 | 2/2 | Complete | 2026-02-16 |
-| 17. Dependency Security Upgrades | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
-| 18. Breaking API Cleanup | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
-| 19. DX Improvements | v1.0 Stable | 3/3 | Complete | 2026-02-17 |
-| 20. Defensive Hardening | v1.0 Stable | Complete    | 2026-02-17 | - |
-| 21. Test Coverage | v1.0 Stable | Complete    | 2026-02-17 | - |
-| 22. Demo App & Release | v1.0 Stable | Complete    | 2026-02-17 | - |
-| 23. Demo Example Bugfixes | v1.0 Stable | Complete    | 2026-02-17 | - |
-| 24. Milestone Verification & Release | v1.0 Stable | 0/1 | Pending | - |
-| 25. New Example Pages | v1.0 Stable | 0/? | Pending | - |
-| 26. Source Code Fixes | 6/6 | Complete    | 2026-02-22 | - |
-| 27. Package Quality & README | 2/2 | Complete    | 2026-02-22 | - |
-| 28. Documentation Corrections | 2/2 | Complete    | 2026-02-22 | - |
-| 29. Demo Component Fixes | 3/3 | Complete    | 2026-02-22 | - |
-| 30. Test Coverage Expansion | 3/3 | Complete    | 2026-02-22 | - |
-| 31. E2E & Integration Test Expansion | 2/2 | Complete    | 2026-02-22 | - |
-| 32. Critical Fixes & API Contracts | v1.0 Stable | 0/? | Pending | - |
-| 33. DX Convenience APIs | 2/2 | Complete    | 2026-02-22 | - |
-| 34. Test Gap Closure | 2/2 | Complete    | 2026-02-22 | - |
-| 35. Documentation Expansion & Fixes | 3/3 | Complete    | 2026-02-22 | - |
-| 36. Documentation Sync (Post-Fixes) | 2/2 | Complete    | 2026-02-22 | - |
-| 37. Nice-to-Have DX Features | 3/3 | Complete    | 2026-02-22 | - |
-| 38. Final Documentation Sync | 2/2 | Complete   | 2026-02-22 | - |
-| 39. Documentation Code Correctness | 2/2 | Complete | 2026-02-22 | - |
-| 40. Build and Type Declaration Fixes | 2/2 | Complete | 2026-02-22 | - |
-| 41. API Type Safety | 1/1 | Complete | 2026-02-22 | - |
-| 42. Source Code Correctness Bugs | 2/2 | Complete | 2026-02-22 | - |
-| 43. Test Coverage Gaps | 3/3 | Complete | 2026-02-23 | - |
-| 44. Docs Site SEO and Accessibility | 3/3 | Complete | 2026-02-24 | - |
-| 45. Architecture Improvements | 2/2 | Complete | 2026-02-24 | - |
-| 46. Post-Review Fixes | 4/4 | Complete    | 2026-02-25 |
-| 47. Ship-Blocker Fix | 1/1 | Complete    | 2026-02-27 | - |
-| 48. Safety & Correctness | 2/2 | Complete   | 2026-02-27 | - |
-| 49. Export Cleanup | 1/1 | Complete    | 2026-02-27 | - |
-| 50. Performance | 2/2 | Complete    | 2026-02-27 | - |
-| 51. Documentation Fixes | 2/2 | Complete    | 2026-02-27 | - |
-| 52. Test Strengthening | 3/3 | Complete    | 2026-02-28 | - |
-| 53. Built-in Effects | Effects & Transport | 0/? | Not started | - |
-| 54. LFO | 2/2 | Complete    | 2026-02-28 | - |
-| 55. Transport + BeatTrack Sync | Effects & Transport | 0/? | Not started | - |
-| 56. Sequencer + Musical Time | Effects & Transport | 0/? | Not started | - |
-| 57. PolySynth | Effects & Transport | 0/? | Not started | - |
-| 58. GrainPlayer | Effects & Transport | 0/? | Not started | - |
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
+| 1-11 | M1: MVP | 48/48 | Complete | 2026-02-14 |
+| 12-16 | M2: Quality & Polish | 20/20 | Complete | 2026-02-16 |
+| 17-46 | M3: Stable Release | 52+/52+ | Complete | 2026-02-25 |
+| 47-52 | M4: Deep Review Hardening | 13/13 | Complete | 2026-02-28 |
+| 53. Built-in Effects | M5: Effects & Transport | 4/4 | Complete | 2026-02-28 |
+| 54. LFO | M5 | 2/2 | Complete | 2026-02-28 |
+| 54.1. Deep Review Fixes | M5 | 4/4 | Complete | 2026-02-28 |
+| 55. Transport + BeatTrack Sync | M5 | 0/? | Not started | - |
+| 56. Sequencer + Musical Time | M5 | 0/? | Not started | - |
+| 57. PolySynth | M5 | 0/? | Not started | - |
+| 58. GrainPlayer | M5 | 0/? | Not started | - |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -839,7 +783,11 @@ Plans:
   2. Developer can call `transport.start()`, `transport.pause()`, and `transport.stop()` — position advances during play, freezes on pause, and resets to 0 on stop
   3. Developer can call `beatTrack.syncTo(transport)` and the BeatTrack's internal `setTimeout` scheduler is disabled — beats are triggered by the Transport clock instead
   4. Two BeatTracks both synced to the same Transport play in lockstep with no audible drift between their beat patterns
-**Plans**: TBD
+Plans:
+- [x] 55-01-PLAN.md — WorkerTimer shared utility (Wave 1)
+- [x] 55-02-PLAN.md — Transport class with lifecycle, position, events (Wave 2)
+- [x] 55-03-PLAN.md — BeatTrack WorkerTimer migration (Wave 2)
+- [x] 55-04-PLAN.md — syncTo/unsync integration with mute/solo (Wave 3)
 
 ### Phase 56: Sequencer + Musical Time
 **Goal**: Developers can schedule arbitrary callbacks at musical time positions using human-readable notation, and live BPM changes take effect immediately without re-scheduling
@@ -874,7 +822,9 @@ Plans:
 ---
 
 **Archives:**
-- `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
-- `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
+- `milestones/mvp-phases/` — Milestone 1 phase directories (Phases 1-11)
+- `milestones/v1.1-phases/` — Milestone 2 phase directories (Phases 12-16)
+- `milestones/v1.1-ROADMAP.md` — Milestone 2 phase details
+- `milestones/v1.1-REQUIREMENTS.md` — Milestone 2 requirements with outcomes
 
 *Last updated: 2026-02-28 after Effects & Transport roadmap created*

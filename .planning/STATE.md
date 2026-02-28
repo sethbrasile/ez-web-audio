@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: "5"
 milestone_name: Effects & Transport
 status: in_progress
-last_updated: "2026-02-28T17:13:40.256Z"
+last_updated: "2026-02-28T22:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  completed_phases: 4
+  total_plans: 14
+  completed_plans: 14
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 54.1 Plan 04 completed — Phase 54.1 DONE)
-**Current Focus:** Phase 55 — Transport + BeatTrack Sync
+**Last Updated:** 2026-02-28 (Phase 55 complete — Transport + BeatTrack Sync)
+**Current Focus:** Phase 56 — Sequencer + Musical Time
 
 ## Project Reference
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 55 of 58 — next up (Transport + BeatTrack Sync)
-Status: Phases 53, 54, 54.1 complete. Phase 55 not yet planned.
-Last activity: 2026-02-28 — Plan 54.1-04 completed (1 task, 14 new coverage gap tests)
+Phase: 56 of 58 — next up (Sequencer + Musical Time)
+Status: Phases 53, 54, 54.1, 55 complete. Phase 56 not yet planned.
+Last activity: 2026-02-28 — Phase 55 completed (4 plans, 95 new tests across WorkerTimer/Transport/BeatTrack sync)
 
-Progress: [█████░░░░░] 50% (3/6 phases complete in Milestone 5)
+Progress: [██████░░░░] 67% (4/6 phases complete in Milestone 5)
 
 ## Performance Metrics
 
@@ -46,7 +46,7 @@ Progress: [█████░░░░░] 50% (3/6 phases complete in Milestone
 | 53. Built-in Effects | 4/4 | 210 tests | 52.5 |
 | 54. LFO | 2/2 | 52 tests | - |
 | 54.1. Deep Review Fixes | 4/4 complete | 14 new tests (plan 04) | - |
-| 55. Transport + BeatTrack Sync | TBD | - | - |
+| 55. Transport + BeatTrack Sync | 4/4 complete | 95 new tests (23+41+31) | 23.75 |
 | 56. Sequencer + Musical Time | TBD | - | - |
 | 57. PolySynth | TBD | - | - |
 | 58. GrainPlayer | TBD | - | - |
@@ -75,6 +75,17 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - dispose() uses try/catch per-node for safe teardown including feedback loops
 - getAudioContext() public accessor pattern avoids unsafe casts
 
+**Phase 55 decisions made:**
+- WorkerTimer: inline Blob Worker with setTimeout fallback, lazy creation, 20ms interval
+- Transport follows BeatTrack's EventTarget + CustomEvent pattern
+- start() after pause() emits 'resume' (not 'start') to differentiate
+- Position: 1-indexed bar/beat, 0-indexed tick (musical convention)
+- syncTo/unsync pattern: synced tracks throw on standalone methods
+- internalStop() extracted to avoid guard-throw in dispose/unsync paths
+- Mute/solo: muted always silences; stackable solo (any soloed → only soloed play)
+- Beat events always fire even when muted (for UI sync)
+- Beat.triggerVisualOnly() for muted/non-soloed visual indication
+
 **Design decisions remaining:**
 - Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
 
@@ -90,11 +101,10 @@ None active.
 
 ### Blockers/Concerns
 
-- Phase 55 (Transport) has highest integration risk: `syncTo(transport)` must cleanly disable BeatTrack's internal scheduler without breaking `playActiveBeats()` backward compatibility. Research recommends a short prototype spike before full plan.
 - Phase 58 (GrainPlayer): `AudioBufferSourceNode` approach cannot independently time-stretch (pitch shift changes speed). Must document this limitation prominently and frame as "pitch shift + position scrubbing" not "time stretch".
 
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 54.1-04-PLAN.md — Phase 54.1 complete, ready for Phase 55
+Stopped at: Completed Phase 55 — ready for Phase 56
 Resume file: None
