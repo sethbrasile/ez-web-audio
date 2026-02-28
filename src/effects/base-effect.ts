@@ -119,6 +119,19 @@ export abstract class BaseEffect implements Effect {
    * filter.rampTo('frequency', 800, 1) // Ramp cutoff to 800Hz over 1 second
    * ```
    */
+  /**
+   * Get a named AudioParam from this effect for external modulation.
+   *
+   * Delegates to the subclass's getAudioParam() implementation.
+   * Returns null if the parameter name is not recognized.
+   *
+   * @param name - The parameter name (e.g., 'frequency', 'time', 'feedback')
+   * @returns The AudioParam, or null if not recognized
+   */
+  public getParam(name: string): AudioParam | null {
+    return this.getAudioParam(name)
+  }
+
   rampTo(param: string, value: number, duration: number): void {
     if (param === 'mix') {
       // Ramp wet/dry mix via gain nodes

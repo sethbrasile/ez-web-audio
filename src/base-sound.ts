@@ -595,6 +595,19 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
   }
 
   /**
+   * Get the StereoPannerNode for this sound.
+   *
+   * Provides controlled access to the underlying StereoPannerNode for advanced
+   * audio routing scenarios (e.g., LFO modulation of pan position).
+   * For simple pan control, use changePanTo() or update('pan').
+   *
+   * @returns The StereoPannerNode controlling this sound's pan position
+   */
+  public getPannerNode(): StereoPannerNode {
+    return this.pannerNode
+  }
+
+  /**
    * Update an audio parameter immediately.
    *
    * Returns a fluent builder for setting the parameter value. Use `.to(value)`
