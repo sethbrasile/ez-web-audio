@@ -811,7 +811,7 @@ describe('factory functions', () => {
       it('leaves identity fields at defaults for non-standard keys', async () => {
         const { createNotes } = await import('./index')
         // Use a numeric key that cannot be parsed as a note name
-        const notes = createNotes({ 'CUSTOM': 999.9 })
+        const notes = createNotes({ CUSTOM: 999.9 })
         // letter/accidental/octave remain at constructor defaults (frequency not in built-in map)
         expect(notes[0].letter).toBe('A')
         expect(notes[0].accidental).toBe('')
@@ -882,6 +882,34 @@ describe('factory functions', () => {
       expect(layered).toBeDefined()
     })
   })
+
+  describe('createLFO()', () => {
+    it('creates an LFO with default options', async () => {
+      const { createLFO, LFO } = await import('./index')
+      const lfo = createLFO()
+      expect(lfo).toBeInstanceOf(LFO)
+      expect(lfo.frequency).toBe(1)
+      expect(lfo.depth).toBe(0.3)
+    })
+
+    it('creates an LFO with custom options', async () => {
+      const { createLFO } = await import('./index')
+      const lfo = createLFO({ frequency: 5, depth: 0.5, type: 'triangle' })
+      expect(lfo.frequency).toBe(5)
+      expect(lfo.depth).toBe(0.5)
+    })
+
+    it('lfo can connect to a sound and start', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createLFO, createSound } = await import('./index')
+      const sound = await createSound('test.mp3')
+      const lfo = createLFO({ frequency: 2, depth: 0.3 })
+      lfo.connect(sound, 'gain')
+      lfo.start()
+      expect(lfo.isRunning).toBe(true)
+      lfo.dispose()
+    })
+  })
 })
 
 describe('preventEventDefaults', () => {
@@ -942,10 +970,21 @@ describe('preventEventDefaults', () => {
     preventEventDefaults(div)
 
     const expectedEvents = [
-      'touchstart', 'touchend', 'touchcancel', 'touchmove',
-      'mousedown', 'mouseup', 'click', 'contextmenu',
-      'dragstart', 'dragend', 'dragenter', 'dragover',
-      'drag', 'dragleave', 'drop',
+      'touchstart',
+      'touchend',
+      'touchcancel',
+      'touchmove',
+      'mousedown',
+      'mouseup',
+      'click',
+      'contextmenu',
+      'dragstart',
+      'dragend',
+      'dragenter',
+      'dragover',
+      'drag',
+      'dragleave',
+      'drop',
     ]
 
     expectedEvents.forEach((eventName) => {

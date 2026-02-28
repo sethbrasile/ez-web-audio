@@ -8,6 +8,7 @@ import type { EnvelopeOptions } from './envelope'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { LayeredSoundOptions } from './layered-sound'
+import type { LFOConnectOptions, LFOOptions, LFOWaveform } from './lfo'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { CrossfadeOptions } from './utils/crossfade'
@@ -49,6 +50,7 @@ import { Envelope } from './envelope'
 import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
 import { Font } from './font'
 import { LayeredSound } from './layered-sound'
+import { LFO } from './lfo'
 import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
 import { AudioSprite } from './sprite'
@@ -556,6 +558,48 @@ export async function createAnalyzer(
 }
 
 /**
+ * Create a Low Frequency Oscillator (LFO) for modulating audio parameters.
+ *
+ * An LFO produces a slow oscillation that can be connected to any audio parameter
+ * (gain, pan, frequency, filter cutoff, etc.) to create effects like tremolo, vibrato,
+ * auto-pan, and auto-filter.
+ *
+ * The LFO does not require an AudioContext upfront — it infers the context from the
+ * first target connected via connect().
+ *
+ * @param options - Optional LFO configuration (frequency, depth, waveform type)
+ * @returns LFO instance ready to connect to audio targets
+ *
+ * @example
+ * ```typescript
+ * import { createLFO, createOscillator } from 'ez-web-audio'
+ *
+ * // Tremolo: modulate gain at 5 Hz
+ * const synth = await createOscillator({ frequency: 440 })
+ * const tremolo = createLFO({ frequency: 5, depth: 0.3, type: 'sine' })
+ * tremolo.connect(synth, 'gain')
+ * tremolo.start()
+ * synth.play()
+ *
+ * // Vibrato: modulate frequency in cents
+ * const vibrato = createLFO({ frequency: 6, depth: 50, type: 'sine' })
+ * vibrato.connect(synth, 'frequency') // depth=50 cents by default for frequency
+ * vibrato.start()
+ *
+ * // Auto-pan: modulate pan position
+ * const autoPan = createLFO({ frequency: 0.5, depth: 0.8, type: 'triangle' })
+ * autoPan.connect(synth, 'pan')
+ * autoPan.start()
+ *
+ * // BPM sync: set LFO rate to match quarter notes at 120 BPM
+ * tremolo.syncToBPM(120, '1/4') // sets frequency to 2 Hz
+ * ```
+ */
+export function createLFO(options?: LFOOptions): LFO {
+  return new LFO(options)
+}
+
+/**
  * Create a LayeredSound that plays multiple Sound/Oscillator instances simultaneously.
  * All layers start at exactly the same audioContext.currentTime for perfect sync.
  *
@@ -998,6 +1042,7 @@ export {
   GainEffect,
   InvalidNoteError,
   isPreloaded,
+  LFO,
   MusicallyAware,
   Note,
   Oscillator,
@@ -1065,6 +1110,9 @@ export type {
   ExternalEffect,
   FilterEffectOptions,
   FilterType,
+  LFOConnectOptions,
+  LFOOptions,
+  LFOWaveform,
   OscillatorControlType,
   OscillatorFilterOptions,
   OscillatorOptions,
