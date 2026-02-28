@@ -1,8 +1,9 @@
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BeatTrack as RealBeatTrack } from '@/beat-track'
+import { Transport } from './transport'
 import { Sound } from './sound'
 
 /**
@@ -792,5 +793,340 @@ describe('dispose() (SAFE-03)', () => {
     // After dispose, the eventTarget was replaced so old listeners are detached
     // Verify dispose worked correctly by checking beats are cleared
     expect(track.beats.length).toBe(0)
+  })
+})
+
+describe('syncTo / unsync', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    audioContext = new Mock() as unknown as AudioContext
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function createSyncableBeatTrack() {
+    const sound = createSound()
+    const track = new BeatTrack(audioContext, [sound])
+    return track
+  }
+
+  function createTestTransport(bpm = 120) {
+    return new Transport(audioContext as any, { bpm })
+  }
+
+  describe('syncTo()', () => {
+    it('sets isSynced to true', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(track.isSynced).toBe(true)
+      transport.dispose()
+    })
+
+    it('registers track with transport.tracks', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(transport.tracks).toContain(track)
+      transport.dispose()
+    })
+
+    it('stores noteType as _syncNoteType', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 16 })
+      expect((track as any)._syncNoteType).toBe(1 / 16)
+      transport.dispose()
+    })
+
+    it('is idempotent when syncing to same transport', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(transport.tracks).toHaveLength(1)
+      transport.dispose()
+    })
+
+    it('unsyncs from previous transport when syncing to new one', () => {
+      const track = createSyncableBeatTrack()
+      const transport1 = createTestTransport()
+      const transport2 = createTestTransport()
+      track.syncTo(transport1, { noteType: 1 / 4 })
+      track.syncTo(transport2, { noteType: 1 / 8 })
+      expect(transport1.tracks).toHaveLength(0)
+      expect(transport2.tracks).toContain(track)
+      transport1.dispose()
+      transport2.dispose()
+    })
+  })
+
+  describe('unsync()', () => {
+    it('sets isSynced to false', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      track.unsync()
+      expect(track.isSynced).toBe(false)
+      transport.dispose()
+    })
+
+    it('removes track from transport.tracks', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      track.unsync()
+      expect(transport.tracks).toHaveLength(0)
+      transport.dispose()
+    })
+
+    it('is a no-op when not synced', () => {
+      const track = createSyncableBeatTrack()
+      expect(() => track.unsync()).not.toThrow()
+    })
+
+    it('re-enables standalone methods after unsync', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      track.unsync()
+      // Should not throw now
+      expect(() => track.playBeats(120, 1 / 4)).not.toThrow()
+      track.stop()
+    })
+  })
+
+  describe('guard methods throw when synced', () => {
+    it('playBeats() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.playBeats(120, 1 / 4)).toThrow('Cannot call playBeats()')
+      transport.dispose()
+    })
+
+    it('playActiveBeats() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.playActiveBeats(120, 1 / 4)).toThrow('Cannot call playActiveBeats()')
+      transport.dispose()
+    })
+
+    it('stop() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.stop()).toThrow('Cannot call stop()')
+      transport.dispose()
+    })
+
+    it('pause() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.pause()).toThrow('Cannot call pause()')
+      transport.dispose()
+    })
+
+    it('resume() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.resume()).toThrow('Cannot call resume()')
+      transport.dispose()
+    })
+
+    it('setTempo() throws when synced', () => {
+      const track = createSyncableBeatTrack()
+      const transport = createTestTransport()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(() => track.setTempo(140)).toThrow('Cannot call setTempo()')
+      transport.dispose()
+    })
+  })
+
+  describe('muted property', () => {
+    it('defaults to false', () => {
+      const track = createSyncableBeatTrack()
+      expect(track.muted).toBe(false)
+    })
+
+    it('can be set to true', () => {
+      const track = createSyncableBeatTrack()
+      track.muted = true
+      expect(track.muted).toBe(true)
+    })
+
+    it('muted track _shouldPlay() returns false', () => {
+      const track = createSyncableBeatTrack()
+      track.muted = true
+      expect((track as any)._shouldPlay()).toBe(false)
+    })
+
+    it('unmuted track _shouldPlay() returns true (standalone)', () => {
+      const track = createSyncableBeatTrack()
+      expect((track as any)._shouldPlay()).toBe(true)
+    })
+  })
+
+  describe('solo property', () => {
+    it('defaults to false', () => {
+      const track = createSyncableBeatTrack()
+      expect(track.solo).toBe(false)
+    })
+
+    it('solo has no effect in standalone mode', () => {
+      const track = createSyncableBeatTrack()
+      track.solo = true
+      expect((track as any)._shouldPlay()).toBe(true)
+    })
+
+    it('when one track is soloed, non-soloed tracks return _shouldPlay=false', () => {
+      const transport = createTestTransport()
+      const track1 = createSyncableBeatTrack()
+      const track2 = createSyncableBeatTrack()
+      track1.syncTo(transport, { noteType: 1 / 4 })
+      track2.syncTo(transport, { noteType: 1 / 4 })
+
+      track1.solo = true
+      // track1 is soloed, should play
+      expect((track1 as any)._shouldPlay()).toBe(true)
+      // track2 is not soloed, should not play
+      expect((track2 as any)._shouldPlay()).toBe(false)
+      transport.dispose()
+    })
+
+    it('multiple tracks can be soloed (stackable)', () => {
+      const transport = createTestTransport()
+      const track1 = createSyncableBeatTrack()
+      const track2 = createSyncableBeatTrack()
+      const track3 = createSyncableBeatTrack()
+      track1.syncTo(transport, { noteType: 1 / 4 })
+      track2.syncTo(transport, { noteType: 1 / 4 })
+      track3.syncTo(transport, { noteType: 1 / 4 })
+
+      track1.solo = true
+      track2.solo = true
+      expect((track1 as any)._shouldPlay()).toBe(true)
+      expect((track2 as any)._shouldPlay()).toBe(true)
+      expect((track3 as any)._shouldPlay()).toBe(false)
+      transport.dispose()
+    })
+
+    it('when no tracks are soloed, all unmuted tracks play', () => {
+      const transport = createTestTransport()
+      const track1 = createSyncableBeatTrack()
+      const track2 = createSyncableBeatTrack()
+      track1.syncTo(transport, { noteType: 1 / 4 })
+      track2.syncTo(transport, { noteType: 1 / 4 })
+
+      expect((track1 as any)._shouldPlay()).toBe(true)
+      expect((track2 as any)._shouldPlay()).toBe(true)
+      transport.dispose()
+    })
+
+    it('muted + soloed track returns _shouldPlay=false (mute overrides solo)', () => {
+      const transport = createTestTransport()
+      const track1 = createSyncableBeatTrack()
+      track1.syncTo(transport, { noteType: 1 / 4 })
+      track1.solo = true
+      track1.muted = true
+      expect((track1 as any)._shouldPlay()).toBe(false)
+      transport.dispose()
+    })
+  })
+
+  describe('_scheduleBeatFromTransport()', () => {
+    it('emits beat event when called', () => {
+      const track = createSyncableBeatTrack()
+      track.beats[0].active = true
+
+      const beatEvents: any[] = []
+      track.on('beat', (e: any) => beatEvents.push(e.detail))
+
+      ;(track as any)._scheduleBeatFromTransport(0, audioContext.currentTime)
+      expect(beatEvents.length).toBe(1)
+      expect(beatEvents[0].beatIndex).toBe(0)
+      expect(beatEvents[0].active).toBe(true)
+    })
+
+    it('wraps beatIndex around beats.length', () => {
+      const track = createSyncableBeatTrack()
+      // Default 4 beats, so index 6 should wrap to 2
+      track.beats[2].active = true
+
+      const beatEvents: any[] = []
+      track.on('beat', (e: any) => beatEvents.push(e.detail))
+
+      ;(track as any)._scheduleBeatFromTransport(6, audioContext.currentTime)
+      expect(beatEvents[0].beatIndex).toBe(2)
+    })
+
+    it('emits beat events even when muted', () => {
+      const track = createSyncableBeatTrack()
+      track.muted = true
+
+      const beatEvents: any[] = []
+      track.on('beat', (e: any) => beatEvents.push(e.detail))
+
+      ;(track as any)._scheduleBeatFromTransport(0, audioContext.currentTime)
+      expect(beatEvents.length).toBe(1)
+    })
+  })
+
+  describe('Transport-driven playback', () => {
+    it('Transport.start() schedules beats on synced tracks', () => {
+      const transport = createTestTransport()
+      const track = createSyncableBeatTrack()
+      track.beats[0].active = true
+
+      const beatEvents: any[] = []
+      track.on('beat', (e: any) => beatEvents.push(e.detail))
+
+      track.syncTo(transport, { noteType: 1 / 4 })
+      transport.start()
+      vi.advanceTimersByTime(20) // trigger one scheduler tick
+
+      expect(beatEvents.length).toBeGreaterThan(0)
+      transport.dispose()
+    })
+
+    it('two tracks synced to same transport both receive beats', () => {
+      const transport = createTestTransport()
+      const track1 = createSyncableBeatTrack()
+      const track2 = createSyncableBeatTrack()
+      track1.beats[0].active = true
+      track2.beats[0].active = true
+
+      const events1: any[] = []
+      const events2: any[] = []
+      track1.on('beat', (e: any) => events1.push(e.detail))
+      track2.on('beat', (e: any) => events2.push(e.detail))
+
+      track1.syncTo(transport, { noteType: 1 / 4 })
+      track2.syncTo(transport, { noteType: 1 / 16 })
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(events1.length).toBeGreaterThan(0)
+      expect(events2.length).toBeGreaterThan(0)
+      transport.dispose()
+    })
+
+    it('dispose() unsyncs from transport', () => {
+      const transport = createTestTransport()
+      const track = createSyncableBeatTrack()
+      track.syncTo(transport, { noteType: 1 / 4 })
+      expect(transport.tracks).toHaveLength(1)
+
+      track.dispose()
+      expect(transport.tracks).toHaveLength(0)
+      transport.dispose()
+    })
   })
 })

@@ -2,6 +2,7 @@ import type { BeatTrackEventMap } from './events/event-types'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
+import type { Transport } from './transport'
 import { Beat } from './beat'
 import { Sampler } from './sampler'
 import audioContextAwareTimeout from './utils/timeout'
@@ -80,6 +81,29 @@ export class BeatTrack extends Sampler {
 
   // Beat cache (replaces module-level WeakMap for framework proxy compatibility)
   private _beats: Beat[] = []
+
+  // Sync state
+  private _syncedTo: Transport | null = null
+
+  /**
+   * The note type this track was synced with (e.g., 1/4, 1/8, 1/16).
+   * Used by Transport to calculate beat duration.
+   * @internal
+   */
+  _syncNoteType: number = 1 / 4
+
+  /**
+   * Whether this track is muted. When muted, beat scheduling continues
+   * (events still fire for UI sync) but audio playback is silenced.
+   */
+  public muted = false
+
+  /**
+   * Whether this track is soloed. Solo is stackable — when any synced track
+   * has solo=true, only soloed tracks produce audio. When no tracks are soloed,
+   * all unmuted tracks produce audio.
+   */
+  public solo = false
 
   // AudioContext-aware setTimeout for precise event timing
   private acTimeout: (fn: () => void, delayMillis: number) => number
@@ -210,6 +234,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public playBeats(bpm: number, noteType: number): void {
+    this.guardSynced('playBeats')
     if (bpm <= 0) {
       throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
@@ -242,6 +267,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public playActiveBeats(bpm: number, noteType: number): void {
+    this.guardSynced('playActiveBeats')
     if (bpm <= 0) {
       throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
@@ -268,21 +294,8 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public stop(): void {
-    this.workerTimer.stop()
-
-    // Cancel any pending beat-level timers to prevent post-stop visual flicker
-    for (const beat of this.beats) {
-      beat.cancelPendingTimers()
-    }
-
-    this.currentBeatIndex = 0
-    this.nextBeatTime = 0
-    this.pausedBeatIndex = null
-
-    this.emit('stop', {
-      time: this.audioContext.currentTime,
-      source: this,
-    })
+    this.guardSynced('stop')
+    this.internalStop()
   }
 
   /**
@@ -299,6 +312,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public pause(): void {
+    this.guardSynced('pause')
     this.workerTimer.stop()
 
     this.pausedBeatIndex = this.currentBeatIndex
@@ -324,6 +338,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public resume(): void {
+    this.guardSynced('resume')
     if (this.pausedBeatIndex !== null) {
       this.currentBeatIndex = this.pausedBeatIndex
       // Reset nextBeatTime to current time to prevent scheduler catch-up:
@@ -357,10 +372,162 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public setTempo(bpm: number): void {
+    this.guardSynced('setTempo')
     if (bpm <= 0) {
       throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
     }
     this.currentTempo = bpm
+  }
+
+  /**
+   * Whether this BeatTrack is currently synced to a Transport.
+   */
+  public get isSynced(): boolean {
+    return this._syncedTo !== null
+  }
+
+  /**
+   * Sync this BeatTrack to a Transport for clock-driven playback.
+   *
+   * When synced, the Transport's scheduler drives this track's beats.
+   * Standalone methods (playBeats, playActiveBeats, stop, pause, resume, setTempo)
+   * throw an error while synced — use transport.start()/stop() instead.
+   *
+   * @param transport - The Transport to sync to
+   * @param opts - Sync options: noteType (rhythmic subdivision, e.g., 1/4, 1/16)
+   *
+   * @example
+   * ```typescript
+   * const transport = await createTransport({ bpm: 120 })
+   * const kick = await createBeatTrack(['kick.mp3'], { numBeats: 4 })
+   *
+   * kick.syncTo(transport, { noteType: 1/4 })
+   * transport.start() // kicks play quarter notes at 120 BPM
+   * ```
+   */
+  public syncTo(transport: Transport, opts: { noteType: number }): void {
+    if (this._syncedTo === transport) return // already synced to this transport
+    if (this._syncedTo) this.unsync() // detach from previous
+    this._syncedTo = transport
+    this._syncNoteType = opts.noteType
+    transport._addTrack(this)
+  }
+
+  /**
+   * Unsync this BeatTrack from its Transport.
+   *
+   * Re-enables standalone methods (playBeats, playActiveBeats, stop, etc.).
+   * If the track was playing via Transport, it stops cleanly.
+   *
+   * @example
+   * ```typescript
+   * kick.unsync()
+   * kick.playBeats(120, 1/4) // standalone mode works again
+   * ```
+   */
+  public unsync(): void {
+    if (!this._syncedTo) return
+    this._syncedTo._removeTrack(this)
+    this._syncedTo = null
+    this.internalStop()
+  }
+
+  /**
+   * Determine whether this track should produce audio on the current beat.
+   *
+   * Logic:
+   * - If muted, never play audio
+   * - If not synced (standalone), always play audio (solo has no effect standalone)
+   * - If synced: if any sibling track is soloed, only soloed tracks play
+   * - If no tracks are soloed, all unmuted tracks play
+   *
+   * @internal
+   */
+  _shouldPlay(): boolean {
+    if (this.muted) return false
+    if (!this._syncedTo) return true // standalone: solo has no effect
+    const siblings = this._syncedTo.tracks
+    const anySoloed = siblings.some(t => (t as BeatTrack).solo)
+    return !anySoloed || this.solo
+  }
+
+  /**
+   * Schedule a single beat from the Transport's scheduler.
+   *
+   * Called by Transport.schedulerTick() for each beat within the lookahead window.
+   * Respects mute/solo state: muted or non-soloed tracks still emit beat events
+   * (for UI sync) but skip audio playback.
+   *
+   * @param beatIndex - Index into this track's beats array
+   * @param time - AudioContext time at which the beat should play
+   * @internal
+   */
+  _scheduleBeatFromTransport(beatIndex: number, time: number): void {
+    const beat = this.beats[beatIndex % this.beats.length]
+    const offset = time - this.audioContext.currentTime
+
+    if (this._shouldPlay()) {
+      // Play audio: use playInIfActive (only active beats produce sound)
+      beat.playInIfActive(offset)
+    }
+    else {
+      // Muted or not soloed: visual-only (currentTimeIsPlaying) with no audio
+      const msOffset = Math.max(0, offset * 1000)
+      if (msOffset <= 0) {
+        beat.triggerVisualOnly()
+      }
+      else {
+        this.acTimeout(() => beat.triggerVisualOnly(), msOffset)
+      }
+    }
+
+    // Always emit beat event (even when muted) for UI sync
+    const active = beat.active
+    const msOffset = offset * 1000
+    const emitBeat = (): void => {
+      this.emit('beat', { time, beatIndex: beatIndex % this.beats.length, active, source: this })
+    }
+    if (msOffset <= 0) {
+      emitBeat()
+    }
+    else {
+      this.acTimeout(emitBeat, msOffset)
+    }
+  }
+
+  /**
+   * Guard against calling standalone methods while synced to a Transport.
+   * @internal
+   */
+  private guardSynced(methodName: string): void {
+    if (this._syncedTo) {
+      throw new Error(
+        `Cannot call ${methodName}() on a synced BeatTrack. Use transport.start()/stop() instead.`,
+      )
+    }
+  }
+
+  /**
+   * Internal stop implementation that doesn't check sync state.
+   * Used by unsync() to cleanly stop without throwing.
+   * @internal
+   */
+  private internalStop(): void {
+    this.workerTimer.stop()
+
+    // Cancel any pending beat-level timers to prevent post-stop visual flicker
+    for (const beat of this.beats) {
+      beat.cancelPendingTimers()
+    }
+
+    this.currentBeatIndex = 0
+    this.nextBeatTime = 0
+    this.pausedBeatIndex = null
+
+    this.emit('stop', {
+      time: this.audioContext.currentTime,
+      source: this,
+    })
   }
 
   /**
@@ -510,8 +677,14 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public dispose(): void {
+    // Unsync from Transport if synced (before stopping)
+    if (this._syncedTo) {
+      this._syncedTo._removeTrack(this)
+      this._syncedTo = null
+    }
+
     // Stop playback (stops WorkerTimer, resets beat index, cancels beat timers)
-    this.stop()
+    this.internalStop()
     this.workerTimer.dispose()
 
     // Dispose all underlying sounds in the sampler

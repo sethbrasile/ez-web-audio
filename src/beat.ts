@@ -164,6 +164,15 @@ export class Beat {
   }
 
   /**
+   * Trigger visual-only state (currentTimeIsPlaying) without audio playback.
+   * Used by BeatTrack when muted or not soloed — the beat's time position is
+   * still visually indicated even though no sound plays.
+   */
+  public triggerVisualOnly(): void {
+    this.markCurrentTimePlaying()
+  }
+
+  /**
    * Mark this beat as currently playing and schedule reset.
    * @internal
    */
@@ -191,7 +200,8 @@ export class Beat {
     const id = this.setTimeout(() => {
       // Remove this timer ID from pending list since it has completed
       const idx = this.pendingTimerIds.indexOf(id)
-      if (idx !== -1) this.pendingTimerIds.splice(idx, 1)
+      if (idx !== -1)
+        this.pendingTimerIds.splice(idx, 1)
       fn()
     }, delay)
     this.pendingTimerIds.push(id)
