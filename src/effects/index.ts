@@ -41,3 +41,7 @@ export { createFilterEffect } from './filter-effect'
 export { GainEffect } from './gain-effect'
 // Factory functions
 export { createGainEffect } from './gain-effect'
+// Base class
+export { BaseEffect } from './base-effect'
+// Delay effect
+export { createDelay, DelayEffect, type DelayOptions } from './delay-effect'

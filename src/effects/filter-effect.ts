@@ -1,6 +1,5 @@
-import type { Effect } from './index'
-import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
 import { getOrCreateAudioContext } from '@/audio-context'
+import { BaseEffect } from './base-effect'
 
 /**
  * All available BiquadFilter types.
@@ -35,90 +34,38 @@ export interface FilterEffectOptions {
  * Supports all 8 BiquadFilter types with wet/dry mixing via equal-power crossfade.
  * The bypass and mix controls allow smooth blending between filtered and dry signal.
  *
+ * Extends BaseEffect for shared wet/dry mixing, bypass, and rampTo() functionality.
+ *
  * @example
  * ```typescript
  * const filter = createFilterEffect(audioContext, 'lowpass', { frequency: 800, q: 2 })
  * filter.frequency = 1000  // Adjust cutoff
  * filter.mix = 0.5  // 50% wet/dry
  * filter.bypass = true  // Bypass filter entirely
+ * filter.rampTo('frequency', 2000, 1)  // Smooth ramp over 1 second
  * ```
  */
-export class FilterEffect implements Effect {
+export class FilterEffect extends BaseEffect {
   private readonly filterNode: BiquadFilterNode
-  private readonly inputNode: GainNode
-  private readonly outputNode: GainNode
-  private readonly dryGain: GainNode
-  private readonly wetGain: GainNode
-
-  private _bypass = false
-  private _mix = 1
 
   constructor(
     audioContext: AudioContext,
     type: FilterType,
     options: FilterEffectOptions = {},
   ) {
-    // Create nodes
-    this.filterNode = audioContext.createBiquadFilter()
-    this.inputNode = audioContext.createGain()
-    this.outputNode = audioContext.createGain()
-    this.dryGain = audioContext.createGain()
-    this.wetGain = audioContext.createGain()
+    super(audioContext)
 
-    // Configure filter
+    // Create and configure filter
+    this.filterNode = audioContext.createBiquadFilter()
     this.filterNode.type = type
     this.filterNode.frequency.value = options.frequency ?? 350
     this.filterNode.Q.value = options.q ?? 1
     this.filterNode.gain.value = options.gain ?? 0
     this.filterNode.detune.value = options.detune ?? 0
 
-    // Set up routing for wet/dry mix
-    // Input splits to dry path and wet path (through filter)
-    // Dry: input -> dryGain -> output
-    // Wet: input -> filter -> wetGain -> output
-    this.inputNode.connect(this.dryGain)
+    // Wire effect chain: input -> filter -> wetGain
     this.inputNode.connect(this.filterNode)
     this.filterNode.connect(this.wetGain)
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
-
-    // Apply initial mix (full wet by default)
-    this.applyMix()
-  }
-
-  /** The input AudioNode (receives signal from chain) */
-  get input(): AudioNode {
-    return this.inputNode
-  }
-
-  /** The output AudioNode (sends signal to next in chain) */
-  get output(): AudioNode {
-    return this.outputNode
-  }
-
-  /**
-   * When true, signal bypasses the filter entirely (100% dry).
-   */
-  get bypass(): boolean {
-    return this._bypass
-  }
-
-  set bypass(v: boolean) {
-    this._bypass = v
-    this.applyMix()
-  }
-
-  /**
-   * Wet/dry mix: 0 = fully dry (no filter), 1 = fully wet (all through filter).
-   * Uses equal-power crossfade for natural mixing.
-   */
-  get mix(): number {
-    return this._mix
-  }
-
-  set mix(v: number) {
-    this._mix = Math.max(0, Math.min(1, v)) // Clamp to 0-1
-    this.applyMix()
   }
 
   /** Filter frequency in Hz */
@@ -166,12 +113,14 @@ export class FilterEffect implements Effect {
     this.filterNode.type = v
   }
 
-  /**
-   * Apply wet/dry mix using equal-power crossfade.
-   * Delegates to shared utility for consistent mixing across all effects.
-   */
-  private applyMix(): void {
-    applyEqualPowerCrossfade(this.dryGain, this.wetGain, this._mix, this._bypass)
+  protected getAudioParam(name: string): AudioParam | null {
+    switch (name) {
+      case 'frequency': return this.filterNode.frequency
+      case 'q': return this.filterNode.Q
+      case 'gain': return this.filterNode.gain
+      case 'detune': return this.filterNode.detune
+      default: return null
+    }
   }
 }
 
