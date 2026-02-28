@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: First Stable Release
 status: unknown
-last_updated: "2026-02-28T17:04:34.963Z"
+last_updated: "2026-02-28T17:08:36.163Z"
 progress:
   total_phases: 49
-  completed_phases: 48
+  completed_phases: 49
   total_plans: 143
-  completed_plans: 142
+  completed_plans: 143
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 54.1 Plan 01 completed)
-**Current Focus:** Phase 54.1 — Effects and LFO Deep Review Fixes
+**Last Updated:** 2026-02-28 (Phase 54.1 Plan 04 completed — Phase 54.1 DONE)
+**Current Focus:** Phase 55 — Transport + BeatTrack Sync
 
 ## Project Reference
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 54.1 of 58 (Effects and LFO Deep Review Fixes)
-Plan: 03 complete, 04 next
-Status: In progress
-Last activity: 2026-02-28 — Plan 54.1-03 completed (2 tasks, 13 LFO + 16 effects validation tests)
+Phase: 54.1 of 58 COMPLETE (Effects and LFO Deep Review Fixes)
+Plan: 04 complete — all 4 plans done, phase complete
+Status: Phase 54.1 complete, ready for Phase 55
+Last activity: 2026-02-28 — Plan 54.1-04 completed (1 task, 14 new coverage gap tests)
 
 Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 
@@ -46,12 +46,13 @@ Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 |-------|-------|-------|----------|
 | 53. Built-in Effects | 4/4 | 210 tests | 52.5 |
 | 54. LFO | 2/2 | 52 tests | - |
-| 54.1. Deep Review Fixes | 1/4 complete | 57 LFO tests | - |
+| 54.1. Deep Review Fixes | 4/4 complete | 14 new tests (plan 04) | - |
 | 55. Transport + BeatTrack Sync | TBD | - | - |
 | 56. Sequencer + Musical Time | TBD | - | - |
 | 57. PolySynth | TBD | - | - |
 | 58. GrainPlayer | TBD | - | - |
 | Phase 54.1 P03 | 6 | 2 tasks | 12 files |
+| Phase 54.1 P04 | 2 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 54.1]: LFO frequency validation: positive finite only (zero invalid — produces silence)
 - [Phase 54.1]: CURVE_SAMPLES=1024 for DistortionEffect: WaveShaper interpolates, 1024 is industry-standard with 43x memory reduction
 - [Phase 54.1]: ReverbEffect decay/damping use setTargetAtTime with timeConstant=0.01/3 for click-free transitions
+- [Phase 54.1-04]: vi.spyOn(globalThis, 'fetch') for mock fetch testing — restores cleanly, avoids global state leakage
+- [Phase 54.1-04]: mockRestore() called inline after fetch mock tests — avoids afterEach blocks and test pollution
 
 ### Roadmap Evolution
 
@@ -95,5 +98,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 54.1-03-PLAN.md — ready for 54.1-04
+Stopped at: Completed 54.1-04-PLAN.md — Phase 54.1 complete, ready for Phase 55
 Resume file: None
