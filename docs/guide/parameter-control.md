@@ -102,17 +102,20 @@ osc.play()
 
 ### Vibrato (manual LFO)
 
+::: warning Consume-once semantics
+`onPlaySet` and `onPlayRamp` schedules are **consume-once** — cleared after each `play()` call. Calling `onPlayRamp` multiple times for the same parameter replaces the previous schedule (last-write-wins). True vibrato requires a real-time loop that re-schedules ramps — it cannot be built with a pre-play schedule alone.
+:::
+
+For a single pitch bend effect, scheduling works well:
+
 ```typescript
-// Small periodic frequency variation using scheduled ramps
-function addVibrato(oscillator: Oscillator, rate = 5, depth = 10) {
-  const period = 1 / rate
-  let t = 0
-  while (t < 4) { // 4 seconds of vibrato
-    oscillator.onPlayRamp('frequency').from(440 - depth).to(440 + depth).in(period / 2)
-    t += period
-  }
-}
+// Bend from 440 Hz down to 220 Hz over 2 seconds on next play
+osc.onPlayRamp('frequency').from(440).to(220).in(2)
+osc.play()
+// Schedule is now consumed — subsequent play() starts at the default frequency
 ```
+
+For continuous vibrato, use the Web Audio API's `OscillatorNode` LFO pattern directly or re-schedule before each play.
 
 ## Convenience Methods
 
