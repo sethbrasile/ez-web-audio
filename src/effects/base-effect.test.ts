@@ -132,4 +132,34 @@ describe('baseEffect', () => {
       expect(spy).toHaveBeenCalledWith(0.8, audioContext.currentTime, 1) // duration/3
     })
   })
+
+  describe('getAudioContext', () => {
+    it('returns the same AudioContext passed to constructor', () => {
+      const effect = new TestEffect(audioContext)
+      expect(effect.getAudioContext()).toBe(audioContext)
+    })
+
+    it('returns a different context for a different instance', () => {
+      const ctx1 = createMockContext()
+      const ctx2 = createMockContext()
+      const effect1 = new TestEffect(ctx1)
+      const effect2 = new TestEffect(ctx2)
+      expect(effect1.getAudioContext()).toBe(ctx1)
+      expect(effect2.getAudioContext()).toBe(ctx2)
+      expect(effect1.getAudioContext()).not.toBe(effect2.getAudioContext())
+    })
+  })
+
+  describe('dispose', () => {
+    it('disconnects all base nodes without throwing', () => {
+      const effect = new TestEffect(audioContext)
+      expect(() => effect.dispose()).not.toThrow()
+    })
+
+    it('is safe to call twice (no throw on double disconnect)', () => {
+      const effect = new TestEffect(audioContext)
+      effect.dispose()
+      expect(() => effect.dispose()).not.toThrow()
+    })
+  })
 })
