@@ -284,5 +284,83 @@ describe('reverbEffect', () => {
       expect(reverb.normalize).toBe(false)
       expect(reverb.mix).toBe(0.5)
     })
+
+    it('creates convolution reverb from URL string (mock fetch)', async () => {
+      const mockBuffer = createMockAudioBuffer()
+      const mockArrayBuffer = new ArrayBuffer(1024)
+
+      // Mock global fetch to return a valid response
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      } as Response)
+
+      // Mock decodeAudioData on the context
+      const decodeSpy = vi.spyOn(audioContext, 'decodeAudioData').mockResolvedValue(mockBuffer)
+
+      const reverb = await createReverb(audioContext, '/impulse.wav')
+
+      expect(reverb).toBeInstanceOf(ReverbEffect)
+      expect(reverb.mode).toBe('convolution')
+      expect(fetchSpy).toHaveBeenCalledWith('/impulse.wav')
+      expect(decodeSpy).toHaveBeenCalledWith(mockArrayBuffer)
+
+      fetchSpy.mockRestore()
+      decodeSpy.mockRestore()
+    })
+
+    it('throws when URL fetch fails (non-ok response)', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      } as Response)
+
+      await expect(createReverb(audioContext, '/missing.wav')).rejects.toThrow(/Failed to load/)
+
+      fetchSpy.mockRestore()
+    })
+  })
+
+  describe('edge cases', () => {
+    describe('reverb algorithmic boundary values', () => {
+      it('decay=0 is handled without throwing', () => {
+        const effect = new ReverbEffect(audioContext)
+        expect(() => { effect.decay = 0 }).not.toThrow()
+      })
+
+      it('damping=0 (brightest) is handled', () => {
+        const effect = new ReverbEffect(audioContext)
+        effect.damping = 0
+        expect(effect.damping).toBe(0)
+      })
+
+      it('damping=1 (darkest) is handled', () => {
+        const effect = new ReverbEffect(audioContext)
+        effect.damping = 1
+        expect(effect.damping).toBe(1)
+      })
+
+      it('preDelay=0 (no delay) is valid', () => {
+        const effect = new ReverbEffect(audioContext)
+        effect.preDelay = 0
+        expect(effect.preDelay).toBeCloseTo(0)
+      })
+
+      it('mix=0 is valid (fully dry)', () => {
+        const effect = new ReverbEffect(audioContext)
+        effect.mix = 0
+        expect(effect.mix).toBe(0)
+      })
+
+      it('mix=1 is valid (fully wet)', () => {
+        const effect = new ReverbEffect(audioContext)
+        effect.mix = 1
+        expect(effect.mix).toBe(1)
+      })
+    })
   })
 })

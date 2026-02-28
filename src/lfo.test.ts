@@ -197,6 +197,34 @@ describe('lfo', () => {
       expect(lfo.isRunning).toBe(true)
     })
 
+    it('disconnect() with no args removes all connections', () => {
+      const sound1 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const sound2 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO()
+      lfo.connect(sound1, 'gain')
+      lfo.connect(sound2, 'pan')
+      lfo.start()
+      // Should not throw and should remove all connections
+      expect(() => lfo.disconnect()).not.toThrow()
+      // LFO is still running (connections removed, oscillator not stopped)
+      expect(lfo.isRunning).toBe(true)
+    })
+
+    it('disconnect() with no args while not started still removes connections', () => {
+      const sound1 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const sound2 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO()
+      lfo.connect(sound1, 'gain')
+      lfo.connect(sound2, 'pan')
+      // Disconnect all before starting
+      expect(() => lfo.disconnect()).not.toThrow()
+    })
+
+    it('disconnect() with no args is safe when already empty', () => {
+      const lfo = new LFO()
+      expect(() => lfo.disconnect()).not.toThrow()
+    })
+
     it('throws when connecting effect with unrecognized param', () => {
       const effect = new TestEffect(ctx)
       const lfo = new LFO()

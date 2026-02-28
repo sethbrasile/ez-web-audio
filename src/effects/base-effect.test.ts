@@ -152,6 +152,30 @@ describe('baseEffect', () => {
     })
   })
 
+  describe('getParam', () => {
+    it('getParam() delegates to getAudioParam() and returns AudioParam for known name', () => {
+      const effect = new TestEffect(audioContext)
+      const param = effect.getParam('gain')
+      expect(param).not.toBeNull()
+      // The returned value should be an AudioParam-like object with a value property
+      expect(typeof (param as AudioParam).value).toBe('number')
+    })
+
+    it('getParam() returns null for unknown parameter name', () => {
+      const effect = new TestEffect(audioContext)
+      const param = effect.getParam('nonexistent')
+      expect(param).toBeNull()
+    })
+
+    it('getParam() returns same object as getAudioParam() would return', () => {
+      const effect = new TestEffect(audioContext)
+      // Both public getParam and the internal gain node should refer to same AudioParam
+      const param = effect.getParam('gain')
+      const directGainParam = effect.testGain.gain
+      expect(param).toBe(directGainParam)
+    })
+  })
+
   describe('getAudioContext', () => {
     it('returns the same AudioContext passed to constructor', () => {
       const effect = new TestEffect(audioContext)
