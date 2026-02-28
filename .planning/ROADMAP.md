@@ -497,7 +497,7 @@ Plans:
 | 54. LFO | M5 | 2/2 | Complete | 2026-02-28 |
 | 54.1. Deep Review Fixes | M5 | 4/4 | Complete | 2026-02-28 |
 | 55. Transport + BeatTrack Sync | M5 | 0/? | Not started | - |
-| 56. Sequencer + Musical Time | M5 | 0/? | Not started | - |
+| 56. Sequencer + Musical Time | 1/2 | In Progress|  | - |
 | 57. PolySynth | M5 | 0/? | Not started | - |
 | 58. GrainPlayer | M5 | 0/? | Not started | - |
 
