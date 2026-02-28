@@ -12,6 +12,8 @@ import type { LFOConnectOptions, LFOOptions, LFOWaveform } from './lfo'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { CrossfadeOptions } from './utils/crossfade'
+import type { MusicalTimeNotation } from './utils/musical-time'
+import type { SequenceCallback, SequenceOptions } from './sequence'
 import type { TransportOptions, TransportPosition } from './transport'
 import type { Accidental, NoteLetter, Octave } from '@/musical-identity'
 import type { SamplerOptions } from '@/sampler'
@@ -53,6 +55,7 @@ import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from 
 import { Font } from './font'
 import { LayeredSound } from './layered-sound'
 import { LFO } from './lfo'
+import { Sequence } from './sequence'
 import { formatPosition, Transport } from './transport'
 import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
@@ -64,6 +67,7 @@ import frequencyMap from './utils/frequency-map'
 import { createBrownNoiseBuffer, createPinkNoiseBuffer } from './utils/noise'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import { playTogether } from './utils/play-together'
+import { isMusicalTimeNotation, musicalTimeToBeats, parseMusicalTime } from './utils/musical-time'
 import audioContextAwareTimeout from './utils/timeout'
 import unmuteIosAudio from './utils/unmute'
 
@@ -632,6 +636,38 @@ export async function createTransport(options: TransportOptions): Promise<Transp
 }
 
 /**
+ * Create a Sequence that schedules arbitrary callbacks at musical time positions.
+ *
+ * Sequences are tied to a Transport at creation and follow its lifecycle.
+ * Events are stored as beat positions, so live BPM changes automatically affect
+ * subsequent scheduling without re-scheduling.
+ *
+ * @param transport - The Transport to sync to
+ * @param options - Sequence configuration (length, loop, initial events)
+ * @returns Sequence instance
+ *
+ * @example
+ * ```typescript
+ * import { createTransport, createSequence, createSound } from 'ez-web-audio'
+ *
+ * const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
+ * const kick = await createSound('kick.mp3')
+ *
+ * const seq = createSequence(transport, { length: '1m' })
+ * seq.at('1:1:0', (time) => kick.playIn(time - ctx.currentTime))
+ * seq.at('1:3:0', (time) => kick.playIn(time - ctx.currentTime))
+ *
+ * transport.start()
+ *
+ * // Change BPM — events adjust automatically
+ * transport.bpm = 140
+ * ```
+ */
+export function createSequence(transport: Transport, options: SequenceOptions): Sequence {
+  return new Sequence(transport, options)
+}
+
+/**
  * Create a LayeredSound that plays multiple Sound/Oscillator instances simultaneously.
  * All layers start at exactly the same audioContext.currentTime for perfect sync.
  *
@@ -1089,6 +1125,7 @@ export {
   ReverbEffect,
   SampledNote,
   Sampler,
+  Sequence,
   setDebugHandler,
   // Debug utilities
   setDebugMode,
@@ -1102,6 +1139,10 @@ export {
   Transport,
   formatPosition,
   wrapEffect,
+  // Musical time utilities
+  musicalTimeToBeats,
+  parseMusicalTime,
+  isMusicalTimeNotation,
 }
 
 export type {
@@ -1116,6 +1157,9 @@ export type {
   PlayEventDetail,
   ResumeEventDetail,
   SeekEventDetail,
+  SequenceEventDetail,
+  SequenceEventMap,
+  SequenceLoopDetail,
   SoundEventMap,
   SoundEventType,
   StopEventDetail,
@@ -1163,6 +1207,9 @@ export type {
   SpriteDefinition,
   SpriteManifest,
   SpritePlayOptions,
+  MusicalTimeNotation,
+  SequenceCallback,
+  SequenceOptions,
   TransportOptions,
   TransportPosition,
   TimeObject,

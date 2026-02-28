@@ -8,7 +8,8 @@
 import type { BaseSound } from '../base-sound'
 import type { BeatTrack } from '../beat-track'
 import type { LayeredSound } from '../layered-sound'
-import type { Transport } from '../transport'
+import type { Sequence } from '../sequence'
+import type { Transport, TransportPosition } from '../transport'
 
 /**
  * Union of all classes that emit events in ez-web-audio.
@@ -25,7 +26,7 @@ import type { Transport } from '../transport'
  * })
  * ```
  */
-export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | Transport
+export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | Sequence | Transport
 
 /**
  * Detail for 'play' events, fired when audio playback starts.
@@ -256,4 +257,38 @@ export interface TransportEventMap {
   pause: CustomEvent<TransportLifecycleDetail>
   resume: CustomEvent<TransportLifecycleDetail>
   tick: CustomEvent<TransportTickDetail>
+}
+
+// ─── Sequence Events ──────────────────────────────────────────────────
+
+/**
+ * Detail for Sequence 'event' events, fired when a scheduled callback fires.
+ */
+export interface SequenceEventDetail {
+  /** AudioContext time when the event fires */
+  time: number
+  /** Musical time position of the event */
+  position: TransportPosition
+  /** The event ID returned by sequence.at() */
+  eventId: string
+  /** The Sequence instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
+ * Detail for Sequence 'loop' events, fired when the sequence wraps around.
+ */
+export interface SequenceLoopDetail {
+  /** Loop iteration count (1-indexed) */
+  iteration: number
+  /** The Sequence instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
+ * Maps Sequence event names to their corresponding CustomEvent types.
+ */
+export interface SequenceEventMap {
+  event: CustomEvent<SequenceEventDetail>
+  loop: CustomEvent<SequenceLoopDetail>
 }

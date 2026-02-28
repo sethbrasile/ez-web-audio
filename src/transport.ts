@@ -1,5 +1,6 @@
 import type { BeatTrack } from './beat-track'
 import type { TransportEventMap } from './events/event-types'
+import type { Sequence } from './sequence'
 import { WorkerTimer } from './utils/worker-timer'
 
 /**
@@ -107,6 +108,9 @@ export class Transport {
   private _syncedTracks: Set<BeatTrack> = new Set()
   private trackStates: Map<BeatTrack, SyncedTrackState> = new Map()
 
+  // Synced sequences
+  private _syncedSequences: Set<Sequence> = new Set()
+
   // Pause state
   private pausedTickIndex = 0
   private pausedElapsed = 0
@@ -189,6 +193,11 @@ export class Transport {
         time: this.audioContext.currentTime,
         source: this,
       })
+
+      // Resume sequences from paused position
+      for (const seq of this._syncedSequences) {
+        seq._onTransportResume(this.audioContext.currentTime, this.pausedElapsed)
+      }
     }
     else {
       // Fresh start
@@ -200,6 +209,11 @@ export class Transport {
         time: this.audioContext.currentTime,
         source: this,
       })
+
+      // Notify sequences of fresh start
+      for (const seq of this._syncedSequences) {
+        seq._onTransportStart(this.audioContext.currentTime)
+      }
     }
 
     this.nextTickTime = this.audioContext.currentTime
@@ -233,6 +247,11 @@ export class Transport {
     this.pausedTickIndex = this.currentTickIndex
     this.pausedElapsed = this.audioContext.currentTime - this.startTime
 
+    // Pause sequences (preserve position)
+    for (const seq of this._syncedSequences) {
+      seq._onTransportPause(this.audioContext.currentTime)
+    }
+
     this.emit('pause', {
       time: this.audioContext.currentTime,
       source: this,
@@ -263,6 +282,11 @@ export class Transport {
       state.nextBeatTime = 0
     }
 
+    // Reset all sequences to beginning
+    for (const seq of this._syncedSequences) {
+      seq._reset()
+    }
+
     if (wasPlaying) {
       this.emit('stop', {
         time: this.audioContext.currentTime,
@@ -282,6 +306,11 @@ export class Transport {
     // Unsync all tracks
     for (const track of [...this._syncedTracks]) {
       this._removeTrack(track)
+    }
+
+    // Remove all sequences
+    for (const seq of [...this._syncedSequences]) {
+      this._removeSequence(seq)
     }
 
     this.eventTarget = new EventTarget()
@@ -327,6 +356,31 @@ export class Transport {
     this.trackStates.delete(track)
   }
 
+  // ─── Sequence Management (package-internal) ────────────────────────
+
+  /**
+   * Register a Sequence as synced to this Transport.
+   * Called by Sequence constructor.
+   * @internal
+   */
+  _addSequence(sequence: Sequence): void {
+    if (this._syncedSequences.has(sequence)) return
+    this._syncedSequences.add(sequence)
+
+    if (this._playing) {
+      sequence._onTransportStart(this.audioContext.currentTime)
+    }
+  }
+
+  /**
+   * Unregister a Sequence from this Transport.
+   * Called by Sequence.dispose().
+   * @internal
+   */
+  _removeSequence(sequence: Sequence): void {
+    this._syncedSequences.delete(sequence)
+  }
+
   // ─── Scheduler ────────────────────────────────────────────────────
 
   /**
@@ -354,6 +408,17 @@ export class Transport {
         state.nextBeatTime += beatDuration
         state.currentBeatIndex = (state.currentBeatIndex + 1) % state.track.beats.length
       }
+    }
+
+    // Schedule sequence events within lookahead window
+    for (const sequence of this._syncedSequences) {
+      sequence._scheduleEventsInWindow(
+        currentTime,
+        this.scheduleAheadTime,
+        this._bpm,
+        this._timeSignature,
+        this._ticksPerBeat,
+      )
     }
   }
 
