@@ -1,123 +1,108 @@
-# Requirements: EZ Audio — Deep Review Hardening
+# Requirements: EZ Audio — Effects & Transport
 
-**Defined:** 2026-02-26
+**Defined:** 2026-02-28
 **Core Value:** Make the Web Audio API easy to use
-**Source:** `.planning/reviews/2026-02-26-deep-review.md`
 
-## Requirements
+## Milestone Requirements
 
-28 findings from the 2026-02-26 deep review, filtered to exclude 4 already-fixed/intentionally-kept items (H2, M7, M9, L5).
+Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
-### Ship-Blocker
+### Effects
 
-- [x] **SHIP-01**: Published type declarations do not import test-only dependencies (`standardized-audio-context-mock` removed from `ContextLike` in `timeout.ts`)
+- [ ] **FX-01**: Developer can create a delay effect with configurable time, feedback, and wet/dry mix
+- [ ] **FX-02**: Developer can create a reverb effect with configurable decay and wet/dry mix
+- [ ] **FX-03**: Developer can create a distortion effect with configurable amount and wet/dry mix
+- [ ] **FX-04**: Developer can create a compressor effect with threshold, ratio, knee, attack, release
+- [ ] **FX-05**: Developer can create a 3-band EQ effect with configurable low/mid/high gain
+- [ ] **FX-06**: All built-in effects work with existing `addEffect()` on Sound, Oscillator, and LayeredSound
 
-### Safety & Correctness
+### Modulation
 
-- [x] **SAFE-01**: Fire-and-forget play methods (`playFor`, `playIn`, `playInAndStopAfter`, `Sampler.play`, `Track.resume`) handle rejected promises instead of discarding them
-- [x] **SAFE-02**: `dispose()` disconnects `audioSourceNode` and nullifies its `onended` handler
-- [x] **SAFE-03**: `BeatTrack` has a `dispose()` method that stops playback, disposes sounds, clears beats, and releases resources
-- [x] **SAFE-04**: `Track.percentPlayed` returns 0 when duration is 0 (no divide-by-zero)
-- [x] **SAFE-05**: `Track.seek()` guards against concurrent seeks overwriting `startOffset` (race condition fix)
-- [x] **SAFE-06**: `LayeredSound.play()` uses `Promise.allSettled()` so one layer failure doesn't abort all layers
+- [ ] **MOD-01**: Developer can create an LFO with configurable frequency, depth, and waveform
+- [ ] **MOD-02**: Developer can connect an LFO to any AudioParam on any sound (gain, pan, frequency, filter cutoff)
+- [ ] **MOD-03**: LFO is properly disposed when the target sound is disposed (no memory leaks)
 
-### Export Cleanup
+### Synthesis
 
-- [x] **EXPORT-01**: `_disposeUnmute` is not a public export (removed from `export` or moved to testing entry point)
-- [x] **EXPORT-02**: `createFont` failure throws `AudioLoadError` (not plain `Error`); unknown oscillator note throws `InvalidNoteError`
+- [ ] **SYNTH-01**: Developer can create a PolySynth that plays multiple notes simultaneously
+- [ ] **SYNTH-02**: PolySynth manages voice allocation with configurable max voices and voice stealing
+- [ ] **SYNTH-03**: Developer can create a GrainPlayer from an audio buffer with configurable grain size and overlap
+- [ ] **SYNTH-04**: GrainPlayer supports independent pitch shifting and playback rate control
 
-### Performance
+### Transport
 
-- [x] **PERF-01**: Preload cache stores decoded `AudioBuffer` objects, avoiding redundant `decodeAudioData()` calls on cache hits
-- [x] **PERF-02**: `duration` getter has a lightweight numeric path (`durationRaw` or cached `TimeObject`) to avoid allocation in hot paths
-- ~~**PERF-03**: Scheduler `tick()` combines execute and filter into a single pass~~ _(N/A — scheduler already uses single iteration, no separate filter pass exists)_
-- [x] **PERF-04**: `audioContext.resume()` only called when `audioContext.state === 'suspended'` (not on every play)
+- [ ] **TRANS-01**: Developer can create a global Transport with configurable BPM and time signature
+- [ ] **TRANS-02**: Transport provides start/stop/pause controls and current position
+- [ ] **TRANS-03**: BeatTrack can sync to a Transport instead of using its own internal clock
+- [ ] **TRANS-04**: Multiple BeatTracks synced to one Transport play in perfect sync
 
-### Documentation Fixes
+### Sequencer
 
-- [x] **DOCS-01**: Vibrato example in `docs/guide/parameter-control.md` either works correctly or has a caveat about consume-once semantics
-- [x] **DOCS-02**: README `await song.seek(30).as('seconds')` corrected — `seek().as()` returns void, not a Promise
+- [ ] **SEQ-01**: Developer can create a Sequence that schedules arbitrary callbacks at musical time divisions
+- [ ] **SEQ-02**: Developer can use musical time notation ("4n", "8t", "2m") to specify timing
+- [ ] **SEQ-03**: Sequences respond to live BPM changes without re-scheduling
 
-### Test Strengthening
+## Future Requirements
 
-- [x] **TEST-01**: `onPlaySet`/`onPlayRamp` tests verify scheduled values are applied during playback (not just no-throw)
-- [x] **TEST-02**: `Sound` class has dedicated `end` event test for natural playback completion
-- [x] **TEST-03**: Event listeners stop firing after `dispose()` is called (cleanup verification test)
+Deferred to next milestone. Tracked but not in current roadmap.
 
-### Build & Refactoring
+### Effects (deferred)
 
-- [x] **BUILD-01**: Publish workflow verifies git tag matches `package.json` version before publishing
-- [x] **REFAC-01**: Gain-interception logic (`_targetGain` syncing) extracted into shared helper on BaseSound — not duplicated between `base-sound.ts` and `oscillator.ts`
-- [x] **REFAC-02**: Controller `applyValues`/`applyRampValues` shared logic extracted into `BaseParamController`
+- **FX-07**: Developer can create a chorus effect with configurable rate, depth, and wet/dry mix
+- **FX-08**: Developer can create a limiter effect with configurable threshold
 
-### Remaining Safety
+### Advanced Effects (discussion topics)
 
-- [x] **SAFE-07**: AudioContext replacement logs a warning when creating a new context after the previous one closed (orphaned sounds awareness)
-- [x] **SAFE-08**: `dispose()` clears event listeners (or documents that consumers must call `off()` before `dispose()`)
-- [x] **SAFE-09**: `LayeredSound` has a `dispose()` method that stops and disposes all layers
-- [x] **SAFE-10**: `changePanTo()` warns when value is outside [-1, 1] range
-
-### Documentation & DX
-
-- [x] **DOCS-03**: Soundfont parsing documented as synchronous with potential UI freeze on mobile for large files (5-20MB)
-- [x] **DOCS-04**: A `playTogether` example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
-- [x] **DX-01**: `createBeatTrack`/`createSampler` accept `AudioInput[]` (not just `string[]`) or document the limitation
-
-### Remaining Performance
-
-- [x] **PERF-05**: AudioSprite skips gain/panner node creation when at default values (gain=1, pan=0)
-- [x] **PERF-06**: Crossfade curve arrays cached at module level (mathematically constant, no regeneration per call)
+- **ADV-01**: Developer can load WASM-based audio effects
+- **ADV-02**: Developer can load VST-style plugins (feasibility TBD)
+- **ADV-03**: Developer can use third-party effect libraries (tuna.js, etc.) via wrapEffect
 
 ## Out of Scope
 
+Explicitly excluded. Documented to prevent scope creep.
+
 | Feature | Reason |
 |---------|--------|
-| New audio capabilities | This milestone is fixes and hardening only |
-| Web Worker offloading for soundfont parsing | M14 recommends documenting the limitation for now |
-| `contextchanged` event system | M5 only requires a console warning, not a full event system |
-| `removeAllListeners()` on TypedEventEmitter | L1 can be addressed with documentation or basic cleanup in dispose |
+| Signal-rate math (Add, Multiply, Scale) | Too low-level for "EZ" philosophy |
+| Offline rendering | Niche, orthogonal to core library |
+| Recording/capture | Requires MediaRecorder, separate concern |
+| 3D spatial audio | Specialized, low demand |
+| AudioWorklet-based effects | Complexity; native nodes sufficient |
+| MIDI I/O | Separate package territory |
+| Multiple AudioContexts | Single context pattern is simpler and sufficient |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHIP-01 | Phase 47 | Complete |
-| SAFE-01 | Phase 48 | Complete |
-| SAFE-02 | Phase 48 | Complete |
-| SAFE-03 | Phase 48 | Complete |
-| SAFE-04 | Phase 48 | Complete |
-| SAFE-05 | Phase 48 | Complete |
-| SAFE-06 | Phase 48 | Complete |
-| EXPORT-01 | Phase 49 | Complete |
-| EXPORT-02 | Phase 49 | Complete |
-| PERF-01 | _(pre-existing)_ | Complete |
-| PERF-02 | Phase 51 | Complete |
-| PERF-03 | _(N/A)_ | Removed |
-| PERF-04 | Phase 51 | Complete |
-| DOCS-01 | Phase 52 | Complete |
-| DOCS-02 | Phase 52 | Complete |
-| TEST-01 | Phase 50 | Complete |
-| TEST-02 | Phase 50 | Complete |
-| TEST-03 | Phase 50 | Complete |
-| BUILD-01 | Phase 50 | Complete |
-| REFAC-01 | Phase 50 | Complete |
-| REFAC-02 | Phase 50 | Complete |
-| SAFE-07 | Phase 51 | Complete |
-| SAFE-08 | Phase 51 | Complete |
-| SAFE-09 | Phase 51 | Complete |
-| SAFE-10 | Phase 51 | Complete |
-| DOCS-03 | Phase 52 | Complete |
-| DOCS-04 | Phase 52 | Complete |
-| DX-01 | Phase 52 | Complete |
-| PERF-05 | Phase 51 | Complete |
-| PERF-06 | Phase 51 | Complete |
+| FX-01 | — | Pending |
+| FX-02 | — | Pending |
+| FX-03 | — | Pending |
+| FX-04 | — | Pending |
+| FX-05 | — | Pending |
+| FX-06 | — | Pending |
+| MOD-01 | — | Pending |
+| MOD-02 | — | Pending |
+| MOD-03 | — | Pending |
+| SYNTH-01 | — | Pending |
+| SYNTH-02 | — | Pending |
+| SYNTH-03 | — | Pending |
+| SYNTH-04 | — | Pending |
+| TRANS-01 | — | Pending |
+| TRANS-02 | — | Pending |
+| TRANS-03 | — | Pending |
+| TRANS-04 | — | Pending |
+| SEQ-01 | — | Pending |
+| SEQ-02 | — | Pending |
+| SEQ-03 | — | Pending |
 
 **Coverage:**
-- Requirements: 30 total (1 removed as N/A)
-- Completed: 10
-- Pending: 19
-- Unmapped: 0
+- Milestone requirements: 19 total
+- Mapped to phases: 0
+- Unmapped: 19 ⚠️
 
 ---
-*Requirements defined: 2026-02-26*
-*Last updated: 2026-02-27 — consolidated phases 50-54 into 50-52, marked Phase 48/49 requirements complete, removed PERF-03 as N/A*
+*Requirements defined: 2026-02-28*
+*Last updated: 2026-02-28 after initial definition*
