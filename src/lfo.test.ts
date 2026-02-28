@@ -1,8 +1,7 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { BaseEffect } from './effects/base-effect'
 import { LFO } from './lfo'
-import type { LFOConnectOptions } from './lfo'
 import { Oscillator } from './oscillator'
 import { Sound } from './sound'
 
@@ -28,13 +27,15 @@ class TestEffect extends BaseEffect {
   }
 
   protected getAudioParam(name: string): AudioParam | null {
-    if (name === 'frequency') return this.filterNode.frequency
-    if (name === 'Q') return this.filterNode.Q
+    if (name === 'frequency')
+      return this.filterNode.frequency
+    if (name === 'Q')
+      return this.filterNode.Q
     return null
   }
 }
 
-describe('LFO', () => {
+describe('lfo', () => {
   let ctx: AudioContext
 
   beforeEach(() => {
@@ -346,7 +347,7 @@ describe('LFO', () => {
       expect(lfo.type).toBe('sample-and-hold')
     })
 
-    it('S&H LFO can connect and start', () => {
+    it('sample-and-hold LFO can connect and start', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO({ type: 'sample-and-hold', frequency: 4 })
       lfo.connect(sound, 'gain')
