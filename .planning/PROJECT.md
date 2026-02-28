@@ -47,7 +47,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 ### Active
 
-Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for detailed REQ-IDs
+Effects & Transport milestone — built-in effects, LFO, transport/clock, sequencer, PolySynth, GrainPlayer. See `.planning/REQUIREMENTS.md` for detailed REQ-IDs.
 
 ### Out of Scope
 
@@ -60,18 +60,19 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 - **MIDI support** — specialized, can be a separate package
 - **Audio worklets** — too low-level for "easy" API
 
-## Current Milestone: Deep Review Hardening
+## Current Milestone: Effects & Transport
 
-**Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
+**Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
-**Target improvements:**
-- Ship-blocker: remove test-only mock type from published declarations
-- Safety: guard unhandled promise rejections, add missing dispose() methods, fix divide-by-zero and race conditions
-- Exports: remove internal function exports, use domain error classes
-- Performance: cache decoded AudioBuffers, optimize hot-path allocations, reduce per-frame overhead
-- Docs: fix misleading vibrato example, correct await usage in README
-- Tests: strengthen weak assertions, add missing end event and dispose cleanup tests
-- Build: add publish tag verification, extract duplicated logic, document known limitations
+**Target features:**
+- Built-in effects: delay, reverb, distortion, chorus, compressor, limiter, EQ
+- LFO: low-frequency oscillator connectable to parameters (enables tremolo, vibrato, auto-filter, auto-pan)
+- Transport/Clock: global BPM-synced timeline that multiple BeatTracks/sequences can lock to
+- Sequencer/Pattern: generalize BeatTrack concept into arbitrary event sequencing with musical time notation
+- PolySynth: voice allocation wrapper for polyphonic oscillator playback
+- GrainPlayer: granular synthesis with independent pitch and time control
+
+**Discussion topics for effects phase:** WASM-based effects, VST support feasibility, tuna.js integration patterns
 
 **Note:** This is pre-release work. The library ships to npm 1.0.0 when it's ready — no rush.
 
@@ -122,4 +123,4 @@ Requirements for v1.0 stable npm release — see `.planning/REQUIREMENTS.md` for
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
 
 ---
-*Last updated: 2026-02-26 after Deep Review Hardening milestone started*
+*Last updated: 2026-02-28 after Effects & Transport milestone started*
