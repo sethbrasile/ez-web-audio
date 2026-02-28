@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: First Stable Release
 status: unknown
-last_updated: "2026-02-28T08:55:43.243Z"
+last_updated: "2026-02-28T16:54:51.057Z"
 progress:
-  total_phases: 48
+  total_phases: 49
   completed_phases: 48
-  total_plans: 139
-  completed_plans: 139
+  total_plans: 143
+  completed_plans: 140
 ---
 
 # Project State: EZ Audio
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 54 of 58 (LFO)
+Phase: 54.1 of 58 (Effects and LFO Deep Review Fixes)
 Plan: — (not yet planned)
 Status: Ready to plan
-Last activity: 2026-02-28 — Phase 53 completed (4 plans, 210 effect tests)
+Last activity: 2026-02-28 — Phase 54 completed (2 plans, 52 LFO tests)
 
 Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 
@@ -50,6 +50,7 @@ Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 | 56. Sequencer + Musical Time | TBD | - | - |
 | 57. PolySynth | TBD | - | - |
 | 58. GrainPlayer | TBD | - | - |
+| Phase 54.1 P02 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,12 @@ See .planning/PROJECT.md Key Decisions table for full history.
 **Effects & Transport design decisions remaining:**
 - Phase 54: LFO depth unit API — raw native units vs typed connect helpers like `createTremolo(sound, { depth })` (breaking-change risk if wrong)
 - Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
+- [Phase 54.1-02]: dispose() uses try/catch per-node for safe teardown of audio nodes including feedback loops
+- [Phase 54.1-02]: getAudioContext() public accessor pattern avoids unsafe casts in LFO and external tools
+
+### Roadmap Evolution
+
+- Phase 54.1 inserted after Phase 54: Effects and LFO Deep Review Fixes (URGENT)
 
 ### Pending Todos
 
