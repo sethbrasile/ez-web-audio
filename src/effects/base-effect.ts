@@ -104,6 +104,27 @@ export abstract class BaseEffect implements Effect {
   }
 
   /**
+   * Get the AudioContext used by this effect.
+   * Useful for external tools (e.g., LFO) that need the context.
+   */
+  public getAudioContext(): AudioContext {
+    return this.audioContext
+  }
+
+  /**
+   * Get a named AudioParam from this effect for external modulation.
+   *
+   * Delegates to the subclass's getAudioParam() implementation.
+   * Returns null if the parameter name is not recognized.
+   *
+   * @param name - The parameter name (e.g., 'frequency', 'time', 'feedback')
+   * @returns The AudioParam, or null if not recognized
+   */
+  public getParam(name: string): AudioParam | null {
+    return this.getAudioParam(name)
+  }
+
+  /**
    * Smoothly ramp a parameter to a target value over a duration.
    *
    * Uses `AudioParam.setTargetAtTime` for glitch-free transitions.
@@ -119,19 +140,6 @@ export abstract class BaseEffect implements Effect {
    * filter.rampTo('frequency', 800, 1) // Ramp cutoff to 800Hz over 1 second
    * ```
    */
-  /**
-   * Get a named AudioParam from this effect for external modulation.
-   *
-   * Delegates to the subclass's getAudioParam() implementation.
-   * Returns null if the parameter name is not recognized.
-   *
-   * @param name - The parameter name (e.g., 'frequency', 'time', 'feedback')
-   * @returns The AudioParam, or null if not recognized
-   */
-  public getParam(name: string): AudioParam | null {
-    return this.getAudioParam(name)
-  }
-
   rampTo(param: string, value: number, duration: number): void {
     if (param === 'mix') {
       // Ramp wet/dry mix via gain nodes
@@ -150,6 +158,17 @@ export abstract class BaseEffect implements Effect {
 
     const timeConstant = duration / 3
     audioParam.setTargetAtTime(value, this.audioContext.currentTime, timeConstant)
+  }
+
+  /**
+   * Disconnect all internal audio nodes. Subclasses should override
+   * to also disconnect effect-specific nodes (e.g., feedback loops).
+   */
+  public dispose(): void {
+    try { this.inputNode.disconnect() } catch { /* already disconnected */ }
+    try { this.outputNode.disconnect() } catch { /* already disconnected */ }
+    try { this.dryGain.disconnect() } catch { /* already disconnected */ }
+    try { this.wetGain.disconnect() } catch { /* already disconnected */ }
   }
 
   /**

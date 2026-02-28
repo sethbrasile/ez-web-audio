@@ -96,6 +96,12 @@ export class DelayEffect extends BaseEffect {
     return this._maxTime
   }
 
+  public override dispose(): void {
+    try { this.delayNode.disconnect() } catch { /* already disconnected */ }
+    try { this.feedbackGain.disconnect() } catch { /* already disconnected */ }
+    super.dispose()
+  }
+
   protected getAudioParam(name: string): AudioParam | null {
     switch (name) {
       case 'time': return this.delayNode.delayTime
