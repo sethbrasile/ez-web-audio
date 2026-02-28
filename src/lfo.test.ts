@@ -463,6 +463,61 @@ describe('lfo', () => {
       lfo.dispose()
       lfo.dispose() // should not throw
     })
+
+    // ===== C1: Event-based cleanup tests (two LFOs on same target) =====
+    it('C1: two LFOs on same target — target.dispose() cleans up both', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo1 = new LFO({ frequency: 2 })
+      const lfo2 = new LFO({ frequency: 5 })
+      lfo1.connect(sound, 'gain')
+      lfo2.connect(sound, 'pan')
+      lfo1.start()
+      lfo2.start()
+
+      // Dispose the target — event-based cleanup should fire for BOTH LFOs
+      sound.dispose()
+
+      // Both LFOs should still run (only connections, not oscillators, are cleaned up)
+      expect(lfo1.isRunning).toBe(true)
+      expect(lfo2.isRunning).toBe(true)
+
+      // After lfo1 disposes, lfo2 cleanup should still work on a second target
+      const sound2 = new Sound(ctx, createMockAudioBuffer(ctx))
+      lfo2.connect(sound2, 'gain')
+      sound2.dispose()
+      expect(lfo2.isRunning).toBe(true)
+    })
+
+    it('C1: LFO-A dispose then target dispose — LFO-B cleanup still works', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo1 = new LFO({ frequency: 2 })
+      const lfo2 = new LFO({ frequency: 5 })
+      lfo1.connect(sound, 'gain')
+      lfo2.connect(sound, 'pan')
+      lfo1.start()
+      lfo2.start()
+
+      // LFO-A disposes itself (removes its own dispose listener)
+      lfo1.dispose()
+
+      // Now target disposes — lfo2 event listener should still fire and clean up lfo2
+      sound.dispose()
+
+      // lfo2 should still be running (oscillator not stopped), just no connections
+      expect(lfo2.isRunning).toBe(true)
+    })
+
+    it('C1: BaseSound emits dispose event before silencing dispatchEvent', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      let disposeEventFired = false
+
+      sound.addEventListener('dispose', () => {
+        disposeEventFired = true
+      })
+
+      sound.dispose()
+      expect(disposeEventFired).toBe(true)
+    })
   })
 
   // ===== 10. Type Changes (MOD-01) =====
