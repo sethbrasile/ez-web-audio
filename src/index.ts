@@ -3,13 +3,14 @@ import type { AnalyzerOptions } from './analyzer'
 import type { BeatTrackOptions } from './beat-track'
 import type { ControlType, ControlTypeMap, OscillatorControlType, RatioType, SeekType, SoundControlType } from './controllers/base-param-controller'
 import type { DebugMessage } from './debug'
-import type { Effect, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
+import type { AlgorithmicReverbOptions, CompressorOptions, ConvolutionReverbOptions, DelayOptions, DistortionOptions, DistortionType, Effect, EQOptions, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
 import type { EnvelopeOptions } from './envelope'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { LayeredSoundOptions } from './layered-sound'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import type { CrossfadeOptions } from './utils/crossfade'
 import type { Accidental, NoteLetter, Octave } from '@/musical-identity'
 import type { SamplerOptions } from '@/sampler'
 import { OscillatorController } from '@controllers/oscillator-controller'
@@ -26,12 +27,22 @@ import { getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unl
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
+  CompressorEffect,
+  createCompressor,
+  createDelay,
+  createDistortion,
   createEffect,
+  createEQ,
   createFilterEffect,
   createGainEffect,
+  createReverb,
+  DelayEffect,
+  DistortionEffect,
   EffectWrapper,
+  EQEffect,
   FilterEffect,
   GainEffect,
+  ReverbEffect,
   wrapEffect,
 } from './effects'
 import { Envelope } from './envelope'
@@ -702,7 +713,9 @@ export async function createWhiteNoise(): Promise<Sound> {
     output[i] = Math.random() * 2 - 1
   }
 
-  return new Sound(audioContext, audioBuffer)
+  const sound = new Sound(audioContext, audioBuffer)
+  sound.loop = true
+  return sound
 }
 
 /**
@@ -761,7 +774,9 @@ export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sou
     }
   }
 
-  return new Sound(audioContext, audioBuffer)
+  const sound = new Sound(audioContext, audioBuffer)
+  sound.loop = true
+  return sound
 }
 
 /**
@@ -958,15 +973,25 @@ export {
   Beat,
   BeatTrack,
   clearPreloadCache,
+  CompressorEffect,
+  createCompressor,
+  createDelay,
+  createDistortion,
   createEffect,
+  createEQ,
   createFilterEffect,
   // Effects
   createGainEffect,
+  createReverb,
   // Crossfade utility
   crossfade,
+  CrossfadeOptions,
+  DelayEffect,
+  DistortionEffect,
   EffectWrapper,
   // Envelope
   Envelope,
+  EQEffect,
   FilterEffect,
   Font,
   frequencyMap,
@@ -983,6 +1008,7 @@ export {
   playTogether,
   // Preload utilities
   preload,
+  ReverbEffect,
   SampledNote,
   Sampler,
   setDebugHandler,
@@ -1021,14 +1047,21 @@ export { LayeredSound } from './layered-sound'
 export type { LayeredSoundOptions } from './layered-sound'
 
 export type {
+  AlgorithmicReverbOptions,
   AnalyzerOptions,
   BeatTrackOptions,
+  CompressorOptions,
   Connectable,
   ControlType,
   ControlTypeMap,
+  ConvolutionReverbOptions,
   DebugMessage,
+  DelayOptions,
+  DistortionOptions,
+  DistortionType,
   Effect,
   EnvelopeOptions,
+  EQOptions,
   ExternalEffect,
   FilterEffectOptions,
   FilterType,

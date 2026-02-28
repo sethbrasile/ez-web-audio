@@ -1,0 +1,236 @@
+import { getOrCreateAudioContext } from '@/audio-context'
+import { BaseEffect } from './base-effect'
+
+/**
+ * Available distortion curve types.
+ */
+export type DistortionType = 'soft' | 'hard' | 'fuzz' | 'overdrive' | 'custom'
+
+/**
+ * Options for creating a DistortionEffect.
+ */
+export interface DistortionOptions {
+  /** Distortion curve type (default: 'soft') */
+  type?: DistortionType
+  /** Distortion amount 0-100 (default: 50). Higher = more distortion */
+  amount?: number
+  /** Post-distortion tone control 0-1 (default: 0.5). 0 = dark, 1 = bright */
+  tone?: number
+  /** Oversampling to prevent aliasing (default: '4x') */
+  oversample?: OverSampleType
+  /** Custom waveshaper curve (only used when type is 'custom') */
+  curve?: Float32Array<ArrayBuffer>
+  /** Wet/dry mix 0-1 (default: 1) */
+  mix?: number
+}
+
+/**
+ * Generate a waveshaper transfer curve for the given distortion type and amount.
+ * @internal
+ */
+function generateCurve(type: DistortionType, amount: number): Float32Array<ArrayBuffer> {
+  const samples = 44100
+  const curve: Float32Array<ArrayBuffer> = new Float32Array(samples)
+  const k = amount / 10
+
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1
+
+    switch (type) {
+      case 'soft':
+        // Soft clipping via tanh — warm/tube character
+        curve[i] = Math.tanh(k * x)
+        break
+      case 'hard':
+        // Hard clipping — aggressive
+        curve[i] = Math.max(-1, Math.min(1, (amount / 25) * x))
+        break
+      case 'fuzz': {
+        // Aggressive sigmoid — heavy fuzz
+        const fk = amount * 2
+        curve[i] = ((3 + fk) * x * 20 * (Math.PI / 180)) / (Math.PI + fk * Math.abs(x))
+        break
+      }
+      case 'overdrive':
+        // Asymmetric soft clip — classic overdrive
+        if (x < 0) {
+          curve[i] = -Math.tanh(-x * k * 0.5)
+        }
+        else {
+          curve[i] = Math.tanh(x * k)
+        }
+        break
+      default:
+        curve[i] = x
+    }
+  }
+  return curve
+}
+
+/**
+ * DistortionEffect - WaveShaper-based distortion with selectable curve types and tone control.
+ *
+ * Supports four built-in curve types (soft, hard, fuzz, overdrive) plus custom curves.
+ * Includes a post-distortion tone control (lowpass filter) to shape the output.
+ * Uses 4x oversampling by default to prevent aliasing artifacts.
+ *
+ * Extends BaseEffect for shared wet/dry mixing, bypass, and rampTo() functionality.
+ *
+ * @example
+ * ```typescript
+ * import { createDistortion, createSound } from 'ez-web-audio'
+ *
+ * const sound = await createSound('guitar.mp3')
+ * const dist = createDistortion({ type: 'overdrive', amount: 50, tone: 0.6, mix: 0.7 })
+ * sound.addEffect(dist)
+ * sound.play()
+ *
+ * // Real-time control
+ * dist.amount = 80
+ * dist.tone = 0.3  // Darker tone
+ * dist.type = 'fuzz'  // Switch curve type
+ * ```
+ */
+export class DistortionEffect extends BaseEffect {
+  private readonly waveShaperNode: WaveShaperNode
+  private readonly toneFilter: BiquadFilterNode
+  private _type: DistortionType
+  private _amount: number
+  private _tone: number
+  private _customCurve?: Float32Array<ArrayBuffer>
+
+  constructor(
+    audioContext: AudioContext,
+    options: DistortionOptions = {},
+  ) {
+    super(audioContext)
+
+    this._type = options.type ?? 'soft'
+    this._amount = Math.max(0, Math.min(100, options.amount ?? 50))
+    this._tone = Math.max(0, Math.min(1, options.tone ?? 0.5))
+
+    // Create nodes
+    this.waveShaperNode = audioContext.createWaveShaper()
+    this.toneFilter = audioContext.createBiquadFilter()
+
+    // Configure waveshaper
+    this.waveShaperNode.oversample = options.oversample ?? '4x'
+    if (this._type === 'custom' && options.curve) {
+      this._customCurve = options.curve
+      this.waveShaperNode.curve = options.curve
+    }
+    else {
+      this.waveShaperNode.curve = generateCurve(this._type, this._amount)
+    }
+
+    // Configure tone filter (lowpass)
+    this.toneFilter.type = 'lowpass'
+    this.applyTone()
+
+    // Wire effect chain: input -> waveshaper -> toneFilter -> wetGain
+    this.inputNode.connect(this.waveShaperNode)
+    this.waveShaperNode.connect(this.toneFilter)
+    this.toneFilter.connect(this.wetGain)
+
+    // Apply initial mix if provided
+    if (options.mix !== undefined) {
+      this.mix = options.mix
+    }
+  }
+
+  /** Distortion amount (0-100) */
+  get amount(): number {
+    return this._amount
+  }
+
+  set amount(v: number) {
+    this._amount = Math.max(0, Math.min(100, v))
+    if (this._type !== 'custom') {
+      this.waveShaperNode.curve = generateCurve(this._type, this._amount)
+    }
+  }
+
+  /** Distortion curve type */
+  get type(): DistortionType {
+    return this._type
+  }
+
+  set type(v: DistortionType) {
+    this._type = v
+    if (v === 'custom' && this._customCurve) {
+      this.waveShaperNode.curve = this._customCurve
+    }
+    else if (v !== 'custom') {
+      this.waveShaperNode.curve = generateCurve(v, this._amount)
+    }
+  }
+
+  /** Post-distortion tone control (0 = dark/200Hz, 1 = bright/8000Hz) */
+  get tone(): number {
+    return this._tone
+  }
+
+  set tone(v: number) {
+    this._tone = Math.max(0, Math.min(1, v))
+    this.applyTone()
+  }
+
+  /** Oversampling mode for aliasing prevention */
+  get oversample(): OverSampleType {
+    return this.waveShaperNode.oversample
+  }
+
+  set oversample(v: OverSampleType) {
+    this.waveShaperNode.oversample = v
+  }
+
+  protected getAudioParam(name: string): AudioParam | null {
+    switch (name) {
+      case 'tone': return this.toneFilter.frequency
+      default: return null
+    }
+  }
+
+  /**
+   * Map tone 0-1 to lowpass frequency using exponential scale.
+   * 0 = 200Hz (dark), 1 = 8000Hz (bright)
+   */
+  private applyTone(): void {
+    this.toneFilter.frequency.value = 200 * 40 ** this._tone
+  }
+}
+
+/**
+ * Factory function to create a DistortionEffect.
+ *
+ * AudioContext is optional. If omitted, uses the shared library AudioContext.
+ *
+ * @param options - Optional distortion parameters
+ * @returns A new DistortionEffect instance
+ *
+ * @example
+ * ```typescript
+ * // Zero-config (good defaults)
+ * const dist = createDistortion()
+ *
+ * // With options
+ * const dist2 = createDistortion({ type: 'overdrive', amount: 60, tone: 0.7, mix: 0.8 })
+ *
+ * // Custom curve
+ * const dist3 = createDistortion({ type: 'custom', curve: myFloat32Array })
+ *
+ * // With explicit AudioContext
+ * const dist4 = createDistortion(audioContext, { amount: 50 })
+ * ```
+ */
+export function createDistortion(options?: DistortionOptions): DistortionEffect
+export function createDistortion(audioContext: AudioContext, options?: DistortionOptions): DistortionEffect
+export function createDistortion(
+  audioContextOrOptions?: AudioContext | DistortionOptions,
+  options?: DistortionOptions,
+): DistortionEffect {
+  if (audioContextOrOptions !== undefined && typeof (audioContextOrOptions as AudioContext).createGain === 'function') {
+    return new DistortionEffect(audioContextOrOptions as AudioContext, options ?? {})
+  }
+  return new DistortionEffect(getOrCreateAudioContext(), (audioContextOrOptions as DistortionOptions) ?? {})
+}

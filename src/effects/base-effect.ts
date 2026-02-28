@@ -132,7 +132,8 @@ export abstract class BaseEffect implements Effect {
     }
 
     const audioParam = this.getAudioParam(param)
-    if (!audioParam) return
+    if (!audioParam)
+      return
 
     const timeConstant = duration / 3
     audioParam.setTargetAtTime(value, this.audioContext.currentTime, timeConstant)

@@ -12,7 +12,6 @@ function createMockContext() {
   const ctx = new Mock() as unknown as AudioContext
 
   // Patch createDelay to return a proper mock with delayTime
-  const origCreateDelay = ctx.createDelay
   ;(ctx as any).createDelay = (maxDelayTime?: number) => {
     // Get a GainNode as the base (it has connect/disconnect)
     const node = ctx.createGain() as any

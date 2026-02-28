@@ -21,7 +21,8 @@ class TestEffect extends BaseEffect {
   }
 
   protected getAudioParam(name: string): AudioParam | null {
-    if (name === 'gain') return this.testGain.gain
+    if (name === 'gain')
+      return this.testGain.gain
     return null
   }
 }

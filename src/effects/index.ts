@@ -32,16 +32,24 @@ export interface Effect {
   mix: number
 }
 
+// Base class
+export { BaseEffect } from './base-effect'
+// Compressor effect
+export { CompressorEffect, type CompressorOptions, createCompressor } from './compressor-effect'
+// Delay effect
+export { createDelay, DelayEffect, type DelayOptions } from './delay-effect'
+
+// Distortion effect
+export { createDistortion, DistortionEffect, type DistortionOptions, type DistortionType } from './distortion-effect'
 export { createEffect, EffectWrapper, type ExternalEffect } from './effect-wrapper'
 export { wrapEffect } from './effect-wrapper'
+// EQ effect
+export { createEQ, EQEffect, type EQOptions } from './eq-effect'
 export { FilterEffect, type FilterEffectOptions, type FilterType } from './filter-effect'
-
 export { createFilterEffect } from './filter-effect'
 // Re-export classes
 export { GainEffect } from './gain-effect'
 // Factory functions
 export { createGainEffect } from './gain-effect'
-// Base class
-export { BaseEffect } from './base-effect'
-// Delay effect
-export { createDelay, DelayEffect, type DelayOptions } from './delay-effect'
+// Reverb effect
+export { type AlgorithmicReverbOptions, type ConvolutionReverbOptions, createReverb, ReverbEffect } from './reverb-effect'
