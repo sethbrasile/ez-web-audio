@@ -3,14 +3,15 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-26
+**Last Updated:** 2026-02-28
 
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-11 (shipped 2026-02-14)
 - ✅ **v1.1 Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
 - ✅ **v1.0 Stable** — Phases 17-46 (complete)
-- 📋 **Deep Review Hardening** — Phases 47-54 (planned)
+- ✅ **Deep Review Hardening** — Phases 47-52 (complete)
+- 📋 **Effects & Transport** — Phases 53-58 (planned)
 
 ## Phases
 
@@ -77,7 +78,8 @@
 - [x] **Phase 45: Architecture Improvements** - Internal code clarity, named methods, resource cleanup (completed 2026-02-24)
 - [x] **Phase 46: Post-Review Fixes** - Fix build compatibility, onPlayRamp bug, broken doc examples, gain restoration after fadeOut (completed 2026-02-25)
 
-### 📋 Deep Review Hardening (Phases 47-54)
+<details>
+<summary>✅ Deep Review Hardening (Phases 47-52) — COMPLETE 2026-02-28</summary>
 
 **Milestone Goal:** Address all findings from the 2026-02-26 deep review — fix the ship-blocker type declaration bug, eliminate runtime crashes and unhandled rejections, clean up public exports, optimize hot-path performance, fix misleading docs, strengthen test assertions, and improve build/refactoring quality.
 
@@ -87,6 +89,19 @@
 - [x] **Phase 50: Code Quality** - Extract duplicated gain-interception and controller logic, strengthen test assertions, add publish tag verification (completed 2026-02-27)
 - [x] **Phase 51: Performance & Safety** - Guard audioContext.resume(), add durationRaw accessor, pan validation, crossfade cache, AudioSprite node optimization, context warning, dispose cleanup, LayeredSound dispose (completed 2026-02-27)
 - [x] **Phase 52: Documentation & Examples** - Fix vibrato example, correct README seek await, document soundfont blocking, add playTogether example page, widen AudioInput signatures (completed 2026-02-28)
+
+</details>
+
+### 📋 Effects & Transport (Phases 53-58)
+
+**Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
+
+- [ ] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface
+- [ ] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation
+- [ ] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization
+- [ ] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport
+- [ ] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus
+- [ ] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters
 
 ## Phase Details
 
@@ -535,8 +550,12 @@ Plans:
 | 50. Performance | 2/2 | Complete    | 2026-02-27 | - |
 | 51. Documentation Fixes | 2/2 | Complete    | 2026-02-27 | - |
 | 52. Test Strengthening | 3/3 | Complete    | 2026-02-28 | - |
-| 53. Build & Refactoring | Deep Review Hardening | 0/? | Not started | - |
-| 54. Remaining Safety, DX & Performance | Deep Review Hardening | 0/? | Not started | - |
+| 53. Built-in Effects | Effects & Transport | 0/? | Not started | - |
+| 54. LFO | Effects & Transport | 0/? | Not started | - |
+| 55. Transport + BeatTrack Sync | Effects & Transport | 0/? | Not started | - |
+| 56. Sequencer + Musical Time | Effects & Transport | 0/? | Not started | - |
+| 57. PolySynth | Effects & Transport | 0/? | Not started | - |
+| 58. GrainPlayer | Effects & Transport | 0/? | Not started | - |
 
 ### Phase 39: Documentation Code Correctness
 
@@ -772,10 +791,73 @@ Plans:
   5. A playTogether example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
 **Plans**: TBD
 
+### Phase 53: Built-in Effects
+**Goal**: Developers can apply professional-quality delay, reverb, distortion, compressor, and EQ effects to any sound using the existing addEffect() API — no third-party libraries required
+**Depends on**: Phase 52
+**Requirements**: FX-01, FX-02, FX-03, FX-04, FX-05, FX-06
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `createDelay({ time: 0.3, feedback: 0.5, mix: 0.4 })` and add it to any Sound, Oscillator, or LayeredSound via `addEffect()`
+  2. Developer can call `createReverb(url)` (or `createReverb({ decay, preDelay })` for algorithmic) and the effect applies convolution reverb to playback
+  3. Developer can call `createDistortion({ amount: 50, mix: 0.6 })` and the WaveShaper curve distorts the signal at the configured amount
+  4. Developer can call `createCompressor({ threshold: -24, ratio: 4, knee: 30, attack: 0.003, release: 0.25 })` and the DynamicsCompressorNode reduces dynamic range
+  5. Developer can call `createEQ({ low: 3, mid: -2, high: 4 })` and the three-band filter adjusts frequency balance
+**Plans**: TBD
+
+### Phase 54: LFO
+**Goal**: Developers can create a low-frequency oscillator and connect it to any audio parameter on any sound, enabling tremolo, vibrato, auto-filter, and auto-pan effects with no memory leaks
+**Depends on**: Phase 53
+**Requirements**: MOD-01, MOD-02, MOD-03
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `createLFO({ frequency: 5, depth: 0.3, type: 'sine' })` and receive an LFO instance with start/stop/dispose methods
+  2. Developer can call `lfo.connect(sound, 'gain')` and the sound's gain oscillates at the LFO frequency — producing an audible tremolo effect
+  3. After calling `sound.dispose()`, the LFO connected to that sound stops running and releases all AudioNode references (no memory leak, no zombie OscillatorNode)
+**Plans**: TBD
+
+### Phase 55: Transport + BeatTrack Sync
+**Goal**: Developers can create a global Transport clock that multiple BeatTracks lock to, enabling perfect multi-track synchronization that survives background tab throttling
+**Depends on**: Phase 54
+**Requirements**: TRANS-01, TRANS-02, TRANS-03, TRANS-04
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `createTransport({ bpm: 120, timeSignature: [4, 4] })` and the Transport starts a Web Worker-backed clock that is not throttled when the tab is hidden
+  2. Developer can call `transport.start()`, `transport.pause()`, and `transport.stop()` — position advances during play, freezes on pause, and resets to 0 on stop
+  3. Developer can call `beatTrack.syncTo(transport)` and the BeatTrack's internal `setTimeout` scheduler is disabled — beats are triggered by the Transport clock instead
+  4. Two BeatTracks both synced to the same Transport play in lockstep with no audible drift between their beat patterns
+**Plans**: TBD
+
+### Phase 56: Sequencer + Musical Time
+**Goal**: Developers can schedule arbitrary callbacks at musical time positions using human-readable notation, and live BPM changes take effect immediately without re-scheduling
+**Depends on**: Phase 55
+**Requirements**: SEQ-01, SEQ-02, SEQ-03
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `sequence.at('1m', callback)` and `sequence.at('2:2', callback)` — callbacks fire at the correct musical positions when the Transport is running
+  2. Developer can use musical time strings `"4n"` (quarter note), `"8t"` (eighth triplet), `"2m"` (two bars) — all parse correctly and schedule at the right beat offset relative to current BPM
+  3. Changing `transport.bpm` during playback causes subsequent beat scheduling to use the new BPM without needing to call `sequence.reschedule()` or restart the Transport
+**Plans**: TBD
+
+### Phase 57: PolySynth
+**Goal**: Developers can play multiple simultaneous notes through a single PolySynth instance without manual voice management — chords and rapid melodic passages play cleanly with no clicks when voices are stolen
+**Depends on**: Phase 53 (effects integration patterns inform output bus design)
+**Requirements**: SYNTH-01, SYNTH-02
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `polySynth.play('C4')`, `polySynth.play('E4')`, `polySynth.play('G4')` within the same event handler and all three notes sound simultaneously
+  2. When the voice pool is full and a new note is requested, the oldest-released voice is stolen — the stolen voice fades out over 10ms before the new note begins (no audible click)
+  3. Developer can call `polySynth.addEffect(delay)` and the effect applies to all voices through the shared output bus
+**Plans**: TBD
+
+### Phase 58: GrainPlayer
+**Goal**: Developers can create texture and pad sounds from an audio buffer with independent control over pitch and playback position — without requiring any external library
+**Depends on**: Phase 55 (lookahead scheduler pattern refined in Transport/Sequencer phases)
+**Requirements**: SYNTH-03, SYNTH-04
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `createGrainPlayer(buffer, { grainSize: 0.1, overlap: 0.05 })` and the GrainPlayer emits a continuous texture from overlapping audio grains
+  2. Developer can set `grainPlayer.position` to scrub through different parts of the source buffer while the GrainPlayer is playing — position changes are audible within one lookahead window
+  3. Developer can set `grainPlayer.pitch` to shift pitch in semitones (e.g., `+7` for a fifth up) without changing the playback rate — the documentation prominently notes this is pitch-shift via `playbackRate` and cannot time-stretch independently
+**Plans**: TBD
+
 ---
 
 **Archives:**
 - `milestones/v1.1-ROADMAP.md` — full v1.1 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — v1.1 requirements with outcomes
 
-*Last updated: 2026-02-26 after Deep Review Hardening roadmap created*
+*Last updated: 2026-02-28 after Effects & Transport roadmap created*

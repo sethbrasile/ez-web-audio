@@ -77,32 +77,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FX-01 | — | Pending |
-| FX-02 | — | Pending |
-| FX-03 | — | Pending |
-| FX-04 | — | Pending |
-| FX-05 | — | Pending |
-| FX-06 | — | Pending |
-| MOD-01 | — | Pending |
-| MOD-02 | — | Pending |
-| MOD-03 | — | Pending |
-| SYNTH-01 | — | Pending |
-| SYNTH-02 | — | Pending |
-| SYNTH-03 | — | Pending |
-| SYNTH-04 | — | Pending |
-| TRANS-01 | — | Pending |
-| TRANS-02 | — | Pending |
-| TRANS-03 | — | Pending |
-| TRANS-04 | — | Pending |
-| SEQ-01 | — | Pending |
-| SEQ-02 | — | Pending |
-| SEQ-03 | — | Pending |
+| FX-01 | Phase 53 | Pending |
+| FX-02 | Phase 53 | Pending |
+| FX-03 | Phase 53 | Pending |
+| FX-04 | Phase 53 | Pending |
+| FX-05 | Phase 53 | Pending |
+| FX-06 | Phase 53 | Pending |
+| MOD-01 | Phase 54 | Pending |
+| MOD-02 | Phase 54 | Pending |
+| MOD-03 | Phase 54 | Pending |
+| SYNTH-01 | Phase 57 | Pending |
+| SYNTH-02 | Phase 57 | Pending |
+| SYNTH-03 | Phase 58 | Pending |
+| SYNTH-04 | Phase 58 | Pending |
+| TRANS-01 | Phase 55 | Pending |
+| TRANS-02 | Phase 55 | Pending |
+| TRANS-03 | Phase 55 | Pending |
+| TRANS-04 | Phase 55 | Pending |
+| SEQ-01 | Phase 56 | Pending |
+| SEQ-02 | Phase 56 | Pending |
+| SEQ-03 | Phase 56 | Pending |
 
 **Coverage:**
 - Milestone requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19 ⚠️
+- Mapped to phases: 19
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after initial definition*
+*Last updated: 2026-02-28 after roadmap created (phases 53-58 mapped)*
