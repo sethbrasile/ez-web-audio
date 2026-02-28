@@ -5,6 +5,7 @@ import type { SamplerOptions } from './sampler'
 import { Beat } from './beat'
 import { Sampler } from './sampler'
 import audioContextAwareTimeout from './utils/timeout'
+import { WorkerTimer } from './utils/worker-timer'
 
 export interface BeatTrackOptions extends SamplerOptions {
   numBeats?: number
@@ -65,10 +66,9 @@ export class BeatTrack extends Sampler {
 
   // Lookahead scheduler state
   private scheduleAheadTime = 0.1 // 100ms lookahead
-  private schedulerInterval = 25 // 25ms check interval
+  private workerTimer: WorkerTimer = new WorkerTimer()
   private nextBeatTime = 0
   private currentBeatIndex = 0
-  private timerID: number | null = null
   private currentTempo: number = 120
   private noteType: number = 1 / 4
 
@@ -268,10 +268,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public stop(): void {
-    if (this.timerID !== null) {
-      clearTimeout(this.timerID)
-      this.timerID = null
-    }
+    this.workerTimer.stop()
 
     // Cancel any pending beat-level timers to prevent post-stop visual flicker
     for (const beat of this.beats) {
@@ -302,10 +299,7 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public pause(): void {
-    if (this.timerID !== null) {
-      clearTimeout(this.timerID)
-      this.timerID = null
-    }
+    this.workerTimer.stop()
 
     this.pausedBeatIndex = this.currentBeatIndex
 
@@ -370,22 +364,29 @@ export class BeatTrack extends Sampler {
   }
 
   /**
-   * Lookahead scheduler that schedules beats 100ms ahead.
+   * Start the lookahead scheduler using WorkerTimer for background-tab resilience.
    *
-   * This pattern checks every 25ms and schedules beats 100ms ahead of current time.
-   * It prevents timing gaps from JS event loop jitter while keeping beat triggers
-   * close to real-time for UI synchronization.
+   * Runs the first tick synchronously (to schedule beats within the current
+   * lookahead window immediately), then starts the WorkerTimer for subsequent
+   * ticks at regular intervals (~20ms).
    *
-   * Note: The scheduler loop uses `window.setTimeout`, which browsers throttle to
-   * ~1 s intervals when the tab is in the background. This can cause scheduling
-   * drift or missed beats while the tab is hidden. However, the individual beat
-   * playback times are anchored to `audioContext.currentTime` via
-   * `audioContextAwareTimeout`, so beats that *are* scheduled will fire at the
-   * correct audio-clock instant.
+   * Individual beat playback times are anchored to `audioContext.currentTime`
+   * via `audioContextAwareTimeout`, so beats fire at the correct audio-clock instant.
    *
    * @internal
    */
   private scheduler(): void {
+    // Run first tick synchronously to schedule beats immediately
+    this.schedulerTick()
+    this.workerTimer.start(() => this.schedulerTick())
+  }
+
+  /**
+   * Single tick of the lookahead scheduler. Schedules all beats within
+   * the lookahead window.
+   * @internal
+   */
+  private schedulerTick(): void {
     const currentTime = this.audioContext.currentTime
 
     // Schedule all beats within lookahead window
@@ -393,11 +394,6 @@ export class BeatTrack extends Sampler {
       this.scheduleBeat(this.currentBeatIndex, this.nextBeatTime)
       this.advanceToNextBeat()
     }
-
-    this.timerID = window.setTimeout(
-      () => this.scheduler(),
-      this.schedulerInterval,
-    )
   }
 
   /**
@@ -514,8 +510,9 @@ export class BeatTrack extends Sampler {
    * ```
    */
   public dispose(): void {
-    // Stop playback (clears timerID, resets beat index, cancels beat timers)
+    // Stop playback (stops WorkerTimer, resets beat index, cancels beat timers)
     this.stop()
+    this.workerTimer.dispose()
 
     // Dispose all underlying sounds in the sampler
     for (const sound of this.sounds) {

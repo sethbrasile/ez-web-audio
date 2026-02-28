@@ -36,10 +36,12 @@ class BeatTrack extends RealBeatTrack {
   }
 
   /**
-   * Expose timerID for testing scheduler state
+   * Expose WorkerTimer running state for testing scheduler state.
+   * Returns a truthy value (the WorkerTimer) when running, null when stopped.
    */
-  public getTimerID(): number | null {
-    return (this as any).timerID
+  public getTimerID(): any {
+    const workerTimer = (this as any).workerTimer
+    return workerTimer?.isRunning ? workerTimer : null
   }
 
   /**
