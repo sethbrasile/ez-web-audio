@@ -79,7 +79,8 @@ export class CompressorEffect extends BaseEffect {
   }
 
   set threshold(v: number) {
-    this.compressorNode.threshold.value = v
+    // M8: Clamp to valid range [-100, 0] dB
+    this.compressorNode.threshold.value = Math.max(-100, Math.min(0, v))
   }
 
   /** Compression ratio (e.g., 4 = 4:1) */
@@ -88,7 +89,8 @@ export class CompressorEffect extends BaseEffect {
   }
 
   set ratio(v: number) {
-    this.compressorNode.ratio.value = v
+    // M8: Clamp to valid range [1, 20]
+    this.compressorNode.ratio.value = Math.max(1, Math.min(20, v))
   }
 
   /** Knee width in dB */
@@ -97,7 +99,8 @@ export class CompressorEffect extends BaseEffect {
   }
 
   set knee(v: number) {
-    this.compressorNode.knee.value = v
+    // M8: Clamp to valid range [0, 40] dB
+    this.compressorNode.knee.value = Math.max(0, Math.min(40, v))
   }
 
   /** Attack time in seconds */
@@ -106,7 +109,8 @@ export class CompressorEffect extends BaseEffect {
   }
 
   set attack(v: number) {
-    this.compressorNode.attack.value = v
+    // M8: Clamp to valid range [0, 1] seconds
+    this.compressorNode.attack.value = Math.max(0, Math.min(1, v))
   }
 
   /** Release time in seconds */
@@ -115,7 +119,8 @@ export class CompressorEffect extends BaseEffect {
   }
 
   set release(v: number) {
-    this.compressorNode.release.value = v
+    // M8: Clamp to valid range [0, 1] seconds
+    this.compressorNode.release.value = Math.max(0, Math.min(1, v))
   }
 
   /** Current gain reduction in dB (read-only). Useful for metering */

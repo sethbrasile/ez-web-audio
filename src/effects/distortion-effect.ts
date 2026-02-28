@@ -24,12 +24,15 @@ export interface DistortionOptions {
   mix?: number
 }
 
+/** Number of samples in the waveshaper transfer curve. 1024 gives excellent fidelity at 43x less memory than 44100. */
+const CURVE_SAMPLES = 1024
+
 /**
  * Generate a waveshaper transfer curve for the given distortion type and amount.
  * @internal
  */
 function generateCurve(type: DistortionType, amount: number): Float32Array<ArrayBuffer> {
-  const samples = 44100
+  const samples = CURVE_SAMPLES
   const curve: Float32Array<ArrayBuffer> = new Float32Array(samples)
   const k = amount / 10
 
@@ -109,6 +112,11 @@ export class DistortionEffect extends BaseEffect {
     this._amount = Math.max(0, Math.min(100, options.amount ?? 50))
     this._tone = Math.max(0, Math.min(1, options.tone ?? 0.5))
 
+    // M5: Guard against 'custom' type without a curve
+    if (this._type === 'custom' && !options.curve) {
+      throw new Error('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
+    }
+
     // Create nodes
     this.waveShaperNode = audioContext.createWaveShaper()
     this.toneFilter = audioContext.createBiquadFilter()
@@ -156,6 +164,10 @@ export class DistortionEffect extends BaseEffect {
   }
 
   set type(v: DistortionType) {
+    // M5: Guard against 'custom' type without a curve
+    if (v === 'custom' && !this._customCurve) {
+      throw new Error('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
+    }
     this._type = v
     if (v === 'custom' && this._customCurve) {
       this.waveShaperNode.curve = this._customCurve

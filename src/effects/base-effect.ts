@@ -141,6 +141,19 @@ export abstract class BaseEffect implements Effect {
    * ```
    */
   rampTo(param: string, value: number, duration: number): void {
+    // L3: Guard against duration <= 0 — setTargetAtTime requires positive timeConstant
+    if (duration <= 0) {
+      if (param === 'mix') {
+        this.mix = value // Use the setter for instant change
+        return
+      }
+      const audioParam = this.getAudioParam(param)
+      if (audioParam) {
+        audioParam.setValueAtTime(value, this.audioContext.currentTime)
+      }
+      return
+    }
+
     if (param === 'mix') {
       // Ramp wet/dry mix via gain nodes
       const targetAngle = Math.max(0, Math.min(1, value)) * 0.5 * Math.PI

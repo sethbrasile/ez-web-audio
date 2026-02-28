@@ -79,7 +79,8 @@ export class DelayEffect extends BaseEffect {
   }
 
   set time(v: number) {
-    this.delayNode.delayTime.value = v
+    // M9: Clamp to valid range [0, maxTime]
+    this.delayNode.delayTime.value = Math.max(0, Math.min(this._maxTime, v))
   }
 
   /** Feedback amount (0-0.99). Higher values = more repeats */

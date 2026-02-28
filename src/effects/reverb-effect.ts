@@ -222,9 +222,12 @@ export class ReverbEffect extends BaseEffect {
     if (this._mode !== 'algorithmic' || !this.combFilters)
       return
     this._decay = v
-    // Update comb filter delay times
+    // M7: Use setTargetAtTime for smooth (click-free) transitions
+    const now = this.audioContext.currentTime
+    const timeConstant = 0.01 / 3 // ~10ms smooth transition
     this.combFilters.forEach((comb, i) => {
-      comb.delay.delayTime.value = COMB_DELAY_TIMES[i] * (v / 1.5)
+      const newDelayTime = COMB_DELAY_TIMES[i] * (v / 1.5)
+      comb.delay.delayTime.setTargetAtTime(newDelayTime, now, timeConstant)
     })
   }
 
@@ -249,8 +252,11 @@ export class ReverbEffect extends BaseEffect {
       return
     this._damping = Math.max(0, Math.min(1, v))
     const freq = this.dampingToFrequency(this._damping)
+    // M7: Use setTargetAtTime for smooth (click-free) transitions
+    const now = this.audioContext.currentTime
+    const timeConstant = 0.01 / 3 // ~10ms smooth transition
     for (const comb of this.combFilters) {
-      comb.damping.frequency.value = freq
+      comb.damping.frequency.setTargetAtTime(freq, now, timeConstant)
     }
   }
 

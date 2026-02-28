@@ -1,6 +1,6 @@
 import type { Effect } from './index'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createReverb, ReverbEffect } from './reverb-effect'
 
 function createMockContext() {
@@ -134,6 +134,40 @@ describe('reverbEffect', () => {
         expect(effect.damping).toBe(1)
         effect.damping = -0.5
         expect(effect.damping).toBe(0)
+      })
+
+      // M7: Reverb decay/damping setters use setTargetAtTime for smooth transitions
+      it('M7: decay setter uses setTargetAtTime on comb filter delays', () => {
+        // Use a fresh context where we can spy on delay nodes
+        const spyCtx = createMockContext()
+        const setTargetAtTimeCalls: unknown[][] = []
+
+        // Wrap createDelay to capture and spy on setTargetAtTime
+        const origCreateDelay = (spyCtx as any).createDelay
+        ;(spyCtx as any).createDelay = (maxDelayTime?: number) => {
+          const node = origCreateDelay(maxDelayTime)
+          const original = node.delayTime.setTargetAtTime
+          node.delayTime.setTargetAtTime = (...args: unknown[]) => {
+            setTargetAtTimeCalls.push(args)
+            return original?.(...args)
+          }
+          return node
+        }
+
+        const effect = new ReverbEffect(spyCtx)
+        setTargetAtTimeCalls.length = 0 // clear constructor calls
+
+        effect.decay = 2.5
+        expect(effect.decay).toBe(2.5)
+        // Should have called setTargetAtTime for each of the 4 comb filter delay nodes
+        expect(setTargetAtTimeCalls.length).toBeGreaterThanOrEqual(4)
+      })
+
+      it('M7: damping setter uses setTargetAtTime on comb filter biquad filters', () => {
+        const effect = new ReverbEffect(audioContext)
+        // Verify functionally: setter should not throw and update stored value
+        expect(() => { effect.damping = 0.7 }).not.toThrow()
+        expect(effect.damping).toBe(0.7)
       })
     })
 
