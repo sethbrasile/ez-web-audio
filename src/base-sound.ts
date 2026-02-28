@@ -1289,6 +1289,10 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
     // Detach analyzer
     this._analyzer = null
 
+    // Emit 'dispose' event BEFORE silencing dispatchEvent so listeners can react.
+    // This enables event-based cleanup patterns (e.g., LFO listening for target disposal).
+    this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
+
     // Silence future event dispatch so listeners cannot fire on a disposed instance.
     // EventTarget has no removeAllListeners(), so we override dispatchEvent instead.
     this.dispatchEvent = () => false

@@ -80,7 +80,7 @@ export class LFO {
   private _audioContext: AudioContext | null = null
   private _isRunning = false
   private _connections: ConnectionRecord[] = []
-  private _disposePatchMap = new Map<LFOTarget, () => void>()
+  private _disposeListeners = new Map<LFOTarget, EventListener>()
   private _disposed = false
 
   constructor(options?: LFOOptions) {
@@ -230,8 +230,8 @@ export class LFO {
       target.addEventListener('play', retriggerListener)
     }
 
-    // Patch target.dispose() for cleanup
-    this._patchDispose(target)
+    // Register dispose event listener for cleanup
+    this._listenForDispose(target)
 
     this._connections.push(record)
     return this
@@ -345,11 +345,13 @@ export class LFO {
 
     this.disconnect()
 
-    // Restore all patched dispose methods
-    for (const [target, origDispose] of this._disposePatchMap) {
-      (target as unknown as { dispose: () => void }).dispose = origDispose
+    // Remove all dispose event listeners
+    for (const [target, handler] of this._disposeListeners) {
+      if (this._isBaseSound(target)) {
+        target.removeEventListener('dispose', handler)
+      }
     }
-    this._disposePatchMap.clear()
+    this._disposeListeners.clear()
 
     this._disposed = true
   }
@@ -575,7 +577,8 @@ export class LFO {
       this._removeConnection(conn)
     }
     this._connections = this._connections.filter(c => c.target !== target)
-    this._disposePatchMap.delete(target)
+    // Remove the dispose listener so it doesn't linger after cleanup
+    this._disposeListeners.delete(target)
   }
 
   private _createSampleAndHoldBuffer(frequency: number): AudioBuffer {
@@ -602,26 +605,20 @@ export class LFO {
     return buffer
   }
 
-  private _patchDispose(target: LFOTarget): void {
-    // If already patched by this LFO, skip
-    if (this._disposePatchMap.has(target)) {
+  private _listenForDispose(target: LFOTarget): void {
+    // If already listening, skip (idempotent)
+    if (this._disposeListeners.has(target)) {
       return
     }
 
-    // Only patch if target has a dispose method
-    const targetWithDispose = target as { dispose?: () => void }
-    if (typeof targetWithDispose.dispose !== 'function') {
+    // Only BaseSound emits 'dispose' events; BaseEffect targets skip until they add dispose()
+    if (!this._isBaseSound(target)) {
       return
     }
 
-    const origDispose = targetWithDispose.dispose.bind(target)
-
-    targetWithDispose.dispose = () => {
-      this._cleanupTarget(target)
-      origDispose()
-    }
-
-    this._disposePatchMap.set(target, origDispose)
+    const handler = (() => this._cleanupTarget(target)) as EventListener
+    target.addEventListener('dispose', handler)
+    this._disposeListeners.set(target, handler)
   }
 
   private _updateAllDepthGains(): void {

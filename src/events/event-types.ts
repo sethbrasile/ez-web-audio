@@ -59,6 +59,15 @@ export interface EndEventDetail {
 }
 
 /**
+ * Detail for 'dispose' events, fired when a BaseSound is disposed.
+ * Emitted BEFORE dispatchEvent is silenced, so listeners can react.
+ */
+export interface DisposeEventDetail {
+  /** The sound instance that is being disposed */
+  source: AudioEventSource
+}
+
+/**
  * Detail for 'pause' events, fired when a Track is paused.
  */
 export interface PauseEventDetail {
@@ -115,6 +124,7 @@ export interface BaseSoundEventMap {
   play: CustomEvent<PlayEventDetail>
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>
+  dispose: CustomEvent<DisposeEventDetail>
 }
 
 /**
