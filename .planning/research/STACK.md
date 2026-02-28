@@ -1,905 +1,499 @@
-# Technology Stack - Advanced Web Audio Features
+# Stack Research
 
-**Project:** ez-audio
-**Research Date:** 2026-01-31
+**Domain:** Web Audio library — built-in effects, LFO, transport/clock, sequencer, polyphony, granular synthesis
+**Researched:** 2026-02-28
 **Confidence:** HIGH
 
-## Executive Summary
+## Context: What Is NOT Being Researched
 
-For the new advanced features (ADSR envelopes, event systems, audio visualization, audio sprites, effects chains), the recommended stack leverages native Web Audio API capabilities with TypeScript-first patterns. Key recommendation: **avoid third-party libraries** where native APIs are sufficient, maintain zero-dependency architecture, and extend the existing fluent controller pattern.
-
-## Core Technology Stack
-
-### Base Platform (Already Established)
-
-| Technology | Version | Purpose | Confidence |
-|------------|---------|---------|------------|
-| TypeScript | 5.6+ | Type safety, development experience | HIGH |
-| Web Audio API | Current (W3C 1.1) | Audio processing foundation | HIGH |
-| Vitest | 2.1+ | Testing with happy-dom | HIGH |
-| standardized-audio-context-mock | 9.7+ | AudioContext mocking for tests | HIGH |
-
-**Rationale:** These are already in place and working well. No changes needed to base stack.
+The existing stack (TypeScript, Vite, Vitest, Playwright, VitePress, happy-dom, standardized-audio-context-mock) is proven and unchanged. This document covers only what is needed for the **Effects & Transport milestone**: what native Web Audio nodes handle each feature, what needs custom code, and what (if anything) to import.
 
 ---
 
-## New Feature Technologies
+## Recommended Stack
 
-### 1. ADSR Envelope Implementation
+### Core Technologies (New Additions)
 
-**Recommended Pattern:** Native AudioParam scheduling with fluent TypeScript API
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Web Audio API — native nodes | Current (W3C 1.1) | All effects, LFO, compressor, EQ | Zero-dependency; these nodes were built for exactly this purpose |
+| Web Worker (inline Blob URL) | Native browser | Transport clock reliability | Prevents timer throttling in background tabs; same pattern Tone.js uses in production |
+| AudioWorklet | Baseline (since April 2021) | GrainPlayer only | Only place where native nodes cannot express the logic; all other features avoid it |
 
-#### Core Implementation
+### No New npm Dependencies
+
+Every feature in this milestone can be built from:
+1. Native Web Audio nodes (effects, LFO, compressor, limiter, EQ, chorus, delay, reverb, PolySynth)
+2. Vanilla TypeScript scheduling loops (transport, sequencer, granular)
+3. A single inline Web Worker created from a Blob URL (transport clock)
+
+Do not add Tone.js, tuna.js, or any other audio library as a dependency. The effects adapter pattern (`wrapEffect`) already lets users bring those if they want them.
+
+---
+
+## Feature-by-Feature Implementation Stack
+
+### 1. Built-in Effects
+
+#### Delay — Native DelayNode + GainNode feedback loop
+
+**Confidence:** HIGH — Verified via MDN
+
+```
+signal → DelayNode → GainNode(feedback) ↰
+       ↓
+     output
+```
+
+- `DelayNode.delayTime` — a-rate AudioParam, max value set at construction (pass `maxDelayTime` to `createDelay(maxSeconds)`)
+- Feedback gain must stay < 1.0 or signal diverges
+- For stereo ping-pong: two `DelayNode`s + `ChannelSplitterNode` + `ChannelMergerNode`
+- Integration: implement as a class following the existing `Effect` interface (has `input`, `output`, `bypass`, `mix`)
+
+**What it takes:** ~60 lines. No external code needed.
+
+#### Reverb — ConvolverNode (convolution) with synthesized IR fallback
+
+**Confidence:** HIGH for convolution approach; MEDIUM for algorithmic
+
+Two approaches:
+
+| Approach | Quality | File dependency | Realtime param control | Recommendation |
+|----------|---------|-----------------|----------------------|----------------|
+| `ConvolverNode` + IR file | Professional | Yes (WAV/MP3, 1–5 MB) | No (re-buffer to change) | Primary for quality reverb |
+| Algorithmic (delay network) | Decent | None | Yes | Fallback / "instant" reverb |
+
+For the IR approach: `ConvolverNode.buffer` is set to a decoded `AudioBuffer` from a WAV file. The library should ship a `createReverb(url)` factory that fetches and decodes the IR, and also a `createReverb({ decay, preDelay })` overload that synthesizes a simple IR programmatically (no file needed, lower quality).
+
+Synthesizing a simple IR: fill an `AudioBuffer` with exponentially-decaying noise. This gives usable spring/room reverb without requiring a file.
 
 ```typescript
-// Extend existing controller pattern
-interface ADSREnvelope {
-  attack: number // seconds
-  decay: number // seconds
-  sustain: number // ratio (0-1)
-  release: number // seconds
-}
-
-class ADSRController {
-  applyEnvelope(param: AudioParam, envelope: ADSREnvelope, startTime: number, noteOffTime?: number): void {
-    const { attack, decay, sustain, release } = envelope
-    const now = startTime
-
-    // Attack phase - linear ramp from 0 to 1
-    param.setValueAtTime(0, now)
-    param.linearRampToValueAtTime(1, now + attack)
-
-    // Decay phase - exponential ramp to sustain level
-    // Use exponentialRampToValueAtTime (avoid zero, min 0.0001)
-    param.exponentialRampToValueAtTime(Math.max(sustain, 0.0001), now + attack + decay)
-
-    // Sustain phase - hold at sustain level until note off
-    if (noteOffTime) {
-      param.setValueAtTime(sustain, noteOffTime)
-      // Release phase - ramp to zero
-      param.exponentialRampToValueAtTime(0.0001, noteOffTime + release)
+// Synthesize IR: exponentially-decaying white noise
+function createSyntheticIR(ctx: AudioContext, decay = 2, preDelay = 0): AudioBuffer {
+  const sampleRate = ctx.sampleRate
+  const length = sampleRate * decay
+  const buf = ctx.createBuffer(2, length, sampleRate)
+  const preDelaySamples = Math.floor(preDelay * sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch)
+    for (let i = preDelaySamples; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - (i - preDelaySamples) / length, decay)
     }
   }
+  return buf
 }
 ```
 
-**Why Native AudioParam Methods:**
-- **No clicks/pops**: Native ramping handles sample-accurate transitions
-- **Hardware-accelerated**: Runs on audio thread, not main thread
-- **Precise timing**: Uses AudioContext clock, not setTimeout
-- **Zero dependencies**: Built into Web Audio API
+**What it takes:** ~80 lines. No external code needed.
 
-**Anti-Pattern to Avoid:**
+#### Distortion — WaveShaperNode
+
+**Confidence:** HIGH — Verified via MDN
+
+`WaveShaperNode.curve` accepts a `Float32Array` waveshaping function. Standard distortion curve:
+
 ```typescript
-// DON'T: Manual value updates in a loop
-setInterval(() => {
-  gainNode.gain.value += delta // Creates clicks, not sample-accurate
-}, 10)
+function makeDistortionCurve(amount: number): Float32Array {
+  const samples = 256
+  const curve = new Float32Array(samples)
+  const k = amount
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1
+    curve[i] = ((Math.PI + k) * x) / (Math.PI + k * Math.abs(x))
+  }
+  return curve
+}
 ```
 
-**Known Pitfall:** `exponentialRampToValueAtTime` cannot ramp to zero (Math domain error). Use `0.0001` as minimum value, then call `setValueAtTime(0, ...)` if true silence needed.
+- `oversample` property: `'none'` | `'2x'` | `'4x'` — use `'4x'` to reduce aliasing at high drive
+- Integration: wrap in `Effect` interface; expose `drive` param that regenerates the curve
 
-**Confidence:** HIGH (verified with [MDN Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API))
+**What it takes:** ~40 lines.
 
-**Sources:**
-- [Building a Synthesizer with Web Audio API - Envelopes](https://dobrian.github.io/cmp/topics/building-a-synthesizer-with-web-audio-api/4.envelopes.html)
-- [fastidious-envelope-generator approach](https://github.com/rsimmons/fastidious-envelope-generator) (reference for artifact-free edge cases)
+#### Compressor — DynamicsCompressorNode
+
+**Confidence:** HIGH — Verified via MDN
+
+Native node with five `AudioParam`s:
+
+| Param | Default | Typical Range | Notes |
+|-------|---------|---------------|-------|
+| `threshold` | -24 dB | -60 to 0 | Level above which compression kicks in |
+| `knee` | 30 dB | 0 to 40 | Soft knee width |
+| `ratio` | 12 | 1 to 20 | Input:output ratio above threshold |
+| `attack` | 0.003 s | 0 to 1 | How fast compressor engages |
+| `release` | 0.25 s | 0 to 1 | How fast compressor releases |
+
+Read-only `reduction` property shows current gain reduction in dB — useful for a gain-reduction meter in the UI.
+
+**What it takes:** ~30 lines (thinnest wrapper in the milestone).
+
+#### Limiter — DynamicsCompressorNode with extreme settings
+
+**Confidence:** HIGH
+
+A limiter is a compressor with ratio ≥ 20:1. Recommended preset:
+
+```typescript
+// Limiter = compressor with hard settings
+compressor.threshold.value = -3   // dB
+compressor.knee.value = 0         // Hard knee
+compressor.ratio.value = 20       // 20:1 = effectively infinite
+compressor.attack.value = 0.001   // Very fast
+compressor.release.value = 0.1    // Fast
+```
+
+**What it takes:** A `createLimiter()` factory that calls `createCompressor()` with these defaults. Literally a preset, not a new node type.
+
+#### Chorus — Two DelayNodes + LFO modulating delayTime
+
+**Confidence:** HIGH — Verified via Tone.js source analysis and MDN
+
+Pattern from Tone.js (production-proven): stereo chorus uses two `DelayNode`s (left and right channels), each with an `OscillatorNode` LFO modulating its `delayTime`. The delay times oscillate between 2–20ms at low frequency (0.5–4 Hz).
+
+```
+signal → ChannelSplitter → DelayL (delayTime ← LFO-L) → ChannelMerger → output
+                        ↘ DelayR (delayTime ← LFO-R) ↗
+```
+
+Key parameter ranges (from Tone.js):
+- `delayTime`: 2–20ms nominal; depth makes it modulate ±delayTime around nominal
+- `frequency`: LFO rate in Hz (0.5–4 Hz typical)
+- `feedback`: Routes output back to input for flanger effect
+
+**What it takes:** ~80 lines. LFO can reuse the `LFO` class being built separately.
+
+#### EQ (3-band) — Three chained BiquadFilterNodes
+
+**Confidence:** HIGH — Verified via MDN
+
+Three `BiquadFilterNode`s chained in series:
+
+| Band | Filter Type | Default Frequency | Parameter |
+|------|-------------|-------------------|-----------|
+| Bass | `lowshelf` | 200 Hz | `gain` (±dB) |
+| Mid | `peaking` | 1000 Hz | `gain` (±dB), `Q` |
+| Treble | `highshelf` | 3000 Hz | `gain` (±dB) |
+
+All parameters are `AudioParam`s (a-rate), so they can be automated or connected to an LFO. A parametric EQ simply exposes `frequency` and `Q` on the peaking band as well.
+
+**What it takes:** ~50 lines.
 
 ---
 
-### 2. Event System
+### 2. LFO (Low-Frequency Oscillator)
 
-**Recommended Pattern:** TypeScript-native EventTarget with strict typing
+**Confidence:** HIGH — Verified via MDN `AudioNode.connect(AudioParam)` documentation
 
-#### Core Implementation
+Native `OscillatorNode` can connect directly to `AudioParam`. This is the canonical Web Audio pattern for modulation:
 
 ```typescript
-// Type-safe event map
-interface EZAudioEventMap {
-  play: { time: number, sound: string }
-  stop: { time: number, sound: string }
-  ended: { sound: string }
-  statechange: { state: AudioContextState }
-  beat: { beatIndex: number, track: string }
-}
+const lfo = audioContext.createOscillator()
+const lfoGain = audioContext.createGain()
 
-// Extend EventTarget with typed events
-class TypedEventTarget<T extends Record<string, any>> extends EventTarget {
-  on<K extends keyof T>(
-    type: K,
-    listener: (event: CustomEvent<T[K]>) => void,
-    options?: AddEventListenerOptions
-  ): void {
-    this.addEventListener(type as string, listener as EventListener, options)
-  }
+lfo.frequency.value = 2        // 2 Hz rate
+lfoGain.gain.value = 50        // ±50 Hz modulation depth
+lfo.connect(lfoGain)
+lfo.start()
 
-  emit<K extends keyof T>(type: K, detail: T[K]): void {
-    this.dispatchEvent(new CustomEvent(type as string, { detail }))
-  }
-
-  off<K extends keyof T>(
-    type: K,
-    listener: (event: CustomEvent<T[K]>) => void
-  ): void {
-    this.removeEventListener(type as string, listener as EventListener)
-  }
-}
-
-// Usage
-class EZAudioEvents extends TypedEventTarget<EZAudioEventMap> {}
-const events = new EZAudioEvents()
-
-// Type-safe listeners
-events.on('play', (e) => {
-  console.log(e.detail.sound, e.detail.time) // TypeScript knows the shape
-})
+// Connect to any AudioParam
+lfoGain.connect(oscillator.frequency)   // vibrato
+lfoGain.connect(gainNode.gain)          // tremolo
+lfoGain.connect(filter.frequency)       // auto-filter
 ```
 
-**Why Native EventTarget:**
-- **Zero dependencies**: Built into browsers since ~2021
-- **Standard API**: Familiar addEventListener/removeEventListener
-- **Memory safe**: Browser handles listener cleanup
-- **TypeScript support**: Easily typed with generics
+The `LFO` class needs to manage:
+- `rate` — LFO frequency (Hz)
+- `depth` — amplitude of LFO output (scales effect)
+- `type` — waveform: `'sine'` | `'triangle'` | `'square'` | `'sawtooth'`
+- `connect(param: AudioParam)` — hook to any param
+- `disconnect()` — unhook
+- `start()` / `stop()`
 
-**Alternatives Considered:**
+**Integration with existing architecture:** LFO output connects to `AudioParam` directly via native API. No existing code needs to change — LFO is a standalone utility.
 
-| Library | Pros | Cons | Verdict |
-|---------|------|------|---------|
-| EventEmitter3 | High performance | Adds dependency, Node.js-style API | Reject |
-| strict-event-emitter-types | Type-only (0kb) | Still requires EventEmitter base | Consider if Node.js compat needed |
-| mitt | Tiny (200b) | Another API to learn | Reject - EventTarget is standard |
-
-**Anti-Pattern to Avoid:**
-```typescript
-// DON'T: Custom callback arrays
-private listeners: Array<(data: any) => void> = []
-// Lose memory management, standard APIs, type safety
-```
-
-**Integration with Web Audio API Native Events:**
-```typescript
-// Leverage AudioScheduledSourceNode 'ended' event
-audioSourceNode.addEventListener('ended', () => {
-  events.emit('ended', { sound: this.name })
-})
-
-// Leverage AudioContext 'statechange' event
-audioContext.addEventListener('statechange', () => {
-  events.emit('statechange', { state: audioContext.state })
-})
-```
-
-**Confidence:** HIGH (native browser API, verified with [MDN EventTarget](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget))
-
-**Sources:**
-- [TypeScript Deep Dive - Typesafe Event Emitter](https://basarat.gitbook.io/typescript/main-1/typed-event)
-- [RJ Zaworski - Event Emitters in TypeScript](https://rjzaworski.com/2019/10/event-emitters-in-typescript)
+**What it takes:** ~60 lines. The only design decision is the API for specifying target and depth.
 
 ---
 
-### 3. Audio Visualization (AnalyserNode)
+### 3. Transport / Clock
 
-**Recommended Pattern:** AnalyserNode with requestAnimationFrame loop
+**Confidence:** HIGH for the Web Worker clock approach — verified via Tone.js Ticker.ts source and Chris Wilson's "A Tale of Two Clocks" (web.dev)
 
-#### Core Implementation
+#### Why Transport Needs a Web Worker Clock
+
+`setTimeout`/`setInterval` on the main thread can be throttled to 1Hz in background tabs (Chrome/Safari). An audio transport running in a background tab will drift catastrophically. The solution (used by Tone.js in production) is to run the clock tick inside a Web Worker, which is not throttled.
+
+#### Pattern: Blob-URL Web Worker + Lookahead Scheduler
 
 ```typescript
-interface VisualizationConfig {
-  fftSize?: 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768
-  smoothingTimeConstant?: number // 0-1, default 0.8
-  minDecibels?: number // default -100
-  maxDecibels?: number // default -30
-}
-
-class AudioVisualizer {
-  private analyser: AnalyserNode
-  private dataArray: Uint8Array
-  private animationId: number | null = null
-
-  constructor(
-    audioContext: AudioContext,
-    config: VisualizationConfig = {}
-  ) {
-    this.analyser = audioContext.createAnalyser()
-    this.analyser.fftSize = config.fftSize ?? 2048
-    this.analyser.smoothingTimeConstant = config.smoothingTimeConstant ?? 0.8
-    this.analyser.minDecibels = config.minDecibels ?? -100
-    this.analyser.maxDecibels = config.maxDecibels ?? -30
-
-    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount)
-  }
-
-  connect(source: AudioNode): this {
-    source.connect(this.analyser)
-    return this
-  }
-
-  // Frequency domain data (0-255 values)
-  getFrequencyData(): Uint8Array {
-    this.analyser.getByteFrequencyData(this.dataArray)
-    return this.dataArray
-  }
-
-  // Time domain data (oscilloscope)
-  getWaveformData(): Uint8Array {
-    this.analyser.getByteTimeDomainData(this.dataArray)
-    return this.dataArray
-  }
-
-  // For high-precision analysis
-  getFrequencyDataFloat(): Float32Array {
-    const data = new Float32Array(this.analyser.frequencyBinCount)
-    this.analyser.getFloatFrequencyData(data)
-    return data
-  }
-
-  startVisualization(callback: (data: Uint8Array) => void, mode: 'frequency' | 'waveform' = 'frequency'): void {
-    const draw = () => {
-      this.animationId = requestAnimationFrame(draw)
-      const data = mode === 'frequency' ? this.getFrequencyData() : this.getWaveformData()
-      callback(data)
-    }
-    draw()
-  }
-
-  stopVisualization(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId)
-      this.animationId = null
+// Clock worker created as inline Blob (no separate file needed)
+const workerCode = `
+  let interval;
+  self.onmessage = (e) => {
+    if (e.data === 'start') {
+      interval = setInterval(() => self.postMessage('tick'), ${UPDATE_INTERVAL_MS})
+    } else if (e.data === 'stop') {
+      clearInterval(interval)
     }
   }
+`
+const blob = new Blob([workerCode], { type: 'text/javascript' })
+const worker = new Worker(URL.createObjectURL(blob))
+```
+
+The worker sends a `'tick'` message every `UPDATE_INTERVAL_MS` (e.g. 25ms). The main thread receives the tick and schedules any audio events in the next lookahead window (e.g. 100ms ahead) using `audioContext.currentTime`. This two-clock approach separates:
+
+- **JavaScript timer** (imprecise, for scheduling checks)
+- **Web Audio clock** (`audioContext.currentTime`, sample-accurate, for actual event timing)
+
+#### CSP Consideration
+
+Blob URLs require `worker-src 'self' blob:` in Content Security Policy. This is a known Tone.js limitation. Document it clearly; most users won't be affected. The fallback is a `setTimeout`-based clock for environments where Blob workers are blocked.
+
+#### Transport State Machine
+
+```
+stopped → playing → paused → playing
+       ↖_________|
+```
+
+The Transport manages:
+- `bpm` — beats per minute (default 120)
+- `timeSignature` — beats per bar (default 4)
+- `currentBeat` — which beat within the bar
+- `currentBar` — bar count
+- `position` — readable position in `bar:beat:subdivision` notation
+
+#### Musical Time to Seconds
+
+```typescript
+function beatsToSeconds(beats: number, bpm: number): number {
+  return (beats / bpm) * 60
+}
+
+// Support Tone.js-style notation (optional convenience)
+// "4n" = quarter note, "8n" = eighth, "1m" = 1 measure
+function parseMusicalTime(notation: string, bpm: number, timeSignature = 4): number {
+  // "4n" → 1 beat; "8n" → 0.5 beat; "1m" → timeSignature beats
 }
 ```
 
-**FFT Size Selection Guide:**
+Musical time notation (`"4n"`, `"8n"`, `"1m"`) is a nice-to-have convenience layer on top of the seconds-based scheduler. It requires a parser but no external library.
 
-| FFT Size | Frequency Bins | Use Case | CPU Impact |
-|----------|----------------|----------|------------|
-| 256 | 128 | Simple level meters, beat detection | Very Low |
-| 512 | 256 | Basic spectrum analyzer | Low |
-| 1024 | 512 | Standard visualization | Low-Medium |
-| 2048 | 1024 | **Recommended default** - detailed spectrum | Medium |
-| 4096 | 2048 | High-resolution frequency analysis | Medium-High |
-| 8192+ | 4096+ | Scientific analysis, pitch detection | High |
-
-**Performance Best Practices:**
-1. **Use requestAnimationFrame**: Syncs with browser repaint (60fps max)
-2. **Don't create new arrays**: Reuse `dataArray` for efficiency
-3. **Pass-through connection**: AnalyserNode can be left unconnected on output without blocking audio
-4. **Smoothing**: Use `smoothingTimeConstant` (0.8 default) for smoother transitions
-
-**Integration with Existing Architecture:**
-```typescript
-// Add to BaseSound class
-class BaseSound {
-  public attachVisualizer(visualizer: AudioVisualizer): this {
-    // Connect analyzer between source and gain
-    this.audioSourceNode.connect(visualizer.analyser)
-    visualizer.analyser.connect(this.gainNode)
-    return this
-  }
-}
-```
-
-**Anti-Pattern to Avoid:**
-```typescript
-// DON'T: Create new arrays every frame
-setInterval(() => {
-  const data = new Uint8Array(analyser.frequencyBinCount) // Memory allocation every 16ms!
-  analyser.getByteFrequencyData(data)
-}, 16)
-```
-
-**Confidence:** HIGH (verified with [MDN AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode))
+**What it takes:** ~200 lines (the largest single piece in this milestone). Splits into:
+1. `Ticker` class (Web Worker clock + setTimeout fallback)
+2. `Transport` class (BPM, position tracking, event scheduling)
 
 ---
 
-### 4. Audio Sprites
+### 4. Sequencer / Pattern
 
-**Recommended Format:** JSON sprite map with standard schema
+**Confidence:** HIGH — Conceptually straightforward extension of existing BeatTrack
 
-#### JSON Schema
+The `Sequencer` generalizes `BeatTrack` from "array of on/off beats" to "array of arbitrary events with callbacks":
 
 ```typescript
-interface AudioSprite {
-  src: string // Path to audio file (mp3, wav, etc.)
-  sprite: {
-    [spriteName: string]: [
-      number, // Start offset in milliseconds
-      number // Duration in milliseconds
-    ]
-  }
+interface SequencerEvent {
+  time: number        // Position in beats
+  callback: (time: number) => void  // Called with precise audio time
 }
 
-// Example sprite definition
-const drumSprites: AudioSprite = {
-  src: '/sounds/drum-kit.wav',
-  sprite: {
-    kick: [0, 500], // 0ms start, 500ms duration
-    snare: [500, 400], // 500ms start, 400ms duration
-    hihat: [900, 200], // 900ms start, 200ms duration
-    crash: [1100, 1500] // 1100ms start, 1500ms duration
-  }
+class Sequencer {
+  events: SequencerEvent[]
+  loop: boolean
+  loopLength: number  // In beats
 }
 ```
 
-#### Implementation
+Key differences from `BeatTrack`:
+- `BeatTrack` is tied to `Sound` playback; `Sequencer` takes arbitrary callbacks
+- `Sequencer` integrates with `Transport` for shared BPM
+- Events can be at any beat position (not just subdivisions)
 
-```typescript
-class AudioSpriteLoader {
-  private audioBuffer?: AudioBuffer
-  private spriteMap: Map<string, { start: number, duration: number }> = new Map()
+**Integration:** `BeatTrack` can optionally lock to a `Transport` instance for BPM sync, keeping backwards compatibility for standalone use.
 
-  async load(audioContext: AudioContext, sprite: AudioSprite): Promise<void> {
-    const response = await fetch(sprite.src)
-    const arrayBuffer = await response.arrayBuffer()
-    this.audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-
-    // Convert sprite definitions to internal map (ms -> seconds)
-    for (const [name, [startMs, durationMs]] of Object.entries(sprite.sprite)) {
-      this.spriteMap.set(name, {
-        start: startMs / 1000,
-        duration: durationMs / 1000
-      })
-    }
-  }
-
-  playSprite(audioContext: AudioContext, spriteName: string): AudioBufferSourceNode {
-    if (!this.audioBuffer)
-      throw new Error('Sprites not loaded')
-
-    const sprite = this.spriteMap.get(spriteName)
-    if (!sprite)
-      throw new Error(`Sprite '${spriteName}' not found`)
-
-    const source = audioContext.createBufferSource()
-    source.buffer = this.audioBuffer
-
-    // start(when, offset, duration)
-    source.start(audioContext.currentTime, sprite.start, sprite.duration)
-
-    return source
-  }
-}
-```
-
-**Why This Format:**
-- **Industry standard**: Compatible with howler.js, audiosprite npm package
-- **Simple schema**: Easy to generate, hand-edit, or produce from tools
-- **Millisecond precision**: Matches audiosprite tool output
-- **Type-safe**: Easy to model in TypeScript
-
-**Sprite Generation Tools:**
-
-| Tool | Format | Command | Notes |
-|------|--------|---------|-------|
-| audiosprite (npm) | JSON | `audiosprite --format howler2 *.wav` | Industry standard |
-| ffmpeg | Manual | `ffmpeg -i input.wav -ss 0 -t 0.5 kick.wav` | For custom workflows |
-
-**Integration with Existing Sound Class:**
-```typescript
-// Extend existing pattern
-interface SpriteSound extends Sound {
-  spriteName: string
-}
-
-function createSpriteSound(
-  audioContext: AudioContext,
-  spriteLoader: AudioSpriteLoader,
-  spriteName: string
-): SpriteSound {
-  const sprite = spriteLoader.getSprite(spriteName)
-  return createSound(audioContext, spriteLoader.audioBuffer!, {
-    startOffset: sprite.start,
-    duration: sprite.duration
-  })
-}
-```
-
-**Confidence:** MEDIUM-HIGH (standard format, verified with [audiosprite npm package](https://www.npmjs.com/package/audiosprite) and [howler.js documentation](https://howlerjs.com/))
-
-**Sources:**
-- [How to create AudioSprites with howler.js](https://medium.com/game-development-stuff/how-to-create-audiosprites-to-use-with-howler-js-beed5d006ac1)
+**What it takes:** ~100 lines.
 
 ---
 
-### 5. Effects Chain Architecture
+### 5. PolySynth (Polyphonic Oscillator Wrapper)
 
-**Recommended Pattern:** Modular node graph with typed connections (already partially in place)
+**Confidence:** HIGH — Well-understood voice allocation problem
 
-#### Effects Library Structure
+A `PolySynth` maintains a pool of `Oscillator` instances and allocates them for chord/polyphonic playback:
 
 ```typescript
-// Effect base interface
+class PolySynth {
+  private voices: Oscillator[]    // Pool of oscillators
+  private activeVoices: Map<string, Oscillator>  // note → voice
+
+  playNote(note: string, velocity?: number): void
+  stopNote(note: string): void
+  stopAll(): void
+}
+```
+
+Voice allocation strategies (in priority order):
+1. **Steal oldest** — when all voices busy, retrigger the longest-running voice
+2. **Steal quietest** — steal voice in release phase if available
+3. **Expand** — create new voice if under `maxVoices` limit
+
+The `Oscillator` class already handles ADSR and has `play()`/`stop()`. `PolySynth` just manages which voice gets which note.
+
+**What it takes:** ~80 lines. Complexity is in the voice-stealing logic, not in the audio graph.
+
+---
+
+### 6. GrainPlayer (Granular Synthesis)
+
+**Confidence:** MEDIUM-HIGH — AudioBufferSourceNode scheduling works; AudioWorklet adds pitch independence
+
+#### Approach: AudioBufferSourceNode Scheduling (No AudioWorklet)
+
+Granular synthesis without AudioWorklet is achievable and the pattern is proven. Each "grain" is a short `AudioBufferSourceNode` with:
+- A start offset into the source buffer (position in source)
+- A `playbackRate` for pitch control
+- An envelope (ramp up/down to avoid clicks)
+
+Grains are scheduled via `audioContext.currentTime` lookahead, same as the transport scheduler.
+
+```typescript
+function scheduleGrain(ctx: AudioContext, buffer: AudioBuffer, params: GrainParams): void {
+  const source = ctx.createBufferSource()
+  source.buffer = buffer
+  source.playbackRate.value = params.pitch  // Pitch without affecting position
+  source.start(params.when, params.offset, params.duration)
+
+  // Envelope to avoid clicks
+  const env = ctx.createGain()
+  env.gain.setValueAtTime(0, params.when)
+  env.gain.linearRampToValueAtTime(1, params.when + params.attack)
+  env.gain.setValueAtTime(1, params.when + params.duration - params.release)
+  env.gain.linearRampToValueAtTime(0, params.when + params.duration)
+}
+```
+
+**Key parameters:**
+
+| Parameter | Description | Typical Range |
+|-----------|-------------|---------------|
+| `position` | Playhead in source buffer (0–1) | 0–1 |
+| `pitch` | playbackRate multiplier | 0.25–4 |
+| `grainSize` | Duration of each grain | 0.02–0.2s |
+| `overlap` | Grain overlap (density) | 0–grainSize |
+| `spread` | Random position scatter | 0–0.5s |
+| `detune` | Random pitch scatter | 0–100 cents |
+
+**Limitation of no-AudioWorklet approach:** When stretching time without changing pitch, `playbackRate` affects both simultaneously. True independent time-stretching requires AudioWorklet (or a WASM lib). For v1, the `position` + `pitch` approach gives pitch shifting and position scrubbing, which covers most use cases (Tone.js `GrainPlayer` uses this same approach).
+
+#### When to Use AudioWorklet (Future v2)
+
+AudioWorklet enables sample-accurate grain scheduling on the audio thread (zero jitter) and true time-stretching algorithms. Document this as a future upgrade path rather than blocking v1.
+
+**What it takes:** ~150 lines (scheduler loop + grain factory + parameter management).
+
+---
+
+## Integration Points with Existing Codebase
+
+### Effects integrate via the existing `Effect` interface
+
+All new built-in effects (`DelayEffect`, `ReverbEffect`, `DistortionEffect`, `ChorusEffect`, `CompressorEffect`, `LimiterEffect`, `EQ3Effect`) must implement the existing `Effect` interface:
+
+```typescript
 interface Effect {
-  name: string
-  audioNode: AudioNode
-  wetDry?: WetDryControl
-  destroy?: () => void
-}
-
-interface WetDryControl {
-  wet: GainNode
-  dry: GainNode
-  setMix: (ratio: number) => void // 0 = all dry, 1 = all wet
-}
-
-// Reverb Effect (ConvolverNode)
-class ReverbEffect implements Effect {
-  name = 'reverb'
-  audioNode: ConvolverNode
-  private wetDry: WetDryControl
-
-  constructor(
-    audioContext: AudioContext,
-    impulseResponse: AudioBuffer,
-    options: { mix?: number, normalize?: boolean } = {}
-  ) {
-    this.audioNode = audioContext.createConvolver()
-    this.audioNode.buffer = impulseResponse
-    this.audioNode.normalize = options.normalize ?? true
-
-    // Wet/dry mixing
-    const wet = audioContext.createGain()
-    const dry = audioContext.createGain()
-    const merger = audioContext.createGain()
-
-    this.wetDry = { wet, dry, setMix: (ratio: number) => {
-      wet.gain.value = ratio
-      dry.gain.value = 1 - ratio
-    } }
-
-    this.wetDry.setMix(options.mix ?? 0.5)
-  }
-
-  static async loadImpulseResponse(
-    audioContext: AudioContext,
-    url: string
-  ): Promise<AudioBuffer> {
-    const response = await fetch(url)
-    const arrayBuffer = await response.arrayBuffer()
-    return audioContext.decodeAudioData(arrayBuffer)
-  }
-}
-
-// Delay Effect (DelayNode + Feedback)
-class DelayEffect implements Effect {
-  name = 'delay'
-  audioNode: DelayNode
-  private feedback: GainNode
-  private wetDry: WetDryControl
-
-  constructor(
-    audioContext: AudioContext,
-    options: {
-      delayTime?: number // seconds (max 5.0)
-      feedback?: number // 0-1
-      mix?: number // 0-1
-    } = {}
-  ) {
-    this.audioNode = audioContext.createDelay(5.0)
-    this.audioNode.delayTime.value = options.delayTime ?? 0.5
-
-    this.feedback = audioContext.createGain()
-    this.feedback.gain.value = options.feedback ?? 0.4
-
-    // Feedback loop: delay -> feedback -> delay
-    this.audioNode.connect(this.feedback)
-    this.feedback.connect(this.audioNode)
-
-    // Wet/dry setup (similar to reverb)
-    // ... (omitted for brevity)
-  }
-}
-
-// Filter Effect (BiquadFilterNode)
-class FilterEffect implements Effect {
-  name = 'filter'
-  audioNode: BiquadFilterNode
-
-  constructor(
-    audioContext: AudioContext,
-    options: {
-      type?: BiquadFilterType
-      frequency?: number
-      Q?: number
-      gain?: number
-    } = {}
-  ) {
-    this.audioNode = audioContext.createBiquadFilter()
-    this.audioNode.type = options.type ?? 'lowpass'
-    this.audioNode.frequency.value = options.frequency ?? 1000
-    this.audioNode.Q.value = options.Q ?? 1
-    this.audioNode.gain.value = options.gain ?? 0
-  }
-}
-
-// Compressor Effect (DynamicsCompressorNode)
-class CompressorEffect implements Effect {
-  name = 'compressor'
-  audioNode: DynamicsCompressorNode
-
-  constructor(
-    audioContext: AudioContext,
-    options: {
-      threshold?: number
-      knee?: number
-      ratio?: number
-      attack?: number
-      release?: number
-    } = {}
-  ) {
-    this.audioNode = audioContext.createDynamicsCompressor()
-    this.audioNode.threshold.value = options.threshold ?? -24
-    this.audioNode.knee.value = options.knee ?? 30
-    this.audioNode.ratio.value = options.ratio ?? 12
-    this.audioNode.attack.value = options.attack ?? 0.003
-    this.audioNode.release.value = options.release ?? 0.25
-  }
+  input: AudioNode
+  output: AudioNode
+  bypass: boolean
+  mix: number
 }
 ```
 
-#### Effects Chain Manager
+This means they can be added via the existing `sound.addEffect(effect)` API with zero changes to `BaseSound`. Factory functions follow the context-free pattern already established:
 
 ```typescript
-// Extend existing BaseSound.connections architecture
-class EffectsChain {
-  private effects: Effect[] = []
-
-  constructor(private audioContext: AudioContext) {}
-
-  addEffect(effect: Effect, position?: number): this {
-    if (position !== undefined) {
-      this.effects.splice(position, 0, effect)
-    }
-    else {
-      this.effects.push(effect)
-    }
-    return this
-  }
-
-  removeEffect(name: string): this {
-    const index = this.effects.findIndex(e => e.name === name)
-    if (index > -1) {
-      const effect = this.effects[index]
-      effect.destroy?.()
-      this.effects.splice(index, 1)
-    }
-    return this
-  }
-
-  getEffect(name: string): Effect | undefined {
-    return this.effects.find(e => e.name === name)
-  }
-
-  // Connect chain: input -> effects -> output
-  connect(input: AudioNode, output: AudioNode): this {
-    if (this.effects.length === 0) {
-      input.connect(output)
-      return this
-    }
-
-    // Disconnect all first
-    input.disconnect()
-    this.effects.forEach(e => e.audioNode.disconnect())
-
-    // Reconnect in order
-    input.connect(this.effects[0].audioNode)
-
-    for (let i = 0; i < this.effects.length - 1; i++) {
-      this.effects[i].audioNode.connect(this.effects[i + 1].audioNode)
-    }
-
-    this.effects[this.effects.length - 1].audioNode.connect(output)
-
-    return this
-  }
-}
+// Context-free (uses shared AudioContext)
+const delay = createDelay({ time: 0.3, feedback: 0.4 })
+sound.addEffect(delay)
 ```
 
-**Standard Effect Chain Order:**
+### LFO integrates via AudioParam connection
 
-```
-Source → [Filter/EQ] → [Distortion] → [Modulation] → [Delay] → [Reverb] → [Compressor] → Output
-```
+No changes to existing classes. LFO connects directly to any `AudioParam` on any existing node. The user gets the `AudioParam` reference via existing controller accessors and passes it to `lfo.connect(param)`.
 
-**Why This Order:**
-- **Filters first**: Shape tone before distortion (more natural)
-- **Distortion before modulation**: Modulate the distorted signal
-- **Delay before reverb**: Reverb should affect delayed signal
-- **Compressor last**: Even out final output levels
+### Transport integrates via BeatTrack
 
-**Impulse Response Library Recommendation:**
+`BeatTrack` gets an optional `transport?: Transport` constructor option. When set, the BeatTrack locks to the transport BPM/clock instead of its own internal timer. When not set, existing behavior is unchanged — full backwards compatibility.
 
-| Source | Format | Quality | License |
-|--------|--------|---------|---------|
-| [OpenAIR](https://www.openair.hosted.york.ac.uk/) | WAV | Professional | CC-BY |
-| [Reverb.js CDN](http://reverbjs.org/) | WAV | Good | MIT-style |
-| [Valhalla FreqEcho IRs](https://valhalladsp.com/demos-downloads/) | WAV | Excellent | Free for use |
+### PolySynth wraps the existing Oscillator
 
-**Recommended IR Format:**
-- **32-bit float, stereo (2-channel), 44.1kHz WAV** for best compatibility
-- Keep files under 5 seconds for performance
-- Store in `/public/impulses/` for CDN delivery
-
-**Anti-Pattern to Avoid:**
-```typescript
-// DON'T: Use deprecated ScriptProcessorNode
-const processor = audioContext.createScriptProcessor(4096, 1, 1)
-processor.onaudioprocess = (e) => { /* custom DSP */ }
-// This is DEPRECATED and causes audio glitches
-```
-
-**Modern Replacement:** Use AudioWorklet for custom DSP (covered in next section)
-
-**Confidence:** HIGH (verified with [MDN Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and [ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode))
-
-**Sources:**
-- [web.dev - Audio Effects Patterns](https://web.dev/patterns/media/audio-effects)
-- [Reverb.js library](https://github.com/andibrae/Reverb.js)
+`PolySynth` creates instances of the existing `Oscillator` class. No changes to `Oscillator` required.
 
 ---
 
-### 6. Custom Audio Processing (AudioWorklet)
+## What NOT to Add
 
-**Status:** MANDATORY for custom DSP, ScriptProcessorNode is DEPRECATED
-
-#### When to Use AudioWorklet
-
-Use AudioWorklet when you need:
-- Custom signal processing (custom filters, effects)
-- Real-time audio synthesis
-- Sample-accurate control not available via standard nodes
-
-**Don't use** for:
-- Simple gain/pan/filter (use built-in nodes)
-- ADSR envelopes (use AudioParam scheduling)
-- Basic effects (use built-in nodes like BiquadFilter, Delay, Convolver)
-
-#### Basic AudioWorklet Pattern
-
-```typescript
-// processor.js (runs in AudioWorkletGlobalScope)
-class CustomProcessor extends AudioWorkletProcessor {
-  process(inputs, outputs, parameters) {
-    const input = inputs[0]
-    const output = outputs[0]
-
-    // Custom DSP here
-    for (let channel = 0; channel < output.length; channel++) {
-      const inputChannel = input[channel]
-      const outputChannel = output[channel]
-
-      for (let i = 0; i < outputChannel.length; i++) {
-        outputChannel[i] = inputChannel[i] * 0.5 // Example: 50% volume
-      }
-    }
-
-    return true // Keep processor alive
-  }
-}
-
-registerProcessor('custom-processor', CustomProcessor)
-```
-
-```typescript
-// main.ts (main thread)
-await audioContext.audioWorklet.addModule('processor.js')
-const workletNode = new AudioWorkletNode(audioContext, 'custom-processor')
-source.connect(workletNode).connect(audioContext.destination)
-```
-
-**Why AudioWorklet:**
-- **Runs on audio thread**: No main thread blocking, no jank
-- **Sample-accurate**: Deterministic timing
-- **Standard API**: Web Audio spec, future-proof
-- **WASM support**: Can compile C++ DSP code to WASM
-
-**vs. ScriptProcessorNode (DEPRECATED):**
-
-| Feature | ScriptProcessorNode | AudioWorklet |
-|---------|-------------------|--------------|
-| Status | Deprecated, may stop working | Standard, recommended |
-| Thread | Main thread (blocks UI) | Audio thread (isolated) |
-| Timing | Asynchronous (glitches) | Deterministic (no glitches) |
-| Performance | Poor under load | Excellent |
-
-**Recommendation:** Only implement AudioWorklet if you have a specific custom DSP need. For ez-audio's current roadmap, native nodes should be sufficient.
-
-**Confidence:** HIGH (verified with [MDN AudioWorklet](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_AudioWorklet) and [Chrome deprecation notice](https://developer.chrome.com/blog/audio-worklet))
+| Avoid | Why | What to Do Instead |
+|-------|-----|--------------------|
+| Tone.js as dependency | 200KB+, duplicates ez-audio's purpose | Build native; use as reference only |
+| tuna.js as dependency | Adds dependency; `wrapEffect` already handles it | Keep `wrapEffect` as the integration point for tuna |
+| ScriptProcessorNode | Deprecated in all browsers | Use AudioWorklet (GrainPlayer) or native nodes (everything else) |
+| AudioWorklet for effects | Requires HTTPS, separate file, more complexity | Native nodes handle delay/reverb/distortion/compressor cleanly |
+| `requestAnimationFrame` for transport | Throttled when tab is hidden | Use Web Worker clock |
+| Infinite voice pools in PolySynth | Memory unbounded | Fixed pool with voice stealing |
+| Full time-stretch GrainPlayer | Requires AudioWorklet, significant complexity | `playbackRate`-based pitch shift covers most v1 use cases |
 
 ---
 
-## Development Dependencies
+## Alternatives Considered
 
-### Testing Stack
-
-| Package | Version | Purpose | Notes |
-|---------|---------|---------|-------|
-| vitest | 2.1+ | Test runner | Already in use |
-| happy-dom | 15.7+ | DOM environment | Already in use |
-| standardized-audio-context-mock | 9.7+ | Mock AudioContext | Already in use |
-
-**No changes needed** - existing test infrastructure works for new features.
-
-### Mock Strategy for New Features
-
-```typescript
-// Example: Testing ADSR envelope
-import { AudioContext } from 'standardized-audio-context-mock'
-
-test('ADSR applies envelope correctly', () => {
-  const audioContext = new AudioContext()
-  const gainNode = audioContext.createGain()
-
-  const envelope = { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1.0 }
-  applyADSR(gainNode.gain, envelope, 0)
-
-  // Verify scheduled values
-  // standardized-audio-context-mock tracks setValueAtTime calls
-})
-```
+| Feature | Recommended | Alternative | Why Not Alternative |
+|---------|-------------|-------------|---------------------|
+| Reverb | ConvolverNode + synthetic IR | Freeverb via AudioWorklet | AudioWorklet complexity for marginal quality gain |
+| Transport clock | Web Worker (Blob URL) | `setInterval` on main thread | Throttled to 1Hz in background tabs |
+| Transport clock | Web Worker (Blob URL) | `AudioWorkletProcessor` tick | Overkill; adds HTTPS requirement for simple tick |
+| Chorus | DelayNode + LFO | ScriptProcessorNode | Deprecated; native approach is better |
+| GrainPlayer | `AudioBufferSourceNode` scheduling | AudioWorklet grain engine | AudioWorklet = HTTPS required, separate file, much more complex |
+| PolySynth voices | Reuse `Oscillator` class | New voice class | `Oscillator` already handles ADSR, gain, play/stop |
+| EQ | 3× `BiquadFilterNode` | Single `BiquadFilterNode` | Single node = only 1 band; 3 separate nodes = bass/mid/treble independently |
 
 ---
 
-## Build & Distribution
+## Version Compatibility
 
-### Current Stack (No Changes)
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Vite | Bundler | Works well, keep as-is |
-| TypeScript Compiler | Type checking | Already configured |
-| vite-plugin-dts | .d.ts generation | Already in place |
-
-### Bundle Size Considerations
-
-All recommended patterns use **zero additional dependencies**:
-- ADSR: Native AudioParam methods
-- Events: Native EventTarget
-- Visualization: Native AnalyserNode
-- Sprites: Native AudioBuffer + fetch
-- Effects: Native Web Audio nodes
-
-**Current bundle:** ~0kb of dependencies (excluding TypeScript types)
-**After new features:** Still ~0kb of dependencies
-
-This maintains ez-audio's value proposition: **small, fast, zero-dependency wrapper**.
+| Feature | Browser Support | Notes |
+|---------|-----------------|-------|
+| All native effect nodes | All modern browsers (Chrome 36+, Firefox 53+, Safari 14.1+, Edge 79+) | Web Audio API 1.1 — stable |
+| AudioWorklet | Baseline since April 2021 | Chrome 66+, Firefox 76+, Safari 14.1+, Edge 79+; HTTPS required |
+| Web Worker (Blob URL) | All modern browsers | CSP `worker-src blob:` may need explicit allowlist |
+| `OscillatorNode.connect(AudioParam)` | All modern browsers | Core Web Audio feature |
 
 ---
 
-## Anti-Patterns to Avoid
-
-### 1. Third-Party Wrapper Libraries
-
-**Don't:**
-```typescript
-import Howler from 'howler' // Another wrapper library
-import Tone from 'tone' // 200kb+ dependency
-```
-
-**Why:** ez-audio IS the wrapper library. Adding another wrapper defeats the purpose and adds bundle weight.
-
-### 2. ScriptProcessorNode (Deprecated)
-
-**Don't:**
-```typescript
-const processor = audioContext.createScriptProcessor(4096, 1, 1)
-```
-
-**Why:** Deprecated, causes audio glitches, will be removed from browsers.
-
-**Use instead:** AudioWorklet (only if custom DSP truly needed)
-
-### 3. Manual Parameter Animation
-
-**Don't:**
-```typescript
-setInterval(() => {
-  gainNode.gain.value += 0.01 // Not sample-accurate, creates clicks
-}, 10)
-```
-
-**Use instead:** AudioParam scheduling methods (linearRampToValueAtTime, etc.)
-
-### 4. New Arrays Every Frame
-
-**Don't:**
-```typescript
-requestAnimationFrame(() => {
-  const data = new Uint8Array(analyser.frequencyBinCount) // Memory churn!
-})
-```
-
-**Use instead:** Reuse pre-allocated arrays
-
-### 5. Synchronous File Loading
-
-**Don't:**
-```typescript
-const buffer = loadAudioFileSync(url) // Blocks main thread
-```
-
-**Use instead:** async/await with fetch + decodeAudioData
-
----
-
-## Installation Commands
+## Installation
 
 ```bash
-# No new dependencies needed!
-# All features use native Web Audio API
-
-# Current dev dependencies already include everything needed:
-pnpm install  # Existing dependencies only
+# No new dependencies needed.
+# All features use native Web Audio API + TypeScript.
+pnpm install   # existing dependencies only
 ```
-
----
-
-## TypeScript Configuration
-
-### Recommended tsconfig Updates
-
-```json
-{
-  "compilerOptions": {
-    "lib": ["ES2020", "DOM", "DOM.Iterable"], // Already present
-    "strict": true, // Already present
-    "strictNullChecks": true, // Already present
-
-    // Ensure Web Audio API types available
-    "types": ["vite/client"],
-
-    // Enable decorators if using class-based patterns
-    "experimentalDecorators": false // Not needed for recommended patterns
-  }
-}
-```
-
-**No changes needed** - current tsconfig.json already has correct settings.
-
----
-
-## Summary: Technology Decisions
-
-| Feature | Technology | Rationale | Confidence |
-|---------|------------|-----------|------------|
-| ADSR Envelopes | Native AudioParam scheduling | Sample-accurate, zero-dependency, hardware-accelerated | HIGH |
-| Event System | Native EventTarget + TypeScript generics | Standard API, type-safe, zero-dependency | HIGH |
-| Visualization | Native AnalyserNode + requestAnimationFrame | Performant, standard, zero-dependency | HIGH |
-| Audio Sprites | JSON map + native AudioBuffer | Industry standard format, simple, type-safe | MEDIUM-HIGH |
-| Effects (Reverb) | Native ConvolverNode + impulse responses | Professional quality, zero-dependency | HIGH |
-| Effects (Delay) | Native DelayNode + GainNode feedback | Standard pattern, performant | HIGH |
-| Effects (Filter) | Native BiquadFilterNode | Full filter suite built-in | HIGH |
-| Custom DSP | AudioWorklet (only if needed) | Future-proof, performant, standard | HIGH |
-
-**Core Philosophy:** Maximize use of native Web Audio API, minimize dependencies, maintain TypeScript-first development experience.
 
 ---
 
 ## Sources
 
-### Official Documentation (HIGH confidence)
-- [MDN Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
-- [MDN AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode)
-- [MDN ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode)
-- [MDN BaseAudioContext](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext)
-- [MDN AudioWorklet](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_AudioWorklet)
-- [W3C Web Audio API 1.1 Specification](https://www.w3.org/TR/webaudio-1.1/)
+- [MDN: DynamicsCompressorNode](https://developer.mozilla.org/en-US/docs/Web/API/DynamicsCompressorNode) — compressor AudioParams and ranges; HIGH confidence
+- [MDN: DelayNode](https://developer.mozilla.org/en-US/docs/Web/API/DelayNode) — delay time param, feedback loop pattern; HIGH confidence
+- [MDN: BiquadFilterNode](https://developer.mozilla.org/en-US/docs/Web/API/BiquadFilterNode) — all 8 filter types, EQ implementation; HIGH confidence
+- [MDN: ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode) — IR reverb, buffer property; HIGH confidence
+- [MDN: AudioNode.connect(AudioParam)](https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect) — LFO modulation pattern; HIGH confidence
+- [MDN: AudioWorklet](https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet) — browser support, HTTPS requirement; HIGH confidence
+- [web.dev: A Tale of Two Clocks](https://web.dev/articles/audio-scheduling) — lookahead scheduler pattern; HIGH confidence
+- [Tone.js Ticker.ts source](https://github.com/Tonejs/Tone.js/blob/dev/Tone/core/clock/Ticker.ts) — Web Worker Blob URL clock implementation; HIGH confidence
+- [Tone.js Chorus docs](https://tonejs.github.io/docs/15.0.4/classes/Chorus.html) — stereo chorus pattern with LFO on delayTime; MEDIUM-HIGH confidence
+- [DEV: Granular Synthesis with Web Audio API](https://dev.to/hexshift/granular-synthesis-in-the-browser-using-web-audio-api-and-audiobuffer-slicing-2o9h) — AudioBufferSourceNode grain scheduling pattern; MEDIUM confidence
 
-### Community Best Practices (MEDIUM-HIGH confidence)
-- [Building a Synthesizer in TypeScript - ITNEXT](https://itnext.io/building-a-synthesizer-in-typescript-5a85ea17e2f2)
-- [Envelopes with Web Audio API](https://dobrian.github.io/cmp/topics/building-a-synthesizer-with-web-audio-api/4.envelopes.html)
-- [TypeScript Deep Dive - Typesafe Event Emitter](https://basarat.gitbook.io/typescript/main-1/typed-event)
-- [web.dev - Audio Effects Patterns](https://web.dev/patterns/media/audio-effects)
-
-### Library References (MEDIUM confidence)
-- [Tone.js Architecture](https://tonejs.github.io/) - Reference for patterns, not for importing
-- [howler.js](https://howlerjs.com/) - Audio sprite format reference
-- [audiosprite npm](https://www.npmjs.com/package/audiosprite) - Sprite generation tool
-- [Reverb.js](https://github.com/andibrae/Reverb.js) - Impulse response library reference
-- [fastidious-envelope-generator](https://github.com/rsimmons/fastidious-envelope-generator) - Artifact-free envelope reference
-
-### Deprecation Notices (HIGH confidence)
-- [Chrome: ScriptProcessorNode Deprecation](https://developer.chrome.com/blog/audio-worklet)
-- [MDN: ScriptProcessorNode](https://developer.mozilla.org/en-US/docs/Web/API/ScriptProcessorNode) - Marked deprecated
+---
+*Stack research for: ez-audio Effects & Transport milestone*
+*Researched: 2026-02-28*

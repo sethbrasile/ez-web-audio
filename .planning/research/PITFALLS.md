@@ -1,1112 +1,782 @@
-# Domain Pitfalls: Web Audio Advanced Features
+# Pitfalls Research: Effects & Transport Milestone
 
-**Domain:** Web Audio API library - advanced features
-**Researched:** 2026-01-31
-**Confidence:** HIGH (verified with MDN official docs and Web Audio performance guide)
+**Domain:** Adding built-in effects, LFO, transport/clock, sequencer, PolySynth, and GrainPlayer to an existing Web Audio library
+**Researched:** 2026-02-28
+**Confidence:** HIGH (verified with MDN official docs, Web Audio spec issues, and performance guide)
 
-## Executive Summary
+---
 
-Adding advanced Web Audio features introduces timing, memory, and performance challenges that are fundamentally different from traditional JavaScript development. The Web Audio API operates on multiple threads with strict real-time requirements. A single timing error, memory leak, or automation mistake can cause audible artifacts (clicks, pops, dropouts) that destroy the user experience.
+## Scope Note
 
-The most critical pitfalls affect **ADSR envelopes** (rapid retriggering causes gain discontinuities), **event systems** (JavaScript timers cause drift vs AudioContext clock), **visualization** (requestAnimationFrame coupling with AnalyserNode), and **AudioParam automation** (event accumulation degrades performance).
+This document is scoped to the **Effects & Transport milestone**. It focuses on pitfalls that arise specifically when:
+
+1. Adding new audio features to an existing, working library
+2. Adding a global transport that must coexist with per-track BeatTrack schedulers
+3. Adding polyphony to a single-oscillator-per-instance system
+4. Integrating granular synthesis without AudioWorklet (or with it)
+5. Maintaining the existing connection chain: `source → filters → connections → gain → pan → destination`
+
+General Web Audio pitfalls (ADSR retriggering, AudioParam automation, memory leaks from disconnected nodes) were covered in prior research. This document focuses on what's NEW and DIFFERENT about this milestone.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause audible artifacts, rewrites, or major performance issues.
+Mistakes that cause audible artifacts, API breaking changes, or full rewrites.
 
-### Pitfall 1: ADSR Envelope Retriggering Discontinuities
+---
 
-**What goes wrong:** When a note is retriggered before the previous envelope completes (fast tempos, rapid note changes, layered sounds), setting a new attack from the current gain value causes audible clicks and pops.
+### Pitfall 1: Global Transport That Fights Per-Track BeatTrack Schedulers
+
+**What goes wrong:**
+A global Transport is introduced but each BeatTrack already has its own private lookahead scheduler (25ms interval, 100ms lookahead). When the global transport starts and tries to drive BeatTrack timing, two schedulers compete. Beats fire twice, drift, or desync.
 
 **Why it happens:**
-- Attack/decay ramps operate at fixed rates, not fixed durations
-- A new envelope starting at gain=0.7 takes less time to reach 1.0 than one starting at 0
-- If the previous envelope hasn't ramped to zero before the new attack starts, there's a discontinuity in the gain curve
-- Exponential ramps cannot reach exactly zero (only asymptotically approach)
+The existing `BeatTrack.scheduler()` is self-contained with its own `timerID`, `nextBeatTime`, and `currentBeatIndex`. A new Transport class cannot simply call `playBeats()` on a BeatTrack without first disabling the BeatTrack's internal scheduler. Developers assume the Transport "takes over" automatically but the BeatTrack's internal scheduling loop keeps running.
+
+**Root cause in the existing code:**
+`BeatTrack.playBeats()` and `BeatTrack.playActiveBeats()` immediately start the internal scheduler. If Transport calls these, the BeatTrack manages its own clock. Transport then also schedules beats independently → double-fire.
 
 **Consequences:**
-- Audible "pops" at fast tempos (e.g., quarter notes at 400bpm, thirty-second notes at 60bpm)
-- Clicks when overlapping notes in layered sounds
-- User perception of low-quality audio
+- Beats fire twice (audible as flamming/double-hit)
+- BPM appears doubled or halved
+- Sync drifts when one scheduler's tick hits a late setTimeout
+- Pause/resume from Transport doesn't affect already-running BeatTrack scheduler
 
-**Prevention:**
-1. **Always ramp to a tiny value (0.0001), never zero** for exponential envelope releases
-2. **Pick up from current value** when retriggering:
-   ```typescript
-   // BAD: Starts new attack from 0, creates discontinuity
-   gainParam.cancelScheduledValues(now)
-   gainParam.setValueAtTime(0, now)
-   gainParam.linearRampToValueAtTime(1, now + attackTime)
+**How to avoid:**
+Design the Transport/BeatTrack relationship explicitly. Two valid architectures:
 
-   // GOOD: Picks up from current value
-   const currentGain = gainParam.value // Get actual current value
-   gainParam.cancelScheduledValues(now)
-   gainParam.setValueAtTime(currentGain, now)
-   // Adjust attack duration based on distance to travel
-   const adjustedAttack = attackTime * (1 - currentGain)
-   gainParam.linearRampToValueAtTime(1, now + adjustedAttack)
-   ```
+Option A — Transport-owned scheduling (recommended):
+```typescript
+// BeatTrack becomes a passive "sound source" registry
+// Transport calls beatTrack._scheduleBeat(beatIndex, time) directly
+// BeatTrack.playBeats() internally checks: if locked to transport, no-op
 
-3. **Use setTargetAtTime for smooth transitions**:
-   ```typescript
-   // Eliminates clicks by gradually approaching target
-   gainParam.setTargetAtTime(targetValue, startTime, timeConstant)
-   ```
+class BeatTrack {
+  private _transportLocked = false
 
-**Detection:** Listen for clicks/pops during rapid note retriggering, use oscilloscope visualization to see gain discontinuities
+  lockToTransport(): void {
+    // Stop internal scheduler if running
+    if (this.timerID !== null) {
+      clearTimeout(this.timerID)
+      this.timerID = null
+    }
+    this._transportLocked = true
+  }
 
-**Feature mapping:** ADSR envelopes, LayeredSound
+  /** Called by Transport at audio-precise times */
+  scheduleBeatAt(beatIndex: number, time: number): void {
+    this.scheduleBeat(beatIndex, time) // existing private method
+  }
+}
+```
 
-**Sources:**
-- [Web Audio ADSR GitHub Issue #510](https://github.com/WebAudio/web-audio-api/issues/510)
-- [Fastidious Envelope Generator](https://github.com/rsimmons/fastidious-envelope-generator)
-- [Dobrian Envelopes Tutorial](https://dobrian.github.io/cmp/topics/building-a-synthesizer-with-web-audio-api/4.envelopes.html)
+Option B — Transport as coordinator, BeatTrack keeps scheduler:
+Transport sets a shared `nextBeatTime` and `bpm` property on each registered BeatTrack. BeatTrack reads from transport instead of its own state. Risk: more coupling, harder to test independently.
+
+**Warning signs:**
+- Drum hits sound like flams (double-strike with 5-25ms gap)
+- BPM is exactly double what was configured
+- Stop/pause from one object doesn't affect the other
+- Adding second BeatTrack causes timing chaos
+
+**Phase to address:** Transport/Clock phase (first thing, before any sequencer work)
 
 ---
 
-### Pitfall 2: JavaScript Timer / AudioContext Clock Desynchronization
+### Pitfall 2: Transport Resume Catches Up From Paused Time
 
-**What goes wrong:** Using `setTimeout`, `setInterval`, or `Date.now()` to schedule audio events causes timing drift, late triggers, and noticeable stuttering.
+**What goes wrong:**
+When Transport is paused and resumed, `nextBeatTime` is still in the past. The lookahead scheduler immediately fires all missed beats in a burst to "catch up" to the current time. At 120 BPM this can mean dozens of beats firing in one scheduler tick.
 
 **Why it happens:**
-- JavaScript timers run on the main thread alongside DOM operations, garbage collection, and user interactions
-- AudioContext.currentTime runs on a separate high-priority audio rendering thread
-- Main thread blocking (70-100ms computations) delays JavaScript timers but does NOT affect audio clock
-- JavaScript timer precision is ~4ms at best, audio requires sub-millisecond precision
+The existing BeatTrack already handles this correctly for itself:
+```typescript
+// From beat-track.ts resume():
+// Reset nextBeatTime to current time to prevent scheduler catch-up:
+// pausedBeatTime is in the past; restoring it would cause hundreds of beats to fire immediately
+this.nextBeatTime = this.audioContext.currentTime
+```
+
+But a new Transport implementation might store the paused position as an absolute audio time and restore it on resume, then let the while-loop in `scheduler()` drain the backlog.
 
 **Consequences:**
-- Audio events drift out of sync over time
-- Stuttering during CPU-intensive operations (animations, rendering)
-- Beat grids sound "sloppy" or "drunk"
-- Impossible to achieve tight musical timing (sub-10ms accuracy)
+- Burst of beats fires on resume (sounds like machine gun)
+- Performance spike that causes audio dropout
+- Beat index jumps incorrectly
 
-**Prevention:**
-1. **Never use JavaScript timers for audio scheduling**:
-   ```typescript
-   // BAD: Will drift and stutter
-   setInterval(() => {
-     playBeat()
-   }, 500) // Supposed to be every 500ms
+**How to avoid:**
+Always reset `nextBeatTime` to `audioContext.currentTime` on resume, then advance from the correct beat index:
+```typescript
+resume(): void {
+  if (this._pausedBeatIndex !== null) {
+    this.nextBeatTime = this.audioContext.currentTime // critical
+    this.currentBeatIndex = this._pausedBeatIndex
+    this._pausedBeatIndex = null
+    this.scheduler()
+  }
+}
+```
 
-   // GOOD: Schedule with AudioContext time
-   function scheduleBeats(currentBeat: number) {
-     const beatTime = audioContext.currentTime + (currentBeat * 0.5)
-     scheduleSound(beatTime)
-   }
-   ```
+**Warning signs:**
+- Burst of sounds immediately on resume
+- CPU spike on resume causing dropout
+- Beat index wrong after resume
 
-2. **Use lookahead scheduling pattern**:
-   ```typescript
-   // Schedule events 100ms ahead using AudioContext time
-   let nextNoteTime = audioContext.currentTime
-   const scheduleAheadTime = 0.1 // 100ms lookahead
-
-   function scheduler() {
-     while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
-       scheduleNote(nextNoteTime)
-       nextNoteTime += 60.0 / tempo // Advance by note duration
-     }
-   }
-
-   // Use JavaScript timer ONLY for checking/scheduling, not timing
-   setInterval(scheduler, 25) // Check every 25ms
-   ```
-
-3. **Dispatch events based on audio time, not wall time**:
-   - Store scheduled event times as `audioContext.currentTime` values
-   - When dispatching to UI, use `audioContext.currentTime` to determine "now"
-   - Use ScriptProcessorNode or AudioWorklet callbacks for sample-accurate events
-
-**Detection:**
-- Record audio and compare to expected timing (drift > 10ms is bad)
-- Beat sequences that "rush" or "drag" over time
-- Events fire late during page scrolling or animations
-
-**Feature mapping:** Event system, BeatTrack enhancements, audio sprites playback timing
-
-**Sources:**
-- [Web Audio Timing Tutorial](https://catarak.github.io/blog/2014/12/02/web-audio-timing-tutorial/)
-- [Understanding Web Audio Clock](https://sonoport.github.io/web-audio-clock.html)
-- [Event Scheduling in Web Audio API](https://vispo.com/netartery/event-scheduling-in-the-web-audio-api.html)
+**Phase to address:** Transport/Clock phase
 
 ---
 
-### Pitfall 3: AudioParam Event Accumulation Performance Degradation
+### Pitfall 3: LFO Connected to AudioParam Leaks When Sound Is Disposed
 
-**What goes wrong:** Scheduling thousands of AudioParam automation events (e.g., long sequences of ADSR envelopes, continuous effects automation) causes performance to degrade over time until audio dropouts occur.
+**What goes wrong:**
+An LFO (OscillatorNode running at low frequency) is connected to an AudioParam of a Sound's gain or filter. When the Sound is disposed or replaced, the LFO OscillatorNode keeps running and stays connected to the now-dead AudioParam. It accumulates silently.
 
 **Why it happens:**
-- Non-Gecko browsers accumulate scheduled events in unbounded lists
-- Each render cycle iterates through ALL pending events to calculate current value
-- As event count grows (thousands), render time exceeds the audio buffer deadline
-- AudioParam events are never garbage collected until the node is destroyed
+`AudioParam.connect()` keeps the LFO node alive in the audio graph. The Sound's GainNode gets disconnected from the destination, but the LFO is still connected to its `gain` AudioParam — a different connection than node→node. Disconnecting the GainNode from downstream does NOT disconnect the LFO from the GainNode's parameter.
+
+In the existing architecture, `BaseSound.dispose()` disconnects the connection chain but the LFO is an external AudioNode connected via `.connect(gainNode.gain)`. Nothing tracks this reverse dependency.
 
 **Consequences:**
-- Smooth performance initially, then gradual degradation
-- Audio dropouts (clicks, silence, noise) after minutes/hours of use
-- Performance cliff is sudden and hard to debug
-- More severe on mobile/low-power devices
+- LFO OscillatorNode runs indefinitely even after its Sound is gone
+- Memory leak: each Sound disposal leaves orphaned LFO
+- CPU waste: running OscillatorNodes have non-zero render cost
+- Can accumulate hundreds of running oscillators in a long session
 
-**Prevention:**
-1. **Swap nodes periodically** to clear event lists:
-   ```typescript
-   class ADSREnvelope {
-     private eventCount = 0
-     private readonly MAX_EVENTS = 1000
+**How to avoid:**
+The LFO must be registered with the Sound it modulates and stopped/disconnected on dispose:
 
-     trigger() {
-       this.eventCount++
+```typescript
+class LFO {
+  private oscillator: OscillatorNode
+  private connections: { param: AudioParam }[] = []
 
-       // Recreate gain node every 1000 triggers
-       if (this.eventCount > this.MAX_EVENTS) {
-         const oldGain = this.gainNode
-         this.gainNode = audioContext.createGain()
-         this.gainNode.gain.value = oldGain.gain.value
-         // Reconnect in audio graph
-         this.reconnectGainNode()
-         oldGain.disconnect()
-         this.eventCount = 0
-       }
+  connect(param: AudioParam): this {
+    this.oscillator.connect(param)
+    this.connections.push({ param })
+    return this
+  }
 
-       // Schedule envelope...
-     }
-   }
-   ```
+  dispose(): void {
+    for (const { param } of this.connections) {
+      try { this.oscillator.disconnect(param) } catch {}
+    }
+    this.connections = []
+    this.oscillator.stop()
+  }
+}
+```
 
-2. **Use cancelScheduledValues() aggressively**:
-   ```typescript
-   // Before scheduling new events, clear old ones
-   gainParam.cancelScheduledValues(audioContext.currentTime)
-   ```
+Sound/Oscillator must also expose a way to register LFOs for cleanup:
+```typescript
+class BaseSound {
+  private _lfos: LFO[] = []
 
-3. **Prefer setTargetAtTime over long ramp chains**:
-   ```typescript
-   // BAD: Creates many automation events
-   for (let i = 0; i < 100; i++) {
-     gainParam.linearRampToValueAtTime(values[i], times[i])
-   }
+  attachLFO(lfo: LFO): this {
+    this._lfos.push(lfo)
+    return this
+  }
 
-   // BETTER: Single event with time constant
-   gainParam.setTargetAtTime(targetValue, startTime, timeConstant)
-   ```
+  dispose(): void {
+    for (const lfo of this._lfos) lfo.dispose()
+    this._lfos = []
+    // ... existing dispose logic
+  }
+}
+```
 
-4. **Monitor node reuse in long-running applications**:
-   - Track how many times nodes are reused
-   - Set thresholds for node recreation
-   - Include in debug mode
+**Warning signs:**
+- Chrome DevTools WebAudio panel shows growing oscillator count
+- CPU usage creeps up after repeated Sound creation/disposal
+- Memory profiler shows AudioNode count growing unboundedly
 
-**Detection:**
-- Performance degrades over extended use (hours)
-- Chrome DevTools WebAudio panel shows growing event counts
-- Audio dropouts that resolve after page refresh
-
-**Feature mapping:** ADSR envelopes, effects automation, crossfading, any feature using AudioParam.setValueAtTime chains
-
-**Sources:**
-- [Web Audio Performance Notes](https://padenot.github.io/web-audio-perf/)
-- Verified: MDN Best Practices doc
+**Phase to address:** LFO phase (must be designed with disposal from the start)
 
 ---
 
-### Pitfall 4: AudioBufferSourceNode Single-Use Violation
+### Pitfall 4: PolySynth Voice Leak — Voices Never Returned to Pool
 
-**What goes wrong:** Attempting to reuse an AudioBufferSourceNode after calling `start()` causes silent failures or crashes. Developers expect source nodes to work like `<audio>` elements (reusable).
+**What goes wrong:**
+PolySynth allocates new Oscillator instances for each note. Voices are "returned to pool" on note release, but if the user never calls `stop()` (or the release envelope hasn't finished), the voice stays allocated. With rapid playing or held notes, all voices are busy and new notes are silently dropped.
 
 **Why it happens:**
-- AudioBufferSourceNode is explicitly designed as single-use ("fire and forget")
-- After `start()` is called, the node transitions to an unusable state
-- Calling `start()` again throws `InvalidStateError`
-- This design is intentional but counterintuitive for developers from other audio APIs
+The existing Oscillator has an async stop() with envelope release:
+```typescript
+// oscillator.ts stop():
+this.audioSourceNode.stop(now + release + padding)
+this._isPlaying = false
+```
+
+The OscillatorNode stops at `now + release`, but the PolySynth might return the voice to the pool when `_isPlaying` becomes false — before the audio node has actually finished outputting the release tail. If another note immediately steals the voice, the old release tail and new attack overlap, causing clicks.
 
 **Consequences:**
-- Silent failures in audio sprites (only first playback works)
-- Confusing errors: "Failed to execute 'start' on 'AudioBufferSourceNode'"
-- Memory leaks if developers hold references expecting reuse
-- Poor performance if developers recreate AudioBuffers instead of just source nodes
+- Clicks when two notes use same voice in rapid succession
+- Silent notes when all voices busy
+- Release tails cut off by voice stealing
+- Race condition between JS voice pool and audio render thread timing
 
-**Prevention:**
-1. **ALWAYS create new source node per playback**:
-   ```typescript
-   class Sound {
-     private audioBuffer: AudioBuffer // Reuse this
+**How to avoid:**
 
-     play() {
-       // Create NEW source for each play
-       const source = audioContext.createBufferSource()
-       source.buffer = this.audioBuffer // Reuse buffer
-       source.connect(this.gainNode)
-       source.start()
+1. Track voice readiness separately from `_isPlaying`:
+```typescript
+interface Voice {
+  oscillator: Oscillator
+  // Voice is not "free" until the release tail is done at the audio level
+  releaseEndTime: number // audioContext time when safe to reuse
+}
 
-       // Don't keep reference - "fire and forget"
-       // Will be garbage collected after playback
-     }
-   }
-   ```
+// Voice is free only when: !isPlaying AND audioContext.currentTime > releaseEndTime
+function isVoiceFree(voice: Voice, now: number): boolean {
+  return !voice.oscillator.isPlaying && now > voice.releaseEndTime
+}
+```
 
-2. **Separate buffer lifecycle from source lifecycle**:
-   ```typescript
-   // GOOD pattern (already in ez-audio)
-   class Sound {
-     constructor(
-       private audioContext: AudioContext,
-       private audioBuffer: AudioBuffer // Stored once, reused
-     ) {}
+2. Voice stealing strategy: steal the voice in release phase that started earliest:
+```typescript
+function stealVoice(voices: Voice[], now: number): Voice {
+  // First preference: voices already done
+  const free = voices.find(v => isVoiceFree(v, now))
+  if (free) return free
 
-     play() {
-       const source = this.createSourceNode() // New every time
-       this.controller.updateAudioSource(source)
-       source.start()
-     }
-   }
-   ```
+  // Second: voice farthest into release (closest to done)
+  const releasing = voices
+    .filter(v => !v.oscillator.isPlaying)
+    .sort((a, b) => a.releaseEndTime - b.releaseEndTime)
+  if (releasing.length) return releasing[0]
 
-3. **Document the pattern**:
-   - Add JSDoc comments explaining single-use nature
-   - Show examples of correct reuse pattern (buffer reuse, source recreation)
+  // Last resort: oldest active voice
+  return voices[0]
+}
+```
 
-**Detection:**
-- "InvalidStateError" when calling `start()`
-- Audio sprites play once then stop working
-- Memory usage grows with number of play() calls
+3. Hard-stop the stolen voice before reuse (with 10ms fade to prevent click):
+```typescript
+async function stealAndReuse(voice: Voice): Promise<Oscillator> {
+  // Cancel release tail immediately with tiny fade
+  await voice.oscillator.stopAt(audioContext.currentTime + 0.01)
+  // Now safe to retrigger
+  return voice.oscillator
+}
+```
 
-**Feature mapping:** Audio sprites, Sound/Track base classes, LayeredSound, preloading system
+**Warning signs:**
+- Clicks when playing fast note runs
+- Notes silently not playing at high polyphony counts
+- Increasing CPU over time if voices never freed
 
-**Sources:**
-- [MDN AudioBufferSourceNode](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode)
-- [Playing Sounds with Web Audio API](https://blog.openreplay.com/playing-sounds-web-audio-api/)
+**Phase to address:** PolySynth phase
 
 ---
 
-### Pitfall 5: Direct AudioParam Value Assignment During Automation
+### Pitfall 5: Built-In Effects Breaking the Existing Connection Chain
 
-**What goes wrong:** Setting `audioParam.value = X` directly while automation is scheduled causes the change to be silently ignored. Developers expect last-write-wins behavior.
+**What goes wrong:**
+Built-in effects (Delay, Reverb, Distortion, etc.) are implemented as classes that create AudioNodes internally. When added to a Sound via `addEffect()`, the existing chain `source → effectChainInput → [effects] → gain → pan → destination` rewires incorrectly. The new effect's internal nodes bypass the gain/pan nodes, or the feedback loop of a delay effect gets connected after the gain node (so the feedback bypasses volume control).
 
 **Why it happens:**
-- When AudioParam has scheduled events, the `.value` setter is disabled
-- The automation timeline takes complete control
-- Direct assignment doesn't throw an error, it just does nothing
-- This is by design but extremely counterintuitive
+The existing effects adapter pattern expects effects to expose `{ input: AudioNode, output: AudioNode }`. Built-in effects that use multiple internal nodes (e.g., Delay = DelayNode + feedback GainNode + wet/dry GainNodes) need careful thought about which node is `input` and which is `output`. Getting this wrong causes:
+- Feedback that doesn't respect master gain
+- Wet/dry mix that's post-gain instead of pre-gain
+- Double-connection of nodes already connected internally
 
 **Consequences:**
-- Controls don't work (user moves slider, nothing happens)
-- Silent failures hard to debug
-- Mixing direct assignment with automation causes unpredictable behavior
-- Users report "broken controls"
+- Delay feedback bypasses gain control (feedback at full volume even when gain is 0)
+- Distortion applied after gain (should be before — ordering matters musically)
+- Reverb wet signal not affected by mute
 
-**Prevention:**
-1. **NEVER mix direct assignment with automation**:
-   ```typescript
-   // BAD: Mixing styles
-   gainParam.value = 0.5 // Direct assignment
-   gainParam.linearRampToValueAtTime(1, time) // Automation - now .value is ignored!
+**How to avoid:**
+All built-in effects must conform to the existing `Effect` interface with explicit `input` and `output` AudioNode properties:
+```typescript
+interface Effect {
+  input: AudioNode  // Signal enters here
+  output: AudioNode // Signal exits here
+  bypass: boolean
+  mix: number
+}
+```
 
-   // GOOD: Use only automation methods
-   gainParam.cancelScheduledValues(audioContext.currentTime)
-   gainParam.setValueAtTime(0.5, audioContext.currentTime)
-   gainParam.linearRampToValueAtTime(1, time)
-   ```
+Effect ordering rules (document these):
+- Pre-gain effects: Distortion, EQ, Chorus (before gain node)
+- Post-gain effects: Reverb, Delay (after gain node, so silence mutes them)
+- The existing chain puts effects between `effectChainInput` and `gain`, so pre-gain is default
 
-2. **In ez-audio's controller pattern, enforce consistency**:
-   ```typescript
-   // Update the existing pattern to always use setValueAtTime
-   protected _update(type: ControlType, value: number): void {
-     switch (type) {
-       case 'gain':
-         // BAD (current code - uses direct assignment)
-         this.gainNode.gain.value = value;
+For delay feedback, the feedback loop must be entirely INSIDE the effect:
+```typescript
+class DelayEffect implements Effect {
+  readonly input: GainNode   // external signal enters here
+  readonly output: GainNode  // exits here to next in chain
 
-         // BETTER: Use automation method
-         this.gainNode.gain.setValueAtTime(
-           value,
-           this.audioContext.currentTime
-         );
-         break;
-     }
-   }
-   ```
+  private delayNode: DelayNode
+  private feedbackGain: GainNode  // internal, not exposed
 
-3. **Clear automation before manual updates**:
-   ```typescript
-   public update(type: ControlType) {
-     return {
-       to: (value: number) => {
-         return {
-           from: (method: RatioType) => {
-             const param = this.getAudioParam(type);
-             // Clear any scheduled automation first
-             param.cancelScheduledValues(this.audioContext.currentTime);
-             param.setValueAtTime(
-               this.convertValue(value, method),
-               this.audioContext.currentTime
-             );
-           }
-         }
-       }
-     }
-   }
-   ```
+  constructor(ctx: AudioContext) {
+    this.input = ctx.createGain()
+    this.output = ctx.createGain()
+    this.delayNode = ctx.createDelay()
+    this.feedbackGain = ctx.createGain()
 
-**Detection:**
-- UI controls don't affect sound
-- Changes work initially but stop after using onPlaySet/onPlayRamp
-- Console shows no errors but behavior is wrong
+    // Wet path: input → delay → output
+    this.input.connect(this.delayNode)
+    this.delayNode.connect(this.output)
 
-**Feature mapping:** ADSR envelopes, effects automation, existing controller methods, crossfading
+    // Feedback: delay → feedbackGain → delay (fully internal)
+    this.delayNode.connect(this.feedbackGain)
+    this.feedbackGain.connect(this.delayNode)
 
-**Sources:**
-- [MDN AudioParam](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam)
-- [Web Audio Crossfading Gotchas](http://alemangui.github.io/ramp-to-value)
+    // Dry path: input → output (bypass)
+    this.input.connect(this.output)
+  }
+}
+```
+
+**Warning signs:**
+- Delay feedback sounds at full volume regardless of gain
+- Muting a sound still produces reverb tail
+- Effect sounds different when bypassed vs. chain removed entirely
+- EQ not affecting the "right" part of the signal
+
+**Phase to address:** Built-in effects phase (must verify each effect's routing)
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 6: Convolution Reverb IR Buffer — Synchronous Buffer Assignment Blocks Audio Thread
 
-Mistakes that cause delays, performance issues, or technical debt.
-
-### Pitfall 6: AnalyserNode FFT Size / Performance Trade-off
-
-**What goes wrong:** Using large FFT sizes (2048+) for real-time visualization causes frame drops and laggy UI, especially on mobile.
+**What goes wrong:**
+Setting `ConvolverNode.buffer` after the node is already in the audio graph causes the browser to perform the FFT partitioning synchronously on the audio rendering thread. This can cause an audible dropout or glitch at the moment the IR is assigned.
 
 **Why it happens:**
-- Larger FFT = more frequency resolution but more computation
-- FFT calculation happens on audio thread, stealing CPU from rendering
-- AnalyserNode data is heavily skewed toward high frequencies (50%+ of data is inaudible)
-- requestAnimationFrame calls every ~16ms (60fps), but FFT might take 10ms+
+The Web Audio spec (section on ConvolverNode) notes that changing the buffer after node creation requires re-partitioning the impulse response. Some browsers do this on the audio thread. For large IR buffers (2+ seconds of stereo), this computation takes more than one render quantum (128 samples at 44.1kHz = ~3ms), causing a dropout.
 
 **Consequences:**
-- Visualization frame rate drops below 30fps
-- Janky animations and UI lag
-- Mobile devices become unusable
-- Battery drain
+- Audible glitch/click when reverb IR is changed live
+- Audio dropout when loading reverb on a busy page
+- Longer IR files = worse glitch
 
-**Prevention:**
-1. **Use minimum FFT size for use case**:
-   ```typescript
-   class AudioVisualizer {
-     private analyser: AnalyserNode
+**How to avoid:**
+1. Pre-create ConvolverNode with buffer before connecting to graph:
+```typescript
+class ReverbEffect implements Effect {
+  private convolver: ConvolverNode
 
-     constructor(audioContext: AudioContext, mode: 'waveform' | 'spectrum') {
-       this.analyser = audioContext.createAnalyser()
+  async loadIR(url: string, ctx: AudioContext): Promise<void> {
+    // Load and decode BEFORE creating the node
+    const response = await fetch(url)
+    const buffer = await ctx.decodeAudioData(await response.arrayBuffer())
 
-       // Match FFT size to visualization needs
-       if (mode === 'waveform') {
-         this.analyser.fftSize = 256 // Minimal for waveform
-       }
-       else {
-         this.analyser.fftSize = 1024 // Balance for spectrum
-       }
-     }
-   }
-   ```
+    // Create a NEW convolver with the buffer, then swap into chain
+    const newConvolver = ctx.createConvolver()
+    newConvolver.buffer = buffer // Set before connecting
 
-2. **Downsample frequency data**:
-   ```typescript
-   getFrequencyData(): Uint8Array {
-     const fullData = new Uint8Array(this.analyser.frequencyBinCount);
-     this.analyser.getByteFrequencyData(fullData);
+    // Swap (brief crossfade to avoid click)
+    this.swapConvolver(newConvolver)
+  }
+}
+```
 
-     // Only use lower half (high frequencies are less useful for visualization)
-     const usefulData = fullData.slice(0, fullData.length / 2);
+2. For IR switching at runtime, crossfade between two ConvolverNodes:
+```typescript
+private swapConvolver(newConvolver: ConvolverNode): void {
+  const ctx = this.audioContext
+  const now = ctx.currentTime
 
-     // Further downsample to number of visual bars
-     return this.downsampleToBarCount(usefulData, this.barCount);
-   }
-   ```
+  // Fade out old, fade in new over 50ms
+  this.dryGain.gain.setValueAtTime(1, now)
+  this.dryGain.gain.linearRampToValueAtTime(0, now + 0.05)
 
-3. **Throttle visualization updates**:
-   ```typescript
-   private lastDrawTime = 0;
-   private readonly DRAW_INTERVAL = 1000 / 30; // 30fps max
+  newConvolver.connect(this.wetGain)
+  this.input.connect(newConvolver)
 
-   private draw = () => {
-     requestAnimationFrame(this.draw);
+  setTimeout(() => {
+    this.convolver.disconnect()
+    this.convolver = newConvolver
+  }, 100)
+}
+```
 
-     const now = performance.now();
-     if (now - this.lastDrawTime < this.DRAW_INTERVAL) {
-       return; // Skip this frame
-     }
-     this.lastDrawTime = now;
+3. For initial load, always use OfflineAudioContext to pre-decode:
+```typescript
+// Decoding in offline context offloads from audio thread
+const offlineCtx = new OfflineAudioContext(2, buffer.length, 44100)
+const decoded = await offlineCtx.decodeAudioData(rawBuffer)
+```
 
-     // Update visualization
-   }
-   ```
+**Warning signs:**
+- Click/pop when reverb is initialized or IR changes
+- Audio dropout lasting exactly one render quantum
+- Performance spike visible in Chrome DevTools at reverb load time
 
-4. **Provide performance presets**:
-   ```typescript
-   const VISUALIZER_PRESETS = {
-     performance: { fftSize: 256, smoothing: 0.5 },
-     balanced: { fftSize: 1024, smoothing: 0.7 },
-     quality: { fftSize: 2048, smoothing: 0.8 },
-   }
-   ```
-
-**Detection:**
-- Chrome DevTools Performance tab shows long AnalyserNode frames
-- Frame rate drops during visualization
-- Mobile gets hot during playback with visualization
-
-**Feature mapping:** Audio visualization feature
-
-**Sources:**
-- [MDN Visualizations with Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API)
-- [Web Audio Performance Guide](https://padenot.github.io/web-audio-perf/)
+**Phase to address:** Built-in effects phase (Reverb specifically)
 
 ---
 
-### Pitfall 7: Memory Leaks from Undisconnected Nodes
+### Pitfall 7: Sequencer Musical Time Notation Parsed Incorrectly at Tempo Change
 
-**What goes wrong:** AudioNodes remain in memory indefinitely even after audio playback completes, causing memory usage to grow until the browser crashes (especially in games or long-running apps).
+**What goes wrong:**
+Musical time strings like `"4n"` (quarter note), `"8t"` (triplet eighth) are parsed to absolute seconds using the current BPM at parse time. When BPM changes, all already-scheduled events play at the wrong time because they were converted to fixed seconds when the sequence was defined.
 
 **Why it happens:**
-- AudioNodes are not garbage collected while connected to the audio graph
-- "Fire and forget" pattern (create source, start, don't keep reference) assumes automatic cleanup
-- Connections to destination or other nodes prevent GC
-- AudioBuffers are large (multiple MB) and shared across source nodes
+The naive approach is: `parseMusicTime("4n", 120) → 0.5 seconds`. Then the event is scheduled at `audioContext.currentTime + 0.5`. If BPM changes to 140, this scheduled event is already committed at 0.5 seconds — it doesn't recompute.
+
+Tone.js solves this by keeping events in transport-time units and converting to absolute seconds only when scheduling. EZ Audio would need the same approach.
 
 **Consequences:**
-- Memory usage grows 10-50MB per minute in sound-heavy apps
-- Mobile browsers force page reload after 100-500 sounds
-- Crashes after hours of use
-- Worse with audio sprites (many small buffers)
+- Tempo changes take many beats to take effect on already-queued events
+- Live tempo control appears broken
+- Swing/groove offsets calculated wrong after BPM change
 
-**Prevention:**
-1. **Disconnect nodes after playback**:
-   ```typescript
-   class Sound {
-     play() {
-       const source = audioContext.createBufferSource()
-       source.buffer = this.audioBuffer
-       source.connect(this.gainNode)
+**How to avoid:**
+Keep events in beat units, convert to seconds only at schedule time:
+```typescript
+interface SequenceEvent {
+  beatOffset: number  // in beats, NOT seconds
+  callback: (time: number) => void
+}
 
-       // CRITICAL: Disconnect when done
-       source.onended = () => {
-         source.disconnect()
-       }
+class Sequencer {
+  private events: SequenceEvent[] = []
 
-       source.start()
-     }
-   }
-   ```
+  // Schedule based on current transport time and BPM
+  private scheduleEvents(): void {
+    const now = this.transport.currentBeat
+    const secondsPerBeat = 60 / this.transport.bpm
 
-2. **Clean up long-running nodes**:
-   ```typescript
-   class Track {
-     stop() {
-       if (this.source) {
-         this.source.stop()
-         this.source.disconnect() // Don't forget this
-         this.source = null
-       }
-     }
+    for (const event of this.events) {
+      if (event.beatOffset >= now && event.beatOffset < now + this.lookaheadBeats) {
+        const audioTime = this.audioContext.currentTime +
+          (event.beatOffset - now) * secondsPerBeat  // Convert NOW
+        event.callback(audioTime)
+      }
+    }
+  }
+}
+```
 
-     dispose() {
-       this.stop()
-       // Disconnect the entire chain
-       this.gainNode.disconnect()
-       this.pannerNode.disconnect()
-       // Dereference AudioBuffer
-       this.audioBuffer = null
-     }
-   }
-   ```
+**Warning signs:**
+- Tempo slider feels "laggy" — changes take many beats to land
+- Notes play late/early after BPM change
+- Swing amount doesn't apply retroactively
 
-3. **Monitor memory in debug mode**:
-   ```typescript
-   class DebugMemoryMonitor {
-     private nodeCount = 0
-
-     trackNode(node: AudioNode) {
-       this.nodeCount++
-       node.addEventListener('ended', () => this.nodeCount--)
-     }
-
-     getStats() {
-       return {
-         activeNodes: this.nodeCount,
-         estimatedMemory: this.nodeCount * 50000 // Rough estimate
-       }
-     }
-   }
-   ```
-
-4. **Implement buffer pooling for audio sprites**:
-   ```typescript
-   // Instead of keeping 100 AudioBuffers, use shared buffer with offset
-   class AudioSpriteSheet {
-     private buffer: AudioBuffer
-     private sprites: Map<string, { offset: number, duration: number }>
-
-     play(spriteName: string) {
-       const sprite = this.sprites.get(spriteName)
-       const source = audioContext.createBufferSource()
-       source.buffer = this.buffer // Single shared buffer
-       source.start(0, sprite.offset, sprite.duration)
-       source.onended = () => source.disconnect() // Clean up
-     }
-   }
-   ```
-
-**Detection:**
-- Chrome DevTools Memory profiler shows growing AudioNode count
-- Mobile browser forces refresh
-- Memory usage grows linearly with play() calls
-- Heap snapshots show retained AudioBufferSourceNode instances
-
-**Feature mapping:** All playback features, audio sprites, LayeredSound, Sound/Track base classes
-
-**Sources:**
-- [Web Audio Memory Management](https://padenot.github.io/web-audio-perf/)
-- [Phaser WebAudio Memory Leak Issue](https://github.com/photonstorm/phaser/issues/5224)
-- [MDN Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
+**Phase to address:** Sequencer/Pattern phase
 
 ---
 
-### Pitfall 8: Effects Chain Connection Order Errors
+### Pitfall 8: GrainPlayer Without AudioWorklet — Main Thread Grain Scheduling
 
-**What goes wrong:** Connecting effects in the wrong order causes silent audio, context errors, or creates feedback loops that crash the audio thread.
+**What goes wrong:**
+Granular synthesis requires scheduling hundreds of tiny audio buffers (grains) per second, each with random offset, pitch, pan, and envelope. Implementing this with `setTimeout` + `AudioBufferSourceNode` per grain causes main thread overload and timing jitter. At grain rates >10/sec the UI freezes; at 50+ grains/sec the audio dropouts begin.
 
 **Why it happens:**
-- `connect()` calls must form a directed acyclic graph (DAG)
-- Creating cycles without DelayNode causes exceptions
-- Connecting nodes from different AudioContexts throws errors (common with multiple contexts)
-- Output/input index mismatches fail silently
+Each grain needs:
+- New `AudioBufferSourceNode` (single-use)
+- `playbackRate` set for pitch shift
+- `start(time, offset, duration)` with exact audio-time scheduling
+- Envelope GainNode
+- Pan node for stereo spread
+
+Creating and connecting 50 nodes per second with the main thread scheduler causes GC pressure and render jank.
 
 **Consequences:**
-- Complete audio silence (hard to debug)
-- "Failed to execute 'connect': cycle detected" errors
-- "NotSupportedError: Nodes are from different contexts"
-- Subtle timing issues from incorrect routing
+- UI freezes during granular playback
+- Grain density limited to ~10-20 grains/sec without glitches
+- Click/pop artifacts from scheduling jitter
+- Battery drain on mobile
 
-**Prevention:**
-1. **Validate connection compatibility**:
-   ```typescript
-   class EffectsChain {
-     connect(source: AudioNode, destination: AudioNode) {
-       // Validate same context
-       if (source.context !== destination.context) {
-         throw new Error('Cannot connect nodes from different AudioContexts')
-       }
+**How to avoid:**
+Two approaches, in order of effectiveness:
 
-       // Validate index ranges if using specific inputs/outputs
-       // (Most nodes have 1 input and 1 output, but some have multiple)
+Option A — AudioWorklet (correct approach, but complex):
+Move grain mixing to AudioWorklet processor. The worklet receives the AudioBuffer as SharedArrayBuffer and handles all grain scheduling internally at the audio render rate. Eliminates main-thread scheduling entirely.
 
-       source.connect(destination)
-     }
-   }
-   ```
+Cost: AudioWorklet adds significant architecture complexity, cross-origin isolation requirements (COOP/COEP headers), and testing difficulty. The existing library explicitly listed AudioWorklet as out of scope.
 
-2. **Build chains incrementally with validation**:
-   ```typescript
-   class EffectsChain {
-     private nodes: AudioNode[] = []
+Option B — Hybrid approach (pragmatic):
+Keep main thread scheduling but use large grain sizes (50-200ms) and moderate density (5-20 grains/sec). At these parameters, main thread scheduling is feasible with the existing lookahead pattern:
 
-     addEffect(effect: AudioNode): this {
-       if (this.nodes.length > 0) {
-         const lastNode = this.nodes[this.nodes.length - 1]
-         lastNode.disconnect() // Disconnect old routing
-         lastNode.connect(effect) // Connect to new effect
-       }
+```typescript
+class GrainPlayer {
+  private scheduleAheadTime = 0.3  // 300ms for grain scheduling
+  private schedulerInterval = 50   // Check every 50ms
 
-       this.nodes.push(effect)
-       return this // Fluent API
-     }
+  private scheduleGrains(): void {
+    const now = this.audioContext.currentTime
 
-     connectToDestination(destination: AudioNode) {
-       if (this.nodes.length > 0) {
-         const lastNode = this.nodes[this.nodes.length - 1]
-         lastNode.connect(destination)
-       }
-     }
-   }
-   ```
+    while (this.nextGrainTime < now + this.scheduleAheadTime) {
+      this.scheduleGrain(this.nextGrainTime)
+      this.nextGrainTime += this.getGrainInterval()
+    }
 
-3. **Implement disconnect-before-reconnect pattern**:
-   ```typescript
-   // When rebuilding chains
-   reconfigureEffects(newEffects: AudioNode[]) {
-     // Disconnect entire chain
-     this.nodes.forEach(node => node.disconnect());
+    this.timerID = setTimeout(() => this.scheduleGrains(), this.schedulerInterval)
+  }
 
-     // Rebuild from scratch
-     this.nodes = newEffects;
-     for (let i = 0; i < this.nodes.length - 1; i++) {
-       this.nodes[i].connect(this.nodes[i + 1]);
-     }
-   }
-   ```
+  private scheduleGrain(time: number): void {
+    const source = this.audioContext.createBufferSource()
+    source.buffer = this.buffer
+    source.playbackRate.value = this.getRandomizedPitch()
 
-4. **Visualize graph for debugging**:
-   ```typescript
-   // Debug mode: print connection graph
-   if (DEBUG) {
-     console.log('Audio Graph:')
-     console.log(this.source, '→', ...this.effects, '→', this.destination)
-   }
-   ```
+    // Small envelope via GainNode
+    const env = this.audioContext.createGain()
+    env.gain.setValueAtTime(0, time)
+    env.gain.linearRampToValueAtTime(1, time + this.grainAttack)
+    env.gain.linearRampToValueAtTime(0, time + this.grainDuration - this.grainRelease)
 
-**Detection:**
-- Complete audio silence
-- Console errors about cycles or context mismatches
-- Chrome DevTools WebAudio panel shows disconnected nodes
-- Following signal path manually (reconnect each node to speakers)
+    source.connect(env)
+    env.connect(this.outputGain)
 
-**Feature mapping:** Effects presets, existing `connections` array pattern, crossfading, LayeredSound
+    const offset = this.getPosition() // current position + random spread
+    source.start(time, offset, this.grainDuration)
+    source.onended = () => { source.disconnect(); env.disconnect() }
+  }
+}
+```
 
-**Sources:**
-- [MDN AudioNode.connect()](https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect)
-- [Web Audio Basic Concepts](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API)
+Document maximum safe grain density: <20 grains/sec for mobile, <50 for desktop.
+
+**Warning signs:**
+- UI frame rate drops during granular playback
+- "Chirping" artifacts from timing jitter
+- Mobile gets hot immediately
+- Chrome shows long tasks in Performance timeline
+
+**Phase to address:** GrainPlayer phase (must decide on AudioWorklet vs. pragmatic limits upfront)
 
 ---
 
-### Pitfall 9: Crossfade Volume Curve Errors
+### Pitfall 9: LFO Rate/Depth Parameter API Ambiguity
 
-**What goes wrong:** Using linear crossfading (fade out A while fading in B linearly) causes a volume dip in the middle where both tracks are at 50%, making the crossfade audible and unpleasant.
+**What goes wrong:**
+LFO is implemented with `rate` (Hz) and `depth` as raw AudioParam values. Users expect depth to be a multiplier (0-1) but it's applied as absolute gain on the modulation signal. An LFO modulating frequency with depth=1 causes ±1 Hz change — inaudible. Users expect depth=1 to mean "full range" (e.g., ±500 Hz for frequency vibrato).
 
 **Why it happens:**
-- Human hearing is logarithmic, not linear
-- When two tracks are both at 50% linear gain, perceived loudness is ~70% (not 100%)
-- This creates a "hole" in the middle of the crossfade
-- Equal-power crossfading is required for constant perceived volume
+The LFO's OscillatorNode output is ±1 (full scale). When connected to an AudioParam, the connection adds the LFO's output to the existing value. Without scaling, connecting to frequency means ±1 Hz. The correct implementation requires scaling via a GainNode before the AudioParam connection, where gain = desired modulation depth in the target parameter's units.
+
+Different parameters have different "natural" ranges:
+- Gain: depth=1 might mean ±0.5 gain
+- Frequency: depth=1 might mean ±50 Hz (one semitone at 440 Hz)
+- Pan: depth=1 might mean ±1 (full sweep)
 
 **Consequences:**
-- Audible dip during crossfades
-- Unprofessional sound quality
-- Crossfades that "pump" or "breathe"
-- Users complain transitions are noticeable
+- LFO appears to have no effect (depth too small)
+- LFO sounds "too extreme" (depth too large)
+- API is confusing — users don't know what unit depth is in
+- Breaking change required later to fix
 
-**Prevention:**
-1. **Use equal-power crossfade curve**:
-   ```typescript
-   function crossfade(
-     trackA: GainNode,
-     trackB: GainNode,
-     position: number // 0 = full A, 1 = full B
-   ) {
-     // Equal power curve (constant power panning law)
-     const gainA = Math.cos(position * Math.PI / 2)
-     const gainB = Math.sin(position * Math.PI / 2)
+**How to avoid:**
+Design the API around normalized depth (0-1) and let the LFO know the target parameter type:
 
-     trackA.gain.setValueAtTime(gainA, audioContext.currentTime)
-     trackB.gain.setValueAtTime(gainB, audioContext.currentTime)
-   }
-   ```
+```typescript
+class LFO {
+  private depthGain: GainNode
 
-2. **Implement exponential ramps for fades**:
-   ```typescript
-   function fadeOut(gainNode: GainNode, duration: number) {
-     const now = audioContext.currentTime
-     gainNode.gain.setValueAtTime(gainNode.gain.value, now)
-     // Exponential feels more natural than linear
-     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration)
-   }
+  connectToGain(gainParam: AudioParam, depth: number): this {
+    // depth 0-1 → ±depth amplitude change
+    this.depthGain.gain.value = depth
+    this.depthGain.connect(gainParam)
+    return this
+  }
 
-   function fadeIn(gainNode: GainNode, duration: number) {
-     const now = audioContext.currentTime
-     gainNode.gain.setValueAtTime(0.0001, now)
-     gainNode.gain.exponentialRampToValueAtTime(1, now + duration)
-   }
-   ```
+  connectToFrequency(freqParam: AudioParam, depth: number, baseFreq: number): this {
+    // depth 0-1 → ±(depth * baseFreq * 0.05) Hz (5% range)
+    this.depthGain.gain.value = depth * baseFreq * 0.05
+    this.depthGain.connect(freqParam)
+    return this
+  }
 
-3. **Provide crossfade curve options**:
-   ```typescript
-   type CrossfadeCurve = 'linear' | 'equal-power' | 'exponential'
+  connectToPan(panParam: AudioParam, depth: number): this {
+    // depth 0-1 → ±depth pan
+    this.depthGain.gain.value = depth
+    this.depthGain.connect(panParam)
+    return this
+  }
+}
+```
 
-   class Crossfader {
-     crossfade(
-       trackA: GainNode,
-       trackB: GainNode,
-       duration: number,
-       curve: CrossfadeCurve = 'equal-power'
-     ) {
-       switch (curve) {
-         case 'equal-power':
-           this.equalPowerCrossfade(trackA, trackB, duration)
-           break
-         case 'exponential':
-           this.exponentialCrossfade(trackA, trackB, duration)
-           break
-         case 'linear':
-           // Still provide linear, but document it's not recommended
-           this.linearCrossfade(trackA, trackB, duration)
-           break
-       }
-     }
-   }
-   ```
+Alternative: typed connect methods with semantic names:
+```typescript
+lfo.createTremolo(sound, { depth: 0.3 })       // Amplitude modulation
+lfo.createVibrato(sound, { depth: 0.5 })        // Frequency modulation
+lfo.createAutoPan(sound, { depth: 1.0 })        // Pan modulation
+lfo.createAutoFilter(sound, { depth: 0.7 })     // Filter cutoff modulation
+```
 
-**Detection:**
-- Volume dip in middle of crossfade
-- Crossfades sound unnatural or "pumpy"
-- A/B testing against professional DJ software shows difference
+**Warning signs:**
+- LFO connects but produces no audible effect
+- Effect is there but extreme/subtle at wrong depth values
+- Users ask "what is depth in units of?"
 
-**Feature mapping:** Crossfading feature, Track transitions
-
-**Sources:**
-- [Equal Power Crossfade Discussion](https://github.com/notthetup/smoothfade)
-- [Web Audio Crossfade Examples](https://gist.github.com/scneptune/7498000)
+**Phase to address:** LFO phase (API design must be settled before implementation)
 
 ---
 
-### Pitfall 10: Multiple AudioContext Instances
+### Pitfall 10: Tab Backgrounding Throttles Transport Scheduler → Beat Drift
 
-**What goes wrong:** Creating multiple AudioContext instances (e.g., one per audio library component, or recreating on errors) causes performance degradation, resource exhaustion, and makes synchronization impossible.
+**What goes wrong:**
+When the browser tab goes to background, `setTimeout` is throttled to 1-second intervals (or worse). The transport scheduler, which depends on setTimeout to check and schedule beats, stops updating. When the tab returns to foreground, the scheduler fires, discovers many beats have been "missed," and either: (a) fires them all in a burst, or (b) drops them, causing a gap.
 
 **Why it happens:**
-- Each AudioContext spawns a separate high-priority audio rendering thread
-- Mobile browsers limit total number of contexts (often 4-6)
-- Each context consumes system audio resources
-- Contexts cannot be synchronized (different time origins)
+This is a known, documented limitation of the existing BeatTrack scheduler (noted in beat-track.ts comments). A global Transport makes this worse because it coordinates multiple BeatTracks. When the scheduler resumes, it must reconcile multiple tracks' timing.
 
 **Consequences:**
-- Performance degradation from multiple rendering threads
-- "Failed to create AudioContext" errors on mobile
-- Impossible to synchronize sounds across contexts
-- Increased memory and CPU usage
-- Audio dropouts from resource contention
+- Sequenced music pauses when tab is backgrounded
+- Burst of beats on return to foreground
+- Multi-track desync (different tracks may have drifted different amounts)
 
-**Prevention:**
-1. **Singleton pattern for AudioContext (already in ez-audio)**:
-   ```typescript
-   // GOOD: Already implemented in ez-audio
-   let audioContext: AudioContext
+**How to avoid:**
 
-   export async function getAudioContext(): Promise<AudioContext> {
-     if (!audioContext) {
-       audioContext = new AudioContext()
-     }
-     return audioContext
-   }
-   ```
+1. Document the limitation clearly (Transport doesn't play reliably in background tabs)
+2. Detect tab visibility and handle gracefully:
+```typescript
+class Transport {
+  constructor() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this._wasPlayingWhenHidden = this.isPlaying
+        // Let scheduler drift — audio thread is unaffected for in-flight events
+      } else if (this._wasPlayingWhenHidden) {
+        // Re-sync: reset nextBeatTime without catching up
+        this.nextBeatTime = this.audioContext.currentTime
+        this._reschedule()
+      }
+    })
+  }
+}
+```
 
-2. **Never recreate AudioContext on errors**:
-   ```typescript
-   // BAD: Creates new context on error
-   try {
-     audioContext.resume()
-   }
-   catch (e) {
-     audioContext = new AudioContext() // DON'T DO THIS
-   }
+3. For background-critical use cases, suggest AudioWorklet (the worklet runs on audio thread, not throttled by visibility). Document this as the only reliable solution.
 
-   // GOOD: Resume existing context
-   if (audioContext.state === 'suspended') {
-     await audioContext.resume()
-   }
-   ```
+**Warning signs:**
+- Music stops when switching tabs
+- Beat burst on tab focus
+- Multi-track desync when returning from background
 
-3. **Document single-context requirement**:
-   - Warn users not to create their own AudioContext
-   - Provide `getAudioContext()` for library extensions
-   - Throw error if multiple contexts detected
-
-4. **Handle context state transitions**:
-   ```typescript
-   async function ensureAudioContext() {
-     if (!audioContext) {
-       audioContext = new AudioContext()
-     }
-
-     // Handle all states
-     if (audioContext.state === 'suspended') {
-       await audioContext.resume()
-     }
-     else if (audioContext.state === 'closed') {
-       // Context was closed - this is rare and usually intentional
-       // Could throw error or create new one, but document this choice
-       throw new Error('AudioContext was closed. Cannot reopen.')
-     }
-   }
-   ```
-
-**Detection:**
-- Performance degradation over time
-- "Too many AudioContext instances" errors on mobile
-- Sounds from different sources don't sync
-- Chrome DevTools shows multiple AudioContext instances
-
-**Feature mapping:** All features (affects core architecture)
-
-**Sources:**
-- [MDN Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
-- [Web Audio Performance Guide](https://padenot.github.io/web-audio-perf/)
+**Phase to address:** Transport/Clock phase (must be documented even if not fully solved)
 
 ---
 
-## Minor Pitfalls
+## Technical Debt Patterns
 
-Mistakes that cause annoyance but are easily fixable.
+Shortcuts that seem reasonable but create long-term problems.
 
-### Pitfall 11: iOS Safari Silent Mode Behavior
-
-**What goes wrong:** Web Audio API respects the device silent mode switch on iOS, causing complete audio silence without errors or warnings. HTML `<audio>` and `<video>` elements ignore silent mode, creating inconsistent behavior.
-
-**Why it happens:**
-- iOS design decision: Web Audio API is for "app-like" experiences
-- System silent mode is meant to silence apps
-- HTML media elements are "content" (like YouTube) and bypass silent mode
-- No API to detect silent mode state
-
-**Consequences:**
-- Users report "audio doesn't work" on iOS
-- Appears to be broken only for some users
-- No errors in console, hard to diagnose remotely
-- User frustration and support burden
-
-**Prevention:**
-1. **Show warning when audio fails to play**:
-   ```typescript
-   class AudioInitializer {
-     async init() {
-       await audioContext.resume()
-
-       // Test if audio is actually working
-       const testOscillator = audioContext.createOscillator()
-       const testGain = audioContext.createGain()
-       testGain.gain.value = 0.001 // Very quiet
-       testOscillator.connect(testGain).connect(audioContext.destination)
-       testOscillator.start()
-       testOscillator.stop(audioContext.currentTime + 0.01)
-
-       // If iOS and might be muted, warn user
-       if (this.isIOS() && audioContext.state === 'running') {
-         this.showSilentModeWarning()
-       }
-     }
-
-     private showSilentModeWarning() {
-       // Show UI: "Make sure silent mode is off"
-     }
-   }
-   ```
-
-2. **Document iOS silent mode behavior**:
-   - Add to troubleshooting guide
-   - Show icon/tooltip about silent mode requirements
-   - Provide test button to verify audio
-
-3. **iOS audio unlock workaround (already in ez-audio)**:
-   ```typescript
-   // GOOD: Already implemented
-   if (useIosMuteWorkaround && !iosWorkaroundPerformed) {
-     unmuteIosAudio(audioContext)
-     iosWorkaroundPerformed = true
-   }
-   ```
-
-**Detection:**
-- User reports of "no sound" only on iOS
-- Testing on iOS with silent mode enabled
-- No errors but audio doesn't play
-
-**Feature mapping:** Core initialization (already handled), debugging mode
-
-**Sources:**
-- [Web Audio API Update on iOS](https://adactio.medium.com/web-audio-api-update-on-ios-1e553fff7847)
-- [Perfect Web Audio on iOS](https://matt-harrison.com/posts/web-audio/)
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Parse musical time to seconds at definition time | Simple implementation | Tempo changes don't apply to queued events | Never — breaks live tempo control |
+| LFO connected directly to AudioParam (no GainNode scaler) | Less code | Depth units ambiguous; impossible to normalize across parameter types | Never |
+| Voice pool without release-end tracking | Simpler voice allocation | Clicks on voice steal; voices returned before release tail ends | Never |
+| GrainPlayer with main-thread grain scheduling at high density | No AudioWorklet required | Hard CPU limit; glitches above ~20 grains/sec | Acceptable at low density (<20/sec) with documented limit |
+| Global Transport as module-level singleton | Easy to share BPM everywhere | One transport per module, impossible to have two songs | Acceptable — matches Tone.js pattern; document it |
+| Built-in effects mutating existing connection chain directly | Less abstraction | Breaking change when chain structure changes | Never — always use Effect interface |
+| ConvolverNode created with buffer in constructor | Simple API | IR change mid-play causes audio thread glitch | Acceptable if IR is only set once |
 
 ---
 
-### Pitfall 12: Exponential Ramp to Zero Error
+## Integration Gotchas
 
-**What goes wrong:** Calling `exponentialRampToValueAtTime(0, time)` throws an error because exponential curves cannot reach zero (mathematical limitation).
+Common mistakes when connecting new features to the existing system.
 
-**Why it happens:**
-- Exponential functions asymptotically approach zero but never reach it
-- Web Audio API enforces this mathematically
-- Developers naturally want to "fade to silence" which is zero
-
-**Consequences:**
-- Runtime errors during fade-outs
-- Failed envelope releases
-- Crashes in production
-
-**Prevention:**
-1. **Use tiny value instead of zero**:
-   ```typescript
-   const ALMOST_ZERO = 0.0001 // -80dB, effectively silent
-
-   function fadeOut(gainParam: AudioParam, duration: number) {
-     const now = audioContext.currentTime
-     gainParam.setValueAtTime(gainParam.value, now)
-     gainParam.exponentialRampToValueAtTime(ALMOST_ZERO, now + duration)
-   }
-   ```
-
-2. **Validate ramp endpoints**:
-   ```typescript
-   function exponentialRamp(
-     param: AudioParam,
-     targetValue: number,
-     endTime: number
-   ) {
-     if (targetValue <= 0) {
-       throw new Error('Exponential ramp target must be > 0. Use 0.0001 for silence.')
-     }
-
-     if (param.value <= 0) {
-       param.setValueAtTime(0.0001, audioContext.currentTime)
-     }
-
-     param.exponentialRampToValueAtTime(targetValue, endTime)
-   }
-   ```
-
-3. **Document in ADSR envelope API**:
-   ```typescript
-   /**
-    * Release stage of ADSR envelope
-    * Note: Uses exponential ramp to near-zero (0.0001) not actual zero
-    */
-   release(duration: number) {
-     this.gainParam.exponentialRampToValueAtTime(0.0001, this.now + duration);
-   }
-   ```
-
-**Detection:**
-- Error: "exponentialRampToValueAtTime: target value must be positive"
-- Failed fade-outs
-- Envelope releases that throw errors
-
-**Feature mapping:** ADSR envelopes, crossfading, effects automation
-
-**Sources:**
-- [MDN AudioParam](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam)
-- [Web Audio Crossfading](http://alemangui.github.io/ramp-to-value)
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| BeatTrack + Transport | Calling `playBeats()` while Transport is also scheduling | `lockToTransport()` method must disable internal BeatTrack scheduler |
+| LFO + Oscillator | Connecting LFO to Oscillator's gain before calling `play()` | LFO must connect after `play()` since `setup()` creates a new GainNode each play |
+| PolySynth + Envelope | Sharing one Envelope instance across all voices | Each voice needs its own Envelope instance (Envelope is stateful) |
+| Built-in effects + `wrapEffect()` | Wrapping a built-in effect in EffectWrapper (double-wrapping) | Built-in effects already implement `Effect` interface — use directly |
+| Sequencer + BeatTrack | Using both simultaneously for different tracks | Fine, but both must lock to same Transport for sync |
+| GrainPlayer + Sound | Attempting to use Sound's `play()` for each grain | Grain playback must bypass Sound abstraction — use AudioBufferSourceNode directly |
+| Transport + `audioContextAwareTimeout` | Using `window.setTimeout` in Transport scheduler | Must use existing `audioContextAwareTimeout` for consistency |
 
 ---
 
-### Pitfall 13: Preloading Without User Gesture
+## Performance Traps
 
-**What goes wrong:** Calling `audioContext.decodeAudioData()` before user interaction causes the AudioContext to start in 'suspended' state, and preloaded buffers don't play until context is resumed.
+Patterns that work at small scale but fail as usage grows.
 
-**Why it happens:**
-- Browser autoplay policies require user gesture to create/resume AudioContext
-- AudioContext is created in 'suspended' state if not triggered by user gesture
-- Buffers decode successfully but can't be played
-
-**Consequences:**
-- Preloaded sounds don't play on first interaction
-- Users click and nothing happens
-- Confusing error: context state is 'suspended'
-
-**Prevention:**
-1. **Preload after initial user gesture**:
-   ```typescript
-   class Preloader {
-     private preloadTriggered = false
-
-     async init() {
-       // Wait for user gesture
-       document.addEventListener('click', async () => {
-         if (!this.preloadTriggered) {
-           this.preloadTriggered = true
-           await this.preloadAllSounds()
-         }
-       }, { once: true })
-     }
-   }
-   ```
-
-2. **Resume context before playing preloaded sounds**:
-   ```typescript
-   async playPreloadedSound(soundId: string) {
-     await audioContext.resume(); // Ensure context is running
-     const sound = this.preloadedSounds.get(soundId);
-     sound.play();
-   }
-   ```
-
-3. **Show loading indicator during decode**:
-   ```typescript
-   async preloadSound(url: string): Promise<AudioBuffer> {
-     this.showLoadingIndicator();
-     const response = await fetch(url);
-     const arrayBuffer = await response.arrayBuffer();
-
-     // This is fast but not instant for large files
-     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-     this.hideLoadingIndicator();
-     return audioBuffer;
-   }
-   ```
-
-**Detection:**
-- Sounds don't play after preloading
-- Console shows context state: 'suspended'
-- First play() call does nothing
-
-**Feature mapping:** Preloading API, audio sprites initialization
-
-**Sources:**
-- [MDN Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| New AudioNode per grain in GrainPlayer | UI freezes, audio dropout | Limit grain density; document max safe density | >20 grains/sec on mobile, >50 on desktop |
+| LFO connecting to AudioParam without depthGain node | Inaudible or extreme modulation | Always use intermediate GainNode for scaling | Immediately (wrong values from day 1) |
+| AudioParam event accumulation in Transport (scheduling many envelopes) | Performance degrades after hours of continuous play | `cancelScheduledValues()` before each rescheduling; node recreation at threshold | >1000 events/node (varies by browser) |
+| ConvolverNode with long IR (3+ seconds) | Audio dropout on IR assignment | Set buffer before connecting node to graph | IR > ~1 second stereo on mobile |
+| Many PolySynth voices with complex effects chains | CPU overload | Limit voice count; document recommended maximums | 16+ voices on mobile; 32+ on desktop |
+| Transport scheduler without WebWorker | Tab throttling in background | Document limitation; detect visibility; handle gracefully | Immediately on tab switch |
 
 ---
 
-## Feature-Specific Pitfall Mapping
+## "Looks Done But Isn't" Checklist
 
-| Feature | Critical Pitfalls | Moderate Pitfalls | Minor Pitfalls |
-|---------|-------------------|-------------------|----------------|
-| ADSR Envelopes | #1 Retriggering, #3 Event Accumulation, #5 Direct Assignment | - | #12 Exponential Zero |
-| Event System | #2 Timer Desync | - | - |
-| Audio Visualization | - | #6 FFT Performance | - |
-| Audio Sprites | #4 Source Reuse | #7 Memory Leaks | #13 Preload Timing |
-| Effects Presets | #5 Direct Assignment | #8 Connection Order | - |
-| Crossfading | #5 Direct Assignment | #9 Volume Curve | - |
-| LayeredSound | #1 Retriggering, #4 Source Reuse | #7 Memory Leaks | - |
-| Debug Mode | - | #6 FFT, #7 Memory | #11 iOS Silent |
-| Preloading API | - | #7 Memory Leaks | #13 Preload Timing |
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Transport:** Often missing visibility-change handling — verify background tab behavior (beats stop or burst)
+- [ ] **LFO:** Often missing disposal tracking — verify LFO nodes are stopped when attached Sound is disposed
+- [ ] **LFO:** Often missing depth normalization — verify depth=0.5 sounds like "half effect" regardless of parameter type
+- [ ] **PolySynth:** Often missing release-end tracking — verify no click when a voice is stolen mid-release
+- [ ] **PolySynth:** Often missing voice limit enforcement — verify graceful behavior (silence, not crash) when all voices busy
+- [ ] **GrainPlayer:** Often missing grain cleanup — verify `source.onended` disconnects grain nodes (memory leak if not)
+- [ ] **GrainPlayer:** Often missing position bounds — verify playback position wraps at end of buffer (or loops, or stops)
+- [ ] **Built-in Delay:** Often missing feedback disconnect on dispose — verify feedback GainNode is disconnected from DelayNode
+- [ ] **Built-in Reverb:** Often missing IR buffer cleanup — verify AudioBuffer is dereferenced on dispose
+- [ ] **Sequencer:** Often missing reschedule on BPM change — verify events already in lookahead window are re-timed
+- [ ] **Transport + BeatTrack:** Often missing lockToTransport call — verify BeatTrack internal scheduler disabled when Transport takes over
 
 ---
 
-## Detection Checklist for QA
+## Recovery Strategies
 
-When testing new features, check for these warning signs:
+When pitfalls occur despite prevention.
 
-**Audio Quality Issues:**
-- [ ] Clicks or pops during playback (Pitfall #1, #5)
-- [ ] Volume dips during transitions (Pitfall #9)
-- [ ] Audio dropouts or glitches (Pitfall #3, #10)
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Transport fights BeatTrack scheduler (double-fire beats) | MEDIUM | Add `lockToTransport()` method; BeatTrack internal scheduler becomes no-op when locked |
+| LFO leak discovered late | MEDIUM | Add `attachLFO()` to BaseSound; `dispose()` calls `lfo.dispose()`; retroactive fix is additive not breaking |
+| PolySynth voice stealing clicks | LOW | Add `releaseEndTime` tracking to voice pool; tighten voice allocation logic |
+| Musical time parsed at wrong point | HIGH | Requires Sequencer redesign — events must store beat offsets, not absolute seconds |
+| GrainPlayer performance problems on mobile | LOW | Reduce `maxGrainDensity` limit; document the constraint |
+| Built-in effect breaks connection chain | LOW | Verify effect exposes correct `input`/`output` nodes; add tests per effect |
+| ConvolverNode IR glitch on load | LOW | Ensure buffer is set before connecting node; add note to factory function docs |
 
-**Timing Issues:**
-- [ ] Events drift out of sync over time (Pitfall #2)
-- [ ] Beats sound "sloppy" or rushed/dragged (Pitfall #2)
+---
 
-**Performance Issues:**
-- [ ] Frame rate drops during visualization (Pitfall #6)
-- [ ] Performance degrades over extended use (Pitfall #3, #7)
-- [ ] Memory usage grows continuously (Pitfall #7)
+## Pitfall-to-Phase Mapping
 
-**Silent Failures:**
-- [ ] Audio stops working after many play() calls (Pitfall #4)
-- [ ] Controls don't affect sound (Pitfall #5)
-- [ ] Complete silence with no errors (Pitfall #8, #11)
+How roadmap phases should address these pitfalls.
 
-**Mobile-Specific:**
-- [ ] App works on desktop but not iOS (Pitfall #11)
-- [ ] Browser force-refreshes after heavy use (Pitfall #7)
-- [ ] "Too many AudioContexts" error (Pitfall #10)
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Transport vs. BeatTrack scheduler conflict | Transport/Clock phase | Test: create BeatTrack, lock to Transport, verify only one scheduler fires |
+| Transport resume catch-up burst | Transport/Clock phase | Test: pause for 5 seconds, resume, verify no burst |
+| LFO connected to dead AudioParam | LFO phase | Test: create Sound with LFO, dispose Sound, verify LFO oscillator is stopped |
+| PolySynth voice leak / steal click | PolySynth phase | Test: play 20 rapid notes with 4-voice polyphony, verify no clicks or leaks |
+| Effects breaking connection chain | Effects phase | Test: each effect with bypass toggle; verify routing before and after |
+| ConvolverNode IR glitch | Effects phase (Reverb) | Test: load reverb with audio playing, verify no dropout |
+| Musical time parsed at wrong BPM | Sequencer phase | Test: schedule events, change BPM mid-sequence, verify new BPM applies |
+| GrainPlayer main-thread overload | GrainPlayer phase | Test: 25 grains/sec on mobile device; measure frame rate and CPU |
+| LFO depth unit ambiguity | LFO phase | Test: depth=0.5 on gain and frequency both produce perceptually similar "half modulation" |
+| Tab backgrounding drift | Transport/Clock phase | Test: play sequence, background tab for 5 seconds, return, verify timing |
 
 ---
 
 ## Sources
 
-**Official Documentation (HIGH confidence):**
+**Official (HIGH confidence):**
 - [MDN Web Audio API Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
 - [Web Audio Performance and Debugging Notes](https://padenot.github.io/web-audio-perf/)
+- [MDN ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode)
 - [MDN AudioParam](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam)
-- [MDN AudioBufferSourceNode](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode)
 
-**Community Resources (MEDIUM-HIGH confidence):**
-- [Web Audio ADSR Envelope Issue](https://github.com/WebAudio/web-audio-api/issues/510)
-- [Fastidious Envelope Generator](https://github.com/rsimmons/fastidious-envelope-generator)
-- [Web Audio Timing Tutorial](https://catarak.github.io/blog/2014/12/02/web-audio-timing-tutorial/)
-- [Understanding Web Audio Clock](https://sonoport.github.io/web-audio-clock.html)
-- [Web Audio: The Ugly Click](http://alemangui.github.io/ramp-to-value)
-- [Perfect Web Audio on iOS](https://matt-harrison.com/posts/web-audio/)
+**Community (MEDIUM-HIGH confidence):**
+- [A Tale of Two Clocks — Chris Wilson (web.dev)](https://web.dev/audio-scheduling/)
+- [Tone.js Transport Wiki](https://github.com/Tonejs/Tone.js/wiki/Transport)
+- [Tone.js Transport: Multiple Timelines Issue](https://github.com/Tonejs/Tone.js/issues/108)
+- [Tone.js Sequence Re-schedule Bug](https://github.com/Tonejs/Tone.js/issues/936)
+- [AudioWorklet Disaster Issue Thread](https://github.com/WebAudio/web-audio-api/issues/2632)
+- [AudioWorklet Performance Pitfall (Case Study)](https://cprimozic.net/blog/webaudio-audioworklet-optimization/)
+- [Web Audio API — Things I Learned the Hard Way](https://blog.szynalski.com/2014/04/web-audio-api/)
+- [Reverb with Web Audio API](https://blog.gskinner.com/archives/2019/02/reverb-web-audio-api.html)
 
-**Issue Trackers (MEDIUM confidence):**
-- [Phaser Memory Leak Issue](https://github.com/photonstorm/phaser/issues/5224)
-- [Web Audio API Issues](https://github.com/WebAudio/web-audio-api/issues)
+**EZ Audio Source (HIGH confidence — actual codebase):**
+- `src/beat-track.ts` — BeatTrack scheduler implementation and backgrounding comment
+- `src/oscillator.ts` — single-use OscillatorNode pattern; voice lifecycle
+- `src/envelope.ts` — ADSR retriggering; cancelAndHoldAtTime usage
+- `src/effects/effect-wrapper.ts` — Effect interface; wet/dry routing pattern
+
+---
+
+*Pitfalls research for: Effects & Transport milestone — EZ Web Audio*
+*Researched: 2026-02-28*

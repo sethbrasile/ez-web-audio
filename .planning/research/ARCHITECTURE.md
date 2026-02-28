@@ -1,1367 +1,703 @@
-# Architecture Patterns for New Features
+# Architecture Patterns: Effects & Transport Milestone
 
 **Project:** EZ Web Audio
-**Research Date:** 2026-01-31
-**Confidence:** HIGH
-
-## Executive Summary
-
-Based on analysis of Tone.js, Howler.js, and Web Audio API patterns, the following architecture integrations are recommended:
-
-1. **LayeredSound**: Composite pattern with voice pooling (similar to Tone.js PolySynth)
-2. **ADSR Envelopes**: Separate envelope classes that connect to controllers (Tone.js pattern)
-3. **Event System**: Custom EventTarget implementation with typed events (Howler.js pattern)
-4. **Effects Presets**: Factory pattern with builder API for fluent configuration
-
-All patterns integrate cleanly with existing BaseSound/Controller architecture without breaking changes.
+**Researched:** 2026-02-28
+**Confidence:** HIGH (Web Audio API is stable; patterns verified against MDN and existing codebase)
 
 ---
 
-## Current Architecture Analysis
+## Current Architecture Baseline
 
-### Existing Structure
+Before documenting new components, a precise picture of what exists is essential for identifying integration points.
+
+### Class Hierarchy
 
 ```
-BaseSound (abstract)
+BaseSound (abstract, extends TypedEventEmitter)
 ├── implements: Playable, Connectable
-├── owns: GainNode, StereoPannerNode
-├── owns: Controller (SoundController or OscillatorController)
-├── defines: connections[] for effect chain
-└── abstract: audioSourceNode, setup(), wireConnections()
+├── owns: GainNode, StereoPannerNode, effectChainInput (GainNode)
+├── owns: Controller (abstract, set by subclass)
+├── owns: Effect[] (persistent effect chain)
+├── owns: Analyzer | null (visualization, inserted after pannerNode)
+├── audio chain: audioSourceNode → [oscillator filters] → effectChainInput
+│              → [effects] → gainNode → pannerNode → [analyzer] → destination
+├── abstract: audioSourceNode, setup(), wireConnections(), duration, durationRaw
+└── concrete: play/stop/pause variants, addEffect/removeEffect, onPlaySet/onPlayRamp, fadeIn/fadeOut
 
-Controller Pattern
-├── BaseParamController (base class)
-├── SoundController (for AudioBufferSourceNode)
-└── OscillatorController (for OscillatorNode)
+Sound extends BaseSound
+Track extends Sound           (adds position tracking, pause/resume, seek)
+Oscillator extends BaseSound  (adds OscillatorNode, ADSR envelope, BiquadFilter chain)
+SampledNote extends MusicallyAware(Sound)
 
-Controllers manage:
-- Immediate updates (update().to().from())
-- Scheduled values (onPlaySet().to().at())
-- Ramps (onPlayRamp().from().to().in())
+Sampler                       (round-robin Sound pool, NOT extending BaseSound)
+BeatTrack extends Sampler     (adds Beat[], lookahead scheduler, tempo, events)
 ```
 
-### Key Strengths
+### Controller Architecture
 
-1. **Clean separation**: Audio nodes (BaseSound) vs parameter automation (Controllers)
-2. **Flexible routing**: `connections[]` array allows arbitrary effect insertion
-3. **Fluent API**: Chainable methods for parameter control
-4. **Single responsibility**: Each class has focused purpose
+```
+BaseParamController
+├── owns: AudioSource (OscillatorNode | AudioBufferSourceNode), GainNode, StereoPannerNode
+├── queues: startingValues[], valuesAtTime[], exponentialValues[], linearValues[]
+├── api: update(type).to(value).as(unit)
+│        onPlaySet(type).to(value).at(time) or .endingAt(time, rampType)
+│        onPlayRamp(type, rampType).from(start).to(end).in(duration)
+└── clearScheduledValues() — called after each play()
 
-### Integration Points
+SoundController extends BaseParamController   (gain, pan, detune)
+OscillatorController extends BaseParamController  (gain, pan, detune, frequency)
+    └── also owns: triggerRelease(time), setEnvelope(envelope)
+```
 
-For new features to integrate properly, they must respect:
+### Effects System
 
-1. **The controller owns all parameter scheduling** - don't bypass controllers
-2. **wireConnections() establishes the signal flow** - effects must wire through this
-3. **setup() is called on every play** - state must be reestablished each time
-4. **AudioBufferSourceNode is disposable** - new node created per play
+```
+Effect interface: { input: AudioNode, output: AudioNode, bypass: boolean, mix: number }
+
+FilterEffect implements Effect    (BiquadFilterNode + wet/dry routing)
+GainEffect implements Effect      (GainNode + wet/dry routing)
+EffectWrapper implements Effect   (wraps external effects like Tuna.js)
+
+Factory functions: createFilterEffect(type, opts), createGainEffect(gain), wrapEffect(effect)
+```
+
+### BeatTrack Scheduling
+
+```
+BeatTrack.playActiveBeats(bpm, noteType):
+  - Sets up lookahead scheduler (scheduleAheadTime=100ms, interval=25ms)
+  - Each tick: while (nextBeatTime < audioCtx.currentTime + 0.1) scheduleBeat(index, time)
+  - Uses audioContextAwareTimeout for beat events
+  - Per-track BPM: no global clock, each BeatTrack has its own tempo
+```
+
+### ControlTypeMap (Extensibility Hook)
+
+```typescript
+// Users can augment this for custom parameter types
+interface ControlTypeMap {
+  frequency: 'frequency'
+  gain: 'gain'
+  detune: 'detune'
+  pan: 'pan'
+}
+```
 
 ---
 
-## Pattern 1: LayeredSound (Composite Pattern)
+## Feature Integration Analysis
 
-### Overview
+### Feature 1: Built-in Effects (Delay, Reverb, Distortion, Chorus, Compressor, Limiter, EQ)
 
-LayeredSound allows multiple sounds to play simultaneously as a single logical unit. Think: piano sample with 3 velocity layers, or drum kit with multiple mic positions.
+**Web Audio nodes available:**
+- `DelayNode` — feedforward delay
+- `ConvolverNode` — convolution reverb (requires impulse response buffer)
+- `WaveShaperNode` — waveshaper distortion
+- `DynamicsCompressorNode` — compressor and limiter (threshold controls limiter mode)
+- `BiquadFilterNode` — EQ bands (already used in FilterEffect)
 
-### Architecture from Other Libraries
+**Integration point:** The `Effect` interface already defines the contract. Built-in effects are new classes implementing it, identical in structure to `FilterEffect`.
 
-**Tone.js PolySynth**: "Manages voices of one of the other types of synths, allowing any of the monophonic synthesizers to be polyphonic." ([Tone.js PolySynth](https://tonejs.github.io/docs/15.1.22/classes/PolySynth.html))
+**New components needed:**
 
-Key insights:
-- PolySynth is NOT a synthesizer itself, it's a voice manager
-- Accepts any monophonic synth as a parameter
-- Handles voice allocation and note tracking
-- Has `maxPolyphony` limit and `activeVoices` counter
+```
+src/effects/
+├── delay-effect.ts       (DelayNode + GainNode feedback loop + wet/dry)
+├── reverb-effect.ts      (ConvolverNode + IR buffer generation/loading + wet/dry)
+├── distortion-effect.ts  (WaveShaperNode + curve generation + wet/dry)
+├── chorus-effect.ts      (DelayNode + LFO modulation + wet/dry)
+├── compressor-effect.ts  (DynamicsCompressorNode + wet/dry)
+├── eq-effect.ts          (3-band or parametric BiquadFilterNode chain)
+└── index.ts              (re-export all)
+```
 
-**Web Audio API Pattern**: "AudioBuffers can be reused across plays, making it efficient to create multiple source nodes." ([AudioBufferSourceNode - MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode))
+**Existing components modified:**
+- `src/effects/index.ts` — add exports for new effect classes and factory functions
+- `src/index.ts` — export new factory functions (`createDelayEffect`, `createReverbEffect`, etc.)
 
-Key insight: Create multiple AudioBufferSourceNodes from same buffer, connect all to same destination - Web Audio API naturally mixes them.
-
-### Recommended Implementation
-
-**Option A: Composition Over Inheritance (RECOMMENDED)**
-
+**Pattern to follow (from FilterEffect):**
 ```typescript
-class LayeredSound implements Playable, Connectable {
-  private layers: Sound[] // or (Playable & Connectable)[]
-  private masterGainNode: GainNode
-  private masterPannerNode: StereoPannerNode
-  private controller: SoundController // manages master gain/pan
-
-  // Delegate Playable methods to all layers
-  async play(): Promise<void> {
-    await Promise.all(this.layers.map(layer => layer.play()))
-  }
-
-  // Implement Connectable by routing through master nodes
-  public connections: Connection[] = []
-
-  // Wire layers → masterGain → masterPanner → connections → destination
-  private wireConnections(): void {
-    this.layers.forEach((layer) => {
-      layer.connect(this.masterGainNode)
-    })
-    // Then wire master nodes through connections array
-  }
+class DelayEffect implements Effect {
+  private delayNode: DelayNode
+  private feedbackNode: GainNode
+  private inputNode: GainNode
+  private outputNode: GainNode
+  private dryGain: GainNode
+  private wetGain: GainNode
+  // Routing: input → delayNode → feedbackNode → delayNode (loop)
+  //          input → dryGain → output
+  //          delayNode → wetGain → output
 }
 ```
 
-**Why this works:**
-- Reuses existing Sound/Oscillator/SampledNote classes
-- Layers maintain individual controllers (per-layer gain/pan/detune)
-- Master controller manages composite gain/pan
-- Each layer can have different start offsets, loop points, etc.
-- No BaseSound inheritance needed (composition is cleaner here)
+**Reverb special case — two implementation approaches:**
+1. Algorithmic (no external file): Compute impulse response buffer in code using white noise + exponential decay. Self-contained, no network request required.
+2. ConvolverNode with IR file: Load an impulse response audio file. Better quality, requires async loading.
+Recommendation: algorithmic for the built-in `ReverbEffect`, expose the `ConvolverNode` via `createEffect()` escape hatch for users who want real IRs.
 
-**Option B: Extend BaseSound**
+**Chorus requires LFO:** This creates a build dependency. Chorus can either be implemented standalone (inline LFO oscillator, not the public LFO class) or after the LFO is built. Standalone is cleaner for this phase since chorus is a black box.
 
-```typescript
-class LayeredSound extends BaseSound {
-  private layers: AudioBuffer[]
-  private layerNodes: AudioBufferSourceNode[] = []
-
-  protected setup(): void {
-    // Create multiple AudioBufferSourceNodes
-    this.layerNodes = this.layers.map((buffer) => {
-      const node = this.audioContext.createBufferSource()
-      node.buffer = buffer
-      return node
-    })
-    this.wireConnections()
-  }
-
-  protected wireConnections(): void {
-    // Connect all layer nodes to same gain node
-    this.layerNodes.forEach((node) => {
-      node.connect(this.gainNode)
-    })
-    // Then continue normal connection chain
-  }
-
-  // audioSourceNode returns a "dummy" or merged node
-  public get audioSourceNode(): AudioBufferSourceNode {
-    return this.layerNodes[0] // primary layer for API compatibility
-  }
-}
-```
-
-**Why this could work:**
-- Fits existing BaseSound pattern
-- Inherits all Playable/Connectable methods
-- Controller works normally (operates on gainNode)
-
-**Why this is problematic:**
-- Multiple audioSourceNodes breaks BaseSound assumptions
-- Controller expects single source node
-- Harder to apply per-layer processing
-
-**RECOMMENDATION: Use Option A (Composition)**
-
-Composition provides:
-- Clearer separation of concerns
-- Easier to add layer-specific features later
-- Avoids breaking BaseSound abstractions
-- More flexible for future enhancements (layer muting, soloing, etc.)
-
-### Data Flow
-
-```
-Layer 1 (Sound) → gainNode[1] → pannerNode[1] ─┐
-Layer 2 (Sound) → gainNode[2] → pannerNode[2] ─┼→ masterGainNode → masterPannerNode → [connections] → destination
-Layer 3 (Sound) → gainNode[3] → pannerNode[3] ─┘
-```
-
-### Integration Checklist
-
-- [ ] LayeredSound implements Playable & Connectable
-- [ ] Master controller manages composite parameters
-- [ ] Individual layers maintain their own controllers
-- [ ] Supports all play methods (play, playAt, playIn, stop, etc.)
-- [ ] Duration returns longest layer's duration
-- [ ] isPlaying is true if ANY layer is playing
+**Confidence:** HIGH — all required Web Audio nodes are well-specified and stable.
 
 ---
 
-## Pattern 2: ADSR Envelope
+### Feature 2: LFO (Low-Frequency Oscillator)
 
-### Overview
+**Web Audio pattern:** An `OscillatorNode` with low frequency (< 20Hz) connected directly to an `AudioParam` instead of to an audio output. The oscillator's output amplitude becomes a modulation signal. A `GainNode` scales the modulation depth.
 
-ADSR envelopes automate parameter changes over time (attack, decay, sustain, release). Commonly used for gain (amplitude envelope) but can apply to any parameter (filter frequency, detune, etc.).
-
-### Architecture from Other Libraries
-
-**Tone.js Envelope**: "The basic envelope type just outputs a signal in the range of 0-1. This node has only an output and no input." ([Tone.js Envelope Wiki](https://github.com/Tonejs/Tone.js/wiki/Envelope))
-
-Three types:
-1. **Tone.Envelope** - outputs 0-1 signal
-2. **Tone.AmplitudeEnvelope** - combines Envelope with GainNode to scale audio
-3. **Tone.ScaledEnvelope** - configurable min/max range
-
-**Web Audio API Pattern**: "setTargetAtTime() method schedules gradual changes to AudioParam values and is useful for decay or release portions of ADSR envelopes." ([AudioParam.setTargetAtTime - MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/setTargetAtTime))
-
-Key methods for envelope automation:
-- `setValueAtTime()` - instant change
-- `linearRampToValueAtTime()` - linear slope
-- `exponentialRampToValueAtTime()` - exponential curve
-- `setTargetAtTime()` - asymptotic approach (decay/release)
-- `setValueCurveAtTime()` - custom curves
-
-**Common Implementation Pattern**:
-
-```javascript
-// Attack
-gainNode.gain.setValueAtTime(0, t_pressed)
-gainNode.gain.linearRampToValueAtTime(volume, t_pressed + attackDuration)
-
-// Decay to sustain
-gainNode.gain.setTargetAtTime(sustainLevel * volume, t_pressed + attackDuration, decayDuration)
-
-// Release
-gainNode.gain.cancelScheduledValues(t_released)
-gainNode.gain.setValueAtTime(gainNode.gain.value, t_released)
-gainNode.gain.linearRampToValueAtTime(0, t_released + releaseDuration)
+```
+OscillatorNode (LFO, e.g. 5Hz sine)
+    ↓ connect(depthGain.gain)  ← NO, this is wrong
+depthGain (GainNode, depth e.g. 0.3)
+    ↓ connect(targetParam)     ← target AudioParam (e.g. filterNode.frequency)
 ```
 
-([Digital Piano with Web Audio API - ADSR](https://www.leafwindow.com/en/digital-piano-with-web-audio-api-5-en/))
+Correct pattern:
+```
+OscillatorNode (LFO)
+    ↓ connect(depthGain)
+depthGain (GainNode, depth=0.3)
+    ↓ connect(targetParam)   ← AudioParam.connect(), not AudioNode.connect()
+```
 
-### Recommended Implementation
+**What the LFO class needs to do:**
+- Own an `OscillatorNode` (the carrier) and a `GainNode` (depth scaler)
+- Expose `connect(target: AudioParam)` to modulate any parameter
+- Expose `disconnect(target: AudioParam)` to stop modulation
+- Expose `rate` (frequency), `depth` (modulation amount), `type` (waveform)
+- Allow connecting to multiple params simultaneously (fan-out)
+- Start/stop the internal oscillator
 
-**Separate Envelope Classes (Tone.js pattern)**
+**New components needed:**
 
+```
+src/lfo.ts          (LFO class + createLFO factory)
+```
+
+**LFO class design:**
 ```typescript
-interface EnvelopeConfig {
-  attack: number // seconds
-  decay: number // seconds
-  sustain: number // 0-1 ratio
-  release: number // seconds
-  attackCurve?: 'linear' | 'exponential'
-  releaseCurve?: 'linear' | 'exponential'
+export class LFO {
+  private oscNode: OscillatorNode
+  private depthNode: GainNode
+  private _running = false
+
+  constructor(audioContext: AudioContext, options?: LFOOptions) { ... }
+
+  get rate(): number          // Hz
+  set rate(hz: number)
+  get depth(): number         // modulation amount (0–1 typical)
+  set depth(value: number)
+  get type(): OscillatorType
+
+  connect(target: AudioParam): this
+  disconnect(target?: AudioParam): this
+  start(): this
+  stop(): this
+  dispose(): void
 }
 
-class Envelope {
-  constructor(private config: EnvelopeConfig) {}
-
-  // Apply envelope to an AudioParam
-  applyTo(param: AudioParam, startTime: number, releaseTime?: number): void {
-    const { attack, decay, sustain, release } = this.config
-
-    // Attack
-    param.setValueAtTime(0, startTime)
-    if (this.config.attackCurve === 'exponential') {
-      param.exponentialRampToValueAtTime(1, startTime + attack)
-    }
-    else {
-      param.linearRampToValueAtTime(1, startTime + attack)
-    }
-
-    // Decay to sustain
-    const decayStart = startTime + attack
-    param.setTargetAtTime(sustain, decayStart, decay / 5) // tau = decay/5 for ~99% completion
-
-    // Release (if time provided)
-    if (releaseTime !== undefined) {
-      param.cancelScheduledValues(releaseTime)
-      param.setValueAtTime(param.value, releaseTime)
-      if (this.config.releaseCurve === 'exponential') {
-        param.exponentialRampToValueAtTime(0.001, releaseTime + release) // 0.001 instead of 0 for exp
-      }
-      else {
-        param.linearRampToValueAtTime(0, releaseTime + release)
-      }
-    }
-  }
-}
-
-class AmplitudeEnvelope extends Envelope {
-  // Convenience wrapper for gain automation
-  applyToGainNode(gainNode: GainNode, startTime: number, releaseTime?: number): void {
-    this.applyTo(gainNode.gain, startTime, releaseTime)
-  }
+export interface LFOOptions {
+  rate?: number       // Hz, default 1
+  depth?: number      // modulation depth, default 0.5
+  type?: OscillatorType  // default 'sine'
 }
 ```
 
-### Integration with Controllers
+**Integration with existing effects:** After LFO exists, chorus and auto-filter/vibrato/tremolo can be built by connecting the LFO to the relevant parameters. The `LFO` is a standalone utility — it does NOT extend `BaseSound` because it does not produce audible signal and has no gain/pan chain.
 
-**Option 1: Envelope as Controller Extension (RECOMMENDED)**
+**Important constraint:** The LFO's `OscillatorNode` is single-use (Web Audio spec). Like `Oscillator.setup()`, the LFO must create a new `OscillatorNode` on each `start()` call.
 
-Add envelope methods to BaseParamController:
+**Existing components modified:**
+- `src/index.ts` — export `LFO`, `createLFO`, `LFOOptions`
 
-```typescript
-interface EnvelopeConfig { /* as above */ }
-
-class BaseParamController {
-  // Existing methods...
-
-  public applyEnvelope(type: ControlType, envelope: EnvelopeConfig): {
-    at: (startTime: number) => {
-      releasing: (releaseTime: number) => void
-    }
-  } {
-    return {
-      at: (startTime: number) => {
-        return {
-          releasing: (releaseTime: number) => {
-            const param = this.getAudioParam(type) // gain, detune, etc.
-            const env = new Envelope(envelope)
-            env.applyTo(param, startTime, releaseTime)
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-Usage:
-```typescript
-const adsr = { attack: 0.1, decay: 0.2, sustain: 0.7, release: 0.5 }
-sound.controller.applyEnvelope('gain', adsr)
-  .at(audioContext.currentTime)
-  .releasing(audioContext.currentTime + 1.0)
-```
-
-**Option 2: Standalone Envelope Classes**
-
-Keep envelopes separate, apply them manually:
-
-```typescript
-const env = new AmplitudeEnvelope({ attack: 0.1, decay: 0.2, sustain: 0.7, release: 0.5 })
-env.applyToGainNode(sound.gainNode, audioContext.currentTime, releaseTime)
-```
-
-**RECOMMENDATION: Option 1 (Controller Extension)**
-
-Reasons:
-- Maintains fluent API consistency
-- Controller remains single source of truth for parameter automation
-- Easier to integrate with onPlaySet/onPlayRamp patterns
-- Envelopes become first-class citizens in the API
-
-### Where in Controller Hierarchy?
-
-Add to **BaseParamController** because:
-- All controllers share gain/pan parameters (common ADSR targets)
-- Keeps envelope logic DRY across SoundController and OscillatorController
-- Frequency/detune envelopes can be added to specific controllers as needed
-
-### Data Flow
-
-```
-User calls: sound.controller.applyEnvelope('gain', adsr)
-            ↓
-Controller stores envelope config in new array: this.envelopes[]
-            ↓
-On playAt(): controller.setValuesAtTimes() applies all envelopes
-            ↓
-Envelope.applyTo() calls AudioParam methods (setValueAtTime, linearRamp, etc.)
-            ↓
-GainNode.gain.value changes over time automatically
-            ↓
-Audio amplitude follows ADSR curve
-```
-
-### Integration Checklist
-
-- [ ] Envelope class with applyTo(param, startTime, releaseTime)
-- [ ] AmplitudeEnvelope convenience wrapper
-- [ ] BaseParamController.applyEnvelope() method
-- [ ] Controller tracks envelopes and applies on playAt()
-- [ ] Support for attack/release curves (linear, exponential)
-- [ ] Proper tau calculation for setTargetAtTime()
+**Confidence:** HIGH — pattern is directly from Web Audio spec and MDN.
 
 ---
 
-## Pattern 3: Event System
+### Feature 3: Transport / Clock
 
-### Overview
+**The problem:** Each `BeatTrack` has its own internal `currentTempo` and its own lookahead scheduler. Two `BeatTrack`s cannot stay perfectly synchronized over time because their schedulers fire independently via `window.setTimeout`, which has variable jitter. A shared clock fixes this.
 
-Event system allows users to react to audio lifecycle changes (load, play, stop, end, error) and custom events.
+**Architecture decision:** A global Transport singleton that multiple playable entities subscribe to. This is additive — existing `BeatTrack.playActiveBeats(bpm, noteType)` continues to work unchanged. The Transport is opt-in.
 
-### Architecture from Other Libraries
+**What the Transport needs:**
+- A single lookahead scheduler loop (shared `window.setTimeout`)
+- A reference BPM and musical time position (bar, beat, tick)
+- Subscriber registration: entities register callbacks that fire at musical time positions
+- `play()`, `pause()`, `stop()`, `setBPM(bpm)`, `setTimeSignature(num, denom)` controls
+- Emit `tick` events for UI synchronization (current beat position)
 
-**Howler.js Event System**: Implements observer pattern through `on()` and `once()` methods. ([Howler.js GitHub](https://github.com/goldfire/howler.js))
-
-Available events:
-- Load: "load", "loaderror"
-- Playback: "play", "playerror", "end"
-- State: "pause", "stop", "resume"
-
-Key characteristics:
-- Instance-level events (per Howl object)
-- Sound ID-level tracking (multiple plays of same sound)
-- Callbacks receive contextual info (sound ID, error codes)
-
-**Web Audio API EventTarget**: "AudioNodes are EventTargets as described in DOM... an AudioContext can be a target of events, therefore it implements the EventTarget interface." ([Web Audio API Spec](https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html))
-
-Built-in events:
-- `ended` event on AudioScheduledSourceNode
-- `statechange` event on AudioContext
-
-Note: "The Web Audio API doesn't support any sort of time-based event dispatch in the main thread for some AudioContext time in the future." ([WebAudio/web-audio-api Issue #473](https://github.com/WebAudio/web-audio-api/issues/473))
-
-**EventTarget Pattern**: JavaScript native pattern using `addEventListener`, `removeEventListener`, `dispatchEvent`.
-
-### Recommended Implementation
-
-**Option 1: Extend EventTarget (RECOMMENDED)**
-
-```typescript
-// Define typed events
-interface BaseSoundEventMap {
-  play: CustomEvent<{ time: number }>
-  stop: CustomEvent<{ time: number }>
-  end: CustomEvent<{ duration: number }>
-  pause: CustomEvent<{ position: number }>
-  resume: CustomEvent<{ position: number }>
-  load: CustomEvent<{ buffer: AudioBuffer }>
-  error: CustomEvent<{ error: Error, type: 'load' | 'play' }>
-}
-
-// Extend BaseSound to inherit from EventTarget
-export abstract class BaseSound extends EventTarget implements Connectable, Playable {
-  // Existing properties...
-
-  // Typed event methods
-  public on<K extends keyof BaseSoundEventMap>(
-    type: K,
-    listener: (event: BaseSoundEventMap[K]) => void,
-    options?: AddEventListenerOptions
-  ): this {
-    this.addEventListener(type, listener as EventListener, options)
-    return this
-  }
-
-  public once<K extends keyof BaseSoundEventMap>(
-    type: K,
-    listener: (event: BaseSoundEventMap[K]) => void
-  ): this {
-    this.addEventListener(type, listener as EventListener, { once: true })
-    return this
-  }
-
-  public off<K extends keyof BaseSoundEventMap>(
-    type: K,
-    listener: (event: BaseSoundEventMap[K]) => void
-  ): this {
-    this.removeEventListener(type, listener as EventListener)
-    return this
-  }
-
-  // Emit helper (internal use)
-  protected emit<K extends keyof BaseSoundEventMap>(
-    type: K,
-    detail: BaseSoundEventMap[K]['detail']
-  ): void {
-    this.dispatchEvent(new CustomEvent(type, { detail }))
-  }
-
-  // Update existing methods to emit events
-  public async playAt(time: number): Promise<void> {
-    // ... existing logic ...
-    this.emit('play', { time })
-  }
-
-  public async stopAt(time: number): Promise<void> {
-    // ... existing logic ...
-    this.emit('stop', { time })
-  }
-}
-```
-
-Usage:
-```typescript
-const sound = createSound(ctx, buffer)
-
-sound.on('play', (e) => {
-  console.log('Started at', e.detail.time)
-})
-
-sound.once('end', (e) => {
-  console.log('Finished after', e.detail.duration, 'seconds')
-})
-
-sound.play()
-```
-
-**Option 2: Custom Event Emitter**
-
-Create separate EventEmitter class and compose it into BaseSound.
-
-**Why Option 1 is better:**
-- Uses native EventTarget (no dependencies, well-tested)
-- Familiar API for web developers
-- TypeScript typing with event maps
-- Browser-native event propagation
-- Smaller bundle size
-
-### Integration Points
-
-Events should fire at these lifecycle moments:
-
-1. **Construction/Loading**
-   - `load` - when AudioBuffer is assigned (Sound, Track)
-   - `error` - if loading fails
-
-2. **Playback**
-   - `play` - in playAt() after audioSourceNode.start()
-   - `stop` - in stopAt() after audioSourceNode.stop()
-   - `end` - when duration completes (use setTimeout in playAt)
-
-3. **Track-specific** (if extending to Track class)
-   - `pause` - when track pauses
-   - `resume` - when track resumes
-   - `seek` - when position changes
-
-### Handling Scheduled Events
-
-For scheduled playback (playAt in future), events should fire at scheduled time:
-
-```typescript
-public async playAt(time: number): Promise<void> {
-  const { audioContext } = this
-  const { currentTime } = audioContext
-  const delay = time - currentTime
-
-  if (delay <= 0) {
-    // Play immediately
-    this.emit('play', { time })
-  } else {
-    // Schedule event emission
-    this.setTimeout(() => {
-      this.emit('play', { time })
-    }, delay * 1000)
-  }
-
-  // ... rest of playAt logic ...
-
-  // Schedule 'end' event
-  if (this.duration.raw) {
-    this.setTimeout(() => {
-      this.emit('end', { duration: this.duration.raw })
-    }, (delay + this.duration.raw) * 1000)
-  }
-}
-```
-
-### Data Flow
+**Transport architecture:**
 
 ```
-User action (sound.play())
-        ↓
-BaseSound.playAt() executes
-        ↓
-emit('play', { time }) dispatches CustomEvent
-        ↓
-EventTarget propagates event to listeners
-        ↓
-User callbacks execute with event data
+Transport (singleton, not a class instance you construct repeatedly)
+├── owns: audioContext reference (from getOrCreateAudioContext())
+├── owns: lookahead scheduler (same 100ms/25ms pattern as BeatTrack)
+├── owns: Set<SubscribedCallback> (registered entities)
+├── state: bpm, timeSignature, position (bar, beat, subdivision)
+├── methods: play(), pause(), stop(), setBPM(n), setTimeSignature(n, d)
+├── methods: subscribe(callback), unsubscribe(callback)
+├── emits: 'tick' (beat position), 'start', 'stop', 'bpm-change'
+└── resolution: 16th notes minimum (common for drum machines)
 ```
 
-### Integration Checklist
+**BeatTrack modification for Transport support:** BeatTrack needs a `syncTo(transport: Transport)` method that:
+1. Stops its own scheduler loop
+2. Subscribes to Transport tick events
+3. Uses the Transport's absolute time for each beat
 
-- [ ] BaseSound extends EventTarget
-- [ ] Typed event map interface defined
-- [ ] on(), once(), off() convenience methods
-- [ ] emit() helper for internal use
-- [ ] Events fire at correct lifecycle moments
-- [ ] Scheduled events use setTimeout for future emission
-- [ ] Track-specific events (pause, resume, seek)
+This is additive — no breaking changes to existing `playActiveBeats()` API.
+
+**Musical time notation (optional, can be Phase 2):** Parsing `"4n"` (quarter note), `"8t"` (triplet eighth), `"2m"` (2 measures) requires a time parser. Implementation: a pure function `parseMusicalTime(notation: string, bpm: number, timeSignature: [number, number]): number` returning seconds. This does NOT need to be in the first Transport phase.
+
+**New components needed:**
+```
+src/transport.ts    (Transport class + getTransport() singleton accessor)
+```
+
+**Existing components modified:**
+- `src/beat-track.ts` — add `syncTo(transport)` method
+- `src/index.ts` — export `Transport`, `getTransport`
+
+**Why singleton:** Having multiple transports defeats the purpose. The library already uses a singleton `AudioContext` pattern — Transport follows the same pattern (`getTransport()` returns the global instance, creates it if needed).
+
+**Confidence:** HIGH — lookahead scheduler pattern is proven (already in BeatTrack). The new work is coordination, not new timing primitives.
 
 ---
 
-## Pattern 4: Effects Presets (Factory + Builder Pattern)
+### Feature 4: Sequencer / Pattern
 
-### Overview
+**The problem:** `BeatTrack` handles rhythmic on/off patterns. A Sequencer generalizes this to arbitrary event callbacks at musical time positions — note sequences, parameter automation, trigger sequences.
 
-Effects presets provide pre-configured effect chains (e.g., "Cathedral Reverb", "Telephone Filter", "Tape Saturation") that users can apply to sounds with one method call.
+**Architecture:** The Sequencer is a higher-level abstraction that uses the Transport clock. It's essentially a `Map<position, callback[]>` where positions are measured in beats or subdivisions.
 
-### Architecture from Other Libraries
+**New components needed:**
+```
+src/sequencer.ts    (Sequencer class + createSequencer factory)
+```
 
-**audio-effects Library Pattern**: Uses base class with internal node management. ([audio-effects GitHub](https://github.com/Sambego/audio-effects))
-
-Structure:
-- `SingleAudioNode` base class
-- Each effect extends base class
-- Internal `nodes` object contains all Web Audio nodes
-- `_node` property = entry point
-- `_outputNode` property = exit point
-- Supports method chaining: `input.connect(volume).connect(distortion).connect(output)`
-
-**Tone.js Effects**: Uses ToneAudioNode base class with `input` and `output` properties for routing. ([ToneAudioNode docs](https://tonejs.github.io/docs/15.0.4/classes/ToneAudioNode.html))
-
-Methods:
-- `connect()` - connect to next node
-- `chain()` - connect to multiple nodes in series
-- `fan()` - connect to multiple nodes in parallel
-
-**Web Audio API Pattern**: "A simple workflow involves connecting sources to effects, and the effects to the destination." ([web.dev audio effects](https://web.dev/patterns/media/audio-effects))
-
-Standard nodes for effects:
-- `createBiquadFilter()` - filters
-- `createWaveShaper()` - distortion
-- `createConvolver()` - reverb
-- `createDelay()` - delay
-- `createDynamicsCompressor()` - compression
-- `createGain()` - volume
-
-### Recommended Implementation
-
-**Factory Pattern for Presets**
-
+**Sequencer class design:**
 ```typescript
-// Effect preset interface
-interface EffectPreset {
-  name: string
-  create: (audioContext: AudioContext) => Connection
-}
-
-// Factory for built-in presets
-class EffectPresets {
-  static CathedralReverb: EffectPreset = {
-    name: 'Cathedral Reverb',
-    create: (ctx: AudioContext) => {
-      const convolver = ctx.createConvolver()
-      const gain = ctx.createGain()
-
-      // Load impulse response (would be async in real implementation)
-      // convolver.buffer = await loadImpulseResponse('cathedral.wav')
-
-      gain.gain.value = 0.5 // wet/dry mix
-      convolver.connect(gain)
-
-      return { audioNode: convolver, name: 'Cathedral Reverb' }
-    }
-  }
-
-  static TelephoneFilter: EffectPreset = {
-    name: 'Telephone Filter',
-    create: (ctx: AudioContext) => {
-      const lowpass = ctx.createBiquadFilter()
-      const highpass = ctx.createBiquadFilter()
-
-      highpass.type = 'highpass'
-      highpass.frequency.value = 300
-      lowpass.type = 'lowpass'
-      lowpass.frequency.value = 3000
-
-      highpass.connect(lowpass)
-
-      return { audioNode: highpass, name: 'Telephone Filter' }
-    }
-  }
-
-  static TapeSaturation: EffectPreset = {
-    name: 'Tape Saturation',
-    create: (ctx: AudioContext) => {
-      const waveshaper = ctx.createWaveShaper()
-      const gain = ctx.createGain()
-
-      // Create saturation curve
-      const curve = new Float32Array(256)
-      for (let i = 0; i < 256; i++) {
-        const x = (i / 128) - 1
-        curve[i] = Math.tanh(x * 2) // soft clipping
-      }
-      waveshaper.curve = curve
-
-      gain.gain.value = 0.8 // reduce output level
-      waveshaper.connect(gain)
-
-      return { audioNode: waveshaper, name: 'Tape Saturation' }
-    }
-  }
+export class Sequencer {
+  // Add an event at a musical position
+  at(beat: number, callback: (time: number) => void): this
+  // Remove event at a position
+  remove(beat: number, callback?: (time: number) => void): this
+  // Clear all events
+  clear(): this
+  // Loop length in beats
+  length: number
+  // Connect to transport
+  syncTo(transport: Transport): this
 }
 ```
 
-**Builder Pattern for Custom Effects**
+**Relationship to BeatTrack:** BeatTrack remains the ergonomic drum machine API. Sequencer is the lower-level "arbitrary callbacks at beat positions" primitive. Advanced users build on Sequencer; most users use BeatTrack.
+
+**Existing components modified:**
+- `src/index.ts` — export `Sequencer`, `createSequencer`
+
+**Confidence:** MEDIUM — architecture is clear, but the precise API surface needs iteration during implementation.
+
+---
+
+### Feature 5: PolySynth
+
+**The problem:** Playing chords requires managing multiple `Oscillator` instances manually. Users must track which voices are active, handle note stealing when voices run out, and coordinate envelope timing.
+
+**Architecture:** Voice pool pattern. `PolySynth` maintains a pool of `Oscillator` instances (voices). `noteOn(note, velocity)` allocates the next free voice. `noteOff(note)` finds the voice playing that note and triggers its release. Stolen voices (oldest playing voice) are reused when the pool is exhausted.
+
+**Voice allocation strategy:** Least-recently-played (LRU) stealing. When all voices are active and a new noteOn arrives, steal the voice that has been playing longest. This matches hardware synthesizer behavior.
+
+**New components needed:**
+```
+src/poly-synth.ts   (PolySynth class + createPolySynth factory)
+```
+
+**PolySynth class design:**
+```typescript
+export class PolySynth {
+  private voices: Oscillator[]
+  private activeVoices: Map<string, Oscillator>  // noteKey → Oscillator
+
+  noteOn(note: string | number, velocity?: number): void
+  noteOff(note: string | number): void
+  releaseAll(): void
+
+  // Pass-through effect chain on the poly output bus
+  addEffect(effect: Effect): this
+  removeEffect(effect: Effect): this
+  changeGainTo(value: number): this
+
+  dispose(): void
+}
+
+export interface PolySynthOptions {
+  voices?: number          // default 8
+  oscillator?: OscillatorOptions   // applied to each voice
+}
+```
+
+**Output bus architecture:** All voices route into a shared `GainNode` (the output bus). The output bus connects to the effect chain and destination. This allows per-PolySynth effects without routing each voice independently.
+
+```
+Voice 1 (Oscillator) ──┐
+Voice 2 (Oscillator) ──┤
+Voice 3 (Oscillator) ──┼──→ outputBusGainNode → [effects] → pannerNode → destination
+...                    │
+Voice N (Oscillator) ──┘
+```
+
+**Existing components used:**
+- `Oscillator` — each voice is a standard `Oscillator` instance
+- `BaseParamController` pattern — PolySynth output bus can use a `SoundController`
+
+**Existing components modified:**
+- `src/index.ts` — export `PolySynth`, `createPolySynth`, `PolySynthOptions`
+
+**Confidence:** HIGH — voice pool pattern is well-established (Tone.js PolySynth, p5.js PolySynth follow the same pattern).
+
+---
+
+### Feature 6: GrainPlayer
+
+**The problem:** Granular synthesis decomposes audio into short grains (10–200ms), then plays them with independent control over pitch and time stretch. It enables timestretch without pitch change and pitch shift without timestretch.
+
+**Two implementation approaches:**
+
+**Approach A: AudioBufferSourceNode grains (no AudioWorklet)**
+- Spawn many `AudioBufferSourceNode` instances at overlapping intervals
+- Each grain: offset into source buffer, duration, playback rate (pitch control), gain envelope
+- Grain scheduling: loop with lookahead, same pattern as BeatTrack scheduler
+- Advantages: no AudioWorklet needed, simpler, works in all modern browsers
+- Disadvantages: higher CPU for many concurrent grains, grain scheduling in JS thread
+
+**Approach B: AudioWorklet-based**
+- Custom AudioWorklet processor handles grain interpolation sample-accurately
+- Advantages: better timing precision, fewer JS thread hits
+- Disadvantages: requires bundling worklet code, more complex infrastructure, testing difficulty
+- The project constraint "No AudioWorklets — too low-level for 'easy' API" applies here
+
+**Recommendation:** Approach A. The project explicitly lists AudioWorklets as out of scope. `AudioBufferSourceNode` grain scheduling is proven (used by granular-js and similar libraries), and the lookahead scheduler pattern already exists in BeatTrack.
+
+**New components needed:**
+```
+src/grain-player.ts   (GrainPlayer class + createGrainPlayer factory)
+```
+
+**GrainPlayer class design:**
+```typescript
+export class GrainPlayer {
+  private buffer: AudioBuffer
+  private scheduler: GrainScheduler  // internal lookahead scheduler
+
+  // Playback controls
+  play(): void
+  stop(): void
+
+  // Grain parameters
+  grainSize: number        // grain duration in seconds (default 0.1)
+  overlap: number          // fraction of grain that overlaps next (0–1, default 0.5)
+  speed: number            // playback speed (1 = normal, 0.5 = half speed)
+  pitch: number            // pitch in semitones (0 = no change)
+  loopStart: number        // loop region start in seconds
+  loopEnd: number          // loop region end in seconds
+  loop: boolean
+
+  // Output routing
+  addEffect(effect: Effect): this
+  changeGainTo(value: number): this
+  setDestination(node: AudioNode): this
+  dispose(): void
+}
+```
+
+**Internal grain scheduling:**
+```
+Every ~25ms (lookahead):
+  while (nextGrainTime < audioCtx.currentTime + lookaheadBuffer):
+    create AudioBufferSourceNode
+    set offset = playbackPosition + random scatter
+    set playbackRate = speed * pitchRatio
+    apply grain envelope (ramp up, sustain, ramp down)
+    schedule .start(nextGrainTime, offset, grainSize)
+    schedule .stop(nextGrainTime + grainSize + overlap)
+    nextGrainTime += grainSize * (1 - overlap)
+    playbackPosition += grainSize * speed
+```
+
+**Output bus:** Like PolySynth, all grains route to a shared `GainNode` output bus. Effects and destination are set on the GrainPlayer, not individual grains.
+
+**Existing components modified:**
+- `src/index.ts` — export `GrainPlayer`, `createGrainPlayer`, `GrainPlayerOptions`
+
+**Confidence:** MEDIUM — approach is proven but pitch/time stretch accuracy requires tuning during implementation. The scheduling pattern is the same as BeatTrack (HIGH confidence), but grain envelope and pitch math need careful implementation.
+
+---
+
+## Component Boundaries
+
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| `BaseSound` | Audio node lifecycle, effect chain, parameter control | `Controller`, `Effect[]`, `Analyzer`, `AudioContext` |
+| `Controller` | Parameter automation scheduling | `AudioParam`, `GainNode`, `StereoPannerNode` |
+| `Effect` interface | Wet/dry audio routing contract | `BaseSound` (via effectChainInput) |
+| `FilterEffect`, `GainEffect` | Existing concrete effects | None (standalone) |
+| `DelayEffect`, `ReverbEffect`, `DistortionEffect` | New concrete effects | None (standalone) |
+| `CompressorEffect`, `EQEffect` | Dynamics/EQ | None (standalone) |
+| `LFO` | AudioParam modulation signal | `AudioParam` targets on any node |
+| `Transport` | Global BPM clock, subscriber coordination | `BeatTrack`, `Sequencer`, `AudioContext` |
+| `BeatTrack` | Drum machine lane | `Transport` (optional, via syncTo), `Beat[]` |
+| `Sequencer` | Arbitrary event scheduling at beat positions | `Transport` |
+| `PolySynth` | Voice pool management | `Oscillator[]`, output `GainNode` |
+| `GrainPlayer` | Granular audio playback | `AudioBuffer`, `AudioBufferSourceNode[]` (spawned), output `GainNode` |
+
+---
+
+## Data Flow
+
+### LFO Modulation Flow
+
+```
+LFO.oscNode (OscillatorNode, e.g. 4Hz)
+    │
+    ▼
+LFO.depthNode (GainNode, depth = 100)
+    │
+    ▼ connect(targetParam)
+FilterEffect.filterNode.frequency (AudioParam)
+    │ (frequency now oscillates between center±100 at 4Hz)
+    ▼
+Audio signal through filter
+```
+
+### Transport-Synchronized BeatTrack Flow
+
+```
+Transport.scheduler() ──tick──► BeatTrack.onTransportTick(beatIndex, absoluteTime)
+                                     │
+                                     ▼
+                             beat.playInIfActive(offset)
+                                     │
+                                     ▼
+                             Sound.playAt(absoluteTime)
+```
+
+### PolySynth Voice Allocation Flow
+
+```
+PolySynth.noteOn('A4')
+    │
+    ├──► Find free voice from pool
+    │    (or steal oldest playing voice if pool exhausted)
+    │
+    ├──► voice.freq = frequencyMap['A4']
+    ├──► voice.play()
+    └──► activeVoices.set('A4', voice)
+
+PolySynth.noteOff('A4')
+    │
+    ├──► voice = activeVoices.get('A4')
+    ├──► voice.stop()   (triggers ADSR release if envelope set)
+    └──► activeVoices.delete('A4')
+```
+
+---
+
+## Patterns to Follow
+
+### Pattern 1: Factory Function with Optional AudioContext
+
+All new public-facing classes follow the existing context-free factory pattern.
 
 ```typescript
-class EffectChainBuilder {
-  private effects: Connection[] = []
+// User-facing (context-free, recommended)
+const delay = createDelayEffect({ time: 0.5, feedback: 0.4 })
+const lfo = createLFO({ rate: 5, depth: 0.3 })
 
-  constructor(private audioContext: AudioContext) {}
+// Implementation
+export function createDelayEffect(options?: DelayEffectOptions): DelayEffect {
+  return new DelayEffect(getOrCreateAudioContext(), options)
+}
+```
 
-  // Add individual effects
-  reverb(impulseResponse?: AudioBuffer): this {
-    const convolver = this.audioContext.createConvolver()
-    if (impulseResponse)
-      convolver.buffer = impulseResponse
-    this.effects.push({ audioNode: convolver, name: 'Reverb' })
-    return this
-  }
+### Pattern 2: Effect Interface Compliance
 
-  delay(delayTime: number = 0.5, feedback: number = 0.3): this {
-    const delay = this.audioContext.createDelay()
-    const feedbackGain = this.audioContext.createGain()
+Every new effect class must expose exactly `{ input, output, bypass, mix }`. Use the same wet/dry routing pattern as `FilterEffect` (dryGain + wetGain + `applyEqualPowerCrossfade()`).
 
-    delay.delayTime.value = delayTime
-    feedbackGain.gain.value = feedback
+```typescript
+class DelayEffect implements Effect {
+  get input(): AudioNode { return this.inputNode }
+  get output(): AudioNode { return this.outputNode }
+  get bypass(): boolean { return this._bypass }
+  set bypass(v: boolean) { this._bypass = v; this.applyMix() }
+  get mix(): number { return this._mix }
+  set mix(v: number) { this._mix = Math.max(0, Math.min(1, v)); this.applyMix() }
 
-    // Create feedback loop
-    delay.connect(feedbackGain)
-    feedbackGain.connect(delay)
-
-    this.effects.push({ audioNode: delay, name: 'Delay' })
-    return this
-  }
-
-  lowpass(frequency: number = 1000, q: number = 1): this {
-    const filter = this.audioContext.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = frequency
-    filter.Q.value = q
-    this.effects.push({ audioNode: filter, name: 'Lowpass' })
-    return this
-  }
-
-  highpass(frequency: number = 100, q: number = 1): this {
-    const filter = this.audioContext.createBiquadFilter()
-    filter.type = 'highpass'
-    filter.frequency.value = frequency
-    filter.Q.value = q
-    this.effects.push({ audioNode: filter, name: 'Highpass' })
-    return this
-  }
-
-  distortion(amount: number = 50): this {
-    const waveshaper = this.audioContext.createWaveShaper()
-    const curve = this.makeDistortionCurve(amount)
-    waveshaper.curve = curve
-    this.effects.push({ audioNode: waveshaper, name: 'Distortion' })
-    return this
-  }
-
-  gain(value: number = 1): this {
-    const gain = this.audioContext.createGain()
-    gain.gain.value = value
-    this.effects.push({ audioNode: gain, name: 'Gain' })
-    return this
-  }
-
-  // Build and return effect chain
-  build(): Connection[] {
-    return this.effects
-  }
-
-  private makeDistortionCurve(amount: number): Float32Array {
-    const samples = 256
-    const curve = new Float32Array(samples)
-    const deg = Math.PI / 180
-    for (let i = 0; i < samples; i++) {
-      const x = (i * 2) / samples - 1
-      curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x))
-    }
-    return curve
+  private applyMix(): void {
+    applyEqualPowerCrossfade(this.dryGain, this.wetGain, this._mix, this._bypass)
   }
 }
 ```
 
-**Integration with BaseSound**
+### Pattern 3: Dispose Pattern
+
+All new stateful classes must implement `dispose()`:
+- Stop any running scheduler/oscillator
+- Disconnect all AudioNodes
+- Clear any subscriptions (Transport, LFO targets)
+- Set a `_disposed` flag to prevent post-dispose operations
+
+### Pattern 4: Lookahead Scheduler
+
+For Transport and GrainPlayer, replicate the BeatTrack scheduler pattern exactly:
 
 ```typescript
-// Add to BaseSound or as utility functions
-class BaseSound {
-  // Existing code...
-
-  // Apply preset
-  applyPreset(preset: EffectPreset): this {
-    const connection = preset.create(this.audioContext)
-    this.addConnection(connection)
-    return this
+private scheduler(): void {
+  const currentTime = this.audioContext.currentTime
+  while (this.nextEventTime < currentTime + this.scheduleAheadTime) {
+    this.scheduleNext(this.nextEventTime)
+    this.advance()
   }
-
-  // Build custom chain
-  buildEffects(): EffectChainBuilder {
-    return new EffectChainBuilder(this.audioContext)
-  }
+  this.timerID = window.setTimeout(() => this.scheduler(), this.schedulerInterval)
 }
 ```
 
-Usage:
+Constants: `scheduleAheadTime = 0.1` (100ms), `schedulerInterval = 25` (25ms). These are validated by existing BeatTrack production use.
 
-```typescript
-// Use preset
-sound.applyPreset(EffectPresets.CathedralReverb)
+### Pattern 5: TypedEventEmitter for New Classes
 
-// Build custom chain
-const effects = sound.buildEffects()
-  .highpass(200)
-  .distortion(30)
-  .delay(0.5, 0.4)
-  .reverb()
-  .gain(0.7)
-  .build()
-
-effects.forEach(effect => sound.addConnection(effect))
-
-// Or fluent version:
-sound
-  .applyPreset(EffectPresets.TelephoneFilter)
-  .changeGainTo(0.8)
-  .play()
-```
-
-### Where to Store Presets
-
-**Option 1: Static class (shown above)**
-- Simple, discoverable
-- Easy to tree-shake unused presets
-- Can be extended by users
-
-**Option 2: Separate module**
-```typescript
-// src/effects/presets/index.ts
-export { CathedralReverb } from './cathedral-reverb'
-export { TelephoneFilter } from './telephone-filter'
-// ...
-```
-
-**RECOMMENDATION: Option 1 (Static Class)**
-- Easier to document
-- Single import for all presets
-- Namespace prevents naming collisions
-
-### Data Flow
-
-```
-User calls: sound.applyPreset(EffectPresets.CathedralReverb)
-            ↓
-Preset.create() instantiates Web Audio nodes
-            ↓
-Returns Connection object { audioNode, name }
-            ↓
-sound.addConnection() adds to connections array
-            ↓
-wireConnections() rebuilds signal chain
-            ↓
-source → [effects] → gain → pan → destination
-```
-
-### Integration Checklist
-
-- [ ] EffectPreset interface defined
-- [ ] EffectPresets static class with common presets
-- [ ] EffectChainBuilder with fluent API
-- [ ] BaseSound.applyPreset() method
-- [ ] BaseSound.buildEffects() method
-- [ ] Presets handle wet/dry mix appropriately
-- [ ] Effects maintain proper gain staging
-
----
-
-## Build Order Recommendations
-
-Based on dependency analysis, recommended build order:
-
-### Phase 1: Foundation (Events)
-**Build Event System First**
-- No dependencies on other new features
-- Provides infrastructure for other features to emit events
-- Simple, well-understood pattern
-- Can be tested independently
-
-**Deliverables:**
-- BaseSound extends EventTarget
-- Typed event map
-- on/once/off methods
-- Events fire from play/stop methods
-
-**Why first:** All other features will want to emit events (LayeredSound fires when all layers end, ADSR fires on envelope phase changes, Effects fire on parameter changes).
-
----
-
-### Phase 2: ADSR Envelopes
-**Build ADSR Second**
-- Depends on: Event system (for envelope phase events)
-- Independent of LayeredSound and Effects
-- Integrates cleanly with existing controller pattern
-
-**Deliverables:**
-- Envelope class with applyTo()
-- AmplitudeEnvelope wrapper
-- BaseParamController.applyEnvelope()
-- Attack/decay/sustain/release automation
-
-**Why second:**
-- Natural extension of existing controller pattern
-- LayeredSound will want to use envelopes (per-layer ADSR)
-- Effects presets might want envelope-controlled parameters
-- Can be tested with existing Sound/Oscillator classes
-
----
-
-### Phase 3: Effects Presets
-**Build Effects Third**
-- Depends on: Event system (for effect parameter change events)
-- Independent of LayeredSound and ADSR
-- Works with existing connections[] pattern
-
-**Deliverables:**
-- EffectPreset interface
-- EffectPresets static class
-- EffectChainBuilder
-- BaseSound.applyPreset() and buildEffects()
-
-**Why third:**
-- Extends existing connections architecture
-- LayeredSound will want effects (applied to composite or individual layers)
-- Can test with existing Sound classes
-- More complex than ADSR, simpler than LayeredSound
-
----
-
-### Phase 4: LayeredSound
-**Build LayeredSound Last**
-- Depends on: Event system, ADSR (for layer envelopes), Effects (for layer processing)
-- Most complex feature
-- Integrates all previous patterns
-
-**Deliverables:**
-- LayeredSound class (composite pattern)
-- Master gain/pan controller
-- Per-layer parameter control
-- Layer muting/soloing (optional)
-
-**Why last:**
-- Can leverage all previously built features
-- Most complex integration point
-- Benefits from having stable Event/ADSR/Effects APIs
-- Easiest to test when other features are solid
-
----
-
-## Cross-Feature Integration Examples
-
-### Example 1: LayeredSound with Per-Layer ADSR
-
-```typescript
-const layer1 = createSound(ctx, pianoSoft)
-const layer2 = createSound(ctx, pianoMedium)
-const layer3 = createSound(ctx, pianoLoud)
-
-// Apply different ADSR to each layer
-layer1.controller.applyEnvelope('gain', { attack: 0.1, decay: 0.3, sustain: 0.6, release: 0.8 })
-layer2.controller.applyEnvelope('gain', { attack: 0.05, decay: 0.2, sustain: 0.7, release: 0.6 })
-layer3.controller.applyEnvelope('gain', { attack: 0.02, decay: 0.1, sustain: 0.8, release: 0.4 })
-
-const layered = new LayeredSound(ctx, [layer1, layer2, layer3])
-
-// Master envelope affects composite
-layered.controller.applyEnvelope('gain', { attack: 0.01, decay: 0.1, sustain: 1, release: 0.5 })
-```
-
-### Example 2: Effects with ADSR-Controlled Parameters
-
-```typescript
-const sound = createSound(ctx, buffer)
-
-// Add filter effect
-const filterEffect = sound.buildEffects().lowpass(5000).build()[0]
-sound.addConnection(filterEffect)
-
-// Animate filter frequency with envelope
-const filterNode = sound.getNodeFrom<BiquadFilterNode>('Lowpass')
-const filterEnvelope = new Envelope({ attack: 0.5, decay: 1, sustain: 0.3, release: 0.8 })
-filterEnvelope.applyTo(filterNode.frequency, ctx.currentTime)
-```
-
-### Example 3: LayeredSound with Master Effects and Events
-
-```typescript
-const layered = new LayeredSound(ctx, [sound1, sound2, sound3])
-
-// Apply reverb to composite
-layered.applyPreset(EffectPresets.CathedralReverb)
-
-// Listen for events
-layered.on('play', e => console.log('All layers started'))
-layered.on('end', e => console.log('All layers finished'))
-
-layered.play()
-```
+Classes that emit events should use `TypedEventEmitter` from `src/events/typed-event-emitter.ts` (the pattern BaseSound uses). For classes that can't extend it (like BeatTrack which extends Sampler), use a private `EventTarget` with the same `on/off/once` convenience API.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### 1. Bypassing Controllers
-**DON'T:**
-```typescript
-sound.gainNode.gain.value = 0.5 // Bypasses controller
-```
+### Anti-Pattern 1: AudioWorklet for GrainPlayer
 
-**DO:**
-```typescript
-sound.changeGainTo(0.5) // Uses controller
-```
+**What:** Implementing GrainPlayer with AudioWorklet for sample-accurate grain scheduling.
+**Why bad:** AudioWorklets require bundling worklet files separately, complicate the build, and are explicitly out of scope per project constraints. The `AudioBufferSourceNode` approach is sufficient for the target use case (DJ-style timestretching, ambient textures, sound design).
+**Instead:** `AudioBufferSourceNode` grains with lookahead scheduling.
 
-**Why:** Controllers maintain state and handle scheduled values. Direct manipulation breaks this.
+### Anti-Pattern 2: Mutable Transport as a Parameter
 
-### 2. Storing AudioSourceNode References
-**DON'T:**
-```typescript
-const source = sound.audioSourceNode
-// Later...
-source.start() // Source may have been replaced in setup()
-```
+**What:** Passing `Transport` as a constructor argument everywhere or making `BeatTrack` require a `Transport`.
+**Why bad:** Breaks existing `BeatTrack.playActiveBeats(bpm, noteType)` API. Creates a mandatory dependency that wasn't needed before.
+**Instead:** Transport is opt-in via `beatTrack.syncTo(transport)`. All existing APIs remain unchanged.
 
-**DO:**
-```typescript
-sound.play() // Always use playback methods
-```
+### Anti-Pattern 3: LFO Extending BaseSound
 
-**Why:** setup() creates new AudioBufferSourceNode on each play. Stored references become stale.
+**What:** Making `LFO` extend `BaseSound` to get gain/pan/effects infrastructure.
+**Why bad:** LFO does not produce audible output. It modulates AudioParams. Inheriting the full `BaseSound` infrastructure adds 400 lines of irrelevant code and creates confusing `.play()` / `.stop()` semantics.
+**Instead:** `LFO` is a standalone class with only `start()`, `stop()`, `connect(param)`, `disconnect(param)` methods.
 
-### 3. Manual Connection Wiring
-**DON'T:**
-```typescript
-sound.audioSourceNode.connect(customNode)
-customNode.connect(sound.gainNode)
-```
+### Anti-Pattern 4: Building Chorus Before LFO
 
-**DO:**
-```typescript
-sound.addConnection({ audioNode: customNode, name: 'CustomEffect' })
-```
+**What:** Implementing ChorusEffect that internally instantiates its own LFO OscillatorNode before the public LFO class is built.
+**Why bad:** Duplicates LFO logic across two files, then needs refactoring when LFO is added.
+**Instead:** If Chorus is needed before LFO, implement it with an inline oscillator marked as `@internal`. Once LFO exists, factor it out if needed. Or simply build LFO first (it's a one-file component).
 
-**Why:** wireConnections() manages the full chain. Manual wiring breaks on next play.
+### Anti-Pattern 5: Infinite Voice Pool in PolySynth
 
-### 4. Forgetting Envelope Release
-**DON'T:**
-```typescript
-envelope.applyTo(gainNode.gain, startTime) // No release time
-// Sustain goes on forever
-```
-
-**DO:**
-```typescript
-envelope.applyTo(gainNode.gain, startTime, releaseTime)
-// Or handle release separately based on user input
-```
-
-**Why:** ADSR without release doesn't make musical sense. Sounds never fully decay.
-
-### 5. Shared Effect Instances
-**DON'T:**
-```typescript
-const reverb = ctx.createConvolver()
-sound1.addConnection({ audioNode: reverb, name: 'Reverb' })
-sound2.addConnection({ audioNode: reverb, name: 'Reverb' }) // Same instance!
-```
-
-**DO:**
-```typescript
-sound1.applyPreset(EffectPresets.Reverb) // Creates new instance
-sound2.applyPreset(EffectPresets.Reverb) // Creates new instance
-```
-
-**Why:** Web Audio nodes can only have one input. Shared instances create routing conflicts.
+**What:** Creating a new `Oscillator` on every `noteOn()` and letting the pool grow unbounded.
+**Why bad:** Each `Oscillator` creates several AudioNodes. 100 rapid note-ons = hundreds of live AudioNodes consuming memory and CPU.
+**Instead:** Fixed pool of voices (default 8, configurable). Steal oldest when pool exhausted.
 
 ---
 
-## Testing Strategies
+## Scalability Considerations
 
-### Unit Testing
-
-**Events:**
-```typescript
-test('play event fires with correct time', async () => {
-  const listener = vi.fn()
-  sound.on('play', listener)
-  await sound.play()
-  expect(listener).toHaveBeenCalledWith(expect.objectContaining({
-    detail: { time: expect.any(Number) }
-  }))
-})
-```
-
-**ADSR:**
-```typescript
-test('envelope applies attack ramp', () => {
-  const envelope = new Envelope({ attack: 0.5, decay: 0.2, sustain: 0.7, release: 0.3 })
-  const param = mockAudioParam()
-  envelope.applyTo(param, 0)
-
-  expect(param.setValueAtTime).toHaveBeenCalledWith(0, 0)
-  expect(param.linearRampToValueAtTime).toHaveBeenCalledWith(1, 0.5)
-})
-```
-
-**Effects:**
-```typescript
-test('preset creates correct nodes', () => {
-  const connection = EffectPresets.TelephoneFilter.create(ctx)
-  expect(connection.audioNode).toBeInstanceOf(BiquadFilterNode)
-  expect(connection.name).toBe('Telephone Filter')
-})
-```
-
-**LayeredSound:**
-```typescript
-test('layers all play simultaneously', async () => {
-  const layer1 = createSound(ctx, buffer1)
-  const layer2 = createSound(ctx, buffer2)
-  const layered = new LayeredSound(ctx, [layer1, layer2])
-
-  await layered.play()
-
-  expect(layer1.isPlaying).toBe(true)
-  expect(layer2.isPlaying).toBe(true)
-})
-```
-
-### Integration Testing
-
-Test cross-feature scenarios:
-- LayeredSound with effects on individual layers
-- ADSR envelopes controlling effect parameters
-- Events firing from layered sounds
-- Complex chains: LayeredSound → ADSR → Effects → Events
+| Concern | Notes |
+|---------|-------|
+| GrainPlayer grain count | At 0.1s grain, 50% overlap, 48kHz sample rate: ~20 concurrent `AudioBufferSourceNode` instances at any time. Well within browser limits. |
+| PolySynth voice count | 8 voices default. Each voice is a persistent Oscillator with 3–5 AudioNodes. ~40 live nodes total. Negligible. |
+| Transport subscribers | Transport supports many subscribers (BeatTrack instances, Sequencers). Each subscriber is just a function call per scheduler tick. Scales to hundreds. |
+| LFO connection fan-out | One LFO can connect to multiple AudioParams. Web Audio allows multiple connections from one node. No library-side limit needed. |
+| Effect chain depth | Each effect adds ~3–5 AudioNodes. 10 effects = ~50 nodes. Acceptable. Browser becomes noisy around 100+ active processing nodes. |
+| Multiple BeatTracks synced to Transport | All BeatTracks share one scheduler loop (Transport). This is strictly better than each having its own `window.setTimeout`. |
 
 ---
 
-## Performance Considerations
+## Build Order: Dependency Graph
 
-### LayeredSound
-- **Voice pooling:** Reuse Sound instances instead of creating new ones per play
-- **Lazy layer loading:** Load layers on-demand for large sample libraries
-- **Layer limits:** Cap maximum layers (8-16) to prevent context overload
+```
+Level 1 (no dependencies on new code):
+  ├── Built-in Effects (DelayEffect, ReverbEffect, DistortionEffect,
+  │     CompressorEffect, LimiterEffect, EQEffect)
+  └── LFO
 
-### ADSR
-- **AudioParam automation is efficient:** Web Audio API handles scheduling natively
-- **Avoid frequent envelope changes:** Set envelope once, reuse for multiple plays
-- **Use exponential ramps carefully:** exponentialRampToValueAtTime can't reach 0 (use 0.001)
+Level 2 (depends on LFO):
+  └── ChorusEffect (uses LFO internally)
 
-### Effects
-- **Limit effect instances:** Each effect = multiple AudioNodes (memory cost)
-- **Share impulse responses:** ConvolverNode buffers can be shared across instances
-- **Disable unused effects:** Disconnect instead of setting wet/dry to 0
+Level 3 (no new dependencies, but Transport is the foundation):
+  └── Transport
 
-### Events
-- **EventTarget is fast:** Native implementation, minimal overhead
-- **Remove listeners:** Use off() or { once: true } to prevent memory leaks
-- **Batch event emissions:** Don't emit on every sample (use setTimeout for scheduling)
+Level 4 (depends on Transport):
+  └── Sequencer
+
+Level 4b (depends on Transport, modifies BeatTrack):
+  └── BeatTrack.syncTo() integration
+
+Level 5 (depends on Oscillator, no new dependencies):
+  └── PolySynth
+
+Level 6 (standalone, depends on AudioBuffer + lookahead pattern):
+  └── GrainPlayer
+```
+
+**Suggested phase order:**
+1. Built-in Effects (high value, zero architectural risk, follows existing patterns exactly)
+2. LFO (small self-contained class, unlocks modulation use cases)
+3. Transport + BeatTrack sync (architectural foundation for multi-track sync)
+4. Sequencer (small, depends on Transport)
+5. PolySynth (depends on Oscillator, well-understood pattern)
+6. GrainPlayer (most complex, standalone, can be delivered independently)
+
+Effects and LFO can be developed in parallel. Transport should precede Sequencer. PolySynth and GrainPlayer are independent of each other and of Transport.
 
 ---
 
-## API Consistency Guidelines
+## Modifications to Existing Files
 
-To maintain consistency with existing ez-audio API:
+| File | Modification | Scope |
+|------|-------------|-------|
+| `src/effects/index.ts` | Add exports for new effect classes | Additive |
+| `src/index.ts` | Add exports for `LFO`, `Transport`, `Sequencer`, `PolySynth`, `GrainPlayer`, all new effects | Additive |
+| `src/beat-track.ts` | Add `syncTo(transport: Transport): this` method | Additive |
+| `src/controllers/base-param-controller.ts` | No changes needed | None |
+| `src/oscillator.ts` | No changes needed | None |
+| `src/base-sound.ts` | No changes needed | None |
 
-### 1. Fluent Chaining
-All mutating methods return `this`:
-```typescript
-sound
-  .applyPreset(EffectPresets.Reverb)
-  .changeGainTo(0.8)
-  .on('end', handleEnd)
-  .play()
-```
-
-### 2. Time-Based Methods Follow Pattern
-- Immediate: `method()` (e.g., `play()`)
-- Delayed: `methodIn(seconds)` (e.g., `playIn(2)`)
-- Scheduled: `methodAt(time)` (e.g., `playAt(ctx.currentTime + 2)`)
-
-Apply to new features:
-```typescript
-envelope.triggerAttack() // immediate
-envelope.triggerAttackIn(1) // delayed
-envelope.triggerAttackAt(ctx.currentTime + 1) // scheduled
-```
-
-### 3. Factory Functions Over Constructors
-Existing pattern:
-```typescript
-createSound(ctx, buffer)
-createOscillator(ctx, options)
-```
-
-New pattern:
-```typescript
-createLayeredSound(ctx, sounds)
-createEnvelope(config)
-```
-
-### 4. Options Objects for Complex Config
-```typescript
-createLayeredSound(ctx, sounds, {
-  name: 'Piano Layers',
-  masterGain: 0.8,
-  masterPan: 0.2
-})
-```
-
-### 5. Typed Parameters
-Use string unions, not magic strings:
-```typescript
-type ControlType = 'frequency' | 'gain' | 'detune' | 'pan'
-type EventType = 'play' | 'stop' | 'end' | 'error'
-```
+No breaking changes are required for any existing public API.
 
 ---
 
-## Migration Path (Backward Compatibility)
-
-All new features can be added without breaking existing API:
-
-### Events
-```typescript
-// Before (no events)
-sound.play()
-
-// After (events optional)
-sound.on('play', handlePlay) // opt-in
-sound.play()
-```
-
-**No breaking changes:** EventTarget is transparent if not used.
-
-### ADSR
-```typescript
-// Before (manual parameter scheduling)
-sound.onPlayRamp('gain').from(0).to(1).in(0.5)
-
-// After (ADSR available)
-sound.controller.applyEnvelope('gain', adsrConfig) // new option
-```
-
-**No breaking changes:** Existing parameter methods still work.
-
-### Effects
-```typescript
-// Before (manual connection)
-const reverb = ctx.createConvolver()
-sound.addConnection({ audioNode: reverb, name: 'Reverb' })
-
-// After (presets available)
-sound.applyPreset(EffectPresets.Reverb) // convenience method
-```
-
-**No breaking changes:** Existing addConnection still works.
-
-### LayeredSound
-```typescript
-// Before (manual management)
-const s1 = createSound(ctx, buf1)
-const s2 = createSound(ctx, buf2)
-s1.play()
-s2.play()
-
-// After (composite available)
-const layered = createLayeredSound(ctx, [s1, s2]) // new class
-layered.play()
-```
-
-**No breaking changes:** Original Sound class unchanged.
-
----
-
-## Documentation Requirements
-
-For each new feature, provide:
-
-1. **Concept Guide** - "What is X and when to use it"
-2. **API Reference** - TypeScript signatures and parameter descriptions
-3. **Examples** - Common use cases with code samples
-4. **Integration Guide** - How X works with Y
-5. **Migration Guide** - Upgrading from manual approach
-
-Example structure:
-```
-docs/
-├── guide/
-│   ├── events.md
-│   ├── envelopes.md
-│   ├── effects.md
-│   └── layered-sounds.md
-├── api/
-│   ├── LayeredSound.md
-│   ├── Envelope.md
-│   ├── EffectPresets.md
-│   └── Events.md
-└── examples/
-    ├── piano-with-adsr.md
-    ├── effect-chains.md
-    └── complex-instruments.md
-```
-
----
-
-## Summary: Integration Recommendations
-
-| Feature | Pattern | Integration Point | Build Order |
-|---------|---------|-------------------|-------------|
-| **LayeredSound** | Composite (composition over inheritance) | New class implementing Playable & Connectable | Phase 4 (last) |
-| **ADSR Envelopes** | Separate class + controller extension | Add to BaseParamController | Phase 2 |
-| **Event System** | EventTarget inheritance | BaseSound extends EventTarget | Phase 1 (first) |
-| **Effects Presets** | Factory + Builder | Static class + builder instance | Phase 3 |
-
-### Key Architectural Decisions
-
-1. **LayeredSound uses composition, not inheritance** - Cleaner separation, more flexible
-2. **ADSR lives in controllers** - Maintains single source of truth for parameter automation
-3. **Events use native EventTarget** - No dependencies, familiar API, TypeScript-friendly
-4. **Effects use factory + builder** - Discoverable presets, fluent custom chains
-
-### Data Flow Overview
+## New Files Required
 
 ```
-User API Call
-    ↓
-BaseSound/LayeredSound methods
-    ↓
-Controllers handle parameter automation (including ADSR)
-    ↓
-wireConnections() establishes signal chain (including effects)
-    ↓
-Web Audio API nodes process audio
-    ↓
-Events fire at lifecycle moments
-    ↓
-User callbacks respond
+src/lfo.ts
+src/transport.ts
+src/sequencer.ts
+src/poly-synth.ts
+src/grain-player.ts
+src/effects/delay-effect.ts
+src/effects/reverb-effect.ts
+src/effects/distortion-effect.ts
+src/effects/chorus-effect.ts
+src/effects/compressor-effect.ts
+src/effects/eq-effect.ts
 ```
 
-### No Breaking Changes Required
-
-All features integrate with existing architecture through:
-- Extension (EventTarget inheritance)
-- Composition (LayeredSound contains Sounds)
-- Addition (new methods on existing classes)
-- Encapsulation (controllers manage new envelope logic)
-
-The existing BaseSound/Controller separation remains intact and is actually strengthened by these patterns.
+Plus test files for each (co-located, same directory).
 
 ---
 
 ## Sources
 
-**Architecture Patterns:**
-- [Web Audio API - MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
-- [Web Audio API Basic Concepts - MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API)
-- [Web Audio FAQ - Chrome Developers](https://developer.chrome.com/blog/web-audio-faq)
-
-**LayeredSound / Composite Pattern:**
-- [AudioBufferSourceNode - MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode)
-- [Tone.js PolySynth Documentation](https://tonejs.github.io/docs/15.1.22/classes/PolySynth.html)
-
-**ADSR Envelopes:**
-- [Tone.js Envelope Wiki](https://github.com/Tonejs/Tone.js/wiki/Envelope)
-- [AudioParam.setTargetAtTime - MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/setTargetAtTime)
-- [Digital Piano with Web Audio API - ADSR](https://www.leafwindow.com/en/digital-piano-with-web-audio-api-5-en/)
-- [envelope-generator GitHub](https://github.com/itsjoesullivan/envelope-generator)
-
-**Event System:**
-- [Howler.js GitHub](https://github.com/goldfire/howler.js)
-- [Web Audio API Specification](https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html)
-- [AudioScheduledSourceNode.ended Event - MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode/ended_event)
-
-**Effects Presets:**
-- [audio-effects GitHub](https://github.com/Sambego/audio-effects)
-- [ToneAudioNode Documentation](https://tonejs.github.io/docs/15.0.4/classes/ToneAudioNode.html)
-- [How to add effects to audio - web.dev](https://web.dev/patterns/media/audio-effects)
-
-**Additional Resources:**
-- [Building a Synthesizer in TypeScript - ITNEXT](https://itnext.io/building-a-synthesizer-in-typescript-5a85ea17e2f2)
-- [Tone.js GitHub Repository](https://github.com/Tonejs/Tone.js)
+- [MDN: Web Audio API Advanced Techniques](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques) — lookahead scheduler pattern, LFO implementation
+- [MDN: AudioNode.connect()](https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect) — connecting to AudioParam
+- [Tone.js PolySynth docs](https://tonejs.github.io/docs/15.1.22/classes/PolySynth.html) — voice allocation pattern
+- Existing `src/beat-track.ts` — lookahead scheduler constants (scheduleAheadTime=0.1, interval=25ms)
+- Existing `src/effects/filter-effect.ts` — wet/dry routing pattern
+- Existing `src/oscillator.ts` — single-use OscillatorNode pattern (relevant for LFO)
+- `.planning/tone-gap-analysis.md` — feature prioritization rationale

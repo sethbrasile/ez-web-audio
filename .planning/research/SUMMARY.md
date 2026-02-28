@@ -1,465 +1,216 @@
 # Project Research Summary
 
-**Project:** EZ Web Audio - Advanced Features
-**Domain:** Web Audio API wrapper library
-**Researched:** 2026-01-31
+**Project:** EZ Web Audio — Effects & Transport Milestone
+**Domain:** Web Audio library — built-in effects, LFO, transport/clock, sequencer, PolySynth, GrainPlayer
+**Researched:** 2026-02-28
 **Confidence:** HIGH
 
 ## Executive Summary
 
-EZ Web Audio is positioned to add advanced synthesis and effects capabilities while maintaining its core value proposition: zero-dependency, TypeScript-first simplicity. Research shows that modern Web Audio libraries fall into three categories—full DAWs (Tone.js), playback-focused (Howler.js), and simplicity-focused (Pizzicato.js, EZ Audio). The recommended approach is to add power-user features (ADSR envelopes, audio sprites, effects chains) without sacrificing the existing fluent API and clean architecture.
+This milestone closes the most significant feature gap between EZ Audio and Tone.js: the absence of built-in effects, a shared transport clock, polyphonic synthesis, and granular playback. Research confirms that every feature in scope can be built from native Web Audio API nodes and vanilla TypeScript scheduling loops — no new npm dependencies are required. The existing `Effect` interface, `BaseSound` connection chain, `BeatTrack` lookahead scheduler pattern (100ms lookahead / 25ms interval), and `Oscillator` class provide strong foundations that all new features extend or compose with rather than replace.
 
-The most critical finding: **all advanced features should use native Web Audio API capabilities** rather than third-party libraries. This maintains the zero-dependency promise and keeps bundle size minimal. The existing controller/BaseSound separation is actually strengthened by these patterns—events extend EventTarget, ADSR integrates with controllers, effects leverage the connections array, and LayeredSound uses composition over inheritance.
+The recommended build order is: built-in effects first (high value, zero architectural risk, proven patterns), then LFO (unlocks modulation), then Transport (global clock coordination), then Sequencer (depends on Transport), then PolySynth (voice pool over existing Oscillator), then GrainPlayer (most complex, standalone). Effects and LFO can be developed in parallel. The Transport introduces the only architectural novelty: it must explicitly disable BeatTrack's internal scheduler when a BeatTrack locks to it — this is the single highest-risk integration point in the milestone.
 
-Key risks center on Web Audio's multi-threaded nature and real-time requirements. ADSR envelope retriggering can cause audible clicks, JavaScript timer/AudioContext clock desynchronization causes timing drift, and AudioParam event accumulation degrades performance over time. All these pitfalls have well-documented prevention strategies using native API patterns.
+The primary risks are all design-time decisions, not implementation unknowns. The LFO depth unit API must be settled before coding begins (post-hoc changes are breaking changes). The Sequencer must store events in beat units rather than absolute seconds or live BPM changes will be broken by design. The PolySynth must track release-end time per voice or voice stealing causes audible clicks. All three risks are fully preventable with explicit upfront design choices documented in the pitfalls research.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The research confirms that **zero additional dependencies** are needed for all proposed advanced features. Every capability can be implemented using native Web Audio API nodes and AudioParam scheduling.
+Every feature can be built from native Web Audio API nodes with no new npm dependencies. The existing build stack (TypeScript, Vite, Vitest, Playwright, VitePress) remains unchanged. Three new native browser capabilities are used: Web Worker created from a Blob URL for the Transport clock (prevents background tab throttling, same pattern Tone.js uses in production), native `OscillatorNode.connect(AudioParam)` for LFO modulation, and `AudioBufferSourceNode` lookahead scheduling for GrainPlayer grains.
 
-**Core technologies (already in place):**
-- TypeScript 5.6+ — type safety and DX already excellent
-- Web Audio API 1.1 — sufficient for all advanced features
-- Vitest + happy-dom — test infrastructure works for new features
-- standardized-audio-context-mock — handles AudioParam automation testing
+**Core technologies:**
+- Native Web Audio nodes (`DelayNode`, `ConvolverNode`, `WaveShaperNode`, `DynamicsCompressorNode`, `BiquadFilterNode`, `OscillatorNode`) — all effects and LFO; zero-dependency, built exactly for this purpose
+- Web Worker (inline Blob URL) — Transport clock reliability; prevents 1Hz throttling in background tabs; same approach as Tone.js
+- `AudioBufferSourceNode` scheduling — GrainPlayer grains; same lookahead pattern already proven in BeatTrack
+- AudioWorklet — explicitly out of scope; `AudioBufferSourceNode` approach covers GrainPlayer's v1 use cases without HTTPS requirements or separate worker files
 
-**Why no dependencies:**
-- ADSR: Native AudioParam methods (setValueAtTime, linearRamp, exponentialRamp)
-- Events: Native EventTarget with TypeScript generics
-- Visualization: Native AnalyserNode + requestAnimationFrame
-- Sprites: JSON map + AudioBuffer offset playback
-- Effects: Native nodes (ConvolverNode, BiquadFilterNode, DelayNode, WaveShaperNode)
-
-**Anti-patterns to avoid:**
-- Third-party wrappers (Tone.js, Howler.js) — EZ Audio IS the wrapper
-- ScriptProcessorNode (deprecated) — use AudioWorklet only if truly needed
-- Manual parameter animation with setInterval — use AudioParam scheduling
+**What NOT to add:** Tone.js (200KB+, duplicates purpose), tuna.js (the existing `wrapEffect` already handles it), `ScriptProcessorNode` (deprecated), `requestAnimationFrame` for transport (throttled in background tabs).
 
 ### Expected Features
 
-Research identified a clear hierarchy of features based on what users expect from modern Web Audio libraries.
+All features in this milestone are either table stakes (their absence makes the library feel incomplete) or strong differentiators (features no other simple Web Audio wrapper offers). Nothing in scope is speculative.
 
-**Must have (table stakes):**
-- Event system — Howler.js, Pizzicato.js, Tone.js all have play/pause/stop/ended events
-- Audio loading/playback — already covered
-- Volume/pan control — already covered
-- AudioContext management — already covered (initAudio)
+**Must have — P1 (table stakes):**
+- Delay effect — most-requested single effect; every audio library has it; `DelayNode` + feedback `GainNode`
+- Reverb effect — essential for music apps; accept IR URL; `ConvolverNode` with async factory
+- Distortion effect — completes the classic "guitar pedal trio"; `WaveShaperNode` with computed curve
+- Compressor + Limiter — thin wrappers over `DynamicsCompressorNode`; trivial to build, high value
+- EQ (3-band) — essential for mixing; three chained `BiquadFilterNode`s (low-shelf, peaking, high-shelf)
+- LFO — unlocks tremolo, vibrato, auto-filter, auto-pan; high leverage for a single class
+- Transport / Clock — enables multi-BeatTrack sync; required before Sequencer
+- PolySynth — playing chords without manual voice management; 8-voice pool, LRU steal
 
-**Should have (competitive differentiators):**
-- ADSR envelopes — Tone.js signature feature, enables professional synthesis
-- Audio sprites — Howler.js signature feature, critical for games
-- Fluent parameter API — already has this (onPlaySet, onPlayRamp)
-- Effects presets — Pizzicato.js has 13 effects, users expect reverb/delay/distortion
-- Crossfading — common DJ/music app need, equal-power curve required
-- LayeredSound — planned feature, enables realistic instruments
+**Should have — P2 (differentiators, require P1 foundations):**
+- Chorus effect — requires LFO; stereo delay modulated by LFO with 180-degree phase offset
+- Sequencer / Pattern — requires Transport; generalizes BeatTrack to arbitrary event sequences
+- Musical time notation (`"4n"`, `"1m"`, `"8t"`) — major DX win; requires Transport BPM reference
+- GrainPlayer — independent pitch and position scrubbing; no other simple Web Audio wrapper has this
 
-**Defer (v2+ or niche):**
-- Transport system — DAW feature, complex, Tone.js owns this space
-- 3D spatial audio — niche use case, can be plugin later
-- Full 4-stage ADSR — simple attack/release covers 80% of use cases
-- Audio visualization — nice-to-have, medium complexity
+**Defer to v2+:**
+- Swing / groove on Transport
+- Phaser / Flanger (`wrapEffect` + Tuna.js covers this today)
+- Per-effect modulation matrix
+- AudioWorklet GrainPlayer (true independent time-stretch)
 
-**Critical dependency:** Event system must come first. Nearly all advanced features depend on it (LayeredSound sync, ADSR phase events, visualization updates, crossfading timing).
+**Anti-features (do not build):**
+- Bundled impulse responses — would multiply library bundle 3-10x; examples in docs only
+- Signal-rate math nodes (`Add`, `Multiply`) — requires full API redesign; AudioParam scheduling covers 95% of use cases
+- Full DAW transport / song arrangement — contradicts the library's "easy" core value
 
 ### Architecture Approach
 
-All new features integrate cleanly with the existing BaseSound/Controller architecture without breaking changes. The key insight is that EZ Audio's separation of concerns (audio nodes in BaseSound, parameter automation in Controllers, effects in connections array) naturally accommodates advanced patterns.
+All new components integrate with zero breaking changes to existing APIs. New effects implement the existing `Effect` interface (`input`, `output`, `bypass`, `mix`) and plug into `sound.addEffect()` unchanged. LFO is a standalone class that does not extend `BaseSound` — it connects to any `AudioParam` via native `connect()`. Transport and Sequencer are opt-in: BeatTrack gains a `syncTo(transport)` method that disables its internal scheduler, but `playActiveBeats(bpm, noteType)` continues to work unchanged. PolySynth wraps the existing `Oscillator` class with a shared output bus. GrainPlayer uses the same lookahead scheduler pattern as BeatTrack with increased lookahead (300ms) to accommodate grain scheduling jitter.
 
-**Major architectural patterns:**
+**Major components:**
 
-1. **LayeredSound: Composition over inheritance**
-   - Composite pattern containing multiple Sound instances
-   - Master gain/pan nodes for composite control
-   - Each layer maintains individual controllers
-   - Implements Playable & Connectable interfaces
-   - No BaseSound inheritance needed (cleaner)
+1. `src/effects/` (7 new files) — `DelayEffect`, `ReverbEffect`, `DistortionEffect`, `ChorusEffect`, `CompressorEffect`, `LimiterEffect`, `EQEffect` — each implements `Effect` interface, follows wet/dry routing pattern from existing `FilterEffect`
+2. `src/lfo.ts` — `LFO` class with `connect(AudioParam)`, `disconnect(AudioParam)`, `start()`, `stop()`, `dispose()`; standalone, not extending `BaseSound`
+3. `src/transport.ts` — `Transport` singleton (via `getTransport()`) with Web Worker clock, BPM, time signature, `play/pause/stop`, subscriber registration; BeatTrack subscribes via `syncTo()`
+4. `src/sequencer.ts` — `Sequencer` with `at(beat, callback)`, events stored in beat units (not absolute seconds), integrates with Transport
+5. `src/poly-synth.ts` — `PolySynth` with fixed voice pool (default 8), LRU steal strategy, release-end tracking per voice, shared output bus `GainNode`
+6. `src/grain-player.ts` — `GrainPlayer` with lookahead grain scheduling (300ms), shared output bus, position bounds, grain cleanup via `source.onended`
 
-2. **ADSR Envelopes: Controller extension**
-   - Separate Envelope classes (Envelope, AmplitudeEnvelope)
-   - Integrate via BaseParamController.applyEnvelope()
-   - Controllers remain single source of truth for parameter automation
-   - Fluent API: `sound.controller.applyEnvelope('gain', adsr).at(time).releasing(releaseTime)`
-
-3. **Event System: EventTarget inheritance**
-   - BaseSound extends EventTarget (native browser API)
-   - Typed event maps with CustomEvent<T>
-   - on/once/off convenience methods
-   - Events fire at lifecycle moments (play, stop, end, pause, resume)
-
-4. **Effects Presets: Factory + Builder**
-   - EffectPresets static class with pre-configured chains
-   - EffectChainBuilder for custom fluent chains
-   - Integrates with existing connections array
-   - Each effect = Connection object { audioNode, name }
-
-**Data flow:**
+**Build order dependency graph:**
 ```
-User API → BaseSound methods → Controllers (params + ADSR) → wireConnections (effects) → Web Audio nodes → Events fire → User callbacks
+Level 1 (no new deps):     Effects, LFO           [can build in parallel]
+Level 2 (needs LFO):       ChorusEffect
+Level 3 (standalone):      Transport
+Level 4 (needs Transport): Sequencer, BeatTrack.syncTo()
+Level 5 (needs Oscillator): PolySynth
+Level 6 (standalone):      GrainPlayer
 ```
 
-**Build order (based on dependencies):**
-1. Event system (foundation for everything)
-2. ADSR envelopes (extends controllers, needs events)
-3. Effects presets (extends connections, needs events)
-4. LayeredSound (uses all previous features)
+**Modifications to existing files:** All additive.
+- `src/beat-track.ts` — add `syncTo(transport)` method and `_transportLocked` flag
+- `src/effects/index.ts` — add exports for new effect classes
+- `src/index.ts` — add exports for all new factory functions
 
 ### Critical Pitfalls
 
-Research identified 13 domain pitfalls, with 5 being critical (cause audible artifacts or major performance issues).
+1. **Transport fighting BeatTrack's internal scheduler** — When `syncTo(transport)` is called, the BeatTrack's own `setTimeout`-based scheduler must be stopped immediately via `clearTimeout(this.timerID)`. Without this, two schedulers compete and beats fire twice (audible as flamming / double-hit). Implement `lockToTransport()` that clears `timerID` and sets a `_transportLocked` flag; `playActiveBeats()` becomes a no-op when locked.
 
-1. **ADSR envelope retriggering discontinuities**
-   - Fast note changes cause clicks/pops if new attack starts from wrong gain value
-   - Prevention: Pick up from current value, use setTargetAtTime, never ramp to exactly zero
-   - Affects: ADSR envelopes, LayeredSound
+2. **LFO leak after Sound disposal** — An LFO connected to a Sound's gain/filter `AudioParam` keeps its `OscillatorNode` running indefinitely after the Sound is disposed. `BaseSound.dispose()` disconnects downstream nodes but does not disconnect things connected to its `AudioParam`s. Design LFO with a `dispose()` method and have `BaseSound` support `attachLFO(lfo)` so disposal is automatic.
 
-2. **JavaScript timer / AudioContext clock desynchronization**
-   - setTimeout/setInterval causes timing drift and stuttering
-   - Prevention: Use lookahead scheduling with audioContext.currentTime, never use Date.now() for audio events
-   - Affects: Event system, BeatTrack, audio sprites timing
+3. **PolySynth voice stealing clicks** — Returning a voice to the pool when `isPlaying === false` is too early; the ADSR release tail is still rendering. Track `releaseEndTime` per voice and only steal voices where `audioContext.currentTime > releaseEndTime`. Hard-stop stolen voices with a 10ms fade to prevent click artifacts.
 
-3. **AudioParam event accumulation performance degradation**
-   - Thousands of automation events cause render deadline misses and dropouts
-   - Prevention: Swap nodes periodically, use cancelScheduledValues aggressively, prefer setTargetAtTime over long ramp chains
-   - Affects: ADSR envelopes, effects automation, crossfading
+4. **Sequencer events parsed at wrong BPM** — If musical time strings are converted to absolute seconds at definition time, BPM changes during playback have no effect. Events must be stored in beat units and converted to seconds only at schedule time: `(beatOffset - now) * (60 / currentBpm)`.
 
-4. **AudioBufferSourceNode single-use violation**
-   - Attempting to reuse source after start() causes silent failures
-   - Prevention: Always create new source per playback, reuse buffer not source
-   - Affects: Audio sprites, Sound/Track, LayeredSound
-
-5. **Direct AudioParam value assignment during automation**
-   - Setting .value directly while automation scheduled silently fails
-   - Prevention: Always use setValueAtTime, never mix direct assignment with automation
-   - Affects: ADSR envelopes, effects automation, existing controllers
-
-**Secondary pitfalls** (moderate impact): AnalyserNode FFT performance, memory leaks from undisconnected nodes, effects chain connection order errors, crossfade volume curve errors, multiple AudioContext instances.
-
-**Minor pitfalls** (easily fixed): iOS silent mode behavior (already handled), exponential ramp to zero error, preloading without user gesture.
+5. **ConvolverNode IR buffer assignment causes audio thread dropout** — Setting `ConvolverNode.buffer` after the node is connected to the audio graph can trigger synchronous FFT re-partitioning on the audio thread. Always set the buffer before connecting to the graph. For runtime IR switching, crossfade between two `ConvolverNode`s over 50ms.
 
 ## Implications for Roadmap
 
-Based on combined research, the roadmap should follow a foundation-first approach where each phase builds on capabilities established in previous phases.
+Based on combined research, the dependency graph and pitfall mapping suggest six implementation phases.
 
-### Phase 1: Event System Foundation
+### Phase 1: Built-in Effects
 
-**Rationale:** Events are a missing table-stakes feature and a dependency for all other advanced features. Low complexity, high value, no dependencies.
+**Rationale:** Highest value-to-risk ratio in the milestone. All seven effects implement the existing `Effect` interface with zero changes to `BaseSound`. Chorus requires LFO and should either be deferred to after Phase 2 or implemented with an inline private oscillator. Reverb async loading is the only non-trivial concern in this phase.
+**Delivers:** Complete built-in effects feature set; immediately usable with all existing sound types via `addEffect()`
+**Addresses:** All P1 effect features (Delay, Reverb, Distortion, Compressor, Limiter, EQ)
+**Avoids:** Effects breaking connection chain (Pitfall 5) — verify `input`/`output` nodes on each effect; Reverb IR dropout (Pitfall 6) — set buffer before connecting node to graph
 
-**Delivers:**
-- BaseSound extends EventTarget with typed event maps
-- on/once/off methods for play/stop/end/pause/resume events
-- Internal emit() helper for lifecycle events
-- Scheduled event emission using setTimeout
+### Phase 2: LFO
 
-**Addresses features:**
-- Playback events (table stakes from FEATURES.md)
-- Foundation for LayeredSound sync
-- Foundation for ADSR phase events
-- Foundation for visualization updates
+**Rationale:** Small (one file, ~60 lines), self-contained, zero dependencies on other new features. Must precede Chorus. LFO depth unit API design must be locked in this phase — it is a breaking-change risk if revisited later. Build LFO first, then Chorus can compose it cleanly.
+**Delivers:** `LFO` class + `createLFO()` factory; tremolo, vibrato, auto-filter, auto-pan all become possible; Chorus can be completed
+**Addresses:** LFO (P1) and enables Chorus (P2)
+**Avoids:** LFO leak (Pitfall 3) — design `attachLFO()`/`dispose()` from the start; LFO depth ambiguity (Pitfall 9) — settle API surface (typed connect methods vs. raw units) before writing code
 
-**Avoids pitfalls:**
-- #2 Timer desynchronization (use audioContext.currentTime for scheduling)
-- Proper event timing infrastructure from the start
+### Phase 3: Transport + BeatTrack Sync
 
-**Research flags:** Standard EventTarget pattern, well-documented. Skip phase-specific research.
+**Rationale:** Architectural foundation for multi-track sync; required before Sequencer. The Web Worker Blob URL clock resolves background tab throttling. BeatTrack's `syncTo(transport)` integration is the highest-risk single change in the milestone — it modifies existing behavior while preserving backwards compatibility.
+**Delivers:** Global BPM clock, `play/pause/stop`, bar:beat position tracking, multi-BeatTrack synchronization, background tab handling via visibility detection
+**Addresses:** Transport (P1); enables Sequencer and musical time notation (P2)
+**Avoids:** Dual scheduler conflict (Pitfall 1) — `lockToTransport()` disables BeatTrack internal scheduler; Resume catch-up burst (Pitfall 2) — reset `nextBeatTime` to `audioContext.currentTime` on resume; Tab backgrounding drift (Pitfall 10) — detect `visibilitychange`, re-sync on tab return
 
----
+### Phase 4: Sequencer + Musical Time Notation
 
-### Phase 2: ADSR Envelopes
+**Rationale:** Depends on Transport (Phase 3). Relatively small (~100 lines) but the design constraint — events in beat units, not absolute seconds — must be enforced upfront or live BPM changes will be fundamentally broken.
+**Delivers:** `Sequencer` with arbitrary event callbacks at beat positions; musical time notation (`"4n"`, `"1m"`, `"8t"`) via a pure parser function
+**Addresses:** Sequencer (P2), musical time notation (P2)
+**Avoids:** Musical time BPM bug (Pitfall 7) — store beat offsets; convert to seconds only at schedule time inside the lookahead loop
 
-**Rationale:** Extends existing controller pattern naturally. Enables professional synthesis capability (Tone.js signature feature). Depends on event system for envelope phase events.
+### Phase 5: PolySynth
 
-**Delivers:**
-- Envelope class with applyTo(param, startTime, releaseTime)
-- AmplitudeEnvelope convenience wrapper
-- BaseParamController.applyEnvelope() fluent method
-- Support for attack/decay/sustain/release automation
-- Linear and exponential curve options
+**Rationale:** Depends only on the existing `Oscillator` class (already shipped). Can be built in parallel with Transport/Sequencer phases but is placed here so Phase 1-2 learnings (effects integration, LFO connection lifecycle) can inform the PolySynth output bus design.
+**Delivers:** `PolySynth` with LRU voice stealing, ADSR per voice, shared output bus for per-PolySynth effects
+**Addresses:** PolySynth (P1 must-have)
+**Avoids:** Voice leak / steal click (Pitfall 4) — track `releaseEndTime` per voice; apply 10ms hard-stop fade on steal
 
-**Addresses features:**
-- ADSR envelopes (competitive differentiator from FEATURES.md)
-- Professional synthesis capability
-- Enhanced parameter control
+### Phase 6: GrainPlayer
 
-**Uses stack:**
-- Native AudioParam scheduling (setValueAtTime, linearRamp, exponentialRamp, setTargetAtTime)
-
-**Implements architecture:**
-- Controller extension pattern from ARCHITECTURE.md
-- Envelope as separate class, integrated via controllers
-
-**Avoids pitfalls:**
-- #1 Retriggering discontinuities (pick up from current value, use setTargetAtTime)
-- #3 Event accumulation (swap nodes periodically, use cancelScheduledValues)
-- #5 Direct assignment (always use AudioParam methods)
-- #12 Exponential zero (use 0.0001 minimum)
-
-**Research flags:** Moderately complex timing math. Consider phase-specific research for edge cases (fast retriggering, polyphonic note management).
-
----
-
-### Phase 3: Audio Sprites
-
-**Rationale:** Independent of ADSR/effects, provides major value for games. Low complexity, high impact. Standard JSON format compatible with audiosprite npm package.
-
-**Delivers:**
-- AudioSprite interface { src, sprite: { name: [offset, duration] } }
-- AudioSpriteLoader class with load() and playSprite()
-- Integration with existing Sound class (offset/duration support)
-- createSpriteSound() factory function
-
-**Addresses features:**
-- Audio sprites (Howler.js signature feature from FEATURES.md)
-- Efficient asset loading for games
-
-**Uses stack:**
-- Native AudioBuffer + AudioBufferSourceNode.start(when, offset, duration)
-- JSON sprite map (industry standard format)
-
-**Implements architecture:**
-- Extends existing Sound pattern
-- Reuses audioBuffer, creates new source per sprite play
-
-**Avoids pitfalls:**
-- #4 Source reuse (create new source for each sprite play)
-- #7 Memory leaks (disconnect source.onended)
-- #13 Preload timing (wait for user gesture)
-
-**Research flags:** Simple pattern, well-documented. Skip phase-specific research.
-
----
-
-### Phase 4: Effects Presets
-
-**Rationale:** Extends existing connections architecture. Provides professional sound quality without complex setup. Independent of LayeredSound, can test with existing Sound classes.
-
-**Delivers:**
-- EffectPreset interface and EffectPresets static class
-- Built-in presets (Cathedral Reverb, Telephone Filter, Tape Saturation)
-- EffectChainBuilder with fluent API
-- BaseSound.applyPreset() and buildEffects() methods
-- Impulse response loading utilities
-
-**Addresses features:**
-- Effects presets (competitive differentiator from FEATURES.md)
-- Reverb, delay, distortion, filters
-
-**Uses stack:**
-- Native nodes (ConvolverNode, DelayNode, BiquadFilterNode, WaveShaperNode, DynamicsCompressorNode)
-- Impulse response AudioBuffers
-
-**Implements architecture:**
-- Factory + Builder pattern from ARCHITECTURE.md
-- Integrates with existing connections array
-
-**Avoids pitfalls:**
-- #5 Direct assignment (use AudioParam methods for effect parameters)
-- #8 Connection order (validate same context, disconnect-before-reconnect)
-- #7 Memory leaks (track node lifecycle)
-
-**Research flags:** Impulse response sourcing needs validation. Consider phase-specific research for quality IR libraries and licensing.
-
----
-
-### Phase 5: LayeredSound (Composite Instrument)
-
-**Rationale:** Most complex feature, depends on events (sync), ADSR (per-layer envelopes), and effects (layer processing). Build last after foundations are stable.
-
-**Delivers:**
-- LayeredSound class implementing Playable & Connectable
-- Composite pattern (contains multiple Sound instances)
-- Master gain/pan nodes for composite control
-- Per-layer parameter control
-- createLayeredSound() factory function
-
-**Addresses features:**
-- LayeredSound (planned feature from FEATURES.md)
-- Realistic instrument rendering (velocity layers, round-robin)
-
-**Uses stack:**
-- Composition of existing Sound classes
-- Master controllers for composite parameters
-
-**Implements architecture:**
-- Composite pattern (composition over inheritance) from ARCHITECTURE.md
-- Implements Playable & Connectable interfaces
-- Leverages events for sync, ADSR for per-layer envelopes
-
-**Avoids pitfalls:**
-- #1 Retriggering (each layer can have independent ADSR)
-- #4 Source reuse (each layer creates new source)
-- #7 Memory leaks (disconnect all layers on stop)
-- Voice pooling for performance
-
-**Research flags:** Complex sync and lifecycle management. Consider phase-specific research for voice pooling strategies and polyphony management.
-
----
-
-### Phase 6 (Optional): Audio Visualization
-
-**Rationale:** Nice-to-have, not table stakes. Can be deferred to v2 if timeline is tight. Medium complexity with performance trade-offs.
-
-**Delivers:**
-- AudioVisualizer class with AnalyserNode integration
-- Frequency and waveform data access
-- requestAnimationFrame rendering loop
-- Performance presets (performance/balanced/quality)
-
-**Addresses features:**
-- Visual waveforms (wavesurfer.js specialty from FEATURES.md)
-- User engagement and debugging
-
-**Uses stack:**
-- Native AnalyserNode + requestAnimationFrame
-- Uint8Array/Float32Array data
-
-**Avoids pitfalls:**
-- #6 FFT performance (use minimum FFT size, downsample data, throttle updates)
-- #7 Memory leaks (reuse dataArray, stop animation loop on dispose)
-
-**Research flags:** Performance tuning needed. Consider phase-specific research for optimal FFT sizes and rendering strategies.
-
----
+**Rationale:** Most complex feature in the milestone; standalone with no dependencies on other new Phase 1-5 features. Placing it last prevents it from blocking the rest of the milestone. The lookahead scheduler pattern (refined in Transport and Sequencer phases) directly informs GrainPlayer's scheduler.
+**Delivers:** `GrainPlayer` with configurable grain size, overlap, pitch, position, loop; documented grain density limits (< 20/sec mobile, < 50/sec desktop)
+**Addresses:** GrainPlayer (P2)
+**Avoids:** Main-thread overload (Pitfall 8) — limit grain density; use 300ms lookahead; grain cleanup via `source.onended` to prevent AudioNode accumulation
 
 ### Phase Ordering Rationale
 
-**Why this specific order:**
-
-1. **Events first** — Foundation for all other features. No dependencies, enables everything else.
-2. **ADSR second** — Natural controller extension, enables LayeredSound to have per-layer envelopes later.
-3. **Audio sprites third** — Independent, high value for games, no dependencies on ADSR.
-4. **Effects fourth** — Independent of LayeredSound, can test with existing Sound classes, LayeredSound can leverage later.
-5. **LayeredSound last** — Most complex, benefits from stable Events/ADSR/Effects APIs.
-6. **Visualization optional** — Can defer without blocking other features.
-
-**Dependency graph:**
-```
-Phase 1: Events (foundation)
-    ├─→ Phase 2: ADSR (depends on events)
-    ├─→ Phase 3: Sprites (independent)
-    ├─→ Phase 4: Effects (independent)
-    └─→ Phase 5: LayeredSound (depends on all)
-
-Phase 6: Visualization (depends only on events)
-```
-
-**How this avoids architecture conflicts:**
-- Controller pattern established before ADSR extends it
-- Event system in place before features need to emit events
-- Connections array pattern validated with effects before LayeredSound uses it
-- Simple features (sprites, effects) tested before complex composite (LayeredSound)
-
-**Testing strategy:**
-- Each phase can be tested independently with existing Sound/Oscillator classes
-- Phase 5 integration tests validate all features working together
-- Critical pitfalls are addressed in each phase's prevention strategies
+- Effects come first because they deliver the most visible value at zero architectural risk — they extend an existing interface without touching any existing code
+- LFO precedes Chorus because Chorus is LFO + delay internally; building LFO first avoids duplicating oscillator logic inside the chorus class
+- Transport precedes Sequencer because a Sequencer without a shared clock is just another isolated timer — the same fragmentation problem that already exists across BeatTracks
+- PolySynth is placed after effects and LFO so its output bus design benefits from observed patterns; it is technically independent and could be moved earlier
+- GrainPlayer is last because it is the highest complexity, lowest dependency feature in the set — it can slip to a follow-up iteration without blocking anything else
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
+**Phases that can skip additional research (well-documented patterns):**
+- **Phase 1 (Effects):** All Web Audio nodes are well-specified in MDN; effect patterns follow the existing `FilterEffect` directly; HIGH confidence across all seven effects
+- **Phase 2 (LFO):** Native `OscillatorNode.connect(AudioParam)` is the canonical MDN pattern; no implementation ambiguity
+- **Phase 5 (PolySynth):** Voice pool pattern is identical across Tone.js and p5.js; well-understood, HIGH confidence
 
-- **Phase 2 (ADSR):** Fast retriggering edge cases, polyphonic note management strategies
-- **Phase 4 (Effects):** Impulse response library sourcing, licensing, quality assessment
-- **Phase 5 (LayeredSound):** Voice pooling strategies, polyphony management patterns
-- **Phase 6 (Visualization):** FFT size optimization, rendering performance profiling
-
-**Phases with standard patterns (skip research-phase):**
-
-- **Phase 1 (Events):** EventTarget pattern is well-documented, no unknowns
-- **Phase 3 (Sprites):** Standard JSON format, simple offset playback pattern
+**Phases that benefit from a short design spike or planning review before implementation:**
+- **Phase 3 (Transport):** The `syncTo(transport)` BeatTrack integration should be prototyped before the full phase plan is written — the interaction between the existing scheduler and the new Transport lock is the highest-risk code change in the milestone
+- **Phase 4 (Sequencer):** The exact API shape (`at(beat, callback)` vs. structured event objects `{ time, note, duration, velocity }`) requires a decision before implementation; this is an API surface that will be hard to change post-release
+- **Phase 6 (GrainPlayer):** The pitch math (semitones to `playbackRate`), position bounds (loop / stop / wrap), and grain density limits need explicit test cases written before implementation begins; a pre-implementation design doc is worthwhile
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All features use native Web Audio API. Zero dependencies verified with MDN official docs. |
-| Features | MEDIUM-HIGH | Feature expectations validated across multiple libraries (Tone.js, Howler.js, Pizzicato.js). Table stakes vs differentiators clear. |
-| Architecture | HIGH | Patterns verified with Tone.js, audio-effects library, and Web Audio spec. Composition/extension patterns fit existing codebase. |
-| Pitfalls | HIGH | Critical pitfalls verified with official MDN docs, Web Audio performance guide, and GitHub issue trackers. Prevention strategies documented. |
+| Stack | HIGH | All features use stable, well-specified Web Audio API nodes; verified via MDN and Tone.js source analysis |
+| Features | HIGH | P1/P2 split is clear; competitor analysis (Tone.js, Tuna.js, Pizzicato.js) confirms priorities; anti-features are well-reasoned |
+| Architecture | HIGH | Integration points are explicit; no breaking changes to existing API; dependency graph is unambiguous |
+| Pitfalls | HIGH | Pitfalls verified against MDN official docs, existing codebase source (`beat-track.ts`, `oscillator.ts`), and Tone.js issue tracker |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-**AudioParam event accumulation threshold:**
-- Research identified the problem but optimal node swap threshold varies by platform
-- Recommendation: Start with 1000 events, monitor in debug mode, adjust based on telemetry
-- Address during Phase 2 implementation with performance profiling
-
-**Impulse response quality and licensing:**
-- Research found several IR libraries (OpenAIR, Reverb.js CDN, Valhalla) but quality/licensing needs verification
-- Recommendation: Download and test sample IRs during Phase 4 planning
-- Verify CC-BY/MIT licensing for redistribution
-
-**LayeredSound voice pooling strategy:**
-- Research shows Tone.js PolySynth uses voice pooling but implementation details not fully documented
-- Recommendation: Prototype simple fixed-pool (8-16 voices) first, optimize based on real-world usage
-- Address during Phase 5 with load testing
-
-**Mobile performance boundaries:**
-- FFT sizes, layer counts, and effect chain lengths have device-specific limits
-- Recommendation: Test on representative devices (iPhone SE, mid-range Android) during each phase
-- Document minimum supported devices in compatibility guide
-
-**ADSR curve quality vs performance:**
-- setTargetAtTime vs exponentialRampToValueAtTime trade-offs for decay/release
-- Recommendation: Provide curve type options, document trade-offs, let users choose
-- Address during Phase 2 with A/B audio quality testing
+- **GrainPlayer pitch/time decoupling accuracy:** The `AudioBufferSourceNode` approach gives pitch shift via `playbackRate` but cannot independently time-stretch (change speed without changing pitch). This limitation must be documented prominently. Decide in Phase 6 planning whether to frame the feature as "pitch shift + position scrubbing" rather than "time stretch" to set correct user expectations.
+- **Reverb algorithmic vs. convolution default:** Research recommends convolution (IR file) as primary and algorithmic (synthesized decaying noise) as fallback. The factory API — `createReverb(url)` vs. `createReverb({ decay, preDelay })` — needs to be finalized before Phase 1 implementation begins. Validate that the synthesized IR quality is acceptable for documentation demos.
+- **LFO depth normalization API:** This is a breaking-change risk. Before Phase 2 implementation, write the expected API and unit tests first (TDD). Options: raw units (depth in target param's native units, user sets appropriate scale) vs. typed connect methods (`createTremolo(sound, { depth })`, `createVibrato(sound, { depth })`). Either is valid; the choice must be locked before code is written.
+- **CSP implications for Web Worker Blob URL:** The Transport clock uses `new Worker(URL.createObjectURL(blob))` which requires `worker-src 'self' blob:` in Content Security Policy. This is a known Tone.js limitation. Document it clearly in Phase 3 and provide a `setTimeout`-based fallback clock for CSP-restricted environments.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-**Official Documentation:**
-- MDN Web Audio API — core API reference, best practices, performance guide
-- MDN AudioParam — scheduling methods, automation timeline
-- MDN AnalyserNode — visualization implementation
-- MDN EventTarget — native event system patterns
-- W3C Web Audio API 1.1 Specification — official spec verification
-
-**Performance and Best Practices:**
-- Web Audio Performance Notes (padenot.github.io) — event accumulation, memory management
-- MDN Web Audio Best Practices — context management, mobile considerations
+- [MDN: DynamicsCompressorNode](https://developer.mozilla.org/en-US/docs/Web/API/DynamicsCompressorNode) — compressor AudioParams and ranges
+- [MDN: DelayNode](https://developer.mozilla.org/en-US/docs/Web/API/DelayNode) — delay time param, feedback loop pattern
+- [MDN: BiquadFilterNode](https://developer.mozilla.org/en-US/docs/Web/API/BiquadFilterNode) — all filter types, EQ implementation
+- [MDN: ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode) — IR reverb, buffer property
+- [MDN: AudioNode.connect(AudioParam)](https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect) — LFO modulation pattern
+- [MDN: Web Audio API Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices) — pitfall prevention
+- [web.dev: A Tale of Two Clocks](https://web.dev/articles/audio-scheduling) — lookahead scheduler pattern (Chris Wilson)
+- Existing `src/beat-track.ts` — lookahead constants (scheduleAheadTime=0.1, interval=25ms), backgrounding comment
+- Existing `src/effects/filter-effect.ts` — wet/dry routing pattern for all new effects to follow
+- Existing `src/oscillator.ts` — single-use OscillatorNode pattern relevant to LFO design
 
 ### Secondary (MEDIUM-HIGH confidence)
-
-**Library Documentation:**
-- Tone.js official docs — ADSR envelope patterns, PolySynth voice pooling
-- Howler.js official docs — audio sprite format, event system
-- Pizzicato.js official docs — effects-as-objects pattern
-- Wavesurfer.js official docs — visualization patterns
-
-**Architecture Patterns:**
-- Tone.js GitHub repository — Envelope implementation, ToneAudioNode base class
-- audio-effects GitHub (Sambego) — effect chaining patterns
-- Reverb.js library — ConvolverNode usage patterns
-
-**Domain Tutorials:**
-- Building a Synthesizer with Web Audio API (dobrian.github.io) — ADSR envelope math
-- Web Audio Timing Tutorial (catarak.github.io) — lookahead scheduling
-- Understanding Web Audio Clock (sonoport.github.io) — timer desynchronization
+- [Tone.js Ticker.ts source](https://github.com/Tonejs/Tone.js/blob/dev/Tone/core/clock/Ticker.ts) — Web Worker Blob URL clock implementation
+- [Tone.js Chorus docs](https://tonejs.github.io/docs/15.0.4/classes/Chorus.html) — stereo chorus pattern with LFO on delayTime
+- [Tone.js PolySynth docs](https://tonejs.github.io/docs/15.1.22/classes/PolySynth.html) — voice allocation, LRU steal strategy
+- [Tone.js Transport Wiki](https://github.com/Tonejs/Tone.js/wiki/Transport) — Transport design reference and known limitations
+- [Tuna.js](https://github.com/Theodeus/tuna) — competitor effect implementations for comparison
+- [Pizzicato.js](https://alemangui.github.io/pizzicato/) — competitor simplicity reference
+- [Web Audio Performance Notes](https://padenot.github.io/web-audio-perf/) — performance constraints and limits
 
 ### Tertiary (MEDIUM confidence)
-
-**Community Resources:**
-- Web Audio API GitHub Issues — ADSR retriggering issue #510, timing patterns
-- fastidious-envelope-generator (rsimmons) — artifact-free envelope edge cases
-- awesome-webaudio curated list — ecosystem overview
-- TypeScript Deep Dive — typesafe event emitter patterns
-
-**Performance Case Studies:**
-- Phaser WebAudio memory leak issue #5224 — node disconnection patterns
-- Chrome Audion extension — debugging strategies
-
-**Implementation Examples:**
-- web.dev audio effects patterns — effect routing examples
-- Web Audio crossfade implementation (webaudioapi.com) — equal-power curves
-- Digital Piano with Web Audio API (leafwindow.com) — ADSR implementation
+- [DEV: Granular Synthesis with Web Audio API](https://dev.to/hexshift/granular-synthesis-in-the-browser-using-web-audio-api-and-audiobuffer-slicing-2o9h) — `AudioBufferSourceNode` grain scheduling pattern
+- [Building a Polyphonic Synth with Web Audio API](https://dev.to/hexshift/building-a-polyphonic-synth-with-web-audio-api-no-libraries-needed-4a07) — PolySynth pattern reference
+- [Tone.js Sequence Re-schedule Bug #936](https://github.com/Tonejs/Tone.js/issues/936) — confirms sequencer event timing pitfall
+- [Tone.js Transport: Multiple Timelines Issue #108](https://github.com/Tonejs/Tone.js/issues/108) — dual scheduler conflict confirmation
 
 ---
-
-**Research completed:** 2026-01-31
-**Ready for roadmap:** Yes
-
-**Bottom line recommendation:** Proceed with 5-phase roadmap (Events → ADSR → Sprites → Effects → LayeredSound). All features use native Web Audio API (zero dependencies). Defer visualization to v2 if timeline is tight. Critical pitfalls have well-documented prevention strategies. High confidence in technical feasibility and architectural fit.
+*Research completed: 2026-02-28*
+*Ready for roadmap: yes*
