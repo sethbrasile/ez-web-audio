@@ -8,6 +8,7 @@
 import type { BaseSound } from '../base-sound'
 import type { BeatTrack } from '../beat-track'
 import type { LayeredSound } from '../layered-sound'
+import type { PolySynth } from '../poly-synth'
 import type { Sequence } from '../sequence'
 import type { Transport, TransportPosition } from '../transport'
 
@@ -26,7 +27,7 @@ import type { Transport, TransportPosition } from '../transport'
  * })
  * ```
  */
-export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | Sequence | Transport
+export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | PolySynth | Sequence | Transport
 
 /**
  * Detail for 'play' events, fired when audio playback starts.
@@ -291,4 +292,28 @@ export interface SequenceLoopDetail {
 export interface SequenceEventMap {
   event: CustomEvent<SequenceEventDetail>
   loop: CustomEvent<SequenceLoopDetail>
+}
+
+// ─── PolySynth Events ────────────────────────────────────────────────
+
+/**
+ * Detail for 'voicestolen' events, fired when a PolySynth voice is stolen
+ * to accommodate a new note request when the voice pool is full.
+ */
+export interface VoiceStolenEventDetail {
+  /** Frequency of the voice that was stolen */
+  stolenFrequency: number
+  /** Frequency of the new note that replaced it */
+  newFrequency: number
+  /** The audioContext.currentTime when the steal occurred */
+  time: number
+  /** The PolySynth instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
+ * Maps PolySynth event names to their corresponding CustomEvent types.
+ */
+export interface PolySynthEventMap {
+  voicestolen: CustomEvent<VoiceStolenEventDetail>
 }
