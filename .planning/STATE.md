@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: "5"
 milestone_name: Effects & Transport
 status: in_progress
-last_updated: "2026-02-28T22:00:00.000Z"
+last_updated: "2026-02-28T23:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  completed_phases: 5
+  total_plans: 16
+  completed_plans: 16
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 55 complete — Transport + BeatTrack Sync)
-**Current Focus:** Phase 56 — Sequencer + Musical Time
+**Last Updated:** 2026-02-28 (Phase 57 complete — PolySynth)
+**Current Focus:** Phase 58 — GrainPlayer
 
 ## Project Reference
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 56 of 58 — next up (Sequencer + Musical Time)
-Status: Phases 53, 54, 54.1, 55 complete. Phase 56 not yet planned.
-Last activity: 2026-02-28 — Phase 55 completed (4 plans, 95 new tests across WorkerTimer/Transport/BeatTrack sync)
+Phase: 58 of 58 — next up (GrainPlayer)
+Status: Phases 53, 54, 54.1, 55, 56, 57 complete. Phase 58 not yet planned.
+Last activity: 2026-02-28 — Phase 57 completed (2 plans, 55 tests for PolySynth voice pool)
 
-Progress: [██████░░░░] 67% (4/6 phases complete in Milestone 5)
+Progress: [████████░░] 83% (5/6 phases complete in Milestone 5)
 
 ## Performance Metrics
 
@@ -47,8 +47,8 @@ Progress: [██████░░░░] 67% (4/6 phases complete in Milestone
 | 54. LFO | 2/2 | 52 tests | - |
 | 54.1. Deep Review Fixes | 4/4 complete | 14 new tests (plan 04) | - |
 | 55. Transport + BeatTrack Sync | 4/4 complete | 95 new tests (23+41+31) | 23.75 |
-| 56. Sequencer + Musical Time | TBD | - | - |
-| 57. PolySynth | TBD | - | - |
+| 56. Sequencer + Musical Time | 2/2 complete | 51 tests | 25.5 |
+| 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
 | 58. GrainPlayer | TBD | - | - |
 
 ## Accumulated Context
@@ -86,8 +86,14 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Beat events always fire even when muted (for UI sync)
 - Beat.triggerVisualOnly() for muted/non-soloed visual indication
 
-**Design decisions remaining:**
-- Phase 56: Sequencer event API shape — `at(beat, callback)` vs structured `{ time, note, duration, velocity }` objects
+**Phase 57 decisions made:**
+- PolySynth extends TypedEventEmitter (not BaseSound) — owns its shared bus
+- VoiceHandle class-based (not Proxy) for TypeScript compatibility
+- Array-based voice pool (small maxVoices, typically ≤32)
+- On-demand voice creation with recycling (not pre-allocated)
+- Same-frequency retrigger: scan active voices for matching frequency before allocating
+- Three steal strategies: 'lru' (default), 'oldest-active', 'quietest'
+- Custom voice factory via createVoice option
 
 ### Roadmap Evolution
 
@@ -106,5 +112,5 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed Phase 55 — ready for Phase 56
+Stopped at: Completed Phase 57 — ready for Phase 58
 Resume file: None

@@ -24,8 +24,8 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
 ### Synthesis
 
-- [ ] **SYNTH-01**: Developer can create a PolySynth that plays multiple notes simultaneously
-- [ ] **SYNTH-02**: PolySynth manages voice allocation with configurable max voices and voice stealing
+- [x] **SYNTH-01**: Developer can create a PolySynth that plays multiple notes simultaneously
+- [x] **SYNTH-02**: PolySynth manages voice allocation with configurable max voices and voice stealing
 - [ ] **SYNTH-03**: Developer can create a GrainPlayer from an audio buffer with configurable grain size and overlap
 - [ ] **SYNTH-04**: GrainPlayer supports independent pitch shifting and playback rate control
 
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOD-01 | Phase 54 | Complete |
 | MOD-02 | Phase 54 | Complete |
 | MOD-03 | Phase 54 | Complete |
-| SYNTH-01 | Phase 57 | Pending |
-| SYNTH-02 | Phase 57 | Pending |
+| SYNTH-01 | Phase 57 | Complete |
+| SYNTH-02 | Phase 57 | Complete |
 | SYNTH-03 | Phase 58 | Pending |
 | SYNTH-04 | Phase 58 | Pending |
 | TRANS-01 | Phase 55 | Pending |
