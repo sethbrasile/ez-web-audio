@@ -4,7 +4,7 @@
 
 Milestone 6 covers documentation and interactive demos for all Milestone 5 features (built-in effects, LFO, Transport, Sequence, PolySynth, GrainPlayer), three new library features (BeatTrack musical time notation, MIDI input utility, amp model API), and two flagship showcase demos (guitar pedalboard, multi-track DAW).
 
-**Phases: 59-68 (10 total)**
+**Phases: 61-70 (10 total)**
 **Structure: Feature-first** — library features ship before their demos, each phase is self-contained, showcase demos come last as capstones.
 
 ---
@@ -39,7 +39,7 @@ New pages added to existing sidebar sections (no restructuring):
 
 ## Phase Details
 
-### Phase 59: BeatTrack Musical Time Notation (Library)
+### Phase 61: BeatTrack Musical Time Notation (Library)
 
 Update BeatTrack to accept musical time notation strings (`'4n'`, `'8n'`, `'16n'`) in addition to existing numeric fractions.
 
@@ -53,7 +53,7 @@ Update BeatTrack to accept musical time notation strings (`'4n'`, `'8n'`, `'16n'
 
 ---
 
-### Phase 60: MIDI Input Utility (Library)
+### Phase 62: MIDI Input Utility (Library)
 
 Add `createMIDIInput()` to the library wrapping the Web MIDI API.
 
@@ -73,7 +73,7 @@ Add `createMIDIInput()` to the library wrapping the Web MIDI API.
 
 ---
 
-### Phase 61: Amp Model API (Library)
+### Phase 63: Amp Model API (Library)
 
 Add `createAmpModel()` as a first-class connectable effect chain.
 
@@ -106,7 +106,7 @@ Input Gain -> Pre-amp Stage 1 (Gain + WaveShaper + HP Filter)
 
 ---
 
-### Phase 62: Built-in Effects Documentation
+### Phase 64: Built-in Effects Documentation
 
 **New page:** `docs/examples/built-in-effects.md`
 
@@ -122,7 +122,7 @@ Showcases `createDelay`, `createReverb`, `createDistortion`, `createCompressor`,
 
 ---
 
-### Phase 63: LFO Documentation + Demo
+### Phase 65: LFO Documentation + Demo
 
 **New page:** `docs/examples/lfo.md`
 
@@ -138,7 +138,7 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 
 ---
 
-### Phase 64: Transport + Sequence Documentation
+### Phase 66: Transport + Sequence Documentation
 
 **New page:** `docs/examples/transport.md`
 
@@ -152,7 +152,7 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 
 ---
 
-### Phase 65: PolySynth + Arpeggiator Documentation
+### Phase 67: PolySynth + Arpeggiator Documentation
 
 **New page:** `docs/examples/polysynth.md` — basic chord playback demo
 
@@ -176,7 +176,7 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 
 ---
 
-### Phase 66: GrainPlayer Documentation + Demo
+### Phase 68: GrainPlayer Documentation + Demo
 
 **New page:** `docs/examples/grain-player.md`
 
@@ -192,7 +192,7 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 
 ---
 
-### Phase 67: Guitar Pedalboard + Amp Simulator Demo
+### Phase 69: Guitar Pedalboard + Amp Simulator Demo
 
 **New page:** `docs/examples/pedalboard.md`
 
@@ -218,7 +218,7 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 
 ---
 
-### Phase 68: DAW / Multi-Track Sequencer Demo
+### Phase 70: DAW / Multi-Track Sequencer Demo
 
 **New page:** `docs/examples/daw.md`
 
@@ -267,21 +267,21 @@ Each has waveform selector (sine, square, triangle, sawtooth, S&H) and BPM sync 
 ## Phase Dependency Graph
 
 ```
-Phase 59 (BeatTrack timing) ─────────────────────────┐
-Phase 60 (MIDI Input) ───────────────────────────┐    │
-Phase 61 (Amp Model) ──────────────────────┐     │    │
+Phase 61 (BeatTrack timing) ─────────────────────────┐
+Phase 62 (MIDI Input) ───────────────────────────┐    │
+Phase 63 (Amp Model) ──────────────────────┐     │    │
                                            │     │    │
-Phase 62 (Effects docs) ──────────────────┐│     │    │
-Phase 63 (LFO docs) ─────────────────────┐││     │    │
-Phase 64 (Transport docs) ──────────────┐│││     │    │
-Phase 65 (PolySynth + Arp docs) ───────┐││││     │    │
-Phase 66 (GrainPlayer docs) ──────────┐│││││     │    │
+Phase 64 (Effects docs) ──────────────────┐│     │    │
+Phase 65 (LFO docs) ─────────────────────┐││     │    │
+Phase 66 (Transport docs) ──────────────┐│││     │    │
+Phase 67 (PolySynth + Arp docs) ───────┐││││     │    │
+Phase 68 (GrainPlayer docs) ──────────┐│││││     │    │
                                       │││││├─────┤    │
-Phase 67 (Pedalboard) ◄──────────────────┘61     │    │
-Phase 68 (DAW) ◄──────────────────────────────all of above
+Phase 69 (Pedalboard) ◄──────────────────┘63     │    │
+Phase 70 (DAW) ◄──────────────────────────────all of above
 ```
 
-Phase 68 depends on all prior phases. Phase 67 depends on Phase 61 (Amp Model). All other phases are independent and could theoretically run in parallel, though the feature-first ordering (59-61 before 62-66) is recommended.
+Phase 70 depends on all prior phases. Phase 69 depends on Phase 63 (Amp Model). All other phases are independent and could theoretically run in parallel, though the feature-first ordering (61-63 before 64-68) is recommended.
 
 ---
 
