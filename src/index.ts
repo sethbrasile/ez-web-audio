@@ -10,11 +10,12 @@ import type { Playable } from './interfaces/playable'
 import type { LayeredSoundOptions } from './layered-sound'
 import type { LFOConnectOptions, LFOOptions, LFOWaveform } from './lfo'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
+import type { PlayOptions, PolySynthOptions, StealStrategy } from './poly-synth'
+import type { SequenceCallback, SequenceOptions } from './sequence'
 import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import type { TransportOptions, TransportPosition } from './transport'
 import type { CrossfadeOptions } from './utils/crossfade'
 import type { MusicalTimeNotation } from './utils/musical-time'
-import type { SequenceCallback, SequenceOptions } from './sequence'
-import type { TransportOptions, TransportPosition } from './transport'
 import type { Accidental, NoteLetter, Octave } from '@/musical-identity'
 import type { SamplerOptions } from '@/sampler'
 import { OscillatorController } from '@controllers/oscillator-controller'
@@ -55,19 +56,20 @@ import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from 
 import { Font } from './font'
 import { LayeredSound } from './layered-sound'
 import { LFO } from './lfo'
-import { Sequence } from './sequence'
-import { formatPosition, Transport } from './transport'
+import { PolySynth, VoiceHandle } from './poly-synth'
 import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
+import { Sequence } from './sequence'
 import { AudioSprite } from './sprite'
+import { formatPosition, Transport } from './transport'
 import { pauseAll, playAll, stopAll } from './utils/collections'
 import { crossfade } from './utils/crossfade'
 import { mungeSoundFont } from './utils/decode-base64'
 import frequencyMap from './utils/frequency-map'
+import { isMusicalTimeNotation, musicalTimeToBeats, parseMusicalTime } from './utils/musical-time'
 import { createBrownNoiseBuffer, createPinkNoiseBuffer } from './utils/noise'
 import { createNoteObjectsForFont, extractDecodedKeyValuePairs } from './utils/note-methods'
 import { playTogether } from './utils/play-together'
-import { isMusicalTimeNotation, musicalTimeToBeats, parseMusicalTime } from './utils/musical-time'
 import audioContextAwareTimeout from './utils/timeout'
 import unmuteIosAudio from './utils/unmute'
 
@@ -520,6 +522,42 @@ export async function createSampler(inputs: AudioInput[], opts?: SamplerOptions)
 export async function createOscillator(options?: OscillatorOptions): Promise<Oscillator> {
   await initAudio()
   return new Oscillator(getOrCreateAudioContext(), options)
+}
+
+/**
+ * Create a PolySynth for polyphonic synthesis with automatic voice management.
+ *
+ * PolySynth manages a pool of Oscillator voices, handling allocation, recycling,
+ * and voice stealing automatically. All voices route through a shared output bus
+ * with master gain/pan controls and effect chain support.
+ *
+ * @param options - PolySynth configuration (maxVoices, stealStrategy, oscillator settings)
+ * @returns Promise resolving to a PolySynth instance
+ *
+ * @example
+ * ```typescript
+ * import { createPolySynth } from 'ez-web-audio'
+ *
+ * const synth = await createPolySynth({
+ *   maxVoices: 8,
+ *   type: 'sawtooth',
+ *   envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.3 },
+ *   lowpass: { frequency: 2000, q: 1 }
+ * })
+ *
+ * // Play a chord
+ * synth.play({ frequency: 261.63 }) // C4
+ * synth.play({ frequency: 329.63 }) // E4
+ * synth.play({ frequency: 392.00 }) // G4
+ *
+ * // Add effects to all voices
+ * const delay = createDelay({ time: 0.3, feedback: 0.4, wet: 0.3 })
+ * synth.addEffect(delay)
+ * ```
+ */
+export async function createPolySynth(options?: PolySynthOptions): Promise<PolySynth> {
+  await initAudio()
+  return new PolySynth(getOrCreateAudioContext(), options)
 }
 
 /**
@@ -1072,15 +1110,11 @@ export async function useInteractionMethods(key: HTMLElement, player: Interactio
 }
 
 export {
-  // Analyzer
   Analyzer,
-  // Timing utilities
   audioContextAwareTimeout,
   AudioContextError,
-  // Errors
   AudioError,
   AudioLoadError,
-  // Audio Sprites
   AudioSprite,
   BaseEffect,
   Beat,
@@ -1093,56 +1127,49 @@ export {
   createEffect,
   createEQ,
   createFilterEffect,
-  // Effects
   createGainEffect,
   createReverb,
-  // Crossfade utility
   crossfade,
   CrossfadeOptions,
   DelayEffect,
   DistortionEffect,
   EffectWrapper,
-  // Envelope
   Envelope,
   EQEffect,
   FilterEffect,
   Font,
+  formatPosition,
   frequencyMap,
   GainEffect,
   InvalidNoteError,
+  isMusicalTimeNotation,
   isPreloaded,
   LFO,
   MusicallyAware,
+  musicalTimeToBeats,
   Note,
   Oscillator,
   OscillatorController,
+  parseMusicalTime,
   pauseAll,
   playAll,
-  // Synchronized playback
   playTogether,
-  // Preload utilities
+  PolySynth,
   preload,
   ReverbEffect,
   SampledNote,
   Sampler,
   Sequence,
   setDebugHandler,
-  // Debug utilities
   setDebugMode,
   setPreloadCacheLimit,
   Sound,
   SoundController,
-  // Collection utilities
   stopAll,
   Track,
-  // Transport
   Transport,
-  formatPosition,
+  VoiceHandle,
   wrapEffect,
-  // Musical time utilities
-  musicalTimeToBeats,
-  parseMusicalTime,
-  isMusicalTimeNotation,
 }
 
 export type {
@@ -1155,6 +1182,7 @@ export type {
   LayeredSoundEventMap,
   PauseEventDetail,
   PlayEventDetail,
+  PolySynthEventMap,
   ResumeEventDetail,
   SeekEventDetail,
   SequenceEventDetail,
@@ -1167,6 +1195,7 @@ export type {
   TransportEventMap,
   TransportLifecycleDetail,
   TransportTickDetail,
+  VoiceStolenEventDetail,
   WarningEventDetail,
 } from './events/event-types'
 // Re-export LayeredSound types
@@ -1196,21 +1225,24 @@ export type {
   LFOConnectOptions,
   LFOOptions,
   LFOWaveform,
+  MusicalTimeNotation,
   OscillatorControlType,
   OscillatorFilterOptions,
   OscillatorOptions,
   Playable,
+  PlayOptions,
+  PolySynthOptions,
   RatioType,
   SamplerOptions,
   SeekType,
+  SequenceCallback,
+  SequenceOptions,
   SoundControlType,
   SpriteDefinition,
   SpriteManifest,
   SpritePlayOptions,
-  MusicalTimeNotation,
-  SequenceCallback,
-  SequenceOptions,
+  StealStrategy,
+  TimeObject,
   TransportOptions,
   TransportPosition,
-  TimeObject,
 }
