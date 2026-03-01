@@ -7,6 +7,7 @@
  */
 import type { BaseSound } from '../base-sound'
 import type { BeatTrack } from '../beat-track'
+import type { GrainPlayer } from '../grain-player'
 import type { LayeredSound } from '../layered-sound'
 import type { PolySynth } from '../poly-synth'
 import type { Sequence } from '../sequence'
@@ -27,7 +28,7 @@ import type { Transport, TransportPosition } from '../transport'
  * })
  * ```
  */
-export type AudioEventSource = BaseSound | BeatTrack | LayeredSound | PolySynth | Sequence | Transport
+export type AudioEventSource = BaseSound | BeatTrack | GrainPlayer | LayeredSound | PolySynth | Sequence | Transport
 
 /**
  * Detail for 'play' events, fired when audio playback starts.
@@ -316,4 +317,17 @@ export interface VoiceStolenEventDetail {
  */
 export interface PolySynthEventMap {
   voicestolen: CustomEvent<VoiceStolenEventDetail>
+}
+
+// ─── GrainPlayer Events ──────────────────────────────────────────────
+
+/**
+ * Maps GrainPlayer event names to their corresponding CustomEvent types.
+ * GrainPlayer emits standard lifecycle events for play/stop/pause/resume.
+ */
+export interface GrainPlayerEventMap {
+  play: CustomEvent<PlayEventDetail>
+  stop: CustomEvent<StopEventDetail>
+  pause: CustomEvent<PauseEventDetail>
+  resume: CustomEvent<ResumeEventDetail>
 }
