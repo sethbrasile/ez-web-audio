@@ -5,6 +5,7 @@ import type { ControlType, ControlTypeMap, OscillatorControlType, RatioType, See
 import type { DebugMessage } from './debug'
 import type { AlgorithmicReverbOptions, CompressorOptions, ConvolutionReverbOptions, DelayOptions, DistortionOptions, DistortionType, Effect, EQOptions, ExternalEffect, FilterEffectOptions, FilterType } from './effects'
 import type { EnvelopeOptions } from './envelope'
+import type { GrainPlayerOptions } from './grain-player'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { LayeredSoundOptions } from './layered-sound'
@@ -54,6 +55,7 @@ import {
 import { Envelope } from './envelope'
 import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
 import { Font } from './font'
+import { GrainPlayer } from './grain-player'
 import { LayeredSound } from './layered-sound'
 import { LFO } from './lfo'
 import { PolySynth, VoiceHandle } from './poly-synth'
@@ -558,6 +560,56 @@ export async function createOscillator(options?: OscillatorOptions): Promise<Osc
 export async function createPolySynth(options?: PolySynthOptions): Promise<PolySynth> {
   await initAudio()
   return new PolySynth(getOrCreateAudioContext(), options)
+}
+
+/**
+ * Create a GrainPlayer for granular synthesis from an audio buffer.
+ *
+ * GrainPlayer generates continuous texture/pad sounds by scheduling many overlapping
+ * short "grains" of audio from a source buffer. Provides independent control over
+ * pitch (via playbackRate per grain) and playback position (which region of the buffer
+ * to sample from).
+ *
+ * Note: Pitch shifting is implemented via playbackRate on each grain. This changes
+ * grain duration proportionally, which the overlap system compensates for. Extreme
+ * pitch values (beyond +/-24 semitones) may affect texture quality.
+ *
+ * @param buffer - The AudioBuffer to use as the grain source
+ * @param options - Optional GrainPlayer configuration
+ * @returns Promise resolving to a GrainPlayer instance
+ *
+ * @example
+ * ```typescript
+ * import { createSound, createGrainPlayer } from 'ez-web-audio'
+ *
+ * // Load an audio file and create a grain player from its buffer
+ * const sound = await createSound('pad.mp3')
+ * const grains = await createGrainPlayer(sound.audioBuffer, {
+ *   grainSize: 0.1,
+ *   overlap: 0.05,
+ *   pitch: 0,
+ *   jitter: 0.1
+ * })
+ *
+ * grains.play()
+ *
+ * // Scrub through the buffer
+ * grains.position = 0.5  // middle of buffer
+ *
+ * // Pitch shift up a fifth
+ * grains.pitch = 7
+ *
+ * // Add effects
+ * const reverb = createReverb({ decay: 3, wet: 0.5 })
+ * grains.addEffect(reverb)
+ * ```
+ */
+export async function createGrainPlayer(
+  buffer: AudioBuffer,
+  options?: GrainPlayerOptions,
+): Promise<GrainPlayer> {
+  await initAudio()
+  return new GrainPlayer(getOrCreateAudioContext(), buffer, options)
 }
 
 /**
@@ -1141,6 +1193,7 @@ export {
   formatPosition,
   frequencyMap,
   GainEffect,
+  GrainPlayer,
   InvalidNoteError,
   isMusicalTimeNotation,
   isPreloaded,
@@ -1179,6 +1232,7 @@ export type {
   BeatTrackEventMap,
   EndEventDetail,
   EventDetailFor,
+  GrainPlayerEventMap,
   LayeredSoundEventMap,
   PauseEventDetail,
   PlayEventDetail,
@@ -1222,6 +1276,7 @@ export type {
   ExternalEffect,
   FilterEffectOptions,
   FilterType,
+  GrainPlayerOptions,
   LFOConnectOptions,
   LFOOptions,
   LFOWaveform,
