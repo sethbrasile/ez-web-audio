@@ -20,7 +20,7 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
 - [x] **MOD-01**: Developer can create an LFO with configurable frequency, depth, and waveform
 - [x] **MOD-02**: Developer can connect an LFO to any AudioParam on any sound (gain, pan, frequency, filter cutoff)
-- [ ] **MOD-03**: LFO is properly disposed when the target sound is disposed (no memory leaks)
+- [x] **MOD-03**: LFO is properly disposed when the target sound is disposed (no memory leaks)
 
 ### Synthesis
 
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FX-06 | Phase 59 | Pending |
 | MOD-01 | Phase 54 | Complete |
 | MOD-02 | Phase 54 | Complete |
-| MOD-03 | Phase 59 | Pending |
+| MOD-03 | Phase 59 | Complete |
 | SYNTH-01 | Phase 57 | Complete |
 | SYNTH-02 | Phase 57 | Complete |
 | SYNTH-03 | Phase 58 | Complete |

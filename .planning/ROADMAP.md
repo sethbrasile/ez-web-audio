@@ -835,7 +835,7 @@ Plans:
   2. Developer can call `layeredSound.removeEffect(delay)` to remove the effect
   3. When an LFO is connected to a BaseEffect target and that effect is disposed, the LFO automatically disconnects and cleans up (no stale AudioParam references)
   4. BaseEffect emits a `'dispose'` event when disposed, matching BaseSound's dispose event pattern
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 59-01-PLAN.md — BaseEffect dispose event + LFO BaseEffect cleanup (MOD-03)
 - [ ] 59-02-PLAN.md — LayeredSound shared output bus + addEffect/removeEffect (FX-06)
