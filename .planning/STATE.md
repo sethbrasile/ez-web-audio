@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: "5"
-milestone_name: Effects & Transport
-status: in_progress
-last_updated: "2026-02-28T23:00:00.000Z"
+milestone: v1.1
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-01T05:18:34.923Z"
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
+  total_phases: 42
+  completed_phases: 42
+  total_plans: 105
+  completed_plans: 105
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 57 complete — PolySynth)
-**Current Focus:** Phase 58 — GrainPlayer
+**Last Updated:** 2026-02-28 (Phase 58 complete — GrainPlayer)
+**Current Focus:** Milestone 5 complete
 
 ## Project Reference
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 58 of 58 — next up (GrainPlayer)
-Status: Phases 53, 54, 54.1, 55, 56, 57 complete. Phase 58 not yet planned.
-Last activity: 2026-02-28 — Phase 57 completed (2 plans, 55 tests for PolySynth voice pool)
+Phase: 58 of 58 — complete (GrainPlayer)
+Status: All phases complete. Milestone 5 finished.
+Last activity: 2026-02-28 — Phase 58 completed (2 plans, 71 tests for GrainPlayer)
 
-Progress: [████████░░] 83% (5/6 phases complete in Milestone 5)
+Progress: [██████████] 100% (6/6 phases complete in Milestone 5)
 
 ## Performance Metrics
 
@@ -49,7 +49,7 @@ Progress: [████████░░] 83% (5/6 phases complete in Milestone
 | 55. Transport + BeatTrack Sync | 4/4 complete | 95 new tests (23+41+31) | 23.75 |
 | 56. Sequencer + Musical Time | 2/2 complete | 51 tests | 25.5 |
 | 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
-| 58. GrainPlayer | TBD | - | - |
+| 58. GrainPlayer | 2/2 complete | 71 tests | 35.5 |
 
 ## Accumulated Context
 
@@ -105,12 +105,21 @@ See .planning/PROJECT.md Key Decisions table for full history.
 
 None active.
 
+**Phase 58 decisions made:**
+- GrainPlayer extends TypedEventEmitter (not BaseSound) — manages transient BufferSourceNodes
+- setTimeout-based scheduling loop (25ms interval, 50ms lookahead)
+- Hann window gain envelope per grain via linearRampToValueAtTime
+- Pitch shift via playbackRate with semitone conversion (2^(semitones/12))
+- Grain duration compensated for playbackRate to maintain consistent windowing
+- Position 0-1 normalized, jitter 0-1 for organic scatter
+- Shared bus pattern identical to PolySynth
+
 ### Blockers/Concerns
 
-- Phase 58 (GrainPlayer): `AudioBufferSourceNode` approach cannot independently time-stretch (pitch shift changes speed). Must document this limitation prominently and frame as "pitch shift + position scrubbing" not "time stretch".
+None active. GrainPlayer limitation (playbackRate-based pitch shift) documented in JSDoc.
 
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed Phase 57 — ready for Phase 58
+Stopped at: Milestone 5 complete — all phases 53-58 done
 Resume file: None

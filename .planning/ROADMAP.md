@@ -101,7 +101,7 @@
 - [x] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization (completed 2026-02-28)
 - [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [x] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus (completed 2026-02-28)
-- [ ] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters
+- [x] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters (completed 2026-03-01)
 
 ## Phase Details
 
@@ -499,7 +499,7 @@ Plans:
 | 55. Transport + BeatTrack Sync | M5 | 0/? | Not started | - |
 | 56. Sequencer + Musical Time | 1/2 | In Progress|  | - |
 | 57. PolySynth | M5 | 2/2 | Complete | 2026-02-28 |
-| 58. GrainPlayer | M5 | 0/? | Not started | - |
+| 58. GrainPlayer | 2/2 | Complete    | 2026-03-01 | - |
 
 ### Phase 39: Documentation Code Correctness
 
