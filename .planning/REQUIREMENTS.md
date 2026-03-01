@@ -14,7 +14,7 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 - [ ] **FX-03**: Developer can create a distortion effect with configurable amount and wet/dry mix
 - [ ] **FX-04**: Developer can create a compressor effect with threshold, ratio, knee, attack, release
 - [ ] **FX-05**: Developer can create a 3-band EQ effect with configurable low/mid/high gain
-- [ ] **FX-06**: All built-in effects work with existing `addEffect()` on Sound, Oscillator, and LayeredSound
+- [x] **FX-06**: All built-in effects work with existing `addEffect()` on Sound, Oscillator, and LayeredSound
 
 ### Modulation
 
@@ -82,7 +82,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FX-03 | Phase 53 | Pending |
 | FX-04 | Phase 53 | Pending |
 | FX-05 | Phase 53 | Pending |
-| FX-06 | Phase 59 | Pending |
+| FX-06 | Phase 59 | Complete |
 | MOD-01 | Phase 54 | Complete |
 | MOD-02 | Phase 54 | Complete |
 | MOD-03 | Phase 59 | Complete |

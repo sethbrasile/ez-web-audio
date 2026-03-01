@@ -102,7 +102,7 @@
 - [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [x] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus (completed 2026-02-28)
 - [x] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters (completed 2026-03-01)
-- [ ] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup
+- [x] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup (completed 2026-03-01)
 - [ ] **Phase 60: Milestone Verification & Checkpoint** - Write missing VERIFICATION.md files for Phases 53/56/57/58, update REQUIREMENTS.md checkboxes
 
 ## Phase Details
@@ -835,7 +835,7 @@ Plans:
   2. Developer can call `layeredSound.removeEffect(delay)` to remove the effect
   3. When an LFO is connected to a BaseEffect target and that effect is disposed, the LFO automatically disconnects and cleans up (no stale AudioParam references)
   4. BaseEffect emits a `'dispose'` event when disposed, matching BaseSound's dispose event pattern
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 59-01-PLAN.md — BaseEffect dispose event + LFO BaseEffect cleanup (MOD-03)
 - [ ] 59-02-PLAN.md — LayeredSound shared output bus + addEffect/removeEffect (FX-06)
