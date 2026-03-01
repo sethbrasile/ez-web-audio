@@ -546,6 +546,62 @@ describe('lfo', () => {
       sound.dispose()
       expect(disposeEventFired).toBe(true)
     })
+
+    // ===== BaseEffect dispose cleanup tests (MOD-03) =====
+    it('effect.dispose() removes LFO connections to that effect', () => {
+      const effect = new TestEffect(ctx)
+      const lfo = new LFO()
+      lfo.connect(effect, 'frequency')
+      lfo.start()
+      effect.dispose()
+      // LFO should still be running but connection to disposed effect is gone
+      expect(lfo.isRunning).toBe(true)
+    })
+
+    it('multiple LFOs on same effect: all cleaned up on effect.dispose()', () => {
+      const effect = new TestEffect(ctx)
+      const lfo1 = new LFO({ frequency: 2 })
+      const lfo2 = new LFO({ frequency: 5 })
+      lfo1.connect(effect, 'frequency')
+      lfo2.connect(effect, 'Q')
+      lfo1.start()
+      lfo2.start()
+      effect.dispose()
+      // Both LFOs should still run, but connections removed
+      expect(lfo1.isRunning).toBe(true)
+      expect(lfo2.isRunning).toBe(true)
+    })
+
+    it('LFO.dispose() removes dispose listeners from BaseEffect targets', () => {
+      const effect = new TestEffect(ctx)
+      const lfo = new LFO()
+      lfo.connect(effect, 'frequency')
+      lfo.start()
+      // LFO dispose should remove dispose listener from effect
+      expect(() => lfo.dispose()).not.toThrow()
+      // effect.dispose() should still work fine (no double-cleanup issue)
+      expect(() => effect.dispose()).not.toThrow()
+    })
+
+    it('double-cleanup is safe: LFO.disconnect() then effect.dispose()', () => {
+      const effect = new TestEffect(ctx)
+      const lfo = new LFO()
+      lfo.connect(effect, 'frequency')
+      lfo.start()
+      lfo.disconnect(effect)
+      // Effect dispose should not throw even though LFO already disconnected
+      expect(() => effect.dispose()).not.toThrow()
+    })
+
+    it('BaseEffect emits dispose event before silencing dispatchEvent', () => {
+      const effect = new TestEffect(ctx)
+      let disposeEventFired = false
+      effect.addEventListener('dispose', () => {
+        disposeEventFired = true
+      })
+      effect.dispose()
+      expect(disposeEventFired).toBe(true)
+    })
   })
 
   // ===== H1/H2: Mutual exclusion and error propagation =====

@@ -372,11 +372,9 @@ export class LFO {
 
     this.disconnect()
 
-    // Remove all dispose event listeners
+    // Remove all dispose event listeners (both BaseSound and BaseEffect targets)
     for (const [target, handler] of this._disposeListeners) {
-      if (this._isBaseSound(target)) {
-        target.removeEventListener('dispose', handler)
-      }
+      target.removeEventListener('dispose', handler)
     }
     this._disposeListeners.clear()
 
@@ -641,11 +639,7 @@ export class LFO {
       return
     }
 
-    // Only BaseSound emits 'dispose' events; BaseEffect targets skip until they add dispose()
-    if (!this._isBaseSound(target)) {
-      return
-    }
-
+    // Both BaseSound and BaseEffect now emit 'dispose' events
     const handler = (() => this._cleanupTarget(target)) as EventListener
     target.addEventListener('dispose', handler)
     this._disposeListeners.set(target, handler)
