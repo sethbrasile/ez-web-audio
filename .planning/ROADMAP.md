@@ -92,7 +92,7 @@
 
 </details>
 
-### 📋 Milestone 5: Effects & Transport (Phases 53-58)
+### 📋 Milestone 5: Effects & Transport (Phases 53-60)
 
 **Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
@@ -102,6 +102,8 @@
 - [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [x] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus (completed 2026-02-28)
 - [x] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters (completed 2026-03-01)
+- [ ] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup
+- [ ] **Phase 60: Milestone Verification & Checkpoint** - Write missing VERIFICATION.md files for Phases 53/56/57/58, update REQUIREMENTS.md checkboxes
 
 ## Phase Details
 
@@ -823,6 +825,32 @@ Plans:
   3. Developer can set `grainPlayer.pitch` to shift pitch in semitones (e.g., `+7` for a fifth up) without changing the playback rate — the documentation prominently notes this is pitch-shift via `playbackRate` and cannot time-stretch independently
 **Plans**: TBD
 
+### Phase 59: LayeredSound Effects + LFO-Effect Dispose
+**Goal**: LayeredSound supports addEffect() for unified effect application, and LFO auto-cleans up when connected BaseEffect targets are disposed
+**Depends on**: Phase 53, Phase 54
+**Requirements**: FX-06, MOD-03
+**Gap Closure**: Closes MC-01 (LayeredSound missing addEffect), MC-02 (LFO-to-BaseEffect dispose), broken flow "Add effect to LayeredSound"
+**Success Criteria** (what must be TRUE):
+  1. Developer can call `layeredSound.addEffect(delay)` and the effect applies to all layers through a shared output bus
+  2. Developer can call `layeredSound.removeEffect(delay)` to remove the effect
+  3. When an LFO is connected to a BaseEffect target and that effect is disposed, the LFO automatically disconnects and cleans up (no stale AudioParam references)
+  4. BaseEffect emits a `'dispose'` event when disposed, matching BaseSound's dispose event pattern
+**Plans**: TBD
+
+### Phase 60: Milestone Verification & Checkpoint
+**Goal**: All M5 phases have formal VERIFICATION.md files and all REQUIREMENTS.md checkboxes accurately reflect implementation status
+**Depends on**: Phase 59
+**Requirements**: FX-01, FX-02, FX-03, FX-04, FX-05, FX-06, TRANS-01, TRANS-02, TRANS-03, TRANS-04, SEQ-01, SEQ-02, SEQ-03, SYNTH-01, SYNTH-02, SYNTH-03, SYNTH-04
+**Gap Closure**: Closes verification gaps for Phases 53, 56, 57, 58; updates stale REQUIREMENTS.md checkboxes
+**Success Criteria** (what must be TRUE):
+  1. `53-VERIFICATION.md` exists and confirms FX-01 through FX-06 against codebase evidence
+  2. `56-VERIFICATION.md` exists and confirms SEQ-01 through SEQ-03 against codebase evidence
+  3. `57-VERIFICATION.md` exists and confirms SYNTH-01 and SYNTH-02 against codebase evidence
+  4. `58-VERIFICATION.md` exists and confirms SYNTH-03 and SYNTH-04 against codebase evidence
+  5. All 19 REQUIREMENTS.md checkboxes show `[x]` (Complete)
+  6. Traceability table Status column shows `Complete` for all 19 requirements
+**Plans**: TBD
+
 ---
 
 **Archives:**
@@ -831,4 +859,4 @@ Plans:
 - `milestones/v1.1-ROADMAP.md` — Milestone 2 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — Milestone 2 requirements with outcomes
 
-*Last updated: 2026-02-28 after Effects & Transport roadmap created*
+*Last updated: 2026-03-01 after gap closure phases 59-60 added*
