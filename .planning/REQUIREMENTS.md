@@ -9,11 +9,11 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
 ### Effects
 
-- [ ] **FX-01**: Developer can create a delay effect with configurable time, feedback, and wet/dry mix
-- [ ] **FX-02**: Developer can create a reverb effect with configurable decay and wet/dry mix
-- [ ] **FX-03**: Developer can create a distortion effect with configurable amount and wet/dry mix
-- [ ] **FX-04**: Developer can create a compressor effect with threshold, ratio, knee, attack, release
-- [ ] **FX-05**: Developer can create a 3-band EQ effect with configurable low/mid/high gain
+- [x] **FX-01**: Developer can create a delay effect with configurable time, feedback, and wet/dry mix
+- [x] **FX-02**: Developer can create a reverb effect with configurable decay and wet/dry mix
+- [x] **FX-03**: Developer can create a distortion effect with configurable amount and wet/dry mix
+- [x] **FX-04**: Developer can create a compressor effect with threshold, ratio, knee, attack, release
+- [x] **FX-05**: Developer can create a 3-band EQ effect with configurable low/mid/high gain
 - [x] **FX-06**: All built-in effects work with existing `addEffect()` on Sound, Oscillator, and LayeredSound
 
 ### Modulation
@@ -31,10 +31,10 @@ Requirements for the Effects & Transport milestone. Each maps to roadmap phases.
 
 ### Transport
 
-- [ ] **TRANS-01**: Developer can create a global Transport with configurable BPM and time signature
-- [ ] **TRANS-02**: Transport provides start/stop/pause controls and current position
-- [ ] **TRANS-03**: BeatTrack can sync to a Transport instead of using its own internal clock
-- [ ] **TRANS-04**: Multiple BeatTracks synced to one Transport play in perfect sync
+- [x] **TRANS-01**: Developer can create a global Transport with configurable BPM and time signature
+- [x] **TRANS-02**: Transport provides start/stop/pause controls and current position
+- [x] **TRANS-03**: BeatTrack can sync to a Transport instead of using its own internal clock
+- [x] **TRANS-04**: Multiple BeatTracks synced to one Transport play in perfect sync
 
 ### Sequencer
 
@@ -77,11 +77,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FX-01 | Phase 53 | Pending |
-| FX-02 | Phase 53 | Pending |
-| FX-03 | Phase 53 | Pending |
-| FX-04 | Phase 53 | Pending |
-| FX-05 | Phase 53 | Pending |
+| FX-01 | Phase 53 | Complete |
+| FX-02 | Phase 53 | Complete |
+| FX-03 | Phase 53 | Complete |
+| FX-04 | Phase 53 | Complete |
+| FX-05 | Phase 53 | Complete |
 | FX-06 | Phase 59 | Complete |
 | MOD-01 | Phase 54 | Complete |
 | MOD-02 | Phase 54 | Complete |
@@ -90,10 +90,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SYNTH-02 | Phase 57 | Complete |
 | SYNTH-03 | Phase 58 | Complete |
 | SYNTH-04 | Phase 58 | Complete |
-| TRANS-01 | Phase 55 | Pending |
-| TRANS-02 | Phase 55 | Pending |
-| TRANS-03 | Phase 55 | Pending |
-| TRANS-04 | Phase 55 | Pending |
+| TRANS-01 | Phase 55 | Complete |
+| TRANS-02 | Phase 55 | Complete |
+| TRANS-03 | Phase 55 | Complete |
+| TRANS-04 | Phase 55 | Complete |
 | SEQ-01 | Phase 56 | Complete |
 | SEQ-02 | Phase 56 | Complete |
 | SEQ-03 | Phase 56 | Complete |
