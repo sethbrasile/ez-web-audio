@@ -99,8 +99,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEQ-03 | Phase 56 | Complete |
 
 **Coverage:**
-- Milestone requirements: 19 total
-- Mapped to phases: 19
+- Milestone requirements: 20 total
+- Mapped to phases: 20
 - Unmapped: 0 ✓
 
 ---
