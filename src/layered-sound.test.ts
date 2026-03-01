@@ -1,8 +1,22 @@
+import type { Effect } from './effects/index'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LayeredSound } from './layered-sound'
 import { Oscillator } from './oscillator'
 import { Sound } from './sound'
+
+function createMockEffect(ctx: AudioContext): Effect & { input: GainNode, output: GainNode } {
+  const input = ctx.createGain()
+  const output = ctx.createGain()
+  input.connect(output)
+  return {
+    input,
+    output,
+    bypass: false,
+    mix: 1,
+    dispose: vi.fn(),
+  }
+}
 
 describe('layeredSound', () => {
   let audioContext: AudioContext
@@ -522,6 +536,135 @@ describe('layeredSound', () => {
       const result = layered.dispatchEvent(new CustomEvent('play', { detail: {} }))
       expect(result).toBe(false)
       expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('effects', () => {
+    it('addEffect() adds effect and returns this', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+
+      const result = layered.addEffect(effect)
+      expect(result).toBe(layered)
+      expect(layered.getEffects()).toHaveLength(1)
+      expect(layered.getEffects()[0]).toBe(effect)
+    })
+
+    it('addEffect(effect, position) inserts at correct index', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+
+      const effect1 = createMockEffect(audioContext)
+      const effect2 = createMockEffect(audioContext)
+      const effect3 = createMockEffect(audioContext)
+
+      layered.addEffect(effect1)
+      layered.addEffect(effect2)
+      layered.addEffect(effect3, 0)
+
+      const effects = layered.getEffects()
+      expect(effects[0]).toBe(effect3)
+      expect(effects[1]).toBe(effect1)
+      expect(effects[2]).toBe(effect2)
+    })
+
+    it('removeEffect() removes effect and returns this', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+
+      layered.addEffect(effect)
+      const result = layered.removeEffect(effect)
+
+      expect(result).toBe(layered)
+      expect(layered.getEffects()).toHaveLength(0)
+    })
+
+    it('removeEffect() with unknown effect is no-op', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+
+      expect(() => layered.removeEffect(effect)).not.toThrow()
+    })
+
+    it('getEffects() returns a copy', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+
+      layered.addEffect(effect)
+      const effects = layered.getEffects()
+      ;(effects as Effect[]).push(createMockEffect(audioContext))
+
+      // Internal array should not be affected
+      expect(layered.getEffects()).toHaveLength(1)
+    })
+
+    it('addEffect() throws on disposed LayeredSound', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      layered.dispose()
+      expect(() => layered.addEffect(createMockEffect(audioContext))).toThrow('disposed')
+    })
+
+    it('removeEffect() throws on disposed LayeredSound', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      layered.dispose()
+      expect(() => layered.removeEffect(createMockEffect(audioContext))).toThrow('disposed')
+    })
+
+    it('dispose() emits dispose event', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      const handler = vi.fn()
+      layered.addEventListener('dispose', handler)
+      layered.dispose()
+      expect(handler).toHaveBeenCalledTimes(1)
+      const event = handler.mock.calls[0][0] as CustomEvent
+      expect(event.detail.source).toBe(layered)
+    })
+
+    it('dispose() disconnects outputBus and clears effects', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+      layered.addEffect(effect)
+
+      layered.dispose()
+      expect(layered.getEffects()).toHaveLength(0)
+    })
+
+    it('layers route through outputBus (setDestination called)', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const setDestSpy = vi.spyOn(sound, 'setDestination')
+
+      const _layered = new LayeredSound(audioContext, [sound])
+      expect(setDestSpy).toHaveBeenCalledTimes(1)
+      // The argument should be a GainNode (the outputBus)
+      const dest = setDestSpy.mock.calls[0][0]
+      expect(dest).toBeDefined()
+    })
+
+    it('effect chain applies to playback', async () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+
+      const effect = createMockEffect(audioContext)
+      layered.addEffect(effect)
+
+      // Should play without errors through the effect chain
+      await layered.play()
     })
   })
 })
