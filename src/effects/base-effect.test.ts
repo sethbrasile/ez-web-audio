@@ -204,5 +204,42 @@ describe('baseEffect', () => {
       effect.dispose()
       expect(() => effect.dispose()).not.toThrow()
     })
+
+    it('emits a dispose CustomEvent with { source: effectInstance }', () => {
+      const effect = new TestEffect(audioContext)
+      const handler = vi.fn()
+      effect.addEventListener('dispose', handler)
+      effect.dispose()
+      expect(handler).toHaveBeenCalledTimes(1)
+      const event = handler.mock.calls[0][0] as CustomEvent
+      expect(event.detail.source).toBe(effect)
+    })
+
+    it('no events fire after dispose() (dispatchEvent is silenced)', () => {
+      const effect = new TestEffect(audioContext)
+      effect.dispose()
+      const handler = vi.fn()
+      effect.addEventListener('dispose', handler)
+      const result = effect.dispatchEvent(new CustomEvent('dispose', { detail: { source: effect } }))
+      expect(result).toBe(false)
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('dispose() is idempotent (calling twice does not re-emit)', () => {
+      const effect = new TestEffect(audioContext)
+      const handler = vi.fn()
+      effect.addEventListener('dispose', handler)
+      effect.dispose()
+      effect.dispose()
+      expect(handler).toHaveBeenCalledTimes(1)
+    })
+
+    it('addEventListener("dispose", handler) fires handler on dispose', () => {
+      const effect = new TestEffect(audioContext)
+      let fired = false
+      effect.addEventListener('dispose', () => { fired = true })
+      effect.dispose()
+      expect(fired).toBe(true)
+    })
   })
 })

@@ -1,5 +1,14 @@
 import type { Effect } from './index'
+import { TypedEventEmitter } from '../events/typed-event-emitter'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
+
+/**
+ * Event map for BaseEffect instances.
+ * Defined inline to avoid circular imports with event-types.ts.
+ */
+export interface BaseEffectEventMap {
+  dispose: CustomEvent<{ source: BaseEffect }>
+}
 
 /**
  * Abstract base class for audio effects that provides shared wet/dry mixing,
@@ -34,7 +43,7 @@ import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
  * }
  * ```
  */
-export abstract class BaseEffect implements Effect {
+export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> implements Effect {
   /** @internal */
   protected readonly inputNode: GainNode
   /** @internal */
@@ -48,8 +57,10 @@ export abstract class BaseEffect implements Effect {
 
   private _bypass = false
   private _mix = 1
+  private _disposed = false
 
   constructor(audioContext: AudioContext) {
+    super()
     this.audioContext = audioContext
     this.inputNode = audioContext.createGain()
     this.outputNode = audioContext.createGain()
@@ -178,10 +189,17 @@ export abstract class BaseEffect implements Effect {
    * to also disconnect effect-specific nodes (e.g., feedback loops).
    */
   public dispose(): void {
+    if (this._disposed) return
+
     try { this.inputNode.disconnect() } catch { /* already disconnected */ }
     try { this.outputNode.disconnect() } catch { /* already disconnected */ }
     try { this.dryGain.disconnect() } catch { /* already disconnected */ }
     try { this.wetGain.disconnect() } catch { /* already disconnected */ }
+
+    // Emit dispose BEFORE silencing (matches BaseSound pattern)
+    this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
+    this.dispatchEvent = () => false
+    this._disposed = true
   }
 
   /**
