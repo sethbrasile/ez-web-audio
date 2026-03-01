@@ -224,7 +224,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
   private effects: Effect[] = []
 
   constructor(
-    private readonly audioContext: AudioContext,
+    public readonly audioContext: AudioContext,
     options?: PolySynthOptions,
   ) {
     super()
@@ -327,6 +327,14 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
 
   /** Whether this PolySynth has been disposed. */
   get disposed(): boolean { return this._disposed }
+
+  // ─── Audio Node Accessors ─────────────────────────────────────────
+
+  /** Returns the master GainNode (for LFO targeting and external routing). */
+  getGainNode(): GainNode { return this.masterGain }
+
+  /** Returns the master StereoPannerNode (for LFO targeting and external routing). */
+  getPannerNode(): StereoPannerNode { return this.masterPan }
 
   /**
    * Play a note at the given frequency. Returns a VoiceHandle for per-voice control.
@@ -735,9 +743,10 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     this.effects = []
     this._analyzer = null
 
+    this._disposed = true
+    this.emit('dispose', { source: this })
+
     // Silence future events
     this.dispatchEvent = () => false
-
-    this._disposed = true
   }
 }

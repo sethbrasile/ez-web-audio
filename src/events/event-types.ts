@@ -318,6 +318,7 @@ export interface VoiceStolenEventDetail {
  */
 export interface PolySynthEventMap {
   voicestolen: CustomEvent<VoiceStolenEventDetail>
+  dispose: CustomEvent<DisposeEventDetail>
 }
 
 // ─── GrainPlayer Events ──────────────────────────────────────────────
@@ -331,4 +332,5 @@ export interface GrainPlayerEventMap {
   stop: CustomEvent<StopEventDetail>
   pause: CustomEvent<PauseEventDetail>
   resume: CustomEvent<ResumeEventDetail>
+  dispose: CustomEvent<DisposeEventDetail>
 }

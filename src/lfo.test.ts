@@ -1,8 +1,10 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { BaseEffect } from './effects/base-effect'
+import { GrainPlayer } from './grain-player'
 import { LFO } from './lfo'
 import { Oscillator } from './oscillator'
+import { PolySynth } from './poly-synth'
 import { Sound } from './sound'
 
 function createMockContext() {
@@ -744,6 +746,91 @@ describe('lfo', () => {
       lfo.type = 'sine'
       expect(lfo.type).toBe('sine')
       expect(lfo.isRunning).toBe(true)
+    })
+  })
+
+  // ===== GrainPlayer and PolySynth targeting =====
+  describe('GrainPlayer targeting', () => {
+    it('connects to GrainPlayer gain', () => {
+      const buffer = createMockAudioBuffer(ctx)
+      const gp = new GrainPlayer(ctx, buffer)
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+
+      expect(() => lfo.connect(gp, 'gain')).not.toThrow()
+      expect(() => lfo.start()).not.toThrow()
+      expect(lfo.isRunning).toBe(true)
+      lfo.stop()
+    })
+
+    it('connects to GrainPlayer pan', () => {
+      const buffer = createMockAudioBuffer(ctx)
+      const gp = new GrainPlayer(ctx, buffer)
+      const lfo = new LFO({ frequency: 2, depth: 0.5 })
+
+      expect(() => lfo.connect(gp, 'pan')).not.toThrow()
+      lfo.start()
+      expect(lfo.isRunning).toBe(true)
+      lfo.stop()
+    })
+
+    it('cleans up when GrainPlayer is disposed', () => {
+      const buffer = createMockAudioBuffer(ctx)
+      const gp = new GrainPlayer(ctx, buffer)
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+
+      lfo.connect(gp, 'gain')
+      lfo.start()
+
+      // Dispose should trigger LFO cleanup via 'dispose' event
+      gp.dispose()
+
+      // LFO should have no connections left
+      lfo.disconnect()
+      lfo.stop()
+    })
+
+    it('supports syncLifecycle with GrainPlayer', () => {
+      const buffer = createMockAudioBuffer(ctx)
+      const gp = new GrainPlayer(ctx, buffer)
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+
+      expect(() => lfo.connect(gp, 'gain', { syncLifecycle: true })).not.toThrow()
+    })
+  })
+
+  describe('PolySynth targeting', () => {
+    it('connects to PolySynth gain', () => {
+      const ps = new PolySynth(ctx, { maxVoices: 4 })
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+
+      expect(() => lfo.connect(ps, 'gain')).not.toThrow()
+      expect(() => lfo.start()).not.toThrow()
+      expect(lfo.isRunning).toBe(true)
+      lfo.stop()
+    })
+
+    it('connects to PolySynth pan', () => {
+      const ps = new PolySynth(ctx, { maxVoices: 4 })
+      const lfo = new LFO({ frequency: 2, depth: 0.5 })
+
+      expect(() => lfo.connect(ps, 'pan')).not.toThrow()
+      lfo.start()
+      expect(lfo.isRunning).toBe(true)
+      lfo.stop()
+    })
+
+    it('cleans up when PolySynth is disposed', () => {
+      const ps = new PolySynth(ctx, { maxVoices: 4 })
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+
+      lfo.connect(ps, 'gain')
+      lfo.start()
+
+      // Dispose should trigger LFO cleanup via 'dispose' event
+      ps.dispose()
+
+      lfo.disconnect()
+      lfo.stop()
     })
   })
 })

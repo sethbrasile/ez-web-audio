@@ -88,7 +88,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
   private effects: Effect[] = []
 
   constructor(
-    private readonly audioContext: AudioContext,
+    public readonly audioContext: AudioContext,
     buffer: AudioBuffer,
     options?: GrainPlayerOptions,
   ) {
@@ -438,6 +438,14 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this._loop = value
   }
 
+  // ─── Audio Node Accessors ─────────────────────────────────────────
+
+  /** Returns the master GainNode (for LFO targeting and external routing). */
+  getGainNode(): GainNode { return this.masterGain }
+
+  /** Returns the master StereoPannerNode (for LFO targeting and external routing). */
+  getPannerNode(): StereoPannerNode { return this.masterPan }
+
   // ─── Master Controls ─────────────────────────────────────────────
 
   /**
@@ -591,9 +599,10 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this.effects = []
     this._analyzer = null
 
+    this._disposed = true
+    this.emit('dispose', { source: this })
+
     // Silence future events
     this.dispatchEvent = () => false
-
-    this._disposed = true
   }
 }

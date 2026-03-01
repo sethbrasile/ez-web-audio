@@ -1,6 +1,8 @@
 import type { BaseSound } from './base-sound'
 import type { BaseEffect } from './effects/base-effect'
+import type { GrainPlayer } from './grain-player'
 import type { Oscillator } from './oscillator'
+import type { PolySynth } from './poly-synth'
 
 /**
  * Waveform types supported by the LFO.
@@ -48,7 +50,7 @@ interface ConnectionRecord {
 }
 
 /** Union type for valid LFO connection targets */
-type LFOTarget = BaseSound | BaseEffect
+type LFOTarget = BaseSound | BaseEffect | GrainPlayer | PolySynth
 
 /**
  * Low Frequency Oscillator (LFO) for modulating audio parameters.

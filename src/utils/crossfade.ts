@@ -33,26 +33,45 @@ export function generateEqualPowerCurve(
 }
 
 /**
+ * Options for crossfade behavior.
+ */
+export interface CrossfadeOptions {
+  /**
+   * What to do with the outgoing track after the fade completes.
+   *
+   * - `'continue'` — track keeps playing at gain 0 (DJ-style, seamless crossfade back)
+   * - `'pause'` — track is paused (preserves position, frees resources)
+   * - `'stop'` — track is stopped and position resets to 0
+   *
+   * @default 'pause'
+   */
+  afterFade?: 'continue' | 'pause' | 'stop'
+}
+
+/**
  * Smoothly crossfades from one Track to another using equal-power curves.
  * This creates a DJ-style transition without volume dips at the midpoint.
  *
  * Behavior:
  * - Source track (fromTrack): fades out from current gain to 0
  * - Destination track (toTrack): fades in from current gain (or 0) to 1
- * - Source track automatically stops and resets gain to 1.0 after fade completes
+ * - After fade, the source track behavior depends on `afterFade` option
  * - If destination is already playing, continues from current position
- * - If destination is not playing, starts it at gain 0 then fades in
+ * - If destination is not playing, resumes from paused position or starts fresh
  *
- * @param fromTrack - Track to fade out (will be stopped after fade)
+ * @param fromTrack - Track to fade out
  * @param toTrack - Track to fade in
  * @param duration - Crossfade duration in seconds
+ * @param options - Crossfade behavior options
  * @returns Promise that resolves when crossfade completes
  *
  * @example
  * ```typescript
- * // Crossfade from track1 to track2 over 2 seconds
+ * // Crossfade with default behavior (pause outgoing track)
  * await crossfade(track1, track2, 2)
- * // track1 is now stopped, track2 is playing
+ *
+ * // DJ-style: outgoing track keeps playing silently
+ * await crossfade(track1, track2, 2, { afterFade: 'continue' })
  * ```
  */
 /** Module-level cached crossfade curves (256 samples, mathematically constant). */
@@ -64,7 +83,9 @@ export async function crossfade(
   fromTrack: Track,
   toTrack: Track,
   duration: number,
+  options?: CrossfadeOptions,
 ): Promise<void> {
+  const afterFade = options?.afterFade ?? 'pause'
   const isToTrackPlaying = toTrack.isPlaying
   const audioContext = fromTrack.audioContext
   const startTime = audioContext.currentTime
@@ -74,29 +95,49 @@ export async function crossfade(
 
   // Fade out source track from current gain value
   const fromGain = fromTrack.getGainNode().gain
+  fromGain.cancelScheduledValues(startTime)
   fromGain.setValueAtTime(fromGain.value, startTime)
   fromGain.setValueCurveAtTime(fadeOutCurve, startTime, duration)
 
   // Fade in destination track
   const toGain = toTrack.getGainNode().gain
-  if (isToTrackPlaying) {
-    // Already playing - fade from current gain value
-    toGain.setValueAtTime(toGain.value, startTime)
+  toGain.cancelScheduledValues(startTime)
+  if (!isToTrackPlaying) {
+    // Not playing — set gain to 0 slightly before the curve starts, then resume or play
+    toGain.setValueAtTime(0, Math.max(0, startTime - 0.001))
     toGain.setValueCurveAtTime(fadeInCurve, startTime, duration)
+    // If track was previously paused (e.g., from a prior crossfade), resume from position
+    if (toTrack.position.raw > 0) {
+      toTrack.resume()
+    }
+    else {
+      await toTrack.play()
+    }
   }
   else {
-    // Not playing - start at 0 and play
-    toGain.setValueAtTime(0, startTime)
+    toGain.setValueAtTime(toGain.value, startTime)
     toGain.setValueCurveAtTime(fadeInCurve, startTime, duration)
-    await toTrack.play()
   }
 
   // Return promise that resolves after fade completes
   return new Promise((resolve) => {
-    // Use native setTimeout for testability with vi.useFakeTimers
     globalThis.setTimeout(async () => {
-      await fromTrack.stop()
-      fromGain.setValueAtTime(1.0, audioContext.currentTime)
+      fromGain.cancelScheduledValues(0)
+
+      if (afterFade === 'continue') {
+        // Keep playing silently — just reset gain to 0
+        fromGain.setValueAtTime(0, audioContext.currentTime)
+      }
+      else if (afterFade === 'stop') {
+        await fromTrack.stop()
+        fromGain.setValueAtTime(1.0, audioContext.currentTime)
+      }
+      else {
+        // 'pause' (default)
+        fromTrack.pause()
+        fromGain.setValueAtTime(1.0, audioContext.currentTime)
+      }
+
       resolve()
     }, duration * 1000)
   })

@@ -216,15 +216,15 @@ describe('crossfade', () => {
     await fadePromise
   })
 
-  it('stops source track after fade completes', async () => {
+  it('pauses source track after fade completes (default afterFade behavior)', async () => {
     await fromTrack.play()
 
-    const stopSpy = vi.spyOn(fromTrack, 'stop')
+    const pauseSpy = vi.spyOn(fromTrack, 'pause')
 
     await crossfade(fromTrack, toTrack, 0.01)
 
-    // Source should be stopped after fade completes
-    expect(stopSpy).toHaveBeenCalled()
+    // Source should be paused after fade completes (default afterFade is 'pause')
+    expect(pauseSpy).toHaveBeenCalled()
   })
 
   it('resets source gain to 1.0 after stop', async () => {
@@ -275,9 +275,10 @@ describe('crossfade', () => {
   it('uses current gain value from source track (FADE-04)', async () => {
     // Start track and modify its gain mid-playback
     await fromTrack.play()
-    fromTrack.gainNode.gain.value = 0.3
 
     const fromGain = fromTrack.gainNode.gain
+    // Mock AudioParam doesn't persist .value assignments, so spy on the getter
+    vi.spyOn(fromGain, 'value', 'get').mockReturnValue(0.3)
     const setValueAtTimeSpy = vi.spyOn(fromGain, 'setValueAtTime')
 
     await crossfade(fromTrack, toTrack, 0.01)
@@ -289,9 +290,10 @@ describe('crossfade', () => {
   it('uses current gain value from destination if already playing', async () => {
     await fromTrack.play()
     await toTrack.play()
-    toTrack.gainNode.gain.value = 0.5
 
     const toGain = toTrack.gainNode.gain
+    // Mock AudioParam doesn't persist .value assignments, so spy on the getter
+    vi.spyOn(toGain, 'value', 'get').mockReturnValue(0.5)
     const setValueAtTimeSpy = vi.spyOn(toGain, 'setValueAtTime')
 
     await crossfade(fromTrack, toTrack, 0.01)
