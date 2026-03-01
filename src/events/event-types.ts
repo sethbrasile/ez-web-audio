@@ -219,6 +219,7 @@ export interface LayeredSoundEventMap {
   stop: CustomEvent<StopEventDetail>
   end: CustomEvent<EndEventDetail>
   warning: CustomEvent<WarningEventDetail>
+  dispose: CustomEvent<DisposeEventDetail>
 }
 
 // ─── Transport Events ────────────────────────────────────────────────

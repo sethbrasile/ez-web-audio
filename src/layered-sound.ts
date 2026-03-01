@@ -1,3 +1,4 @@
+import type { Effect } from './effects/index'
 import type { LayeredSoundEventMap } from './events/event-types'
 import type { Oscillator } from './oscillator'
 import type { Sound } from './sound'
@@ -40,6 +41,9 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   /** Tracks 'end' handlers per layer so they can be removed before adding new ones. */
   private layerEndHandlers: Map<Sound | Oscillator, () => void> = new Map()
   private _disposed = false
+  private outputBus: GainNode
+  private _destination: AudioNode
+  private effects: Effect[] = []
   public name: string
 
   constructor(
@@ -62,6 +66,14 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
       }
       return true
     }) as (Sound | Oscillator)[]
+
+    // Create shared output bus — all layers route through this
+    this.outputBus = audioContext.createGain()
+    this._destination = audioContext.destination
+    this.wireOutputBus()
+
+    // Route each layer through the shared bus instead of directly to destination
+    this.layers.forEach(layer => layer.setDestination(this.outputBus))
 
     // Soft limit warning
     const warnThreshold = opts?.warnLayerCount ?? 8
@@ -214,6 +226,51 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   }
 
   /**
+   * Add an effect to the shared output bus.
+   * All layers route through this bus, so the effect applies to all layers.
+   *
+   * @param effect - The effect to add
+   * @param position - Optional insert position (defaults to end)
+   * @returns this for chaining
+   */
+  addEffect(effect: Effect, position?: number): this {
+    if (this._disposed) throw new Error('Cannot add effect to a disposed LayeredSound.')
+    if (position !== undefined) {
+      this.effects.splice(position, 0, effect)
+    }
+    else {
+      this.effects.push(effect)
+    }
+    this.wireOutputBus()
+    return this
+  }
+
+  /**
+   * Remove an effect from the shared output bus.
+   *
+   * @param effect - The effect to remove
+   * @returns this for chaining
+   */
+  removeEffect(effect: Effect): this {
+    if (this._disposed) throw new Error('Cannot remove effect from a disposed LayeredSound.')
+    const index = this.effects.indexOf(effect)
+    if (index !== -1) {
+      this.effects.splice(index, 1)
+      this.wireOutputBus()
+    }
+    return this
+  }
+
+  /**
+   * Get a readonly copy of the effects array.
+   *
+   * @returns A copy of the effects array
+   */
+  getEffects(): readonly Effect[] {
+    return [...this.effects]
+  }
+
+  /**
    * Stop all layers and dispose them. Releases resources and prevents further use.
    *
    * After disposal, calling play() will throw an error.
@@ -254,14 +311,52 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
     })
     this.layerEndHandlers.clear()
 
+    // Disconnect shared bus and clear effects
+    this.safeDisconnect(this.outputBus)
+    for (const effect of this.effects) {
+      this.safeDisconnect(effect.output)
+    }
+    this.effects = []
+
     // Clear layers array
     this.layers = []
     this.failedLayers = []
+
+    // Emit dispose BEFORE silencing (matches BaseSound pattern)
+    this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
 
     // Silence future events
     this.dispatchEvent = () => false
 
     this._disposed = true
+  }
+
+  /**
+   * Wire the shared output bus through the effects chain to the destination.
+   * @internal
+   */
+  private wireOutputBus(): void {
+    this.safeDisconnect(this.outputBus)
+    for (const effect of this.effects) {
+      this.safeDisconnect(effect.output)
+    }
+
+    let currentNode: AudioNode = this.outputBus
+    for (const effect of this.effects) {
+      if (!effect.bypass) {
+        currentNode.connect(effect.input)
+        currentNode = effect.output
+      }
+    }
+    currentNode.connect(this._destination)
+  }
+
+  /**
+   * Safely disconnect an AudioNode, ignoring errors if already disconnected.
+   * @internal
+   */
+  private safeDisconnect(node: AudioNode): void {
+    try { node.disconnect() } catch { /* already disconnected */ }
   }
 
   /**
