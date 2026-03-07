@@ -491,6 +491,39 @@ describe('polySynth', () => {
       expect(synth.activeVoices).toBe(1)
     })
 
+    it('rapid interleaved play/stop leaves only the last active voice', async () => {
+      const synth = new PolySynth(audioContext, { maxVoices: 8 })
+      const h440 = synth.play({ frequency: 440 })
+      synth.play({ frequency: 550 })
+      await h440.stop()
+      synth.play({ frequency: 660 })
+      const h550 = synth.play({ frequency: 550 }) // retrigger 550
+      await h550.stop()
+      // Only 660 should remain active
+      expect(synth.activeVoices).toBe(1)
+    })
+
+    it('burst same frequency results in only 1 active voice', () => {
+      const synth = new PolySynth(audioContext, { maxVoices: 8 })
+      for (let i = 0; i < 10; i++) {
+        synth.play({ frequency: 440 })
+      }
+      // Same-frequency retrigger reuses the voice
+      expect(synth.activeVoices).toBe(1)
+    })
+
+    it('stop during voice stealing does not throw and decrements count', async () => {
+      const synth = new PolySynth(audioContext, { maxVoices: 2 })
+      synth.play({ frequency: 440 })
+      synth.play({ frequency: 550 })
+      // Pool full — triggers steal
+      const h660 = synth.play({ frequency: 660 })
+      expect(synth.activeVoices).toBe(2)
+      // Stop the stolen victim's replacement immediately
+      await h660.stop()
+      expect(synth.activeVoices).toBe(1)
+    })
+
     it('voice recycling after stop', async () => {
       const synth = new PolySynth(audioContext, { maxVoices: 2 })
       const h1 = synth.play({ frequency: 440 })

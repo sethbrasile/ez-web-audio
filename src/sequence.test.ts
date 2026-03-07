@@ -597,6 +597,29 @@ describe('Sequence', () => {
     })
   })
 
+  describe('behavior after dispose', () => {
+    it('at() after dispose does not throw (adds to dead events array)', () => {
+      const seq = new Sequence(transport, { length: '4m' })
+      seq.dispose()
+      // at() does not guard against disposed state — it silently adds the event
+      expect(() => seq.at('4n', vi.fn())).not.toThrow()
+    })
+
+    it('remove() after dispose returns false and does not throw', () => {
+      const seq = new Sequence(transport, { length: '4m' })
+      const id = seq.at('4n', vi.fn())
+      seq.dispose() // dispose clears events array
+      // remove() on cleared events should return false
+      expect(seq.remove(id)).toBe(false)
+    })
+
+    it('clear() after dispose does not throw', () => {
+      const seq = new Sequence(transport, { length: '4m' })
+      seq.dispose()
+      expect(() => seq.clear()).not.toThrow()
+    })
+  })
+
   describe('edge cases', () => {
     it('empty sequence runs without errors', () => {
       const seq = new Sequence(transport, { length: '1m' })
