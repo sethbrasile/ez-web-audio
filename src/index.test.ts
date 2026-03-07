@@ -994,7 +994,12 @@ describe('preventEventDefaults', () => {
   })
 })
 
-describe('factory functions with explicit AudioContext', () => {
+/**
+ * Tests for BaseAudioContext overloads on factory functions.
+ * All factory functions accept an optional BaseAudioContext first parameter
+ * which bypasses initAudio() and uses the provided context directly.
+ */
+describe('factory functions with explicit AudioContext (BaseAudioContext overloads)', () => {
   let mockAudioContext: AudioContext
   let AudioContextConstructor: ReturnType<typeof vi.fn>
   let mockFetch: ReturnType<typeof vi.fn>

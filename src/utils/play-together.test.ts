@@ -141,7 +141,7 @@ describe('playTogether', () => {
     expect(playAtArg).toBeCloseTo(currentTime + 0.01, 10)
   })
 
-  describe('explicit AudioContext overload', () => {
+  describe('explicit BaseAudioContext overload', () => {
     it('playTogether(ctx, playables) uses the provided context currentTime', async () => {
       const ctx = createMockAudioContext()
       const currentTime = ctx.currentTime
