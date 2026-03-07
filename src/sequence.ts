@@ -1,5 +1,6 @@
 import type { SequenceEventMap } from './events/event-types'
 import type { Transport, TransportPosition } from './transport'
+import { TypedEventEmitter } from './events/typed-event-emitter'
 import { musicalTimeToBeats, type MusicalTimeNotation } from './utils/musical-time'
 
 /**
@@ -64,12 +65,11 @@ interface ScheduledEvent {
  * transport.bpm = 140
  * ```
  */
-export class Sequence {
+export class Sequence extends TypedEventEmitter<SequenceEventMap> {
   private transport: Transport
   private lengthInBeats: number
   private _loop: boolean
   private events: ScheduledEvent[] = []
-  private eventTarget: EventTarget = new EventTarget()
   private nextEventId = 0
 
   // Scheduling state
@@ -80,6 +80,7 @@ export class Sequence {
   private _started = false
 
   constructor(transport: Transport, options: SequenceOptions) {
+    super()
     if (!options.length && options.length !== 0) {
       throw new Error('Sequence requires a length option')
     }
@@ -240,9 +241,12 @@ export class Sequence {
     // No events to schedule
     if (this.events.length === 0) return
 
-    // Schedule events in window
+    // Schedule events in window — track highest beat to update lastScheduledBeat
+    // once after the loop (QC-1-08: fixes same-beat events being dropped)
+    let highestScheduledBeat = this.lastScheduledBeat
+
     for (const event of this.events) {
-      let eventBeat = event.beats
+      const eventBeat = event.beats
 
       // Handle events in the current window
       if (eventBeat > this.lastScheduledBeat && eventBeat < windowEndBeat) {
@@ -251,8 +255,8 @@ export class Sequence {
         const timeOffset = beatOffset / beatsPerSecond
         const eventTime = currentTime + timeOffset
 
-        // Build position
-        const totalBeats = (this.loopIteration > 0 ? (this.loopIteration - 1) : 0) * this.lengthInBeats + eventBeat
+        // Build position (QC-1-10 fix: use loopIteration directly, not loopIteration - 1)
+        const totalBeats = this.loopIteration * this.lengthInBeats + eventBeat
         const bar = Math.floor(totalBeats / beatsPerBar) + 1
         const beatInBar = Math.floor(totalBeats % beatsPerBar) + 1
         const tickInBeat = Math.round((totalBeats % 1) * ticksPerBeat)
@@ -273,7 +277,9 @@ export class Sequence {
           source: this,
         })
 
-        this.lastScheduledBeat = eventBeat
+        if (eventBeat > highestScheduledBeat) {
+          highestScheduledBeat = eventBeat
+        }
       }
 
       // Handle events that wrap around in a looping sequence
@@ -287,6 +293,8 @@ export class Sequence {
         }
       }
     }
+
+    this.lastScheduledBeat = highestScheduledBeat
   }
 
   /**
@@ -330,65 +338,6 @@ export class Sequence {
     this._started = false
   }
 
-  // ─── Events ─────────────────────────────────────────────────────────
-
-  /**
-   * Emit a typed event with the given detail.
-   * @internal
-   */
-  private emit<K extends keyof SequenceEventMap>(
-    type: K,
-    detail: SequenceEventMap[K] extends CustomEvent<infer D> ? D : never,
-  ): void {
-    const event = new CustomEvent(type, { detail })
-    this.eventTarget.dispatchEvent(event)
-  }
-
-  /**
-   * Subscribe to an event. Supports chaining.
-   *
-   * @param type - Event type: 'event' (callback fires) or 'loop' (sequence wraps)
-   * @param listener - Handler function
-   * @returns this for chaining
-   */
-  on<K extends keyof SequenceEventMap>(
-    type: K,
-    listener: (event: SequenceEventMap[K]) => void,
-  ): this {
-    this.eventTarget.addEventListener(type, listener as EventListener)
-    return this
-  }
-
-  /**
-   * Unsubscribe from an event. Supports chaining.
-   *
-   * @param type - Event type to unsubscribe from
-   * @param listener - Handler function to remove
-   * @returns this for chaining
-   */
-  off<K extends keyof SequenceEventMap>(
-    type: K,
-    listener: (event: SequenceEventMap[K]) => void,
-  ): this {
-    this.eventTarget.removeEventListener(type, listener as EventListener)
-    return this
-  }
-
-  /**
-   * Subscribe to an event once. Handler is removed after first invocation.
-   *
-   * @param type - Event type to listen for
-   * @param listener - Handler function (called only once)
-   * @returns this for chaining
-   */
-  once<K extends keyof SequenceEventMap>(
-    type: K,
-    listener: (event: SequenceEventMap[K]) => void,
-  ): this {
-    this.eventTarget.addEventListener(type, listener as EventListener, { once: true })
-    return this
-  }
-
   // ─── Lifecycle ──────────────────────────────────────────────────────
 
   /**
@@ -402,6 +351,5 @@ export class Sequence {
 
     this.transport._removeSequence(this)
     this.events = []
-    this.eventTarget = new EventTarget()
   }
 }
