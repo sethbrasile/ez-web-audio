@@ -94,7 +94,7 @@ export default defineConfig({
   },
 
   vite: {
-    plugins: [llmstxt({ domain: 'https://sethbrasile.github.io/ez-web-audio' })],
+    plugins: [llmstxt({ domain: 'https://sethbrasile.github.io' })],
   },
 
   themeConfig: {
