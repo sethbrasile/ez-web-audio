@@ -4,16 +4,37 @@ import { onUnmounted, ref } from 'vue'
 const loading = ref(false)
 const loaded = ref(false)
 const error = ref('')
-const loopingSprite = ref<string | null>(null)
+const playing = ref<string | null>(null)
+const playingFull = ref(false)
 
 let sprite: any = null
-let lib: any = null
+let fullSound: any = null
+let playTimer: ReturnType<typeof setTimeout> | null = null
+let fullTimer: ReturnType<typeof setTimeout> | null = null
 
 const segments = [
-  { name: 'kick', label: 'Kick', start: 0, end: 0.4 },
-  { name: 'snare', label: 'Snare', start: 0.5, end: 0.9 },
-  { name: 'hihat', label: 'Hi-Hat', start: 1.0, end: 1.3 },
+  { name: 'beep', label: 'Beep', start: 0.0, end: 0.47, color: '#4CAF50' },
+  { name: 'cannon', label: 'Cannon', start: 0.67, end: 2.704, color: '#F44336' },
+  { name: 'whoosh', label: 'Whoosh', start: 2.904, end: 3.966, color: '#2196F3' },
+  { name: 'bling', label: 'Bling', start: 4.166, end: 6.49, color: '#FF9800' },
+  { name: 'punch', label: 'Punch', start: 6.69, end: 7.484, color: '#9C27B0' },
+  { name: 'fanfare', label: 'Fanfare', start: 7.684, end: 11.317, color: '#00BCD4' },
 ]
+
+const totalDuration = 11.317
+
+const manifest = {
+  spritemap: {
+    beep: { start: 0.0, end: 0.47, loop: false },
+    cannon: { start: 0.67, end: 2.704, loop: false },
+    whoosh: { start: 2.904, end: 3.966, loop: false },
+    bling: { start: 4.166, end: 6.49, loop: false },
+    punch: { start: 6.69, end: 7.484, loop: false },
+    fanfare: { start: 7.684, end: 11.317, loop: false },
+  },
+}
+
+const manifestJson = JSON.stringify(manifest, null, 2)
 
 async function initialize() {
   if (loaded.value || loading.value)
@@ -23,19 +44,10 @@ async function initialize() {
     loading.value = true
     error.value = ''
 
-    if (!lib) {
-      lib = await import('ez-web-audio')
-    }
+    const lib = await import('ez-web-audio')
 
-    // Create sprite from kick sample with artificial segments
-    // We use the kick sample and define time-based regions within it
-    sprite = await lib.createSprite('/ez-web-audio/audio/drum-samples/kick1.wav', {
-      spritemap: {
-        kick: { start: 0.0, end: 0.35 },
-        tail: { start: 0.05, end: 0.25 },
-        click: { start: 0.0, end: 0.08 },
-      },
-    })
+    sprite = await lib.createSprite('/ez-web-audio/audio/sfx-sprite.mp3', manifest)
+    fullSound = await lib.createSound('/ez-web-audio/audio/sfx-sprite.mp3')
 
     loaded.value = true
   }
@@ -50,59 +62,76 @@ async function initialize() {
 function playSegment(name: string) {
   if (!sprite)
     return
+
   try {
+    if (playTimer) {
+      clearTimeout(playTimer)
+      playTimer = null
+    }
+
     sprite.play(name)
+    playing.value = name
+
+    const seg = segments.find(s => s.name === name)
+    if (seg) {
+      const duration = (seg.end - seg.start) * 1000
+      playTimer = setTimeout(() => {
+        if (playing.value === name) {
+          playing.value = null
+        }
+        playTimer = null
+      }, duration)
+    }
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Playback error'
   }
 }
 
-function toggleLoop(name: string) {
-  if (!sprite)
+function playFull() {
+  if (!fullSound)
     return
 
-  if (loopingSprite.value === name) {
-    // Stop the loop
-    try {
-      sprite.stop(name)
+  try {
+    if (fullTimer) {
+      clearTimeout(fullTimer)
+      fullTimer = null
     }
-    catch {}
-    loopingSprite.value = null
+
+    fullSound.play()
+    playingFull.value = true
+
+    fullTimer = setTimeout(() => {
+      playingFull.value = false
+      fullTimer = null
+    }, totalDuration * 1000)
   }
-  else {
-    // Stop any existing loop first
-    if (loopingSprite.value) {
-      try {
-        sprite.stop(loopingSprite.value)
-      }
-      catch {}
-    }
-    // Start new loop — requires loop: true in spritemap definition
-    // Since the manifest was created without loop, we demonstrate concept with rapid play
-    try {
-      sprite.play(name)
-      loopingSprite.value = name
-    }
-    catch (e) {
-      error.value = e instanceof Error ? e.message : 'Loop error'
-    }
+  catch (e) {
+    error.value = e instanceof Error ? e.message : 'Playback error'
   }
 }
 
-function stopAll() {
-  if (!sprite)
-    return
-  try {
-    sprite.stopAll()
-    loopingSprite.value = null
-  }
-  catch {}
+function segmentLeft(seg: typeof segments[0]): string {
+  return `${(seg.start / totalDuration) * 100}%`
+}
+
+function segmentWidth(seg: typeof segments[0]): string {
+  return `${((seg.end - seg.start) / totalDuration) * 100}%`
 }
 
 onUnmounted(() => {
+  if (playTimer)
+    clearTimeout(playTimer)
+  if (fullTimer)
+    clearTimeout(fullTimer)
   if (sprite) {
     try { sprite.stopAll() }
+    catch {}
+    try { sprite.dispose() }
+    catch {}
+  }
+  if (fullSound) {
+    try { fullSound.stop() }
     catch {}
   }
 })
@@ -120,52 +149,71 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="controls">
+      <div class="full-play-section">
+        <button
+          class="full-play-btn"
+          :class="{ active: playingFull }"
+          @click="playFull"
+        >
+          {{ playingFull ? 'Playing...' : 'Play Full File' }}
+        </button>
+        <span class="full-play-hint">Hear all 6 sounds played back-to-back from one file</span>
+      </div>
+
       <div class="section-label">
-        Play Segments
+        Visual Timeline
+      </div>
+      <div class="timeline-container">
+        <div class="timeline">
+          <div
+            v-for="seg in segments"
+            :key="seg.name"
+            class="timeline-segment"
+            :class="{ active: playing === seg.name }"
+            :style="{
+              left: segmentLeft(seg),
+              width: segmentWidth(seg),
+              backgroundColor: seg.color,
+            }"
+            :title="`${seg.label}: ${seg.start}s - ${seg.end}s`"
+            @click="playSegment(seg.name)"
+          >
+            <span class="segment-label">{{ seg.label }}</span>
+          </div>
+        </div>
+        <div class="timeline-axis">
+          <span>0s</span>
+          <span>{{ (totalDuration / 2).toFixed(1) }}s</span>
+          <span>{{ totalDuration.toFixed(1) }}s</span>
+        </div>
+      </div>
+
+      <div class="section-label">
+        Play Individual Sounds
       </div>
       <div class="sprite-buttons">
-        <button class="sprite-btn" @click="playSegment('kick')">
-          Full Kick
-        </button>
-        <button class="sprite-btn" @click="playSegment('tail')">
-          Kick Tail
-        </button>
-        <button class="sprite-btn" @click="playSegment('click')">
-          Kick Click
+        <button
+          v-for="seg in segments"
+          :key="seg.name"
+          class="sprite-btn"
+          :class="{ active: playing === seg.name }"
+          :style="{ '--seg-color': seg.color }"
+          @click="playSegment(seg.name)"
+        >
+          {{ seg.label }}
         </button>
       </div>
 
       <div class="section-label">
-        Loop Control
+        Spritemap (audiosprite format)
       </div>
-      <div class="loop-controls">
-        <button
-          class="loop-btn"
-          :class="{ active: loopingSprite === 'kick' }"
-          @click="toggleLoop('kick')"
-        >
-          {{ loopingSprite === 'kick' ? 'Stop Loop' : 'Loop Full Kick' }}
-        </button>
-        <button class="stop-all-btn" @click="stopAll">
-          Stop All
-        </button>
-      </div>
-
-      <div class="sprite-info">
-        <strong>Loaded sprites:</strong>
-        <span v-for="name in ['kick', 'tail', 'click']" :key="name" class="sprite-tag">
-          {{ name }}
-        </span>
+      <div class="manifest-display">
+        <pre><code>{{ manifestJson }}</code></pre>
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="loopingSprite" class="playing-indicator">
-        Looping: <strong>{{ loopingSprite }}</strong>
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
+    <div v-if="error" class="error">
+      {{ error }}
     </div>
   </div>
 </template>
@@ -195,7 +243,19 @@ onUnmounted(() => {
 .controls {
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
+}
+
+.full-play-section {
+  display: flex;
+  align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.full-play-hint {
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
 }
 
 .section-label {
@@ -204,6 +264,66 @@ onUnmounted(() => {
   color: var(--vp-c-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-bottom: -0.5rem;
+}
+
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline {
+  position: relative;
+  height: 48px;
+  background: var(--vp-c-bg-mute);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.timeline-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.75;
+  border-radius: 3px;
+}
+
+.timeline-segment:hover {
+  opacity: 0.9;
+  transform: scaleY(1.05);
+}
+
+.timeline-segment.active {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+  transform: scaleY(1.1);
+  z-index: 1;
+}
+
+.segment-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--vp-c-text-3);
+  padding: 0 2px;
 }
 
 .sprite-buttons {
@@ -212,34 +332,9 @@ onUnmounted(() => {
   gap: 0.5rem;
 }
 
-.loop-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.sprite-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  flex-wrap: wrap;
-}
-
-.sprite-tag {
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8rem;
-}
-
 .init-btn,
-.sprite-btn,
-.loop-btn,
-.stop-all-btn {
+.full-play-btn,
+.sprite-btn {
   padding: 0.6rem 1.2rem;
   border-radius: 6px;
   border: 1px solid var(--vp-c-divider);
@@ -267,11 +362,31 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.sprite-btn:hover:not(:disabled),
-.loop-btn:hover:not(:disabled),
-.stop-all-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg-mute);
+.full-play-btn {
+  background: var(--vp-c-brand);
+  color: white;
   border-color: var(--vp-c-brand);
+}
+
+.full-play-btn:hover:not(.active) {
+  background: var(--vp-c-brand-dark);
+}
+
+.full-play-btn.active {
+  background: var(--vp-c-brand-dark);
+  box-shadow: 0 0 8px var(--vp-c-brand-dimm);
+}
+
+.sprite-btn:hover:not(.active) {
+  background: var(--vp-c-bg-mute);
+  border-color: var(--seg-color, var(--vp-c-brand));
+}
+
+.sprite-btn.active {
+  background: var(--seg-color, var(--vp-c-brand));
+  color: white;
+  border-color: var(--seg-color, var(--vp-c-brand));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--seg-color, var(--vp-c-brand)) 50%, transparent);
 }
 
 button:focus-visible {
@@ -279,29 +394,45 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-.loop-btn.active {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
-  font-weight: 600;
+.manifest-display {
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  overflow-x: auto;
 }
 
-.stop-all-btn {
-  background: var(--vp-c-bg-mute);
+.manifest-display pre {
+  margin: 0;
+  padding: 1rem;
 }
 
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.playing-indicator {
-  font-size: 0.85rem;
-  color: var(--vp-c-brand);
+.manifest-display code {
+  font-size: 0.8rem;
+  color: var(--vp-c-text-1);
 }
 
 .error {
   color: var(--vp-c-danger);
   font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .full-play-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .full-play-hint {
+    text-align: center;
+  }
+
+  .timeline {
+    height: 40px;
+  }
+
+  .segment-label {
+    font-size: 0.6rem;
+  }
 }
 </style>
