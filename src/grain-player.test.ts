@@ -385,6 +385,43 @@ describe('grainPlayer', () => {
     })
   })
 
+  // ─── Overlap Boundary and Jitter Edge Cases ──────────────────
+
+  describe('overlap boundary and jitter edge cases', () => {
+    it('overlap equal to grainSize is clamped to grainSize - 0.001', () => {
+      const gp = new GrainPlayer(audioContext, buffer, {
+        grainSize: 0.1,
+        overlap: 0.1, // equal to grainSize
+      })
+      expect(gp.overlap).toBe(0.099) // clamped to grainSize - 0.001
+      expect(gp.overlap).toBeLessThan(gp.grainSize)
+    })
+
+    it('jitter=1.0 position=0.0 does not throw during grain scheduling', () => {
+      const gp = new GrainPlayer(audioContext, buffer, {
+        jitter: 1.0,
+        position: 0.0,
+      })
+      expect(() => {
+        gp.play()
+        vi.advanceTimersByTime(100) // trigger several scheduling loops
+        gp.stop()
+      }).not.toThrow()
+    })
+
+    it('jitter=1.0 position=1.0 does not throw during grain scheduling', () => {
+      const gp = new GrainPlayer(audioContext, buffer, {
+        jitter: 1.0,
+        position: 1.0,
+      })
+      expect(() => {
+        gp.play()
+        vi.advanceTimersByTime(100) // trigger several scheduling loops
+        gp.stop()
+      }).not.toThrow()
+    })
+  })
+
   // ─── Grain Scheduling ──────────────────────────────────────────
 
   describe('grain scheduling', () => {

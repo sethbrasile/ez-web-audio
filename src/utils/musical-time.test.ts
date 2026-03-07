@@ -197,6 +197,25 @@ describe('parseMusicalTime', () => {
   })
 })
 
+describe('parseMusicalTime — 0t edge case', () => {
+  it('parseMusicalTime(0t) returns 0 (0 beats = 0 seconds)', () => {
+    // 0t matches TRIPLET_PATTERN but has note value 0, which causes division by zero
+    // in (4 / noteValue) * (2/3). This throws in musicalTimeToBeats.
+    expect(() => parseMusicalTime('0t', 120)).toThrow()
+  })
+
+  it('musicalTimeToBeats(0t) throws (note value cannot be 0)', () => {
+    expect(() => musicalTimeToBeats('0t')).toThrow(/note value cannot be 0/)
+  })
+})
+
+describe('isMusicalTimeNotation — 0t edge case', () => {
+  it('returns false for 0t (note value 0 is invalid)', () => {
+    // TRIPLET_PATTERN matches '0t' but isMusicalTimeNotation checks noteValue > 0
+    expect(isMusicalTimeNotation('0t')).toBe(false)
+  })
+})
+
 describe('isMusicalTimeNotation', () => {
   it('returns true for note values', () => {
     expect(isMusicalTimeNotation('4n')).toBe(true)
