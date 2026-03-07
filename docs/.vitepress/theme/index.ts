@@ -1,6 +1,7 @@
 import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 
+import CustomLayout from './CustomLayout.vue'
 import AudioDemo from './components/AudioDemo.vue'
 import AudioSpriteDemo from './components/AudioSpriteDemo.vue'
 import CrossfadeDemo from './components/CrossfadeDemo.vue'
@@ -20,6 +21,7 @@ import XYPad from './components/XYPad.vue'
 
 export default {
   extends: DefaultTheme,
+  Layout: CustomLayout,
   enhanceApp({ app }) {
     // Register components globally for use in markdown
     app.component('AudioDemo', AudioDemo)

@@ -91,6 +91,7 @@
     "vite-plugin-prismjs": "^0.0.11",
     "vite-tsconfig-paths": "^6.1.1",
     "vitepress": "^1.6.4",
+    "vitepress-plugin-llms": "^1.11.0",
     "vitest": "^4.0.18"
   }
 }

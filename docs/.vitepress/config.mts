@@ -1,5 +1,6 @@
 import type { HeadConfig } from 'vitepress'
 import { defineConfig } from 'vitepress'
+import llmstxt from 'vitepress-plugin-llms'
 
 // Import TypeDoc-generated sidebar (will exist after typedoc runs)
 // Using dynamic import to avoid TS errors if file doesn't exist yet
@@ -90,6 +91,10 @@ export default defineConfig({
     head.push(['meta', { property: 'og:url', content: canonicalUrl }])
 
     return head
+  },
+
+  vite: {
+    plugins: [llmstxt({ domain: 'https://sethbrasile.github.io/ez-web-audio' })],
   },
 
   themeConfig: {
