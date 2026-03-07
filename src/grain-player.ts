@@ -1,4 +1,5 @@
 import type { RatioType } from '@controllers/base-param-controller'
+import { WorkerTimer } from '@utils/worker-timer'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { GrainPlayerEventMap } from './events/event-types'
@@ -31,8 +32,8 @@ export interface GrainPlayerOptions {
  *
  * GrainPlayer works by scheduling many overlapping short "grains" of audio from a source
  * buffer. Each grain gets a Hann window envelope (ramp up -> ramp down) to prevent clicks.
- * Grains are scheduled slightly ahead of real time using a setTimeout loop for glitch-free
- * playback.
+ * Grains are scheduled slightly ahead of real time using a WorkerTimer for glitch-free
+ * playback even in background tabs.
  *
  * Provides independent control over:
  * - **Position** (0-1): Which region of the buffer to sample grains from
@@ -75,7 +76,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
 
   // Scheduling
   private nextGrainTime = 0
-  private timerId: ReturnType<typeof setTimeout> | null = null
+  private timer: WorkerTimer | null = null
   private readonly LOOKAHEAD = 0.05 // seconds
   private readonly SCHEDULE_INTERVAL = 25 // ms
 
@@ -97,7 +98,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
 
     // Apply options with defaults
     this._grainSize = Math.max(0.01, options?.grainSize ?? 0.1)
-    this._overlap = options?.overlap ?? 0.05
+    this._overlap = Math.max(0, Math.min(options?.overlap ?? 0.05, this._grainSize - 0.001))
     this._position = Math.max(0, Math.min(1, options?.position ?? 0))
     this._pitch = options?.pitch ?? 0
     this._playbackRateValue = this.semitonesToRate(this._pitch)
@@ -189,9 +190,6 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
       this.scheduleGrain(this.nextGrainTime)
       this.nextGrainTime += this.getHopSize()
     }
-
-    // Re-run in SCHEDULE_INTERVAL ms
-    this.timerId = setTimeout(() => this.scheduleLoop(), this.SCHEDULE_INTERVAL)
   }
 
   private scheduleGrain(when: number): void {
@@ -219,11 +217,6 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     // Clamp to buffer bounds
     const maxOffset = Math.max(0, this.buffer.duration - this._grainSize)
     offset = Math.max(0, Math.min(offset, maxOffset))
-
-    // Handle looping
-    if (this._loop && offset > maxOffset) {
-      offset = offset % this.buffer.duration
-    }
 
     // Compensate grain duration for playback rate
     const compensatedDuration = this._grainSize / this._playbackRateValue
@@ -265,7 +258,12 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this._playing = true
     this._paused = false
     this.nextGrainTime = this.audioContext.currentTime
+
+    if (!this.timer) {
+      this.timer = new WorkerTimer({ interval: this.SCHEDULE_INTERVAL })
+    }
     this.scheduleLoop()
+    this.timer.start(() => this.scheduleLoop())
 
     this.emit('play', {
       time: this.audioContext.currentTime,
@@ -285,10 +283,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     if (!this._playing)
       return
 
-    if (this.timerId !== null) {
-      clearTimeout(this.timerId)
-      this.timerId = null
-    }
+    this.timer?.stop()
 
     this._playing = false
     this._paused = false
@@ -314,10 +309,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     if (!this._playing || this._paused)
       return
 
-    if (this.timerId !== null) {
-      clearTimeout(this.timerId)
-      this.timerId = null
-    }
+    this.timer?.stop()
 
     this._paused = true
 
@@ -342,6 +334,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this._paused = false
     this.nextGrainTime = this.audioContext.currentTime
     this.scheduleLoop()
+    this.timer?.start(() => this.scheduleLoop())
 
     this.emit('resume', {
       time: this.audioContext.currentTime,
@@ -408,19 +401,23 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
   /**
    * Duration of each grain in seconds. Minimum 0.01s.
    * Changes take effect on the next grain.
+   * Note: Shrinking grainSize will re-clamp overlap to maintain valid hop size.
    */
   get grainSize(): number { return this._grainSize }
   set grainSize(value: number) {
     this._grainSize = Math.max(0.01, value)
+    // Re-clamp overlap so hop size stays valid
+    this._overlap = Math.min(this._overlap, this._grainSize - 0.001)
   }
 
   /**
    * Overlap between consecutive grains in seconds.
+   * Clamped to [0, grainSize - 0.001] to ensure hop size never drops below 0.001s.
    * Changes take effect on the next grain.
    */
   get overlap(): number { return this._overlap }
   set overlap(value: number) {
-    this._overlap = value
+    this._overlap = Math.max(0, Math.min(value, this._grainSize - 0.001))
   }
 
   /**
@@ -582,10 +579,8 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
 
     // Stop playback
     if (this._playing) {
-      if (this.timerId !== null) {
-        clearTimeout(this.timerId)
-        this.timerId = null
-      }
+      this.timer?.dispose()
+      this.timer = null
       this._playing = false
       this._paused = false
     }

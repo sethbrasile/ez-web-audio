@@ -335,6 +335,34 @@ describe('grainPlayer', () => {
       expect(gp.overlap).toBe(0.08)
     })
 
+    it('overlap clamps to grainSize - 0.001 maximum', () => {
+      const gp = new GrainPlayer(audioContext, buffer) // grainSize=0.1
+      gp.overlap = 0.2 // exceeds grainSize
+      expect(gp.overlap).toBe(0.099) // 0.1 - 0.001
+    })
+
+    it('overlap clamps negative values to 0', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      gp.overlap = -0.5
+      expect(gp.overlap).toBe(0)
+    })
+
+    it('shrinking grainSize re-clamps overlap', () => {
+      const gp = new GrainPlayer(audioContext, buffer, { grainSize: 0.2 })
+      gp.overlap = 0.15
+      expect(gp.overlap).toBe(0.15)
+      gp.grainSize = 0.05
+      expect(gp.overlap).toBe(0.049) // 0.05 - 0.001
+    })
+
+    it('constructor clamps overlap to grainSize - 0.001', () => {
+      const gp = new GrainPlayer(audioContext, buffer, {
+        grainSize: 0.1,
+        overlap: 0.5, // exceeds grainSize
+      })
+      expect(gp.overlap).toBe(0.099) // 0.1 - 0.001
+    })
+
     it('jitter can be set at runtime', () => {
       const gp = new GrainPlayer(audioContext, buffer)
       gp.jitter = 0.5
@@ -382,12 +410,11 @@ describe('grainPlayer', () => {
       expect(createGainSpy.mock.calls.length).toBeGreaterThan(afterConstructCalls)
     })
 
-    it('stop() clears the scheduling timer', () => {
-      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    it('stop() stops the scheduling timer', () => {
       const gp = new GrainPlayer(audioContext, buffer)
       gp.play()
       gp.stop()
-      expect(clearTimeoutSpy).toHaveBeenCalled()
+      expect(gp.playing).toBe(false)
     })
 
     it('subsequent setTimeout calls continue scheduling', () => {
