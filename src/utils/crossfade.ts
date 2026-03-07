@@ -121,7 +121,7 @@ export async function crossfade(
 
   // Return promise that resolves after fade completes
   return new Promise((resolve) => {
-    globalThis.setTimeout(async () => {
+    globalThis.setTimeout(() => {
       fromGain.cancelScheduledValues(0)
 
       if (afterFade === 'continue') {
@@ -129,13 +129,17 @@ export async function crossfade(
         fromGain.setValueAtTime(0, audioContext.currentTime)
       }
       else if (afterFade === 'stop') {
-        await fromTrack.stop()
-        fromGain.setValueAtTime(1.0, audioContext.currentTime)
+        // Use .catch() to prevent unhandled rejections if stop() rejects
+        // (e.g., track already stopped or disposed) (QC-1-19)
+        fromTrack.stop().catch(() => {})
+        // Use changeGainTo() to sync _targetGain for future playback (QC-1-20)
+        fromTrack.changeGainTo(1.0)
       }
       else {
         // 'pause' (default)
         fromTrack.pause()
-        fromGain.setValueAtTime(1.0, audioContext.currentTime)
+        // Use changeGainTo() to sync _targetGain for future playback (QC-1-20)
+        fromTrack.changeGainTo(1.0)
       }
 
       resolve()

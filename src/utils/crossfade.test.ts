@@ -317,4 +317,62 @@ describe('crossfade', () => {
     // Should be resolved after promise completes
     expect(resolved).toBe(true)
   })
+
+  // ─── afterFade options (QC-1-19, QC-1-20) ──────────────────────
+
+  it('afterFade:stop calls stop() and restores gain via changeGainTo (QC-1-19, QC-1-20)', async () => {
+    await fromTrack.play()
+
+    const stopSpy = vi.spyOn(fromTrack, 'stop')
+    const changeGainSpy = vi.spyOn(fromTrack, 'changeGainTo')
+
+    await crossfade(fromTrack, toTrack, 0.01, { afterFade: 'stop' })
+
+    expect(stopSpy).toHaveBeenCalled()
+    // changeGainTo syncs _targetGain (not raw AudioParam)
+    expect(changeGainSpy).toHaveBeenCalledWith(1.0)
+  })
+
+  it('afterFade:stop does not produce unhandled rejection if stop() rejects (QC-1-19)', async () => {
+    await fromTrack.play()
+
+    // Make stop() reject
+    vi.spyOn(fromTrack, 'stop').mockRejectedValue(new Error('already stopped'))
+
+    // Should not throw or produce unhandled rejection
+    await expect(
+      crossfade(fromTrack, toTrack, 0.01, { afterFade: 'stop' }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('afterFade:continue sets gain to 0 but does not stop or pause', async () => {
+    await fromTrack.play()
+
+    const stopSpy = vi.spyOn(fromTrack, 'stop')
+    const pauseSpy = vi.spyOn(fromTrack, 'pause')
+    const fromGain = fromTrack.getGainNode().gain
+    const setValueAtTimeSpy = vi.spyOn(fromGain, 'setValueAtTime')
+
+    await crossfade(fromTrack, toTrack, 0.01, { afterFade: 'continue' })
+
+    expect(stopSpy).not.toHaveBeenCalled()
+    expect(pauseSpy).not.toHaveBeenCalled()
+    // Last setValueAtTime call should set gain to 0 (continue playing silently)
+    const calls = setValueAtTimeSpy.mock.calls
+    const lastCall = calls[calls.length - 1]
+    expect(lastCall[0]).toBe(0)
+  })
+
+  it('afterFade:pause restores gain via changeGainTo (QC-1-20)', async () => {
+    await fromTrack.play()
+
+    const changeGainSpy = vi.spyOn(fromTrack, 'changeGainTo')
+    const pauseSpy = vi.spyOn(fromTrack, 'pause')
+
+    await crossfade(fromTrack, toTrack, 0.01, { afterFade: 'pause' })
+
+    expect(pauseSpy).toHaveBeenCalled()
+    // changeGainTo syncs _targetGain (not raw AudioParam)
+    expect(changeGainSpy).toHaveBeenCalledWith(1.0)
+  })
 })
