@@ -53,6 +53,33 @@ describe('audioSprite', () => {
     vi.restoreAllMocks()
   })
 
+  describe('constructor validation (QC-1-16)', () => {
+    it('throws when a sprite has end before start', () => {
+      const badManifest: AudiospriteManifest = {
+        spritemap: {
+          good: { start: 0, end: 1 },
+          bad: { start: 3, end: 1 },
+        },
+      }
+      expect(() => new AudioSprite(audioContext, audioBuffer, badManifest)).toThrow(
+        'Sprite "bad" has end (1) before start (3)',
+      )
+    })
+
+    it('accepts zero-duration sprite (end === start)', () => {
+      const manifest: AudiospriteManifest = {
+        spritemap: {
+          silent: { start: 1, end: 1 },
+        },
+      }
+      expect(() => new AudioSprite(audioContext, audioBuffer, manifest)).not.toThrow()
+    })
+
+    it('accepts valid sprites', () => {
+      expect(() => new AudioSprite(audioContext, audioBuffer, testManifest)).not.toThrow()
+    })
+  })
+
   describe('names', () => {
     it('returns array of sprite names', () => {
       const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
@@ -481,21 +508,16 @@ describe('audioSprite', () => {
   })
 
   describe('edge cases (audiosprite format)', () => {
-    it('sprite with end < start throws boundary error', () => {
+    it('sprite with end < start throws at construction time', () => {
       const manifest: AudiospriteManifest = {
         spritemap: {
-          backwards: { start: 5, end: 2 }, // end before start — end exceeds nothing, but start is fine
+          backwards: { start: 5, end: 2 },
         },
       }
-      const sprite = new AudioSprite(audioContext, audioBuffer, manifest)
-
-      // getDuration still works (returns negative)
-      expect(sprite.getDuration('backwards')).toBe(-3)
-
-      // play() throws because end (2) is within buffer but start (5) and end (2) are valid;
-      // however getDuration is negative which is a logic error — boundary check validates end >= 0
-      // and end <= buffer.duration, which passes here (2 <= 20). No error expected.
-      expect(() => sprite.play('backwards')).not.toThrow()
+      // Now caught at construction time (QC-1-16)
+      expect(() => new AudioSprite(audioContext, audioBuffer, manifest)).toThrow(
+        'Sprite "backwards" has end (2) before start (5)',
+      )
     })
 
     it('sprite with end > buffer duration throws boundary error', () => {

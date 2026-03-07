@@ -173,6 +173,16 @@ export class AudioSprite {
     this.audioContext = audioContext
     this.audioBuffer = audioBuffer
     this.manifest = manifest
+
+    // Validate sprite definitions at construction time
+    for (const [name, def] of Object.entries(manifest.spritemap)) {
+      if (def.end < def.start) {
+        throw new Error(
+          `Sprite "${name}" has end (${def.end}) before start (${def.start}). `
+          + 'End time must be >= start time.',
+        )
+      }
+    }
   }
 
   /**
