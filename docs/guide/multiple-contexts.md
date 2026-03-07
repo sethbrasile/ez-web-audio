@@ -99,7 +99,8 @@ const delay = createDelay(mainCtx, { time: 0.3, wet: 0.3 })
 music.addEffect(delay)
 
 // Monitor — headphones (if available)
-const monitorCtx = new AudioContext({ sinkId: 'headphone-device-id' })
+const monitorCtx = new AudioContext()
+await monitorCtx.setSinkId('headphone-device-id')
 const click = await createSound(monitorCtx, 'metronome.mp3')
 
 // Each context is independent
@@ -127,6 +128,8 @@ All factory functions support the explicit context overload:
 | `createGrainPlayer` | `createGrainPlayer(ctx, buffer, opts?)` |
 | `createAnalyzer` | `createAnalyzer(ctx, opts?)` |
 | `createTransport` | `createTransport(ctx, opts)` |
+| `createSequence` | `createSequence(transport, opts)` (uses Transport's context) |
+| `createLFO` | `createLFO(opts)` (connects to target's context) |
 | `createLayeredSound` | `createLayeredSound(ctx, layers, opts?)` |
 | `createFont` | `createFont(ctx, url)` |
 | `createSprite` | `createSprite(ctx, url, manifest)` |
