@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-02-28
+**Last Updated:** 2026-03-07
 
 ## Milestones
 
@@ -12,7 +12,7 @@
 - ✅ **Milestone 3: Stable Release** — Phases 17-46 (complete)
 - ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
 - ✅ **Milestone 5: Effects & Transport** — Phases 53-60 (complete)
-- 📋 **Milestone 6: DX & Discoverability** — Phases 61-64
+- 📋 **Milestone 6: DX & Discoverability** — Phases 61-66
 
 ## Phases
 
@@ -1036,6 +1036,29 @@ Plans:
 Plans:
 - [ ] 64-01-PLAN.md — Fix visualization await bug and drum machine playBeats method
 - [ ] 64-02-PLAN.md — Remove load buttons from AudioSpriteDemo and LayeredSoundDemo, add playhead and stop
+
+### Phase 65: Rebuild & Validation Cleanup
+**Goal**: Close all tech debt from M6 audit — rebuild dist to fix llms.txt URLs, create/finalize VALIDATION.md for all M6 phases, and confirm human verification items
+**Depends on**: Phase 64
+**Gap Closure**: Closes tech debt items 1-7 from v6-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. `pnpm build` completes successfully and llms.txt/llms-full.txt contain correct (non-doubled) base-path URLs
+  2. Phase 61 VALIDATION.md finalized with `nyquist_compliant: true`
+  3. Phase 62 VALIDATION.md finalized with `nyquist_compliant: true`
+  4. Phase 63 VALIDATION.md created with `nyquist_compliant: true`
+  5. Phase 64 VALIDATION.md created with `nyquist_compliant: true`
+  6. Phase 61 human verification checks confirmed (full file playback, segment highlighting, visual timeline)
+  7. Phase 64 human verification checks confirmed (visualization, drum machines, sprite playhead, lazy init)
+**Plans**: TBD
+
+### Phase 66: Orphaned Component Cleanup
+**Goal**: Remove or restore orphaned PlayTogetherDemo.vue component (pre-existing issue surfaced by M6 audit)
+**Depends on**: None
+**Gap Closure**: Closes tech debt item 8 from v6-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. `PlayTogetherDemo.vue` either has a corresponding docs page or is removed
+  2. No orphaned Vue components exist in `docs/.vitepress/theme/components/`
+**Plans**: TBD
 
 ---
 
