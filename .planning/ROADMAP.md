@@ -103,7 +103,7 @@
 - [x] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization (completed 2026-02-28)
 - [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [x] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus (completed 2026-02-28)
-- [ ] **Phase 57.1: Transport, Sequence & PolySynth Core Fixes** - Fix voice state machine, TypedEventEmitter migration, SyncableBeatTrack interface, performance getters (QC round 1)
+- [x] **Phase 57.1: Transport, Sequence & PolySynth Core Fixes** - Fix voice state machine, TypedEventEmitter migration, SyncableBeatTrack interface, performance getters (QC round 1) (completed 2026-03-07)
 - [x] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters (completed 2026-03-01)
 - [x] **Phase 58.1: GrainPlayer Hardening** - Overlap validation, WorkerTimer migration, dead code removal (QC round 1) (completed 2026-03-07)
 - [x] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup (completed 2026-03-01)
@@ -945,7 +945,7 @@ Plans:
   5. All existing LFO and effects tests pass
 **Plans**: TBD
 
-### Phase 57.1: Transport, Sequence & PolySynth Core Fixes
+### Phase 57.1: Transport, Sequence & PolySynth Core Fixes (COMPLETE - 2026-03-07)
 **Goal**: Fix architectural bugs in M5 orchestration classes — voice state machine, type safety, event system consistency, performance
 **Depends on**: None
 **QC Findings**: QC-1-01 (high), QC-1-02 (high), QC-1-08 (medium), QC-1-09 (medium), QC-1-10 (medium), QC-1-12 (medium), QC-1-21 (medium), QC-1-22 (medium)
@@ -960,7 +960,8 @@ Plans:
   7. MusicalTime correctly handles beatUnit from time signature
   8. PolySynth.activeVoices and Transport.tracks getters don't allocate on every access
   9. All existing Transport, Sequence, and PolySynth tests pass
-**Plans**: TBD
+**Plans**: 57.1-01 (PolySynth fixes), 57.1-02 (Transport/Sequence/MusicalTime fixes)
+**Completed**: All 8 QC findings fixed + TypedEventEmitter migration. 1891 tests passing.
 
 ### Phase 58.1: GrainPlayer Hardening
 **Goal**: Fix performance cliffs and architectural gaps in GrainPlayer

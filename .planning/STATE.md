@@ -53,6 +53,7 @@ Progress: [██████████] 100% (116/116 plans complete in Miles
 | 55. Transport + BeatTrack Sync | 4/4 complete | 95 new tests (23+41+31) | 23.75 |
 | 56. Sequencer + Musical Time | 2/2 complete | 51 tests | 25.5 |
 | 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
+| 57.1. Transport/Sequence/PolySynth Fixes | 2/2 complete | 8 QC fixes | - |
 | 58. GrainPlayer | 2/2 complete | 71 tests | 35.5 |
 | Phase 61 P01 | 5min | 1 tasks | 3 files |
 | Phase 61 P02 | 3min | 4 tasks | 5 files |
