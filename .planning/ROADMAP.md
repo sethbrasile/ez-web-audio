@@ -12,7 +12,7 @@
 - ✅ **Milestone 3: Stable Release** — Phases 17-46 (complete)
 - ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
 - ✅ **Milestone 5: Effects & Transport** — Phases 53-60 (complete)
-- 📋 **Milestone 6: DX & Discoverability** — Phases 61-63
+- 📋 **Milestone 6: DX & Discoverability** — Phases 61-64
 
 ## Phases
 
@@ -877,7 +877,7 @@ Plans:
 
 ---
 
-### 📋 Milestone 6: DX & Discoverability (Phases 61-63)
+### 📋 Milestone 6: DX & Discoverability (Phases 61-64)
 
 - [x] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page (completed 2026-03-07)
 - [x] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs (completed 2026-03-07)
@@ -1020,6 +1020,22 @@ Plans:
   5. At least stub guide pages exist for Transport, Sequence, PolySynth, GrainPlayer, LFO
 **Plans**: 60.2-01 (homepage, getting-started, multiple-contexts updates), 60.2-02 (guide pages for M5 features)
 **Completed**: All docs updated for M5.
+
+### Phase 64: Demo Example UX Fixes
+
+**Goal:** Fix all demo/example components to follow correct UX patterns — no loading buttons, proper audio initialization on first user interaction, and fix broken examples
+**Depends on:** Phase 63
+**Issues:**
+  1. Remove "Load" buttons from all examples — render examples fully visible immediately, lazily init AudioContext on first user interaction (Play button etc.)
+  2. Audio sprite example needs visual playhead feedback scrolling across timeline during "full file" playback, plus a stop button
+  3. Audio sprite example should not have an INIT button — Play buttons init audio like all other examples
+  4. Audio visualization example: "Failed to execute 'connect' on 'AudioNode': Overload resolution failed" on Play
+  5. Vue and Vanilla drum machine examples play every sound on every step regardless of active state
+**Plans:** 2 plans
+
+Plans:
+- [ ] 64-01-PLAN.md — Fix visualization await bug and drum machine playBeats method
+- [ ] 64-02-PLAN.md — Remove load buttons from AudioSpriteDemo and LayeredSoundDemo, add playhead and stop
 
 ---
 
