@@ -61,7 +61,7 @@ Uses `sprite` with millisecond-based tuples `[offset_ms, duration_ms]`:
 {
   "sprite": {
     "laser": [0, 300],
-    "explosion": [1000, 2500],
+    "explosion": [1000, 1500],
     "powerup": [4000, 500, true]
   }
 }
@@ -86,7 +86,7 @@ const sprite = await createSprite('sounds.mp3', {
 const sprite2 = await createSprite('sounds.mp3', {
   sprite: {
     laser: [0, 300],
-    explosion: [1000, 2500],
+    explosion: [1000, 1500],
   },
 })
 
