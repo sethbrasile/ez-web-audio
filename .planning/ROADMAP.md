@@ -696,7 +696,9 @@ Plans:
   1. `_disposeUnmute` is not importable from the public `ez-web-audio` package entry point
   2. When `createFont()` fails to load a soundfont, the thrown error is an `AudioLoadError` instance (not a plain `Error`)
   3. When an oscillator is created with an unrecognized note name, the thrown error is an `InvalidNoteError` instance
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 50: Code Quality
 **Goal**: Duplicated logic is extracted, test assertions verify real behavior, and the publish CI prevents version mismatches
@@ -709,7 +711,9 @@ Plans:
   4. A dedicated test verifies that the `end` event fires on a `Sound` instance when natural playback completes (not just when `stop()` is called)
   5. A test verifies that event listeners registered before `dispose()` stop firing after `dispose()` is called
   6. The publish workflow fails fast when the git tag does not match `package.json` version — publishing with a mismatched tag is not possible
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 51: Performance & Safety
 **Goal**: Hot-path audio operations avoid redundant work, and remaining safety gaps from the deep review are closed
@@ -724,7 +728,9 @@ Plans:
   6. Calling `changePanTo()` with a value outside `[-1, 1]` logs a console warning
   7. `AudioSprite` skips gain or panner node creation when the value is at its default (gain=1, pan=0)
   8. Crossfade curve arrays are cached at module level and not regenerated on every call
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 52: Documentation & Examples
 **Goal**: All documentation examples are correct, limitations are documented, and every significant feature has an interactive example
@@ -736,7 +742,9 @@ Plans:
   3. Soundfont parsing is documented with a note that large files (5-20 MB) may cause a UI freeze on mobile
   4. `createBeatTrack()` and `createSampler()` accept `AudioInput[]` (not just `string[]`), or their limitation is documented
   5. A playTogether example page exists at `docs/examples/play-together.md` with a Vue component demonstrating synchronized sound triggering
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 53: Built-in Effects
 **Goal**: Developers can apply professional-quality delay, reverb, distortion, compressor, and EQ effects to any sound using the existing addEffect() API — no third-party libraries required
@@ -762,7 +770,9 @@ Plans:
   1. Developer can call `createLFO({ frequency: 5, depth: 0.3, type: 'sine' })` and receive an LFO instance with start/stop/dispose methods
   2. Developer can call `lfo.connect(sound, 'gain')` and the sound's gain oscillates at the LFO frequency — producing an audible tremolo effect
   3. After calling `sound.dispose()`, the LFO connected to that sound stops running and releases all AudioNode references (no memory leak, no zombie OscillatorNode)
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 54.1: Effects and LFO Deep Review Fixes (INSERTED)
 
@@ -824,7 +834,9 @@ Plans:
   1. Developer can call `createGrainPlayer(buffer, { grainSize: 0.1, overlap: 0.05 })` and the GrainPlayer emits a continuous texture from overlapping audio grains
   2. Developer can set `grainPlayer.position` to scrub through different parts of the source buffer while the GrainPlayer is playing — position changes are audible within one lookahead window
   3. Developer can set `grainPlayer.pitch` to shift pitch in semitones (e.g., `+7` for a fifth up) without changing the playback rate — the documentation prominently notes this is pitch-shift via `playbackRate` and cannot time-stretch independently
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ### Phase 59: LayeredSound Effects + LFO-Effect Dispose
 **Goal**: LayeredSound supports addEffect() for unified effect application, and LFO auto-cleans up when connected BaseEffect targets are disposed
@@ -853,7 +865,9 @@ Plans:
   4. `58-VERIFICATION.md` exists and confirms SYNTH-03 and SYNTH-04 against codebase evidence
   5. All 19 REQUIREMENTS.md checkboxes show `[x]` (Complete)
   6. Traceability table Status column shows `Complete` for all 19 requirements
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ---
 
@@ -908,7 +922,9 @@ Plans:
   4. Guide/example pages have `description` frontmatter
   5. Every page footer includes message pointing to llms.txt with auto-generated file size of llms-full.txt
   6. Build order correct (TypeDoc → VitePress build → llms.txt generation)
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
 
 ---
 
