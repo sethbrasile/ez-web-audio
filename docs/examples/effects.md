@@ -20,7 +20,9 @@ import FilterDemo from '../.vitepress/theme/components/FilterDemo.vue'
 </llm-exclude>
 
 <llm-only>
+
 Interactive audio filter demo: apply lowpass, highpass, bandpass, and notch filters to a loaded audio sample. Adjust frequency cutoff and Q factor with sliders.
+
 </llm-only>
 
 ### Replicating This Demo

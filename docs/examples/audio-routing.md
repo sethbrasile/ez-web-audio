@@ -12,7 +12,9 @@ Learn how to integrate custom Web Audio effects into your signal chain using the
 </llm-exclude>
 
 <llm-only>
+
 Audio routing demo with distortion effect: toggle distortion on/off, adjust distortion amount, and hear the effect on a loaded audio sample.
+
 </llm-only>
 
 ### Replicating This Demo

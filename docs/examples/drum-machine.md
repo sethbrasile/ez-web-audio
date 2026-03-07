@@ -16,7 +16,9 @@ Create rhythmic patterns with a step sequencer using the BeatTrack API.
 </llm-exclude>
 
 <llm-only>
+
 Step sequencer drum machine with kick, snare, and hi-hat tracks. 16-step grid with clickable cells, BPM slider, and visual playhead highlighting the current beat.
+
 </llm-only>
 
 ## How to Use

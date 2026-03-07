@@ -16,7 +16,9 @@ An interactive polyphonic synthesizer with ADSR envelope control. Play multiple 
 </llm-exclude>
 
 <llm-only>
+
 Playable polyphonic synthesizer keyboard with waveform selection, ADSR envelope controls, and mouse/keyboard input. Supports chords.
+
 </llm-only>
 
 ## How It Works

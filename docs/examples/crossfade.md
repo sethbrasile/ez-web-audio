@@ -24,7 +24,9 @@ The `crossfade()` function creates a smooth, DJ-style transition between two Tra
 </llm-exclude>
 
 <llm-only>
+
 Crossfade between two audio tracks using equal-power curves. Adjustable crossfade duration with play controls for both tracks.
+
 </llm-only>
 
 ## Basic Usage

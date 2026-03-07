@@ -16,7 +16,9 @@ Click the button to play a sound effect. Adjust volume and pan before or after p
 </llm-exclude>
 
 <llm-only>
+
 Basic audio playback demo: click to load and play a sound effect with volume and pan controls.
+
 </llm-only>
 
 ### Code
@@ -40,7 +42,9 @@ Tracks provide full playback control for music: play, pause, resume, seek, and p
 </llm-exclude>
 
 <llm-only>
+
 Music track demo with play/pause/stop controls, seek slider, and real-time position display showing current time and progress percentage.
+
 </llm-only>
 
 ### Code

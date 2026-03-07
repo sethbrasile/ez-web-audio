@@ -16,7 +16,9 @@ Tap the pads to hear drum sounds created entirely from synthesis. Each sound is 
 </llm-exclude>
 
 <llm-only>
+
 Synthesized drum kit generating kick, snare, and hi-hat sounds purely from oscillators. Clickable pads with no audio files required.
+
 </llm-only>
 
 ## How Each Sound Works

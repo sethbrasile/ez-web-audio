@@ -16,7 +16,9 @@ Experiment with different waveforms and frequencies. The note name updates in re
 </llm-exclude>
 
 <llm-only>
+
 Interactive oscillator demo: select waveform type (sine, square, sawtooth, triangle), adjust frequency with a slider, and hear the result in real time. Includes lowpass, highpass, and bandpass filter controls.
+
 </llm-only>
 
 ### Code

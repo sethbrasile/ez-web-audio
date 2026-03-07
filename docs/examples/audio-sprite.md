@@ -16,7 +16,9 @@ Audio sprites bundle multiple short sounds into one file, reducing HTTP requests
 </llm-exclude>
 
 <llm-only>
+
 Audio sprite player: plays the full combined audio file, then individual named segments from a sprite manifest. Visual timeline shows colored segments with highlight on play.
+
 </llm-only>
 
 ## What Just Happened?

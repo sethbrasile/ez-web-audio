@@ -16,7 +16,9 @@ import AmbientGenerator from '../.vitepress/theme/components/AmbientGenerator.vu
 </llm-exclude>
 
 <llm-only>
+
 Ambient soundscape generator with layered detuned oscillators, randomized panning, and fade-in/fade-out controls.
+
 </llm-only>
 
 ## How It Works

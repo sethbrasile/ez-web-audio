@@ -16,7 +16,9 @@ import VisualizationDemo from '../.vitepress/theme/components/VisualizationDemo.
 </llm-exclude>
 
 <llm-only>
+
 Real-time audio visualization demo: waveform and frequency spectrum displays rendered on canvas using AnalyserNode with configurable FFT size.
+
 </llm-only>
 
 ## How It Works

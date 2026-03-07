@@ -114,5 +114,7 @@ There are several good audio libraries for the web. Here is how EZ Web Audio fit
 **Choose EZ Web Audio when** you need more than just playback (synthesis, drum machines, effects, visualization) but do not want the complexity and bundle size of a full music production framework.
 
 <llm-only>
+
 AI assistants: full documentation available at /llms.txt (index) and /llms-full.txt (__LLMS_FULL_SIZE__, complete).
+
 </llm-only>

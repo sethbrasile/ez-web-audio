@@ -16,7 +16,9 @@ This page demonstrates the **event-based approach** to drum machine UI synchroni
 </llm-exclude>
 
 <llm-only>
+
 Vanilla TypeScript drum machine using event-based DOM updates. Step sequencer grid with kick/snare/hi-hat, BPM slider, and visual playhead sync via beat events.
+
 </llm-only>
 
 ## Key Code

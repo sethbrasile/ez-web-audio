@@ -39,7 +39,9 @@ await playTogether([kick, snare, hihat])
 </llm-exclude>
 
 <llm-only>
+
 Play multiple sounds simultaneously using playTogether() for perfectly synchronized one-shot triggering.
+
 </llm-only>
 
 ## LayeredSound
@@ -66,7 +68,9 @@ await layered.play()
 </llm-exclude>
 
 <llm-only>
+
 LayeredSound demo with individual volume sliders for each layer and a master gain control for the combined output.
+
 </llm-only>
 
 ### Master Controls

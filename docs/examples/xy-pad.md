@@ -16,7 +16,9 @@ Click or drag on the pad to play. The X-axis controls frequency (100-2000 Hz, lo
 </llm-exclude>
 
 <llm-only>
+
 Two-dimensional touch/mouse pad controlling oscillator frequency (X axis) and gain (Y axis) in real time. Sound plays while pointer is held down.
+
 </llm-only>
 
 ## How to Use

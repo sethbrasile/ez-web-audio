@@ -16,7 +16,9 @@ This page demonstrates using Vue's `reactive()` with BeatTrack's `wrapWith` opti
 </llm-exclude>
 
 <llm-only>
+
 Vue reactive drum machine demonstrating automatic UI sync via reactive beat properties. Includes mute/solo controls and BPM adjustment.
+
 </llm-only>
 
 ## How to Use
