@@ -236,12 +236,12 @@ export class DistortionEffect extends BaseEffect {
  * ```
  */
 export function createDistortion(options?: DistortionOptions): DistortionEffect
-export function createDistortion(audioContext: AudioContext, options?: DistortionOptions): DistortionEffect
+export function createDistortion(audioContext: BaseAudioContext, options?: DistortionOptions): DistortionEffect
 export function createDistortion(
-  audioContextOrOptions?: AudioContext | DistortionOptions,
+  audioContextOrOptions?: BaseAudioContext | DistortionOptions,
   options?: DistortionOptions,
 ): DistortionEffect {
-  if (audioContextOrOptions !== undefined && typeof (audioContextOrOptions as AudioContext).createGain === 'function') {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
     return new DistortionEffect(audioContextOrOptions as AudioContext, options ?? {})
   }
   return new DistortionEffect(getOrCreateAudioContext(), (audioContextOrOptions as DistortionOptions) ?? {})

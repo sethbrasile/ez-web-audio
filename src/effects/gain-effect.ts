@@ -121,9 +121,9 @@ export class GainEffect implements Effect {
  * ```
  */
 export function createGainEffect(initialValue?: number): GainEffect
-export function createGainEffect(audioContext: AudioContext, initialValue?: number): GainEffect
+export function createGainEffect(audioContext: BaseAudioContext, initialValue?: number): GainEffect
 export function createGainEffect(
-  audioContextOrValue?: AudioContext | number,
+  audioContextOrValue?: BaseAudioContext | number,
   initialValue?: number,
 ): GainEffect {
   if (audioContextOrValue === undefined || typeof audioContextOrValue === 'number') {
@@ -131,5 +131,5 @@ export function createGainEffect(
     return new GainEffect(getOrCreateAudioContext(), audioContextOrValue ?? 1.0)
   }
   // Called as createGainEffect(audioContext, value?)
-  return new GainEffect(audioContextOrValue, initialValue ?? 1.0)
+  return new GainEffect(audioContextOrValue as AudioContext, initialValue ?? 1.0)
 }

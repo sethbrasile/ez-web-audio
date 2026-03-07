@@ -148,12 +148,12 @@ export function createFilterEffect(
   options?: FilterEffectOptions,
 ): FilterEffect
 export function createFilterEffect(
-  audioContext: AudioContext,
+  audioContext: BaseAudioContext,
   type: FilterType,
   options?: FilterEffectOptions,
 ): FilterEffect
 export function createFilterEffect(
-  audioContextOrType: AudioContext | FilterType,
+  audioContextOrType: BaseAudioContext | FilterType,
   typeOrOptions?: FilterType | FilterEffectOptions,
   options?: FilterEffectOptions,
 ): FilterEffect {
@@ -167,7 +167,7 @@ export function createFilterEffect(
   }
   // Called as createFilterEffect(audioContext, type, options?)
   return new FilterEffect(
-    audioContextOrType,
+    audioContextOrType as AudioContext,
     typeOrOptions as FilterType,
     options ?? {},
   )

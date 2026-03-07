@@ -188,12 +188,12 @@ export class EQEffect extends BaseEffect {
  * ```
  */
 export function createEQ(options?: EQOptions): EQEffect
-export function createEQ(audioContext: AudioContext, options?: EQOptions): EQEffect
+export function createEQ(audioContext: BaseAudioContext, options?: EQOptions): EQEffect
 export function createEQ(
-  audioContextOrOptions?: AudioContext | EQOptions,
+  audioContextOrOptions?: BaseAudioContext | EQOptions,
   options?: EQOptions,
 ): EQEffect {
-  if (audioContextOrOptions !== undefined && typeof (audioContextOrOptions as AudioContext).createGain === 'function') {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
     return new EQEffect(audioContextOrOptions as AudioContext, options ?? {})
   }
   return new EQEffect(getOrCreateAudioContext(), (audioContextOrOptions as EQOptions) ?? {})

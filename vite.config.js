@@ -20,6 +20,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     exclude: ['e2e/**', 'node_modules/**'],
+    setupFiles: ['src/test/setup.ts'],
   },
   build: {
     lib: {
@@ -31,7 +32,7 @@ export default defineConfig({
     minify: false, // Don't minify - consumers handle this
     rollupOptions: {
       input: {
-        'index': resolve(__dirname, 'src/index.ts'),
+        index: resolve(__dirname, 'src/index.ts'),
       },
       external: [], // No dependencies to externalize
       output: {

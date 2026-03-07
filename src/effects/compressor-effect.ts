@@ -161,12 +161,12 @@ export class CompressorEffect extends BaseEffect {
  * ```
  */
 export function createCompressor(options?: CompressorOptions): CompressorEffect
-export function createCompressor(audioContext: AudioContext, options?: CompressorOptions): CompressorEffect
+export function createCompressor(audioContext: BaseAudioContext, options?: CompressorOptions): CompressorEffect
 export function createCompressor(
-  audioContextOrOptions?: AudioContext | CompressorOptions,
+  audioContextOrOptions?: BaseAudioContext | CompressorOptions,
   options?: CompressorOptions,
 ): CompressorEffect {
-  if (audioContextOrOptions !== undefined && typeof (audioContextOrOptions as AudioContext).createGain === 'function') {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
     return new CompressorEffect(audioContextOrOptions as AudioContext, options ?? {})
   }
   return new CompressorEffect(getOrCreateAudioContext(), (audioContextOrOptions as CompressorOptions) ?? {})

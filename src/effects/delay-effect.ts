@@ -133,12 +133,12 @@ export class DelayEffect extends BaseEffect {
  * ```
  */
 export function createDelay(options?: DelayOptions): DelayEffect
-export function createDelay(audioContext: AudioContext, options?: DelayOptions): DelayEffect
+export function createDelay(audioContext: BaseAudioContext, options?: DelayOptions): DelayEffect
 export function createDelay(
-  audioContextOrOptions?: AudioContext | DelayOptions,
+  audioContextOrOptions?: BaseAudioContext | DelayOptions,
   options?: DelayOptions,
 ): DelayEffect {
-  if (audioContextOrOptions !== undefined && typeof (audioContextOrOptions as AudioContext).createGain === 'function') {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
     // Called as createDelay(audioContext, options?)
     return new DelayEffect(audioContextOrOptions as AudioContext, options ?? {})
   }

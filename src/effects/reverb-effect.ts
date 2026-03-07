@@ -338,25 +338,21 @@ export class ReverbEffect extends BaseEffect {
  */
 // Algorithmic overloads
 export function createReverb(options?: AlgorithmicReverbOptions): ReverbEffect
-export function createReverb(audioContext: AudioContext, options?: AlgorithmicReverbOptions): ReverbEffect
+export function createReverb(audioContext: BaseAudioContext, options?: AlgorithmicReverbOptions): ReverbEffect
 // Convolution from URL overloads
 export function createReverb(url: string, options?: ConvolutionReverbOptions): Promise<ReverbEffect>
-export function createReverb(audioContext: AudioContext, url: string, options?: ConvolutionReverbOptions): Promise<ReverbEffect>
+export function createReverb(audioContext: BaseAudioContext, url: string, options?: ConvolutionReverbOptions): Promise<ReverbEffect>
 // Convolution from AudioBuffer overloads
 export function createReverb(buffer: AudioBuffer, options?: ConvolutionReverbOptions): ReverbEffect
-export function createReverb(audioContext: AudioContext, buffer: AudioBuffer, options?: ConvolutionReverbOptions): ReverbEffect
+export function createReverb(audioContext: BaseAudioContext, buffer: AudioBuffer, options?: ConvolutionReverbOptions): ReverbEffect
 // Implementation
 export function createReverb(
-  first?: AudioContext | AlgorithmicReverbOptions | string | AudioBuffer,
+  first?: BaseAudioContext | AlgorithmicReverbOptions | string | AudioBuffer,
   second?: AlgorithmicReverbOptions | ConvolutionReverbOptions | string | AudioBuffer,
   third?: ConvolutionReverbOptions,
 ): ReverbEffect | Promise<ReverbEffect> {
-  // Detect if first arg is AudioContext (duck typing)
-  const isAudioContext = first !== undefined
-    && typeof first === 'object'
-    && first !== null
-    && typeof (first as AudioContext).createGain === 'function'
-    && typeof (first as AudioContext).createDelay === 'function'
+  // Detect if first arg is AudioContext
+  const isAudioContext = first instanceof BaseAudioContext
 
   if (isAudioContext) {
     const ctx = first as AudioContext
