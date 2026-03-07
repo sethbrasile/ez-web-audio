@@ -12,6 +12,11 @@ let fullSound: any = null
 let playTimer: ReturnType<typeof setTimeout> | null = null
 let fullTimer: ReturnType<typeof setTimeout> | null = null
 
+// Playhead animation state
+const playheadPosition = ref(0)
+let playheadFrame: number | null = null
+let playStartTime = 0
+
 const segments = [
   { name: 'beep', label: 'Beep', start: 0.0, end: 0.47, color: '#4CAF50' },
   { name: 'cannon', label: 'Cannon', start: 0.67, end: 2.704, color: '#F44336' },
@@ -36,9 +41,9 @@ const manifest = {
 
 const manifestJson = JSON.stringify(manifest, null, 2)
 
-async function initialize() {
-  if (loaded.value || loading.value)
-    return
+async function ensureLoaded() {
+  if (loaded.value) return true
+  if (loading.value) return false
 
   try {
     loading.value = true
@@ -50,18 +55,19 @@ async function initialize() {
     fullSound = await lib.createSound('/ez-web-audio/audio/sfx-sprite.mp3')
 
     loaded.value = true
+    return true
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load audio sprite'
+    return false
   }
   finally {
     loading.value = false
   }
 }
 
-function playSegment(name: string) {
-  if (!sprite)
-    return
+async function playSegment(name: string) {
+  if (!(await ensureLoaded())) return
 
   try {
     if (playTimer) {
@@ -88,9 +94,46 @@ function playSegment(name: string) {
   }
 }
 
-function playFull() {
-  if (!fullSound)
+function startPlayhead() {
+  playStartTime = performance.now()
+  animatePlayhead()
+}
+
+function animatePlayhead() {
+  const elapsed = (performance.now() - playStartTime) / 1000
+  playheadPosition.value = (elapsed / totalDuration) * 100
+  if (elapsed < totalDuration && playingFull.value) {
+    playheadFrame = requestAnimationFrame(animatePlayhead)
+  } else {
+    playheadPosition.value = 0
+    playingFull.value = false
+  }
+}
+
+function stopPlayhead() {
+  if (playheadFrame) {
+    cancelAnimationFrame(playheadFrame)
+    playheadFrame = null
+  }
+  playheadPosition.value = 0
+}
+
+async function toggleFullPlayback() {
+  if (playingFull.value) {
+    // Stop playback
+    if (fullSound) {
+      try { fullSound.stop() } catch {}
+    }
+    if (fullTimer) {
+      clearTimeout(fullTimer)
+      fullTimer = null
+    }
+    playingFull.value = false
+    stopPlayhead()
     return
+  }
+
+  if (!(await ensureLoaded())) return
 
   try {
     if (fullTimer) {
@@ -100,9 +143,11 @@ function playFull() {
 
     fullSound.play()
     playingFull.value = true
+    startPlayhead()
 
     fullTimer = setTimeout(() => {
       playingFull.value = false
+      stopPlayhead()
       fullTimer = null
     }, totalDuration * 1000)
   }
@@ -124,6 +169,7 @@ onUnmounted(() => {
     clearTimeout(playTimer)
   if (fullTimer)
     clearTimeout(fullTimer)
+  stopPlayhead()
   if (sprite) {
     try { sprite.stopAll() }
     catch {}
@@ -139,23 +185,15 @@ onUnmounted(() => {
 
 <template>
   <div class="sprite-demo">
-    <div v-if="!loaded" class="init-section">
-      <button :disabled="loading" class="init-btn" @click="initialize">
-        {{ loading ? 'Loading audio...' : 'Load Audio Sprite' }}
-      </button>
-      <p class="hint">
-        Click to initialize audio (browser requires user interaction)
-      </p>
-    </div>
-
-    <div v-else class="controls">
+    <div class="controls">
       <div class="full-play-section">
         <button
           class="full-play-btn"
           :class="{ active: playingFull }"
-          @click="playFull"
+          :disabled="loading"
+          @click="toggleFullPlayback"
         >
-          {{ playingFull ? 'Playing...' : 'Play Full File' }}
+          {{ loading ? 'Loading...' : playingFull ? 'Stop' : 'Play Full File' }}
         </button>
         <span class="full-play-hint">Hear all 6 sounds played back-to-back from one file</span>
       </div>
@@ -180,6 +218,11 @@ onUnmounted(() => {
           >
             <span class="segment-label">{{ seg.label }}</span>
           </div>
+          <div
+            v-if="playingFull"
+            class="playhead"
+            :style="{ left: `${playheadPosition}%` }"
+          />
         </div>
         <div class="timeline-axis">
           <span>0s</span>
@@ -198,9 +241,10 @@ onUnmounted(() => {
           class="sprite-btn"
           :class="{ active: playing === seg.name }"
           :style="{ '--seg-color': seg.color }"
+          :disabled="loading"
           @click="playSegment(seg.name)"
         >
-          {{ seg.label }}
+          {{ loading && !loaded ? 'Loading...' : seg.label }}
         </button>
       </div>
 
@@ -225,19 +269,6 @@ onUnmounted(() => {
   padding: 1.5rem;
   margin: 1rem 0;
   background: var(--vp-c-bg-soft);
-}
-
-.init-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin: 0;
 }
 
 .controls {
@@ -307,6 +338,17 @@ onUnmounted(() => {
   z-index: 1;
 }
 
+.playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: white;
+  z-index: 2;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
 .segment-label {
   font-size: 0.7rem;
   font-weight: 600;
@@ -332,7 +374,6 @@ onUnmounted(() => {
   gap: 0.5rem;
 }
 
-.init-btn,
 .full-play-btn,
 .sprite-btn {
   padding: 0.6rem 1.2rem;
@@ -345,30 +386,13 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.init-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
-}
-
-.init-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.init-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .full-play-btn {
   background: var(--vp-c-brand);
   color: white;
   border-color: var(--vp-c-brand);
 }
 
-.full-play-btn:hover:not(.active) {
+.full-play-btn:hover:not(.active):not(:disabled) {
   background: var(--vp-c-brand-dark);
 }
 
@@ -377,7 +401,13 @@ onUnmounted(() => {
   box-shadow: 0 0 8px var(--vp-c-brand-dimm);
 }
 
-.sprite-btn:hover:not(.active) {
+.full-play-btn:disabled,
+.sprite-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sprite-btn:hover:not(.active):not(:disabled) {
   background: var(--vp-c-bg-mute);
   border-color: var(--seg-color, var(--vp-c-brand));
 }
