@@ -1,7 +1,7 @@
-import type { SpriteManifest } from './sprite'
+import type { AudiospriteManifest, HowlerSpriteManifest, SpriteManifest } from './sprite'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AudioSprite } from './sprite'
+import { AudioSprite, isHowlerManifest, normalizeManifest } from './sprite'
 
 describe('audioSprite', () => {
   let audioContext: AudioContext
@@ -10,7 +10,7 @@ describe('audioSprite', () => {
   let mockGainNode: GainNode
   let mockPannerNode: StereoPannerNode
 
-  const testManifest: SpriteManifest = {
+  const testManifest: AudiospriteManifest = {
     spritemap: {
       laser: { start: 0, end: 0.3 },
       explosion: { start: 1.0, end: 2.5 },
@@ -61,7 +61,7 @@ describe('audioSprite', () => {
     })
 
     it('returns empty array for empty manifest', () => {
-      const emptyManifest: SpriteManifest = { spritemap: {} }
+      const emptyManifest: AudiospriteManifest = { spritemap: {} }
       const sprite = new AudioSprite(audioContext, audioBuffer, emptyManifest)
 
       expect(sprite.names).toEqual([])
@@ -421,7 +421,7 @@ describe('audioSprite', () => {
     })
 
     it('stops all active looping sprites', () => {
-      const multiLoopManifest: SpriteManifest = {
+      const multiLoopManifest: AudiospriteManifest = {
         spritemap: {
           bgm: { start: 0, end: 5, loop: true },
           ambient: { start: 5, end: 15, loop: true },
@@ -467,7 +467,7 @@ describe('audioSprite', () => {
 
   describe('manifest with resources', () => {
     it('accepts manifest with optional resources array', () => {
-      const manifestWithResources: SpriteManifest = {
+      const manifestWithResources: AudiospriteManifest = {
         resources: ['sounds.mp3', 'sounds.ogg', 'sounds.m4a'],
         spritemap: {
           test: { start: 0, end: 1 },
@@ -480,9 +480,9 @@ describe('audioSprite', () => {
     })
   })
 
-  describe('edge cases', () => {
+  describe('edge cases (audiosprite format)', () => {
     it('sprite with end < start throws boundary error', () => {
-      const manifest: SpriteManifest = {
+      const manifest: AudiospriteManifest = {
         spritemap: {
           backwards: { start: 5, end: 2 }, // end before start — end exceeds nothing, but start is fine
         },
@@ -501,7 +501,7 @@ describe('audioSprite', () => {
     it('sprite with end > buffer duration throws boundary error', () => {
       // Create a 1-second buffer specifically for this test
       const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
-      const manifest: SpriteManifest = {
+      const manifest: AudiospriteManifest = {
         spritemap: {
           beyondBuffer: { start: 10, end: 12 }, // end exceeds 1-second buffer
         },
@@ -515,7 +515,7 @@ describe('audioSprite', () => {
     })
 
     it('sprite with start === end (zero duration)', () => {
-      const manifest: SpriteManifest = {
+      const manifest: AudiospriteManifest = {
         spritemap: {
           instant: { start: 1, end: 1 },
         },
@@ -547,7 +547,7 @@ describe('audioSprite', () => {
     })
 
     it('empty spritemap has no names', () => {
-      const emptyManifest: SpriteManifest = { spritemap: {} }
+      const emptyManifest: AudiospriteManifest = { spritemap: {} }
       const sprite = new AudioSprite(audioContext, audioBuffer, emptyManifest)
 
       expect(sprite.names).toEqual([])
@@ -557,7 +557,7 @@ describe('audioSprite', () => {
     it('sprite with end beyond buffer throws boundary error', () => {
       // Create a 1-second buffer specifically for this test
       const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
-      const manifest: SpriteManifest = {
+      const manifest: AudiospriteManifest = {
         spritemap: {
           long: { start: 0, end: 999999 }, // Very long — exceeds buffer
         },
@@ -566,6 +566,185 @@ describe('audioSprite', () => {
 
       expect(sprite.getDuration('long')).toBe(999999)
       expect(() => sprite.play('long')).toThrow('exceeds buffer duration')
+    })
+  })
+
+  describe('Howler manifest normalization', () => {
+    describe('isHowlerManifest()', () => {
+      it('returns true for manifest with sprite key', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { laser: [0, 300] },
+        }
+        expect(isHowlerManifest(howler)).toBe(true)
+      })
+
+      it('returns false for manifest with spritemap key', () => {
+        const audiosprite: AudiospriteManifest = {
+          spritemap: { laser: { start: 0, end: 0.3 } },
+        }
+        expect(isHowlerManifest(audiosprite)).toBe(false)
+      })
+    })
+
+    describe('normalizeManifest()', () => {
+      it('returns audiosprite format unchanged', () => {
+        const audiosprite: AudiospriteManifest = {
+          spritemap: {
+            laser: { start: 0, end: 0.3 },
+            explosion: { start: 1.0, end: 2.5 },
+          },
+        }
+        const result = normalizeManifest(audiosprite)
+        expect(result).toBe(audiosprite) // same reference
+      })
+
+      it('converts Howler [0, 300] to {start: 0, end: 0.3}', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { laser: [0, 300] },
+        }
+        const result = normalizeManifest(howler)
+        expect(result.spritemap.laser).toEqual({
+          start: 0,
+          end: 0.3,
+          loop: false,
+        })
+      })
+
+      it('converts Howler [1000, 2500] to {start: 1, end: 3.5}', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { explosion: [1000, 2500] },
+        }
+        const result = normalizeManifest(howler)
+        expect(result.spritemap.explosion).toEqual({
+          start: 1,
+          end: 3.5,
+          loop: false,
+        })
+      })
+
+      it('respects 3rd tuple element as loop flag', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { bgm: [4000, 500, true] },
+        }
+        const result = normalizeManifest(howler)
+        expect(result.spritemap.bgm).toEqual({
+          start: 4,
+          end: 4.5,
+          loop: true,
+        })
+      })
+
+      it('defaults loop to false when 3rd element absent', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { sfx: [0, 200] },
+        }
+        const result = normalizeManifest(howler)
+        expect(result.spritemap.sfx.loop).toBe(false)
+      })
+
+      it('converts multiple sprites in one manifest', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: {
+            laser: [0, 300],
+            explosion: [1000, 2500],
+            bgm: [4000, 10000, true],
+          },
+        }
+        const result = normalizeManifest(howler)
+        expect(Object.keys(result.spritemap)).toEqual(['laser', 'explosion', 'bgm'])
+        expect(result.spritemap.laser).toEqual({ start: 0, end: 0.3, loop: false })
+        expect(result.spritemap.explosion).toEqual({ start: 1, end: 3.5, loop: false })
+        expect(result.spritemap.bgm).toEqual({ start: 4, end: 14, loop: true })
+      })
+
+      it('handles zero offset and duration', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: { silence: [0, 0] },
+        }
+        const result = normalizeManifest(howler)
+        expect(result.spritemap.silence).toEqual({ start: 0, end: 0, loop: false })
+      })
+    })
+
+    describe('SpriteManifest union type', () => {
+      it('accepts audiosprite format as SpriteManifest', () => {
+        const manifest: SpriteManifest = {
+          spritemap: { test: { start: 0, end: 1 } },
+        }
+        // Type-level check: this compiles and isHowlerManifest detects it correctly
+        expect(isHowlerManifest(manifest)).toBe(false)
+      })
+
+      it('accepts Howler format as SpriteManifest', () => {
+        const manifest: SpriteManifest = {
+          sprite: { test: [0, 1000] },
+        }
+        expect(isHowlerManifest(manifest)).toBe(true)
+      })
+    })
+
+    describe('integration with AudioSprite', () => {
+      it('normalized Howler manifest produces AudioSprite with correct names', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: {
+            laser: [0, 300],
+            explosion: [1000, 2500],
+          },
+        }
+        const normalized = normalizeManifest(howler)
+        const sprite = new AudioSprite(audioContext, audioBuffer, normalized)
+
+        expect(sprite.names).toEqual(['laser', 'explosion'])
+      })
+
+      it('normalized Howler manifest produces correct durations', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: {
+            laser: [0, 300],
+            explosion: [1000, 2500],
+          },
+        }
+        const normalized = normalizeManifest(howler)
+        const sprite = new AudioSprite(audioContext, audioBuffer, normalized)
+
+        expect(sprite.getDuration('laser')).toBeCloseTo(0.3)
+        expect(sprite.getDuration('explosion')).toBeCloseTo(2.5)
+      })
+
+      it('normalized Howler manifest with loop plays correctly', () => {
+        const howler: HowlerSpriteManifest = {
+          sprite: {
+            bgm: [3000, 12000, true],
+          },
+        }
+        const normalized = normalizeManifest(howler)
+
+        // Use the stop() test pattern's mock setup
+        const sources: AudioBufferSourceNode[] = []
+        vi.spyOn(audioContext, 'createBufferSource').mockImplementation(() => {
+          const source = {
+            buffer: null,
+            loop: false,
+            loopStart: 0,
+            loopEnd: 0,
+            connect: vi.fn().mockReturnThis(),
+            disconnect: vi.fn(),
+            start: vi.fn(),
+            stop: vi.fn(),
+            onended: null,
+          } as unknown as AudioBufferSourceNode
+          sources.push(source)
+          return source
+        })
+
+        const sprite = new AudioSprite(audioContext, audioBuffer, normalized)
+        sprite.play('bgm')
+
+        const source = sources[0]
+        expect(source.loop).toBe(true)
+        expect(source.loopStart).toBe(3)
+        expect(source.loopEnd).toBe(15)
+      })
     })
   })
 })

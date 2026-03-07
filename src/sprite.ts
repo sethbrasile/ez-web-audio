@@ -11,14 +11,111 @@ export interface SpriteDefinition {
 }
 
 /**
- * Manifest describing all sprites in an audio file.
- * Compatible with audiosprite JSON format.
+ * A Howler-style sprite tuple: `[offset_ms, duration_ms]` or `[offset_ms, duration_ms, loop]`.
+ *
+ * @example
+ * ```typescript
+ * const laser: HowlerSpriteTuple = [0, 300]           // 0-300ms, no loop
+ * const bgm: HowlerSpriteTuple = [4000, 500, true]    // 4000-4500ms, loop
+ * ```
  */
-export interface SpriteManifest {
+export type HowlerSpriteTuple = [number, number] | [number, number, boolean]
+
+/**
+ * Howler.js-compatible sprite manifest format.
+ *
+ * Uses `sprite` key with millisecond-based tuples.
+ *
+ * @example
+ * ```typescript
+ * const manifest: HowlerSpriteManifest = {
+ *   sprite: {
+ *     laser: [0, 300],
+ *     explosion: [1000, 2500],
+ *     bgm: [4000, 10000, true]
+ *   }
+ * }
+ * ```
+ */
+export interface HowlerSpriteManifest {
+  /** Optional: source audio files */
+  src?: string[]
+  /** Map of sprite names to `[offset_ms, duration_ms, loop?]` tuples */
+  sprite: Record<string, HowlerSpriteTuple>
+}
+
+/**
+ * Audiosprite-compatible manifest format.
+ *
+ * Uses `spritemap` key with second-based `{start, end, loop?}` objects.
+ *
+ * @example
+ * ```typescript
+ * const manifest: AudiospriteManifest = {
+ *   spritemap: {
+ *     laser: { start: 0, end: 0.3 },
+ *     explosion: { start: 1.0, end: 2.5 }
+ *   }
+ * }
+ * ```
+ */
+export interface AudiospriteManifest {
   /** Optional: alternative audio formats */
   resources?: string[]
   /** Map of sprite names to their definitions */
   spritemap: Record<string, SpriteDefinition>
+}
+
+/**
+ * Union type accepting either Howler.js or audiosprite manifest formats.
+ *
+ * Format detection is automatic based on top-level key presence:
+ * - `sprite` key → Howler format (ms-based tuples)
+ * - `spritemap` key → audiosprite format (seconds-based objects)
+ */
+export type SpriteManifest = AudiospriteManifest | HowlerSpriteManifest
+
+/**
+ * Type guard that checks whether a manifest is in Howler.js format.
+ *
+ * @param manifest - The manifest to check
+ * @returns `true` if the manifest has a `sprite` key (Howler format)
+ */
+export function isHowlerManifest(manifest: SpriteManifest): manifest is HowlerSpriteManifest {
+  return 'sprite' in manifest && !('spritemap' in manifest)
+}
+
+/**
+ * Normalize any supported manifest format to audiosprite format.
+ *
+ * If the manifest is already in audiosprite format, it is returned as-is (same reference).
+ * Howler manifests are converted: ms tuples become seconds-based `{start, end, loop}` objects.
+ *
+ * @param manifest - A manifest in either Howler or audiosprite format
+ * @returns An `AudiospriteManifest` with all values in seconds
+ *
+ * @example
+ * ```typescript
+ * // Howler format is normalized automatically
+ * const normalized = normalizeManifest({
+ *   sprite: { laser: [0, 300], bgm: [4000, 500, true] }
+ * })
+ * // Result: { spritemap: { laser: { start: 0, end: 0.3, loop: false }, bgm: { start: 4, end: 4.5, loop: true } } }
+ * ```
+ */
+export function normalizeManifest(manifest: SpriteManifest): AudiospriteManifest {
+  if (!isHowlerManifest(manifest)) {
+    return manifest
+  }
+  const spritemap: Record<string, SpriteDefinition> = {}
+  for (const [name, tuple] of Object.entries(manifest.sprite)) {
+    spritemap[name] = {
+      start: tuple[0] / 1000,
+      end: (tuple[0] + tuple[1]) / 1000,
+      loop: tuple[2] ?? false,
+    }
+  }
+  return { spritemap }
 }
 
 /**
@@ -66,12 +163,12 @@ export class AudioSprite {
 
   private audioContext: AudioContext
   private audioBuffer: AudioBuffer | null
-  private manifest: SpriteManifest
+  private manifest: AudiospriteManifest
 
   constructor(
     audioContext: AudioContext,
     audioBuffer: AudioBuffer,
-    manifest: SpriteManifest,
+    manifest: AudiospriteManifest,
   ) {
     this.audioContext = audioContext
     this.audioBuffer = audioBuffer
@@ -242,8 +339,10 @@ export class AudioSprite {
 
       try {
         source.disconnect()
-        if (gainNode) gainNode.disconnect()
-        if (pannerNode) pannerNode.disconnect()
+        if (gainNode)
+          gainNode.disconnect()
+        if (pannerNode)
+          pannerNode.disconnect()
       }
       catch {
         // Already disconnected

@@ -13,7 +13,7 @@ import type { LFOConnectOptions, LFOOptions, LFOWaveform } from './lfo'
 import type { OscillatorFilterOptions, OscillatorOptions } from './oscillator'
 import type { PlayOptions, PolySynthOptions, StealStrategy } from './poly-synth'
 import type { SequenceCallback, SequenceOptions } from './sequence'
-import type { SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
+import type { AudiospriteManifest, HowlerSpriteManifest, HowlerSpriteTuple, SpriteDefinition, SpriteManifest, SpritePlayOptions } from './sprite'
 import type { TransportOptions, TransportPosition } from './transport'
 import type { CrossfadeOptions } from './utils/crossfade'
 import type { MusicalTimeNotation } from './utils/musical-time'
@@ -62,7 +62,7 @@ import { PolySynth, VoiceHandle } from './poly-synth'
 import { clearPreloadCache, evictIfNeeded, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 import { SampledNote } from './sampled-note'
 import { Sequence } from './sequence'
-import { AudioSprite } from './sprite'
+import { AudioSprite, isHowlerManifest, normalizeManifest } from './sprite'
 import { formatPosition, Transport } from './transport'
 import { pauseAll, playAll, stopAll } from './utils/collections'
 import { crossfade } from './utils/crossfade'
@@ -876,7 +876,8 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
     buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
   }
 
-  return new AudioSprite(audioContext, buffer, manifest)
+  const normalized = normalizeManifest(manifest)
+  return new AudioSprite(audioContext, buffer, normalized)
 }
 
 /**
@@ -1195,11 +1196,13 @@ export {
   GainEffect,
   GrainPlayer,
   InvalidNoteError,
+  isHowlerManifest,
   isMusicalTimeNotation,
   isPreloaded,
   LFO,
   MusicallyAware,
   musicalTimeToBeats,
+  normalizeManifest,
   Note,
   Oscillator,
   OscillatorController,
@@ -1260,6 +1263,7 @@ export type { LayeredSoundOptions } from './layered-sound'
 export type {
   AlgorithmicReverbOptions,
   AnalyzerOptions,
+  AudiospriteManifest,
   BeatTrackOptions,
   CompressorOptions,
   Connectable,
@@ -1277,6 +1281,8 @@ export type {
   FilterEffectOptions,
   FilterType,
   GrainPlayerOptions,
+  HowlerSpriteManifest,
+  HowlerSpriteTuple,
   LFOConnectOptions,
   LFOOptions,
   LFOWaveform,
