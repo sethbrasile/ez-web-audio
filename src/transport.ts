@@ -1,7 +1,21 @@
-import type { BeatTrack } from './beat-track'
 import type { TransportEventMap } from './events/event-types'
 import type { Sequence } from './sequence'
+import { TypedEventEmitter } from './events/typed-event-emitter'
 import { WorkerTimer } from './utils/worker-timer'
+
+/**
+ * Interface for BeatTracks that can sync to a Transport.
+ * Provides the contract Transport needs without unsafe casts.
+ * @internal
+ */
+export interface SyncableBeatTrack {
+  /** The beats array for determining loop length. */
+  beats: readonly { active: boolean }[]
+  /** Note type this track syncs at (e.g., 1/4 for quarter notes). */
+  _syncNoteType: number
+  /** Schedule a single beat at the given audio time. */
+  _scheduleBeatFromTransport(beatIndex: number, time: number): void
+}
 
 /**
  * Configuration options for creating a Transport.
@@ -34,7 +48,7 @@ export interface TransportPosition {
  * @internal
  */
 interface SyncedTrackState {
-  track: BeatTrack
+  track: SyncableBeatTrack
   nextBeatTime: number
   currentBeatIndex: number
 }
@@ -80,10 +94,9 @@ export function formatPosition(pos: TransportPosition): string {
  * transport.start()
  * ```
  */
-export class Transport {
+export class Transport extends TypedEventEmitter<TransportEventMap> {
   private audioContext: AudioContext
   private workerTimer: WorkerTimer
-  private eventTarget: EventTarget = new EventTarget()
 
   // Tempo and time signature
   private _bpm: number
@@ -105,8 +118,9 @@ export class Transport {
   private _position: TransportPosition = { bar: 1, beat: 1, tick: 0, seconds: 0 }
 
   // Synced tracks
-  private _syncedTracks: Set<BeatTrack> = new Set()
-  private trackStates: Map<BeatTrack, SyncedTrackState> = new Map()
+  private _syncedTracks: Set<SyncableBeatTrack> = new Set()
+  private trackStates: Map<SyncableBeatTrack, SyncedTrackState> = new Map()
+  private _tracksCache: readonly SyncableBeatTrack[] | null = null
 
   // Synced sequences
   private _syncedSequences: Set<Sequence> = new Set()
@@ -116,6 +130,7 @@ export class Transport {
   private pausedElapsed = 0
 
   constructor(audioContext: AudioContext, options: TransportOptions) {
+    super()
     if (options.bpm <= 0) {
       throw new Error(`BPM must be greater than 0. Received: ${options.bpm}`)
     }
@@ -166,9 +181,12 @@ export class Transport {
     return this._paused
   }
 
-  /** Read-only array of BeatTracks currently synced to this Transport. */
-  get tracks(): readonly BeatTrack[] {
-    return Object.freeze([...this._syncedTracks])
+  /** Read-only array of BeatTracks currently synced to this Transport. Cached for performance. */
+  get tracks(): readonly SyncableBeatTrack[] {
+    if (!this._tracksCache) {
+      this._tracksCache = Object.freeze([...this._syncedTracks])
+    }
+    return this._tracksCache
   }
 
   // ─── Lifecycle ────────────────────────────────────────────────────
@@ -313,7 +331,7 @@ export class Transport {
       this._removeSequence(seq)
     }
 
-    this.eventTarget = new EventTarget()
+    this._tracksCache = null
     this._disposed = true
   }
 
@@ -324,13 +342,14 @@ export class Transport {
    * Called by BeatTrack.syncTo().
    * @internal
    */
-  _addTrack(track: BeatTrack): void {
+  _addTrack(track: SyncableBeatTrack): void {
     if (this._syncedTracks.has(track)) return
     this._syncedTracks.add(track)
+    this._tracksCache = null // Invalidate cache
 
     if (this._playing) {
       // Hot add: calculate next beat boundary for this track's noteType
-      const noteType = (track as any)._syncNoteType ?? 1 / 4
+      const noteType = track._syncNoteType
       const beatDuration = (240 * noteType) / this._bpm
       const elapsed = this.audioContext.currentTime - this.startTime
       const beatProgress = elapsed % beatDuration
@@ -351,9 +370,10 @@ export class Transport {
    * Called by BeatTrack.unsync().
    * @internal
    */
-  _removeTrack(track: BeatTrack): void {
+  _removeTrack(track: SyncableBeatTrack): void {
     this._syncedTracks.delete(track)
     this.trackStates.delete(track)
+    this._tracksCache = null // Invalidate cache
   }
 
   // ─── Sequence Management (package-internal) ────────────────────────
@@ -399,12 +419,10 @@ export class Transport {
 
     // Schedule each synced track's beats within lookahead window
     for (const state of this.trackStates.values()) {
-      const noteType = (state.track as any)._syncNoteType ?? 1 / 4
+      const noteType = state.track._syncNoteType
       const beatDuration = (240 * noteType) / this._bpm
       while (state.nextBeatTime < currentTime + this.scheduleAheadTime) {
-        if (typeof (state.track as any)._scheduleBeatFromTransport === 'function') {
-          ;(state.track as any)._scheduleBeatFromTransport(state.currentBeatIndex, state.nextBeatTime)
-        }
+        state.track._scheduleBeatFromTransport(state.currentBeatIndex, state.nextBeatTime)
         state.nextBeatTime += beatDuration
         state.currentBeatIndex = (state.currentBeatIndex + 1) % state.track.beats.length
       }
@@ -458,64 +476,5 @@ export class Transport {
       tick: tickInBeat,
       seconds: this.nextTickTime - this.startTime,
     }
-  }
-
-  // ─── Events ───────────────────────────────────────────────────────
-
-  /**
-   * Emit a typed event with the given detail.
-   * @internal
-   */
-  private emit<K extends keyof TransportEventMap>(
-    type: K,
-    detail: TransportEventMap[K] extends CustomEvent<infer D> ? D : never,
-  ): void {
-    const event = new CustomEvent(type, { detail })
-    this.eventTarget.dispatchEvent(event)
-  }
-
-  /**
-   * Subscribe to an event. Supports chaining.
-   *
-   * @param type - Event type: 'start', 'stop', 'pause', 'resume', 'tick'
-   * @param listener - Handler function
-   * @returns this for chaining
-   */
-  on<K extends keyof TransportEventMap>(
-    type: K,
-    listener: (event: TransportEventMap[K]) => void,
-  ): this {
-    this.eventTarget.addEventListener(type, listener as EventListener)
-    return this
-  }
-
-  /**
-   * Unsubscribe from an event. Supports chaining.
-   *
-   * @param type - Event type to unsubscribe from
-   * @param listener - Handler function to remove
-   * @returns this for chaining
-   */
-  off<K extends keyof TransportEventMap>(
-    type: K,
-    listener: (event: TransportEventMap[K]) => void,
-  ): this {
-    this.eventTarget.removeEventListener(type, listener as EventListener)
-    return this
-  }
-
-  /**
-   * Subscribe to an event once. Handler is removed after first invocation.
-   *
-   * @param type - Event type to listen for
-   * @param listener - Handler function (called only once)
-   * @returns this for chaining
-   */
-  once<K extends keyof TransportEventMap>(
-    type: K,
-    listener: (event: TransportEventMap[K]) => void,
-  ): this {
-    this.eventTarget.addEventListener(type, listener as EventListener, { once: true })
-    return this
   }
 }

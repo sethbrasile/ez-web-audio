@@ -2,7 +2,7 @@ import type { BeatTrackEventMap } from './events/event-types'
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
-import type { Transport } from './transport'
+import type { SyncableBeatTrack, Transport } from './transport'
 import { Beat } from './beat'
 import { Sampler } from './sampler'
 import audioContextAwareTimeout from './utils/timeout'
@@ -51,7 +51,7 @@ export interface BeatTrackOptions extends SamplerOptions {
  * })
  * ```
  */
-export class BeatTrack extends Sampler {
+export class BeatTrack extends Sampler implements SyncableBeatTrack {
   /**
    * BeatTrack uses its own EventTarget rather than TypedEventEmitter because
    * BeatTrack extends Sampler (for round-robin sample playback), not BaseSound.
