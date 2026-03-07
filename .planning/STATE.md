@@ -2,34 +2,37 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-01T06:59:30.663Z"
+status: planning
+stopped_at: Completed 61-01-PLAN.md
+last_updated: "2026-03-07T02:09:44.999Z"
+last_activity: 2026-03-01 — Milestone 6 created with 3 phases
 progress:
-  total_phases: 44
+  total_phases: 47
   completed_phases: 44
-  total_plans: 109
-  completed_plans: 109
+  total_plans: 111
+  completed_plans: 110
+  percent: 0
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-02-28 (Phase 58 complete — GrainPlayer)
-**Current Focus:** Milestone 5 complete
+**Last Updated:** 2026-03-01 (Milestone 6 created — DX & Discoverability)
+**Current Focus:** Milestone 6 — Phases 61-63
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Make the Web Audio API easy to use
-**Current milestone:** Milestone 5 — Effects & Transport (Phases 53-58)
+**Current milestone:** Milestone 6 — DX & Discoverability (Phases 61-63)
 
 ## Current Position
 
-Phase: 58 of 58 — complete (GrainPlayer)
-Status: All phases complete. Milestone 5 finished.
-Last activity: 2026-02-28 — Phase 58 completed (2 plans, 71 tests for GrainPlayer)
+Phase: 61 of 63 — pending (Audio Sprites Redesign)
+Status: Milestone 6 created. Specs written, phases need planning.
+Last activity: 2026-03-01 — Milestone 6 created with 3 phases
 
-Progress: [██████████] 100% (6/6 phases complete in Milestone 5)
+Progress: [░░░░░░░░░░] 0% (0/3 phases complete in Milestone 6)
 
 ## Performance Metrics
 
@@ -50,6 +53,7 @@ Progress: [██████████] 100% (6/6 phases complete in Mileston
 | 56. Sequencer + Musical Time | 2/2 complete | 51 tests | 25.5 |
 | 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
 | 58. GrainPlayer | 2/2 complete | 71 tests | 35.5 |
+| Phase 61 P01 | 5min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +98,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Same-frequency retrigger: scan active voices for matching frequency before allocating
 - Three steal strategies: 'lru' (default), 'oldest-active', 'quietest'
 - Custom voice factory via createVoice option
+- [Phase 61]: normalizeManifest returns same reference for audiosprite format; AudioSprite constructor narrowed to AudiospriteManifest
 
 ### Roadmap Evolution
 
@@ -120,6 +125,6 @@ None active. GrainPlayer limitation (playbackRate-based pitch shift) documented 
 
 ## Session Continuity
 
-Last session: 2026-02-28
-Stopped at: Milestone 5 complete — all phases 53-58 done
+Last session: 2026-03-07T02:09:44.993Z
+Stopped at: Completed 61-01-PLAN.md
 Resume file: None
