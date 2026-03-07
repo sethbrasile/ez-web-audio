@@ -1,5 +1,5 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BaseEffect } from './effects/base-effect'
 import { GrainPlayer } from './grain-player'
 import { LFO } from './lfo'
@@ -863,6 +863,112 @@ describe('lfo', () => {
 
       lfo.disconnect()
       lfo.stop()
+    })
+  })
+
+  // ===== 13. Depth Calculation Numeric Verification (QC-1-15) =====
+  describe('depth calculation numeric verification', () => {
+    it('ratio mode, gain target: depth=0.3, gain=1.0 -> depthGain ~0.3', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 0.3 })
+
+      // Spy on createGain to capture the depthGain node
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+
+      // The last GainNode created during connect() is the depthGain
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // ratio mode: 0.3 * 1.0 (default gain) = 0.3
+      expect(depthGain.gain.value).toBeCloseTo(0.3, 1)
+    })
+
+    it('ratio mode, different base: depth=0.5, gain=0.8 -> depthGain ~0.4', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 0.5 })
+
+      // Set gain to 0.8 before connecting LFO
+      sound.getGainNode().gain.value = 0.8
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // ratio mode: 0.5 * 0.8 = 0.4
+      expect(depthGain.gain.value).toBeCloseTo(0.4, 1)
+    })
+
+    it('cents mode: depth=100, frequency=440Hz -> depthGain ~25.78', () => {
+      const osc = new Oscillator(ctx, { frequency: 440 })
+      const lfo = new LFO({ depth: 100 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      // frequency param uses cents mode by default
+      lfo.connect(osc, 'frequency')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // cents mode: 440 * (2^(100/1200) - 1) ~= 25.78
+      const expected = 440 * (2 ** (100 / 1200) - 1)
+      expect(depthGain.gain.value).toBeCloseTo(expected, 0)
+    })
+
+    it('absolute mode: depth=50 -> depthGain = 50 directly', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 50 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain', { depthUnit: 'absolute' })
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // absolute mode: depth used directly
+      expect(depthGain.gain.value).toBeCloseTo(50, 1)
+    })
+
+    it('pan with value=0 fallback: ratio mode falls back to absolute', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 0.3 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      // Pan defaults to 0 (center), so ratio mode falls back to absolute
+      lfo.connect(sound, 'pan')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // When pan value is 0, ratio fallback: depth used as absolute = 0.3
+      expect(depthGain.gain.value).toBeCloseTo(0.3, 1)
     })
   })
 })

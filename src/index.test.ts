@@ -721,6 +721,41 @@ describe('factory functions', () => {
 
       await expect(createSprite('sounds.mp3', manifest)).rejects.toThrow('sounds.mp3')
     })
+
+    it('creates AudioSprite from Howler manifest format', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSprite, AudioSprite } = await import('./index')
+      const howlerManifest = {
+        sprite: {
+          laser: [0, 300] as [number, number],
+          explosion: [400, 1000] as [number, number],
+        },
+      }
+
+      const sprite = await createSprite('sounds.mp3', howlerManifest)
+
+      expect(sprite).toBeInstanceOf(AudioSprite)
+      expect(sprite.names).toContain('laser')
+      expect(sprite.names).toContain('explosion')
+    })
+
+    it('Howler manifest normalizes ms to seconds', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSprite } = await import('./index')
+      const howlerManifest = {
+        sprite: {
+          laser: [0, 300] as [number, number],
+          explosion: [400, 1000] as [number, number],
+        },
+      }
+
+      const sprite = await createSprite('sounds.mp3', howlerManifest)
+
+      // laser: [0, 300] ms -> start=0.0, end=0.3 -> duration=0.3
+      expect(sprite.getDuration('laser')).toBeCloseTo(0.3)
+      // explosion: [400, 1000] ms -> start=0.4, end=1.4 -> duration=1.0
+      expect(sprite.getDuration('explosion')).toBeCloseTo(1.0)
+    })
   })
 
   describe('createNoise()', () => {
@@ -1235,6 +1270,24 @@ describe('factory functions with explicit AudioContext (BaseAudioContext overloa
       const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
       const sprite = await createSprite(mockAudioContext, 'sounds.mp3', manifest)
       expect(sprite).toBeInstanceOf(AudioSprite)
+    })
+
+    it('createFont(ctx, url) returns Font using provided context', async () => {
+      // Mock soundfont parsing: mungeSoundFont returns data strings,
+      // extractDecodedKeyValuePairs returns note pairs, createNoteObjectsForFont returns notes
+      vi.doMock('./utils/decode-base64', () => ({
+        mungeSoundFont: vi.fn().mockReturnValue([]),
+        decodeBase64ToArrayBuffer: vi.fn(),
+      }))
+      vi.doMock('./utils/note-methods', () => ({
+        extractDecodedKeyValuePairs: vi.fn().mockResolvedValue([]),
+        createNoteObjectsForFont: vi.fn().mockReturnValue([]),
+      }))
+
+      mockFetch.mockResolvedValue(makeMockResponse({ text: 'MIDI.Soundfont.piano = {}' }))
+      const { createFont, Font } = await import('./index')
+      const font = await createFont(mockAudioContext, 'piano.js')
+      expect(font).toBeInstanceOf(Font)
     })
 
     it('explicit context factories do not create a new AudioContext', async () => {
