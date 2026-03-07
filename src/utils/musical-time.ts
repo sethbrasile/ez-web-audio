@@ -132,7 +132,10 @@ export function parseMusicalTime(
   }
 
   const beats = musicalTimeToBeats(notation, timeSignature[0], ticksPerBeat)
-  return beats * (60 / bpm)
+  // Scale by beatUnit: in 4/4, quarter=1 beat (scale=1.0).
+  // In 6/8, eighth=1 beat (scale=0.5). In 2/2, half=1 beat (scale=2.0).
+  const beatUnitScale = 4 / timeSignature[1]
+  return beats * (60 / bpm) * beatUnitScale
 }
 
 /**
