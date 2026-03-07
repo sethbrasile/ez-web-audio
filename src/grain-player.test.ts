@@ -446,6 +446,20 @@ describe('grainPlayer', () => {
       gp.update('pan').to(-1).as('ratio')
     })
 
+    it('update gain with percent converts correctly (QC-1-07)', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const spy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      gp.update('gain').to(50).as('percent')
+      expect(spy).toHaveBeenCalledWith(0.5, expect.any(Number))
+    })
+
+    it('update gain with inverseRatio converts correctly (QC-1-07)', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const spy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      gp.update('gain').to(0.3).as('inverseRatio')
+      expect(spy).toHaveBeenCalledWith(0.7, expect.any(Number))
+    })
+
     it('changeGainTo sets gain directly', () => {
       const gp = new GrainPlayer(audioContext, buffer)
       const result = gp.changeGainTo(0.5)

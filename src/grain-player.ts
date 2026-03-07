@@ -1,4 +1,5 @@
 import type { RatioType } from '@controllers/base-param-controller'
+import { convertValue } from '@utils/convert-value'
 import { WorkerTimer } from '@utils/worker-timer'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
@@ -464,8 +465,8 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     const param = type === 'gain' ? this.masterGain.gain : this.masterPan.pan
     return {
       to: (value: number) => ({
-        as: (_method: RatioType): void => {
-          param.setValueAtTime(value, this.audioContext.currentTime)
+        as: (method: RatioType): void => {
+          param.setValueAtTime(convertValue(value, method), this.audioContext.currentTime)
         },
       }),
     }

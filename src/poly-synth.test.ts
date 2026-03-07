@@ -293,6 +293,20 @@ describe('polySynth', () => {
       expect(() => synth.update('gain').to(0.5).as('ratio')).not.toThrow()
     })
 
+    it('update(gain) with percent converts correctly (QC-1-07)', () => {
+      const synth = new PolySynth(audioContext)
+      const spy = vi.spyOn(synth.getGainNode().gain, 'setValueAtTime')
+      synth.update('gain').to(50).as('percent')
+      expect(spy).toHaveBeenCalledWith(0.5, expect.any(Number))
+    })
+
+    it('update(gain) with inverseRatio converts correctly (QC-1-07)', () => {
+      const synth = new PolySynth(audioContext)
+      const spy = vi.spyOn(synth.getGainNode().gain, 'setValueAtTime')
+      synth.update('gain').to(0.3).as('inverseRatio')
+      expect(spy).toHaveBeenCalledWith(0.7, expect.any(Number))
+    })
+
     it('changePanTo does not throw', () => {
       const synth = new PolySynth(audioContext)
       expect(() => synth.changePanTo(-0.5)).not.toThrow()

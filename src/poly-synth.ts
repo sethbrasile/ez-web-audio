@@ -1,4 +1,5 @@
 import type { ControlType, RampType, RatioType } from '@controllers/base-param-controller'
+import { convertValue } from '@utils/convert-value'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { EnvelopeOptions } from './envelope'
@@ -172,6 +173,9 @@ interface VoiceEntry {
   startedAt: number
   releasedAt: number
   frequency: number
+  // Listener references for cleanup on reactivation (QC-1-09)
+  onStop: ((event: any) => void) | null
+  onEnd: ((event: any) => void) | null
 }
 
 /**
@@ -213,6 +217,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
   private readonly _stealStrategy: StealStrategy
   private readonly voiceFactory: (ctx: AudioContext) => Oscillator
   private voices: VoiceEntry[] = []
+  private _activeCount = 0
   private _disposed = false
 
   // Shared output bus
@@ -317,7 +322,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
 
   /** Number of currently active voices. */
   get activeVoices(): number {
-    return this.voices.filter(v => v.state === 'active').length
+    return this._activeCount
   }
 
   /** Number of available voice slots. */
@@ -384,8 +389,13 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
       const stolenFreq = victim.frequency
       // Invalidate old handle
       victim.handle?._invalidate()
+      // Clean up old listeners before stealing
+      this.cleanupVoiceListeners(victim)
       // Stop the old voice (anti-click via stopAt)
       victim.oscillator.stopAt(now)
+      if (victim.state === 'active') {
+        this._activeCount--
+      }
       victim.state = 'available'
 
       const handle = this.activateVoice(victim, frequency, voiceGain, now)
@@ -416,6 +426,59 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
       startedAt: 0,
       releasedAt: 0,
       frequency: 0,
+      onStop: null,
+      onEnd: null,
+    }
+  }
+
+  /**
+   * Clean up old listeners and register new lifecycle listeners on a voice entry.
+   * Implements proper released -> available state transition (QC-1-01)
+   * and prevents orphaned listeners on rapid reactivation (QC-1-09).
+   * @internal
+   */
+  private setupVoiceListeners(entry: VoiceEntry): void {
+    // Clean up old listeners from previous activation
+    this.cleanupVoiceListeners(entry)
+
+    // Register new listeners with proper state transitions:
+    // stop -> released (voice is releasing envelope)
+    // end -> available (voice playback fully complete)
+    const onStop = (): void => {
+      if (entry.state === 'active') {
+        entry.releasedAt = this.audioContext.currentTime
+        entry.state = 'released'
+        this._activeCount--
+      }
+    }
+    const onEnd = (): void => {
+      if (entry.state === 'released') {
+        entry.state = 'available'
+      }
+      // Clean up references
+      entry.onStop = null
+      entry.onEnd = null
+    }
+
+    entry.onStop = onStop
+    entry.onEnd = onEnd
+    entry.oscillator.once('stop', onStop)
+    entry.oscillator.once('end', onEnd)
+  }
+
+  /**
+   * Clean up listeners from a voice entry without triggering state transitions.
+   * Used during stealing and stopAll to prevent stale listeners.
+   * @internal
+   */
+  private cleanupVoiceListeners(entry: VoiceEntry): void {
+    if (entry.onStop) {
+      entry.oscillator.off('stop', entry.onStop)
+      entry.onStop = null
+    }
+    if (entry.onEnd) {
+      entry.oscillator.off('end', entry.onEnd)
+      entry.onEnd = null
     }
   }
 
@@ -431,6 +494,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     entry.frequency = frequency
     entry.startedAt = now
     entry.state = 'active'
+    this._activeCount++
 
     // Set frequency on the oscillator
     entry.oscillator.update('frequency').to(frequency).as('ratio')
@@ -446,23 +510,19 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     // Play the oscillator
     void entry.oscillator.play()
 
-    // Listen for stop/end to mark as released then available
-    const onVoiceStopped = (): void => {
-      if (entry.state === 'active') {
-        entry.releasedAt = this.audioContext.currentTime
-        entry.state = 'released'
-        // Mark as available after a brief delay (allow envelope release)
-        entry.state = 'available'
-      }
-    }
-    entry.oscillator.once('stop', onVoiceStopped)
-    entry.oscillator.once('end', onVoiceStopped)
+    // Set up voice lifecycle listeners (handles cleanup of old listeners)
+    this.setupVoiceListeners(entry)
 
     // Create handle
     const handle = new VoiceHandle(entry.oscillator, () => {
+      if (entry.state === 'active') {
+        this._activeCount--
+      }
       entry.releasedAt = this.audioContext.currentTime
       entry.state = 'available'
       entry.handle = null
+      // Clean up listeners since handle.stop() bypasses the oscillator event flow
+      this.cleanupVoiceListeners(entry)
     })
     entry.handle = handle
 
@@ -491,20 +551,17 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     entry.oscillator.setDestination(this.sharedBusInput)
     void entry.oscillator.play()
 
-    // Listen for stop/end
-    const onVoiceStopped = (): void => {
-      if (entry.state === 'active') {
-        entry.releasedAt = this.audioContext.currentTime
-        entry.state = 'available'
-      }
-    }
-    entry.oscillator.once('stop', onVoiceStopped)
-    entry.oscillator.once('end', onVoiceStopped)
+    // Set up voice lifecycle listeners (handles cleanup of old listeners)
+    this.setupVoiceListeners(entry)
 
     const handle = new VoiceHandle(entry.oscillator, () => {
+      if (entry.state === 'active') {
+        this._activeCount--
+      }
       entry.releasedAt = this.audioContext.currentTime
       entry.state = 'available'
       entry.handle = null
+      this.cleanupVoiceListeners(entry)
     })
     entry.handle = handle
 
@@ -583,6 +640,8 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
       if (voice.state === 'active') {
         voice.handle?._invalidate()
         voice.handle = null
+        // Clean up listeners before stopping
+        this.cleanupVoiceListeners(voice)
         try {
           void voice.oscillator.stop()
         }
@@ -590,6 +649,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
           // Already stopped
         }
         voice.state = 'available'
+        this._activeCount--
       }
     }
   }
@@ -613,8 +673,8 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     const param = type === 'gain' ? this.masterGain.gain : this.masterPan.pan
     return {
       to: (value: number) => ({
-        as: (_method: RatioType): void => {
-          param.setValueAtTime(value, this.audioContext.currentTime)
+        as: (method: RatioType): void => {
+          param.setValueAtTime(convertValue(value, method), this.audioContext.currentTime)
         },
       }),
     }
@@ -727,6 +787,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
       return
 
     this.stopAll()
+    this._activeCount = 0 // Safety reset after stopAll
 
     // Dispose all oscillators
     for (const voice of this.voices) {
