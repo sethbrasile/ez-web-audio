@@ -860,7 +860,7 @@ Plans:
 ### 📋 Milestone 6: DX & Discoverability (Phases 61-63)
 
 - [x] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page (completed 2026-03-07)
-- [ ] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs
+- [x] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs (completed 2026-03-07)
 - [ ] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions
 
 ### Phase 61: Audio Sprites Redesign
