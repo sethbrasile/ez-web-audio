@@ -25,7 +25,7 @@ features:
   - title: Zero Dependencies
     details: Pure Web Audio API wrapper with nothing extra. Tree-shakeable ESM build keeps your bundle small.
   - title: Rich Feature Set
-    details: ADSR envelopes, effects chain, audio sprites, beat sequencer, crossfade, visualization, and more — everything you need for browser audio.
+    details: Built-in effects (delay, reverb, distortion, compressor, EQ), LFO modulation, polyphonic synth, granular synthesis, Transport clock, sequencer, ADSR envelopes, audio sprites, crossfade, visualization, and more.
 ---
 
 ## What is EZ Web Audio?
@@ -67,15 +67,17 @@ track.playActiveBeats(120, 1 / 4) // 120 BPM, quarter notes
 ### Apply Effects
 
 ```typescript
-import { createFilterEffect, createSound } from 'ez-web-audio'
+import { createDelay, createReverb, createSound } from 'ez-web-audio'
 
 const sound = await createSound('/audio/guitar.mp3')
-const lowpass = createFilterEffect('lowpass', { frequency: 800 })
-sound.addEffect(lowpass)
+const delay = createDelay({ time: 0.3, feedback: 0.4, wet: 0.3 })
+const reverb = createReverb({ decay: 2.5, wet: 0.2 })
+sound.addEffect(delay)
+sound.addEffect(reverb)
 sound.play()
 ```
 
-From simple sound effects to full synthesizers with ADSR envelopes, EZ Web Audio handles the complexity so you can focus on creating.
+From simple sound effects to polyphonic synthesizers, granular textures, transport-synced sequencing, and built-in effects chains, EZ Web Audio handles the complexity so you can focus on creating.
 
 ## Why EZ Web Audio?
 
@@ -105,11 +107,11 @@ There are several good audio libraries for the web. Here is how EZ Web Audio fit
 | **Focus** | Simple API for sounds, synthesis, sequencing, and effects | Full music production framework (DAW in browser) | Sound playback and management |
 | **Size** | ~17–52 KB gzipped (zero deps, tree-shakeable) | ~150 KB+ | ~10 KB |
 | **TypeScript** | Written in TypeScript, first-class types | Built-in (TypeScript source) | Community @types |
-| **Synthesis** | Oscillators with ADSR envelopes and filters | Full synth engine, transport, instruments | No synthesis |
-| **Sequencing** | BeatTrack / Beat pattern system | Transport, loops, sequences, parts | No sequencing |
-| **Effects** | Filter, gain, custom effect wrappers | Comprehensive effect library | No effects |
+| **Synthesis** | Oscillators with ADSR, PolySynth (polyphonic), GrainPlayer (granular) | Full synth engine, transport, instruments | No synthesis |
+| **Sequencing** | Transport clock, Sequence, BeatTrack patterns | Transport, loops, sequences, parts | No sequencing |
+| **Effects** | Delay, Reverb, Distortion, Compressor, EQ, Filter, LFO modulation | Comprehensive effect library | No effects |
 | **Learning curve** | Minimal -- matches mental model of "play a sound", scales to complex audio | Steeper -- music production concepts | Minimal |
-| **Best for** | Apps needing sounds, synthesis, sequencing, and effects with a small footprint | Full DAW-style applications, generative music | Simple sound playback (games, UI) |
+| **Best for** | Apps needing sounds, synthesis, sequencing, transport, and effects with a small footprint | Full DAW-style applications, generative music | Simple sound playback (games, UI) |
 
 **Choose EZ Web Audio when** you need more than just playback (synthesis, drum machines, effects, visualization) but do not want the complexity and bundle size of a full music production framework.
 
