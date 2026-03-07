@@ -69,8 +69,10 @@ a user interaction handler (click, tap, keypress).
 :::
 
 ::: details Advanced: Explicit initialization
-If you need explicit control over initialization timing (e.g., iOS mute switch
-workaround, pre-warming the context), you can still call `initAudio()`:
+If you want explicit control over initialization timing (e.g., pre-warming
+the context on a loading screen), you can call `initAudio()`. The same
+AudioContext is shared across the entire library — calling `initAudio()`
+early just ensures it's ready before any sound is created.
 
 ```typescript
 import { createSound, initAudio } from 'ez-web-audio'
@@ -200,6 +202,81 @@ sound.addEffect(filter)
 sound.play() // Sound plays through the filter
 ```
 
+### Built-in Effects
+
+EZ Web Audio includes five built-in effects that work with any sound:
+
+```typescript
+import { createDelay, createReverb, createSound } from 'ez-web-audio'
+
+const guitar = await createSound('/sounds/guitar.mp3')
+
+// Add delay and reverb
+const delay = createDelay({ time: 0.3, feedback: 0.4, wet: 0.3 })
+const reverb = createReverb({ decay: 2.0, wet: 0.2 })
+
+guitar.addEffect(delay)
+guitar.addEffect(reverb)
+guitar.play()
+```
+
+Available effects: `createDelay`, `createReverb`, `createDistortion`, `createCompressor`, `createEQ`. All support wet/dry mix and bypass.
+
+## Polyphonic Synth
+
+Play multiple notes simultaneously with PolySynth:
+
+```typescript
+import { createPolySynth } from 'ez-web-audio'
+
+const synth = await createPolySynth({
+  type: 'sawtooth',
+  maxVoices: 8,
+  envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.5 }
+})
+
+// Play a chord
+synth.play({ frequency: 261.6 }) // C4
+synth.play({ frequency: 329.6 }) // E4
+synth.play({ frequency: 392.0 }) // G4
+```
+
+## Transport & Sequencing
+
+Sync multiple BeatTracks to a shared clock:
+
+```typescript
+import { createBeatTrack, createTransport } from 'ez-web-audio'
+
+const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
+
+const kick = await createBeatTrack(['/sounds/kick.wav'], { numBeats: 4 })
+const hihat = await createBeatTrack(['/sounds/hihat.wav'], { numBeats: 8 })
+
+kick.setPattern([1, 0, 1, 0])
+hihat.setPattern([1, 1, 1, 1, 1, 1, 1, 1])
+
+kick.syncTo(transport, { noteType: 1 / 4 })
+hihat.syncTo(transport, { noteType: 1 / 8 })
+
+transport.start() // Both tracks play in sync
+```
+
+Schedule callbacks at musical time divisions with Sequence:
+
+```typescript
+import { createSequence, createSound, createTransport } from 'ez-web-audio'
+
+const transport = await createTransport({ bpm: 120 })
+const bell = await createSound('/sounds/bell.mp3')
+
+const seq = createSequence(transport, { length: '2m', loop: true })
+seq.at('1:1:0', () => bell.play()) // Beat 1 of bar 1
+seq.at('2:1:0', () => bell.play()) // Beat 1 of bar 2
+
+transport.start()
+```
+
 ## Preloading Audio
 
 For responsive applications, preload audio files before they're needed:
@@ -235,7 +312,7 @@ const sounds = await createSounds(
 Here's a complete example combining multiple features:
 
 ```typescript
-import { createOscillator, createSound, createTrack } from 'ez-web-audio'
+import { createDelay, createOscillator, createSound, createTrack } from 'ez-web-audio'
 
 // Wait for user interaction
 document.getElementById('start')?.addEventListener('click', async () => {
@@ -243,9 +320,11 @@ document.getElementById('start')?.addEventListener('click', async () => {
   const click = await createSound('/sounds/click.mp3')
   click.changeGainTo(0.5)
 
-  // Background music
+  // Background music with delay effect
   const music = await createTrack('/music/background.mp3')
   music.changeGainTo(0.3)
+  const delay = createDelay({ time: 0.25, feedback: 0.3, wet: 0.15 })
+  music.addEffect(delay)
   music.play()
 
   // Synthesized notification sound
@@ -273,5 +352,9 @@ document.getElementById('start')?.addEventListener('click', async () => {
 ## Next Steps
 
 - [Core Concepts](/guide/concepts) - Understand the library architecture
+- [Transport & Sequencing](/guide/transport) - Sync tracks with a shared clock
+- [PolySynth](/guide/poly-synth) - Polyphonic synthesizer with voice management
+- [GrainPlayer](/guide/grain-player) - Granular synthesis from audio buffers
+- [LFO](/guide/lfo) - Modulate parameters with low-frequency oscillators
 - [Interactive Examples](/examples/) - Try features in your browser
 - [API Reference](/api/) - Complete documentation
