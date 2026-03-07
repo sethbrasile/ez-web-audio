@@ -110,6 +110,12 @@ export default defineConfig({
             { text: 'Utilities', link: '/guide/utilities' },
           ],
         },
+        {
+          text: 'Advanced',
+          items: [
+            { text: 'Multiple AudioContexts', link: '/guide/multiple-contexts' },
+          ],
+        },
       ],
       '/examples/': [
         {
@@ -162,7 +168,6 @@ export default defineConfig({
           items: [
             { text: 'Audio Sprite', link: '/examples/audio-sprite' },
             { text: 'Layered Sound', link: '/examples/layered-sound' },
-            { text: 'Play Together', link: '/examples/play-together' },
             { text: 'Crossfade', link: '/examples/crossfade' },
           ],
         },
