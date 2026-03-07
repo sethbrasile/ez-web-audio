@@ -109,7 +109,7 @@
 - [x] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup (completed 2026-03-01)
 - [x] **Phase 59.1: Shared API Utilities & Crossfade Fixes** - Extract convertValue utility, fix crossfade state sync, LayeredSound gain routing, AudioSprite validation (QC round 1) (completed 2026-03-07)
 - [x] **Phase 60: Milestone Verification & Checkpoint** - Write missing VERIFICATION.md files for Phases 53/56/57/58, update REQUIREMENTS.md checkboxes (completed 2026-03-01)
-- [ ] **Phase 60.1: Test Coverage Gaps** - Tests for crossfade afterFade, BeatTrack.setPattern, LFO depth, createFont overload, edge cases (QC round 1)
+- [x] **Phase 60.1: Test Coverage Gaps** - Tests for crossfade afterFade, BeatTrack.setPattern, LFO depth, createFont overload, edge cases (QC round 1) (completed 2026-03-07)
 - [x] **Phase 60.2: Documentation Sync** - Update homepage/getting-started for M5 features, fix multiple-contexts guide, add M5 guide pages (QC round 1) (completed 2026-03-07)
 
 ## Phase Details
