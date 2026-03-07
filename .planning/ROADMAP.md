@@ -11,7 +11,8 @@
 - ✅ **Milestone 2: Quality & Polish** — Phases 12-16 (shipped 2026-02-16)
 - ✅ **Milestone 3: Stable Release** — Phases 17-46 (complete)
 - ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
-- 📋 **Milestone 5: Effects & Transport** — Phases 53-58 (in progress)
+- ✅ **Milestone 5: Effects & Transport** — Phases 53-60 (complete)
+- 📋 **Milestone 6: DX & Discoverability** — Phases 61-63
 
 ## Phases
 
@@ -92,7 +93,7 @@
 
 </details>
 
-### 📋 Milestone 5: Effects & Transport (Phases 53-60)
+### ✅ Milestone 5: Effects & Transport (Phases 53-60)
 
 **Milestone Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
 
@@ -856,10 +857,62 @@ Plans:
 
 ---
 
+### 📋 Milestone 6: DX & Discoverability (Phases 61-63)
+
+- [ ] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page
+- [ ] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs
+- [ ] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions
+
+### Phase 61: Audio Sprites Redesign
+**Goal**: Users form the correct mental model ("many distinct sounds packed into one file") through a compelling demo, and can use either Howler-style or audiosprite-style manifests
+**Depends on**: None
+**Spec**: `.planning/specs/audio-sprites-redesign.md`
+**Success Criteria** (what must be TRUE):
+  1. `SpriteManifest` accepts both Howler-style tuples (`sprite` key, ms) and audiosprite-style objects (`spritemap` key, seconds)
+  2. Format detection is automatic — no user configuration needed
+  3. Demo page plays the full combined file first, then individual named segments
+  4. Visual timeline shows colored segments with highlight on play
+  5. Spritemap JSON is displayed on the page
+  6. Both manifest formats documented with use cases
+  7. audiosprite CLI and soundfx library mentioned in docs
+  8. CC-BY-3.0 attribution displayed on page
+  9. All existing sprite tests continue to pass
+**Plans**: 2 plans
+- [ ] 61-01-PLAN.md — Howler-style manifest types, normalizeManifest, TDD tests
+- [ ] 61-02-PLAN.md — Sprite audio file, AudioSpriteDemo.vue with timeline, docs rewrite
+
+### Phase 62: Multiple AudioContext Support
+**Goal**: Power users can use multiple AudioContexts via optional first-param overloads on factory functions, following the existing effect factory convention
+**Depends on**: None
+**Spec**: `.planning/specs/multiple-audiocontext.md`
+**Success Criteria** (what must be TRUE):
+  1. All factory functions accept optional AudioContext as first parameter
+  2. Existing code without AudioContext param works identically (no breaking changes)
+  3. Sounds created with an explicit AudioContext use that context, not the singleton
+  4. Effect factories already have the pattern — verify consistency
+  5. Advanced usage guide documents: why, browser limits, the shared-context constraint, full example
+  6. Tests verify both overloaded and default paths
+**Plans**: TBD
+
+### Phase 63: llms.txt Support
+**Goal**: AI coding assistants can efficiently discover and ingest the full documentation (guides + API reference) via standard llms.txt files
+**Depends on**: None
+**Spec**: `.planning/specs/llms-txt.md`
+**Success Criteria** (what must be TRUE):
+  1. `vitepress-plugin-llms` installed and configured
+  2. `/llms.txt` generated at build time with useful section descriptions
+  3. `/llms-full.txt` generated containing both guide pages AND TypeDoc API reference
+  4. Guide/example pages have `description` frontmatter
+  5. Every page footer includes message pointing to llms.txt with auto-generated file size of llms-full.txt
+  6. Build order correct (TypeDoc → VitePress build → llms.txt generation)
+**Plans**: TBD
+
+---
+
 **Archives:**
 - `milestones/mvp-phases/` — Milestone 1 phase directories (Phases 1-11)
 - `milestones/v1.1-phases/` — Milestone 2 phase directories (Phases 12-16)
 - `milestones/v1.1-ROADMAP.md` — Milestone 2 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — Milestone 2 requirements with outcomes
 
-*Last updated: 2026-03-01 after gap closure phases 59-60 added*
+*Last updated: 2026-03-01 after Milestone 6 phases 61-63 added*
