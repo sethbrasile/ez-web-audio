@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 61-01-PLAN.md
-last_updated: "2026-03-07T02:09:44.999Z"
+stopped_at: Completed 61-02-PLAN.md
+last_updated: "2026-03-07T02:14:33.610Z"
 last_activity: 2026-03-01 — Milestone 6 created with 3 phases
 progress:
   total_phases: 47
-  completed_phases: 44
+  completed_phases: 45
   total_plans: 111
-  completed_plans: 110
+  completed_plans: 111
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0% (0/3 phases complete in Milestone 
 | 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
 | 58. GrainPlayer | 2/2 complete | 71 tests | 35.5 |
 | Phase 61 P01 | 5min | 1 tasks | 3 files |
+| Phase 61 P02 | 3min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Three steal strategies: 'lru' (default), 'oldest-active', 'quietest'
 - Custom voice factory via createVoice option
 - [Phase 61]: normalizeManifest returns same reference for audiosprite format; AudioSprite constructor narrowed to AudiospriteManifest
+- [Phase 61]: Separate Sound instance for full-file playback (AudioSprite only plays named segments)
 
 ### Roadmap Evolution
 
@@ -125,6 +127,6 @@ None active. GrainPlayer limitation (playbackRate-based pitch shift) documented 
 
 ## Session Continuity
 
-Last session: 2026-03-07T02:09:44.993Z
-Stopped at: Completed 61-01-PLAN.md
+Last session: 2026-03-07T02:14:33.605Z
+Stopped at: Completed 61-02-PLAN.md
 Resume file: None
