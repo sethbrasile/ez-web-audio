@@ -62,7 +62,7 @@
     "build": "npm run build:lib && npm run docs:build",
     "build:lib": "tsc --noEmit && vite build",
     "docs:dev": "typedoc && vitepress dev docs",
-    "docs:build": "typedoc && vitepress build docs",
+    "docs:build": "typedoc && vitepress build docs && node scripts/patch-llms-size.mjs",
     "docs:preview": "vitepress preview docs",
     "preview": "vitepress preview docs",
     "typecheck": "tsc --noEmit",
