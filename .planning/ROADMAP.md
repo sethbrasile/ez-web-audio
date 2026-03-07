@@ -99,12 +99,18 @@
 
 - [x] **Phase 53: Built-in Effects** - Delay, reverb, distortion, compressor, and EQ effects implementing the existing Effect interface (completed 2026-02-28)
 - [x] **Phase 54: LFO** - Low-frequency oscillator for tremolo, vibrato, auto-filter, and auto-pan modulation (completed 2026-02-28)
+- [ ] **Phase 54.2: Effects & LFO Lifecycle Fixes** - Fix LFO syncLifecycle multi-target bug, add missing dispose() overrides, document BaseEffect disposal contract (QC round 1)
 - [x] **Phase 55: Transport + BeatTrack Sync** - Global BPM-synced clock with Web Worker reliability and multi-BeatTrack synchronization (completed 2026-02-28)
 - [x] **Phase 56: Sequencer + Musical Time** - Arbitrary event sequencing with musical time notation (4n, 1m, 8t) tied to Transport (completed 2026-02-28)
 - [x] **Phase 57: PolySynth** - Polyphonic oscillator voice pool with LRU stealing and shared output bus (completed 2026-02-28)
+- [ ] **Phase 57.1: Transport, Sequence & PolySynth Core Fixes** - Fix voice state machine, TypedEventEmitter migration, SyncableBeatTrack interface, performance getters (QC round 1)
 - [x] **Phase 58: GrainPlayer** - Granular synthesis with independent pitch shift, position scrubbing, and configurable grain parameters (completed 2026-03-01)
+- [ ] **Phase 58.1: GrainPlayer Hardening** - Overlap validation, WorkerTimer migration, dead code removal (QC round 1)
 - [x] **Phase 59: LayeredSound Effects + LFO-Effect Dispose** - Add addEffect() to LayeredSound, add dispose event to BaseEffect for LFO cleanup (completed 2026-03-01)
+- [ ] **Phase 59.1: Shared API Utilities & Crossfade Fixes** - Extract convertValue utility, fix crossfade state sync, LayeredSound gain routing, AudioSprite validation (QC round 1)
 - [x] **Phase 60: Milestone Verification & Checkpoint** - Write missing VERIFICATION.md files for Phases 53/56/57/58, update REQUIREMENTS.md checkboxes (completed 2026-03-01)
+- [ ] **Phase 60.1: Test Coverage Gaps** - Tests for crossfade afterFade, BeatTrack.setPattern, LFO depth, createFont overload, edge cases (QC round 1)
+- [ ] **Phase 60.2: Documentation Sync** - Update homepage/getting-started for M5 features, fix multiple-contexts guide, add M5 guide pages (QC round 1)
 
 ## Phase Details
 
@@ -925,6 +931,88 @@ Plans:
 **Plans**: 2 plans
 - [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
 - [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
+
+### Phase 54.2: Effects & LFO Lifecycle Fixes
+**Goal**: Fix LFO multi-target lifecycle bug, add missing dispose() overrides to 4 effect subclasses, document BaseEffect disposal contract
+**Depends on**: None
+**QC Findings**: QC-1-04 (high), QC-1-13 (medium), QC-1-14 (medium)
+**Structural Pattern**: missing-effect-dispose
+**Success Criteria** (what must be TRUE):
+  1. LFO `syncLifecycle` disconnects only the stopped target, not the entire oscillator
+  2. CompressorEffect, DistortionEffect, EQEffect, FilterEffect all override dispose() to disconnect internal nodes
+  3. BaseEffect has documentation of the subclass disposal contract
+  4. LFO depth limitation (baked at connection time) is documented in JSDoc
+  5. All existing LFO and effects tests pass
+**Plans**: TBD
+
+### Phase 57.1: Transport, Sequence & PolySynth Core Fixes
+**Goal**: Fix architectural bugs in M5 orchestration classes — voice state machine, type safety, event system consistency, performance
+**Depends on**: None
+**QC Findings**: QC-1-01 (high), QC-1-02 (high), QC-1-08 (medium), QC-1-09 (medium), QC-1-10 (medium), QC-1-12 (medium), QC-1-21 (medium), QC-1-22 (medium)
+**Structural Pattern**: inconsistent-event-systems
+**Success Criteria** (what must be TRUE):
+  1. PolySynth voice state machine has proper `released` → `available` transition after envelope release
+  2. Transport uses a `SyncableBeatTrack` interface instead of `(track as any)` casts
+  3. Transport and Sequence use TypedEventEmitter instead of manual EventTarget
+  4. Sequence correctly handles multiple events at the same beat position
+  5. PolySynth cleans up event listeners on voice stealing (no orphaned listeners)
+  6. Sequence position is correct across loop iterations
+  7. MusicalTime correctly handles beatUnit from time signature
+  8. PolySynth.activeVoices and Transport.tracks getters don't allocate on every access
+  9. All existing Transport, Sequence, and PolySynth tests pass
+**Plans**: TBD
+
+### Phase 58.1: GrainPlayer Hardening
+**Goal**: Fix performance cliffs and architectural gaps in GrainPlayer
+**Depends on**: None
+**QC Findings**: QC-1-03 (high), QC-1-11 (medium), QC-1-25 (medium)
+**Success Criteria** (what must be TRUE):
+  1. GrainPlayer overlap setter validates and clamps to prevent 1000+ grains/sec
+  2. GrainPlayer uses WorkerTimer instead of setTimeout for background-tab resilience
+  3. Dead code in loop offset handling is removed
+  4. All existing GrainPlayer tests pass
+**Plans**: TBD
+
+### Phase 59.1: Shared API Utilities & Crossfade Fixes
+**Goal**: Fix fluent API conversion bug, crossfade state sync, LayeredSound gain routing, AudioSprite validation
+**Depends on**: None
+**QC Findings**: QC-1-07 (high), QC-1-16 (medium), QC-1-18 (medium), QC-1-19 (medium), QC-1-20 (medium)
+**Structural Pattern**: fluent-api-conversion-gap
+**Success Criteria** (what must be TRUE):
+  1. A shared `convertValue(value, method: RatioType)` utility exists and is used by BaseParamController, GrainPlayer, and PolySynth
+  2. GrainPlayer and PolySynth `update().as('decibels')` correctly converts values
+  3. AudioSprite validates `end < start` at creation time with descriptive error
+  4. LayeredSound `setGain()` modifies the output bus, not individual layer gains
+  5. crossfade `afterFade:'stop'` doesn't produce unhandled rejections
+  6. crossfade restores `_targetGain` via `changeGainTo()` instead of raw AudioParam manipulation
+  7. All existing tests pass
+**Plans**: TBD
+
+### Phase 60.1: Test Coverage Gaps
+**Goal**: Close testing gaps for new M5 features and options
+**Depends on**: Phases 54.2, 57.1, 58.1, 59.1 (tests verify fixed behavior)
+**QC Findings**: QC-1-05 (high), QC-1-06 (high), QC-1-15 (medium), QC-1-17 (medium) + L4-L6, L10-L11, L21
+**Success Criteria** (what must be TRUE):
+  1. crossfade `afterFade: 'continue'` and `afterFade: 'stop'` have dedicated tests
+  2. BeatTrack.setPattern() has tests for basic, short/long arrays, booleans, chaining
+  3. LFO depth calculation tests verify numeric values for ratio/cents/absolute modes
+  4. createFont(ctx) explicit-context overload is tested
+  5. Edge case tests for PolySynth rapid play/stop, Transport live BPM change, Sequence post-dispose
+  6. GrainPlayer edge case tests for overlap boundaries
+  7. createSprite with Howler manifest format has a factory test
+**Plans**: TBD
+
+### Phase 60.2: Documentation Sync
+**Goal**: Update docs to reflect M5 capabilities
+**Depends on**: None
+**QC Findings**: QC-1-23 (medium), QC-1-24 (medium) + L20, L22
+**Success Criteria** (what must be TRUE):
+  1. Homepage features list and comparison table mention Transport, PolySynth, GrainPlayer, LFO, built-in effects
+  2. Getting-started includes M5 factory function examples
+  3. Multiple-contexts guide: sinkId example uses `ctx.setSinkId()`, reference table includes all M5 factories
+  4. Howler manifest example in audio-sprite docs is consistent with implementation
+  5. At least stub guide pages exist for Transport, Sequence, PolySynth, GrainPlayer, LFO
+**Plans**: TBD
 
 ---
 

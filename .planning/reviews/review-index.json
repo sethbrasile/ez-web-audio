@@ -1,0 +1,36 @@
+{
+  "reviews": [
+    {
+      "date": "2026-03-07",
+      "type": "deep-review",
+      "mode": "mid-build",
+      "scope": "Delta since 2026-02-28: M5 Effects & Transport, M6 DX & Discoverability",
+      "file": "2026-03-07-deep-review.md",
+      "counts": { "critical": 0, "high": 7, "medium": 18, "low": 22 },
+      "structuralPatterns": ["inconsistent-event-systems", "missing-effect-dispose", "fluent-api-conversion-gap"]
+    }
+  ],
+  "patterns": {
+    "inconsistent-event-systems": {
+      "name": "Inconsistent event system implementations",
+      "firstSeen": "2026-03-07",
+      "reviews": ["2026-03-07-deep-review.md"],
+      "status": "fix-in-progress",
+      "fixPhase": "57.1"
+    },
+    "missing-effect-dispose": {
+      "name": "Missing dispose() overrides in effect subclasses",
+      "firstSeen": "2026-03-07",
+      "reviews": ["2026-03-07-deep-review.md"],
+      "status": "fix-in-progress",
+      "fixPhase": "54.2"
+    },
+    "fluent-api-conversion-gap": {
+      "name": "Fluent API reimplementation without RatioType conversion",
+      "firstSeen": "2026-03-07",
+      "reviews": ["2026-03-07-deep-review.md"],
+      "status": "fix-in-progress",
+      "fixPhase": "59.1"
+    }
+  }
+}
