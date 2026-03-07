@@ -875,7 +875,7 @@ Plans:
 
 - [x] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page (completed 2026-03-07)
 - [x] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs (completed 2026-03-07)
-- [ ] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions
+- [x] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions (completed 2026-03-07)
 
 ### Phase 61: Audio Sprites Redesign
 **Goal**: Users form the correct mental model ("many distinct sounds packed into one file") through a compelling demo, and can use either Howler-style or audiosprite-style manifests
