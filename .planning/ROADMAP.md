@@ -1049,7 +1049,10 @@ Plans:
   5. Phase 64 VALIDATION.md created with `nyquist_compliant: true`
   6. Phase 61 human verification checks confirmed (full file playback, segment highlighting, visual timeline)
   7. Phase 64 human verification checks confirmed (visualization, drum machines, sprite playhead, lazy init)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
+- [ ] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos
 
 ### Phase 66: Orphaned Component Cleanup
 **Goal**: Remove or restore orphaned PlayTogetherDemo.vue component (pre-existing issue surfaced by M6 audit)
@@ -1058,7 +1061,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `PlayTogetherDemo.vue` either has a corresponding docs page or is removed
   2. No orphaned Vue components exist in `docs/.vitepress/theme/components/`
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
+- [ ] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos
 
 ---
 
