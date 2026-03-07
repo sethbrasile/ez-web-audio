@@ -1,62 +1,92 @@
 ---
-title: AudioSprite - Named Sound Regions from a Single File
-description: "Learn how to pack multiple sounds into one audio file using AudioSprite. Reduce HTTP requests by loading a sprite file once and playing named segments on demand."
+title: Audio Sprites - Multiple Sounds from One File
+description: "Pack multiple sounds into a single audio file and play each by name. Supports both Howler.js and audiosprite manifest formats."
 ---
 
 <script setup>
 import AudioSpriteDemo from '../.vitepress/theme/components/AudioSpriteDemo.vue'
 </script>
 
-# AudioSprite — Named Sound Regions from a Single File
+# Audio Sprites — Multiple Sounds from One File
 
-AudioSprite lets you pack multiple short sounds into a single audio file and play each by name. This technique reduces HTTP requests — instead of loading 10 separate sound effects, you load one file and define regions within it.
-
-**You'll learn:**
-- Loading an audio sprite with `createSprite()`
-- Defining a spritemap with named time regions
-- Playing named segments with `sprite.play('name')`
-- Looping a sprite segment and stopping it
-- Reducing HTTP requests in audio-heavy apps
-
-## Interactive Demo
+Audio sprites bundle multiple short sounds into one file, reducing HTTP requests. Click below to hear how it works.
 
 <AudioSpriteDemo />
 
-## Basic Usage
+## What Just Happened?
 
-Create a sprite by providing a URL to your audio file and a spritemap that defines each named region:
+All 6 sounds you heard — beep, cannon, whoosh, bling, punch, fanfare — are packed into **a single MP3 file**. Instead of 6 HTTP requests, the browser loads one file and plays named segments within it.
+
+A **manifest** maps each name to a time region:
+
+```
+┌──────┬────────┬───────┬──────┬───────┬─────────┐
+│ beep │ cannon │ whoosh│ bling│ punch │ fanfare │
+│ 0.0s │ 0.67s  │ 2.9s  │ 4.2s │ 6.7s  │ 7.7s    │
+└──────┴────────┴───────┴──────┴───────┴─────────┘
+```
+
+`createSprite()` loads the file once, then plays segments by name. This technique is especially useful for games and interactive apps with many short sound effects — fewer requests means faster loading.
+
+## Sprite Formats
+
+EZ Web Audio accepts two popular manifest formats. Format detection is automatic based on the top-level key.
+
+### audiosprite format
+
+Uses `spritemap` with second-based `{start, end}` objects:
+
+```json
+{
+  "spritemap": {
+    "laser": { "start": 0, "end": 0.3 },
+    "explosion": { "start": 1.0, "end": 2.5, "loop": false }
+  }
+}
+```
+
+### Howler.js format
+
+Uses `sprite` with millisecond-based tuples `[offset_ms, duration_ms]`:
+
+```json
+{
+  "sprite": {
+    "laser": [0, 300],
+    "explosion": [1000, 2500],
+    "powerup": [4000, 500, true]
+  }
+}
+```
+
+Howler tuples are `[offset_ms, duration_ms]` with an optional third boolean for looping. EZ Web Audio detects which format you're using and normalizes internally — you don't need to convert anything.
+
+## Basic Usage
 
 ```typescript
 import { createSprite } from 'ez-web-audio'
 
+// audiosprite format
 const sprite = await createSprite('sounds.mp3', {
   spritemap: {
-    laser: { start: 0.0, end: 0.3 },
+    laser: { start: 0, end: 0.3 },
     explosion: { start: 1.0, end: 2.5 },
-    powerup: { start: 3.0, end: 3.5 },
-    coin: { start: 4.0, end: 4.2 },
   },
 })
-```
 
-## Playing Segments
+// Or Howler format — works the same way
+const sprite2 = await createSprite('sounds.mp3', {
+  sprite: {
+    laser: [0, 300],
+    explosion: [1000, 2500],
+  },
+})
 
-Call `sprite.play('name')` with the sprite name to play that region. Multiple calls can overlap — each call creates an independent audio source:
-
-```typescript
-// Play a one-shot sound effect
 sprite.play('laser')
-
-// Adjust gain and stereo pan per play
-sprite.play('explosion', { gain: 0.7, pan: -0.5 })
-
-// Play the same sprite multiple times (concurrent)
-sprite.play('coin')
-sprite.play('coin')
-sprite.play('coin')
+sprite.play('explosion', { gain: 0.7 })
 ```
 
-## Looping Sprites
+## Looping and Stopping
 
 Set `loop: true` in the sprite definition to enable seamless looping:
 
@@ -73,49 +103,29 @@ sprite.play('engine')
 
 // Stop the loop when done
 sprite.stop('engine')
-```
 
-## Stopping Playback
-
-Stop a specific sprite (useful for looping) or all active sprites at once:
-
-```typescript
-// Stop all active playback of a named sprite
-sprite.stop('engine')
-
-// Stop all currently playing sprites
+// Stop all active playback
 sprite.stopAll()
 ```
 
-## Checking Available Sprites
+## Creating Sprites
 
-List all sprite names defined in the manifest:
+You can create sprite files manually or use tools:
 
-```typescript
-console.log(sprite.names) // ['laser', 'explosion', 'powerup', 'coin']
-```
+- **[audiosprite CLI](https://github.com/tonistiigi/audiosprite)** — Concatenates audio files and generates manifest JSON automatically. Install with `npm install -g audiosprite`, then run `audiosprite -o output -e mp3 sound1.mp3 sound2.mp3`.
 
-## Spritemap Format
+- **[soundfx](https://github.com/rse/soundfx)** — A ready-made collection of CC-licensed sound effects, perfect for prototyping and demos.
 
-The spritemap definition is compatible with the [audiosprite](https://github.com/tonistiigi/audiosprite) tool format:
-
-```json
-{
-  "spritemap": {
-    "click": { "start": 0.0, "end": 0.1 },
-    "hover": { "start": 0.2, "end": 0.35 },
-    "success": { "start": 0.5, "end": 1.2 },
-    "ambient": { "start": 2.0, "end": 6.0, "loop": true }
-  }
-}
-```
-
-::: tip Sprite Generation
-Use a tool like [audiosprite](https://github.com/tonistiigi/audiosprite) or [Howler's sprite tool](https://github.com/goldfire/howler.js) to concatenate your audio files and generate sprite manifests automatically.
+::: tip Silence Gaps
+When creating sprites manually, add ~200ms of silence between sounds to prevent bleed from MP3 encoding artifacts.
 :::
+
+## Attribution
+
+> Sound effects in the demo from the [soundfx](https://github.com/rse/soundfx) collection. Individual sounds by JustinBW, dersuperanton, and _MC5_ via [FreeSound](https://freesound.org) (CC-BY-3.0), and nps.gov and Vladimir via [SoundBible](https://soundbible.com) (CC-0).
 
 ## Next Steps
 
 - [Basic Playback](/examples/basic-playback) — Playing individual sounds
-- [Sampled Drum Kit](/examples/sampled-drum-kit) — Using `createSampler()` for round-robin playback
+- [Sampled Drum Kit](/examples/synth-drum-kit) — Using `createSampler()` for round-robin playback
 - [LayeredSound](/examples/layered-sound) — Play multiple sounds in perfect sync
