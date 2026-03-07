@@ -140,4 +140,38 @@ describe('playTogether', () => {
     const playAtArg = (p as unknown as { playAt: ReturnType<typeof vi.fn> }).playAt.mock.calls[0][0]
     expect(playAtArg).toBeCloseTo(currentTime + 0.01, 10)
   })
+
+  describe('explicit AudioContext overload', () => {
+    it('playTogether(ctx, playables) uses the provided context currentTime', async () => {
+      const ctx = createMockAudioContext()
+      const currentTime = ctx.currentTime
+      const p1 = createMockPlayable()
+      const p2 = createMockPlayable()
+
+      await playTogether(ctx, [p1, p2])
+
+      const time1 = (p1 as unknown as { playAt: ReturnType<typeof vi.fn> }).playAt.mock.calls[0][0]
+      const time2 = (p2 as unknown as { playAt: ReturnType<typeof vi.fn> }).playAt.mock.calls[0][0]
+      expect(time1).toBeCloseTo(currentTime + 0.01, 10)
+      expect(time2).toBeCloseTo(currentTime + 0.01, 10)
+    })
+
+    it('playTogether(ctx, playables) does not call getOrCreateAudioContext', async () => {
+      const ctx = createMockAudioContext()
+      const p = createMockPlayable()
+
+      await playTogether(ctx, [p])
+
+      expect(getOrCreateAudioContext).not.toHaveBeenCalled()
+    })
+
+    it('playTogether(playables) still works (default path, no regression)', async () => {
+      const ctx = createMockAudioContext()
+      const p = createMockPlayable(ctx)
+
+      await playTogether([p])
+
+      expect((p as unknown as { playAt: ReturnType<typeof vi.fn> }).playAt).toHaveBeenCalledOnce()
+    })
+  })
 })

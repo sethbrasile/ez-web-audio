@@ -994,6 +994,253 @@ describe('preventEventDefaults', () => {
   })
 })
 
+describe('factory functions with explicit AudioContext', () => {
+  let mockAudioContext: AudioContext
+  let AudioContextConstructor: ReturnType<typeof vi.fn>
+  let mockFetch: ReturnType<typeof vi.fn>
+
+  function makeMockResponse(options: { ok?: boolean, status?: number, statusText?: string, arrayBuffer?: ArrayBuffer, text?: string } = {}) {
+    const { ok = true, status = 200, statusText = 'OK', arrayBuffer = new ArrayBuffer(8), text = '' } = options
+    const response = {
+      ok,
+      status,
+      statusText,
+      clone: vi.fn(),
+      arrayBuffer: vi.fn().mockResolvedValue(arrayBuffer),
+      text: vi.fn().mockResolvedValue(text),
+    } as unknown as Response
+    ;(response.clone as ReturnType<typeof vi.fn>).mockReturnValue({
+      ok,
+      status,
+      statusText,
+      clone: vi.fn().mockReturnThis(),
+      arrayBuffer: vi.fn().mockResolvedValue(arrayBuffer),
+      text: vi.fn().mockResolvedValue(text),
+    })
+    return response
+  }
+
+  beforeEach(async () => {
+    vi.resetModules()
+
+    const { AudioContext: MockAudioContext } = await import('standardized-audio-context-mock')
+    mockAudioContext = new MockAudioContext() as unknown as AudioContext
+
+    // eslint-disable-next-line prefer-arrow-callback
+    AudioContextConstructor = vi.fn(function _MockAudioContext() {
+      return mockAudioContext
+    })
+    vi.stubGlobal('AudioContext', AudioContextConstructor)
+
+    mockFetch = vi.fn()
+    vi.stubGlobal('fetch', mockFetch)
+
+    // Mock unmute to avoid side effects
+    vi.doMock('./utils/unmute', () => ({ default: vi.fn() }))
+  })
+
+  afterEach(async () => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+    const { clearPreloadCache } = await import('./preload')
+    clearPreloadCache()
+  })
+
+  describe('createOscillator(ctx, options)', () => {
+    it('returns Oscillator using provided context', async () => {
+      const { createOscillator, Oscillator } = await import('./index')
+      const osc = await createOscillator(mockAudioContext, { frequency: 440 })
+      expect(osc).toBeInstanceOf(Oscillator)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createOscillator } = await import('./index')
+      await createOscillator(mockAudioContext, { frequency: 440 })
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createPolySynth(ctx, options)', () => {
+    it('returns PolySynth using provided context', async () => {
+      const { createPolySynth, PolySynth } = await import('./index')
+      const synth = await createPolySynth(mockAudioContext, { maxVoices: 4 })
+      expect(synth).toBeInstanceOf(PolySynth)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createPolySynth } = await import('./index')
+      await createPolySynth(mockAudioContext, { maxVoices: 4 })
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createTransport(ctx, options)', () => {
+    it('returns Transport using provided context', async () => {
+      const { createTransport, Transport } = await import('./index')
+      const transport = await createTransport(mockAudioContext, { bpm: 120, timeSignature: [4, 4] })
+      expect(transport).toBeInstanceOf(Transport)
+      transport.dispose()
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createTransport } = await import('./index')
+      const transport = await createTransport(mockAudioContext, { bpm: 120, timeSignature: [4, 4] })
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+      transport.dispose()
+    })
+  })
+
+  describe('createLayeredSound(ctx, layers)', () => {
+    it('returns LayeredSound using provided context', async () => {
+      const { createLayeredSound, LayeredSound } = await import('./index')
+      const layered = await createLayeredSound(mockAudioContext, [])
+      expect(layered).toBeInstanceOf(LayeredSound)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createLayeredSound } = await import('./index')
+      await createLayeredSound(mockAudioContext, [])
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createGrainPlayer(ctx, buffer, options)', () => {
+    it('returns GrainPlayer using provided context', async () => {
+      const { createGrainPlayer, GrainPlayer } = await import('./index')
+      const buffer = mockAudioContext.createBuffer(1, 44100, 44100)
+      const player = await createGrainPlayer(mockAudioContext, buffer)
+      expect(player).toBeInstanceOf(GrainPlayer)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createGrainPlayer } = await import('./index')
+      const buffer = mockAudioContext.createBuffer(1, 44100, 44100)
+      await createGrainPlayer(mockAudioContext, buffer)
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createAnalyzer(ctx, options)', () => {
+    it('returns Analyzer using provided context', async () => {
+      const { createAnalyzer } = await import('./index')
+      const analyzer = await createAnalyzer(mockAudioContext, { fftSize: 2048 })
+      expect(analyzer).toBeDefined()
+      expect(typeof analyzer.getFrequencyData).toBe('function')
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createAnalyzer } = await import('./index')
+      await createAnalyzer(mockAudioContext, { fftSize: 2048 })
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createWhiteNoise(ctx)', () => {
+    it('returns Sound using provided context', async () => {
+      const { createWhiteNoise, Sound } = await import('./index')
+      const noise = await createWhiteNoise(mockAudioContext)
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createWhiteNoise } = await import('./index')
+      await createWhiteNoise(mockAudioContext)
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createNoise(ctx, type)', () => {
+    it('createNoise(ctx, "white") returns Sound using provided context', async () => {
+      const { createNoise, Sound } = await import('./index')
+      const noise = await createNoise(mockAudioContext, 'white')
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('createNoise(ctx, "pink") returns Sound using provided context', async () => {
+      const { createNoise, Sound } = await import('./index')
+      const noise = await createNoise(mockAudioContext, 'pink')
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('createNoise(ctx, "brown") returns Sound using provided context', async () => {
+      const { createNoise, Sound } = await import('./index')
+      const noise = await createNoise(mockAudioContext, 'brown')
+      expect(noise).toBeInstanceOf(Sound)
+      expect(noise.duration.raw).toBeGreaterThan(0)
+    })
+
+    it('does not create a new AudioContext', async () => {
+      const { createNoise } = await import('./index')
+      await createNoise(mockAudioContext, 'white')
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('audio-loading factories with explicit context', () => {
+    it('createSound(ctx, input) returns Sound using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSound, Sound } = await import('./index')
+      const sound = await createSound(mockAudioContext, 'test.mp3')
+      expect(sound).toBeInstanceOf(Sound)
+    })
+
+    it('createTrack(ctx, input) returns Track using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTrack, Track } = await import('./index')
+      const track = await createTrack(mockAudioContext, 'song.mp3')
+      expect(track).toBeInstanceOf(Track)
+    })
+
+    it('createSounds(ctx, urls) returns Sound array using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSounds, Sound } = await import('./index')
+      const sounds = await createSounds(mockAudioContext, ['a.mp3', 'b.mp3'])
+      expect(sounds).toHaveLength(2)
+      sounds.forEach(s => expect(s).toBeInstanceOf(Sound))
+    })
+
+    it('createTracks(ctx, urls) returns Track array using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createTracks, Track } = await import('./index')
+      const tracks = await createTracks(mockAudioContext, ['a.mp3', 'b.mp3'])
+      expect(tracks).toHaveLength(2)
+      tracks.forEach(t => expect(t).toBeInstanceOf(Track))
+    })
+
+    it('createBeatTrack(ctx, inputs) returns BeatTrack using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createBeatTrack, BeatTrack } = await import('./index')
+      const beatTrack = await createBeatTrack(mockAudioContext, ['kick.mp3'])
+      expect(beatTrack).toBeInstanceOf(BeatTrack)
+    })
+
+    it('createSampler(ctx, inputs) returns Sampler using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSampler, Sampler } = await import('./index')
+      const sampler = await createSampler(mockAudioContext, ['snare.mp3'])
+      expect(sampler).toBeInstanceOf(Sampler)
+    })
+
+    it('createSprite(ctx, url, manifest) returns AudioSprite using provided context', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSprite, AudioSprite } = await import('./index')
+      const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
+      const sprite = await createSprite(mockAudioContext, 'sounds.mp3', manifest)
+      expect(sprite).toBeInstanceOf(AudioSprite)
+    })
+
+    it('explicit context factories do not create a new AudioContext', async () => {
+      mockFetch.mockResolvedValue(makeMockResponse())
+      const { createSound } = await import('./index')
+      await createSound(mockAudioContext, 'test.mp3')
+      expect(AudioContextConstructor).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('useInteractionMethods', () => {
   let mockAudioContext: AudioContext
   let AudioContextConstructor: ReturnType<typeof vi.fn>
