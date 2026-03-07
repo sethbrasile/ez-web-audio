@@ -892,7 +892,10 @@ Plans:
   4. Effect factories already have the pattern — verify consistency
   5. Advanced usage guide documents: why, browser limits, the shared-context constraint, full example
   6. Tests verify both overloaded and default paths
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 62-01-PLAN.md — Migrate effect factories and playTogether to instanceof BaseAudioContext
+- [ ] 62-02-PLAN.md — Add BaseAudioContext overloads to all 16 index.ts factory functions
+- [ ] 62-03-PLAN.md — Tests for overloaded paths and multiple-contexts guide page
 
 ### Phase 63: llms.txt Support
 **Goal**: AI coding assistants can efficiently discover and ingest the full documentation (guides + API reference) via standard llms.txt files
