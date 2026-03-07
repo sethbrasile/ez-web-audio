@@ -11,14 +11,20 @@ import DrumMachineVue from '../.vitepress/theme/components/DrumMachineVue.vue'
 
 This page demonstrates using Vue's `reactive()` with BeatTrack's `wrapWith` option. Beat properties auto-toggle and trigger re-renders — **no event listeners needed for visual sync**.
 
+<llm-exclude>
 <DrumMachineVue />
+</llm-exclude>
+
+<llm-only>
+Vue reactive drum machine demonstrating automatic UI sync via reactive beat properties. Includes mute/solo controls and BPM adjustment.
+</llm-only>
 
 ## How to Use
 
 - **Click cells** to toggle beats on/off
 - **Press Play** to start the pattern loop
-- **Mute (M)** silences a track by deactivating all its beats
-- **Solo (S)** mutes all other tracks (exclusive solo)
+- **Mute (M)** silences a track by deactivating all its beats ([code below](#mute--solo-implementation))
+- **Solo (S)** mutes all other tracks ([code below](#mute--solo-implementation))
 - **Adjust BPM** to change tempo in real-time
 - **Step counter** shows current playhead position
 

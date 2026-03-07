@@ -11,7 +11,13 @@ Control frequency and gain in real-time with a visual XY pad. This demonstrates 
 
 Click or drag on the pad to play. The X-axis controls frequency (100-2000 Hz, logarithmic scale), and the Y-axis controls gain (0-100%).
 
+<llm-exclude>
 <XYPad />
+</llm-exclude>
+
+<llm-only>
+Two-dimensional touch/mouse pad controlling oscillator frequency (X axis) and gain (Y axis) in real time. Sound plays while pointer is held down.
+</llm-only>
 
 ## How to Use
 

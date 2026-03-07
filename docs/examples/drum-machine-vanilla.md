@@ -11,23 +11,17 @@ import DrumMachineVanilla from '../.vitepress/theme/components/DrumMachineVanill
 
 This page demonstrates the **event-based approach** to drum machine UI synchronization. BeatTrack emits `beat` events at play time using AudioContext-aware timing, and we update the DOM directly through event listeners. No reactive framework needed for the playhead.
 
+<llm-exclude>
 <DrumMachineVanilla />
+</llm-exclude>
 
-## How It Works
-
-The event-based pattern works in three coordinated phases:
-
-1. **Lookahead Scheduling (100ms ahead):** BeatTrack's internal scheduler runs every 25ms, checking which beats fall within the next 100ms window. For each upcoming beat, it schedules the audio playback on the Web Audio API thread using `audioContext.currentTime`.
-
-2. **Event Emission (at play time):** When a beat is scheduled, BeatTrack also schedules a beat event to fire at the exact moment the audio plays. This event fires using `audioContextAwareTimeout`, which polls `audioContext.currentTime` via `requestAnimationFrame` for frame-accurate timing.
-
-3. **DOM Updates (same frame):** The event handler receives the beat index and updates DOM classes directly. Since the event fires on the same RAF frame as the timing check, the visual update appears synchronized with the audio.
-
-This architecture separates concerns: Web Audio API handles precise audio timing, RAF handles frame-accurate visual timing, and events bridge the two.
+<llm-only>
+Vanilla TypeScript drum machine using event-based DOM updates. Step sequencer grid with kick/snare/hi-hat, BPM slider, and visual playhead sync via beat events.
+</llm-only>
 
 ## Key Code
 
-Here's the event listener setup:
+The event listener that drives the playhead:
 
 ```typescript
 const kick = await createBeatTrack([...urls], { numBeats: 16 })
@@ -53,6 +47,18 @@ Key aspects:
 - **Direct DOM manipulation** — querySelector + classList
 - **Event-driven timing** — visual updates triggered by audio events
 - **Scoped to component** — use a ref to scope queries and avoid global DOM pollution
+
+## How It Works Under the Hood
+
+The event-based pattern works in three coordinated phases:
+
+1. **Lookahead Scheduling (100ms ahead):** BeatTrack's internal scheduler runs every 25ms, checking which beats fall within the next 100ms window. For each upcoming beat, it schedules the audio playback on the Web Audio API thread using `audioContext.currentTime`.
+
+2. **Event Emission (at play time):** When a beat is scheduled, BeatTrack also schedules a beat event to fire at the exact moment the audio plays. This event fires using `audioContextAwareTimeout`, which polls `audioContext.currentTime` via `requestAnimationFrame` for frame-accurate timing.
+
+3. **DOM Updates (same frame):** The event handler receives the beat index and updates DOM classes directly. Since the event fires on the same RAF frame as the timing check, the visual update appears synchronized with the audio.
+
+This architecture separates concerns: Web Audio API handles precise audio timing, RAF handles frame-accurate visual timing, and events bridge the two.
 
 ## AudioContext-Aware Timing
 

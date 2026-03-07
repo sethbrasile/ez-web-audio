@@ -11,7 +11,13 @@ Play a realistic piano with real instrument samples loaded from a soundfont.
 import SoundfontPiano from '../.vitepress/theme/components/SoundfontPiano.vue'
 </script>
 
+<llm-exclude>
 <SoundfontPiano />
+</llm-exclude>
+
+<llm-only>
+Multi-octave piano keyboard using base64-encoded soundfont samples. Click keys or use keyboard input for velocity-sensitive playback.
+</llm-only>
 
 ## What is a Soundfont?
 

@@ -15,7 +15,49 @@ Experiment with different filter types and parameters. Try switching between the
 import FilterDemo from '../.vitepress/theme/components/FilterDemo.vue'
 </script>
 
+<llm-exclude>
 <FilterDemo />
+</llm-exclude>
+
+<llm-only>
+Interactive audio filter demo: apply lowpass, highpass, bandpass, and notch filters to a loaded audio sample. Adjust frequency cutoff and Q factor with sliders.
+</llm-only>
+
+### Replicating This Demo
+
+The demo above creates a filter, adds it to a sound, and updates parameters from slider inputs:
+
+```typescript
+import { createFilterEffect, createOscillator } from 'ez-web-audio'
+
+// Create an audio source
+const osc = await createOscillator({ frequency: 200, type: 'sawtooth' })
+osc.changeGainTo(0.3)
+
+// Create a filter and add it to the source
+const filter = createFilterEffect('lowpass', {
+  frequency: 1000,
+  q: 1
+})
+osc.addEffect(filter)
+osc.play()
+
+// Wire UI controls to filter parameters — updates are instant
+frequencySlider.addEventListener('input', (e) => {
+  filter.frequency = Number(e.target.value)
+})
+
+qSlider.addEventListener('input', (e) => {
+  filter.q = Number(e.target.value)
+})
+
+// Toggle bypass for A/B comparison
+bypassCheckbox.addEventListener('change', (e) => {
+  filter.bypass = e.target.checked
+})
+```
+
+Filter properties (`frequency`, `q`, `gain`, `bypass`) are mutable — assign new values and the audio updates immediately. No scheduling or method calls needed.
 
 ## Effect Types
 
@@ -61,20 +103,18 @@ sound.addEffect(lowpass)
 sound.play()
 ```
 
-### Adjusting Filter Parameters
+### Shelf and Peaking Filters
+
+Shelf and peaking filters have an additional `gain` parameter (in dB) that controls boost/cut:
 
 ```typescript
-const filter = createFilterEffect('lowpass', { frequency: 800 })
-
-// Adjust parameters in real-time
-filter.frequency = 1200 // Move cutoff higher
-filter.q = 4 // Increase resonance
-
-// For shelf and peaking filters
 const shelf = createFilterEffect('highshelf', {
   frequency: 3000,
-  gain: 6 // Boost by 6dB
+  gain: 6 // Boost by 6dB above 3000 Hz
 })
+
+// Adjust gain in real-time
+shelf.gain = -3 // Cut by 3dB instead
 ```
 
 ### Common Filter Recipes

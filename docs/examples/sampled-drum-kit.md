@@ -11,7 +11,13 @@ Play realistic drum sounds with round-robin sample variations for more natural p
 import SampledDrumKit from '../.vitepress/theme/components/SampledDrumKit.vue'
 </script>
 
+<llm-exclude>
 <SampledDrumKit />
+</llm-exclude>
+
+<llm-only>
+Clickable drum pad interface triggering sampled kick, snare, hi-hat, and percussion sounds with round-robin sample variation.
+</llm-only>
 
 ## What is Round-Robin?
 

@@ -1,30 +1,50 @@
 ---
-title: LayeredSound - Synchronized Multi-Layer Playback
-description: "Learn how to play multiple audio layers in perfect synchronization using LayeredSound. Control all layers together as a group or adjust each layer individually."
+title: Synchronized Multi-Sound Playback
+description: "Play multiple sounds at exactly the same moment using playTogether() for one-shot triggers, or LayeredSound for ongoing control with master gain and pan."
 ---
 
 <script setup>
+import PlayTogetherDemo from '../.vitepress/theme/components/PlayTogetherDemo.vue'
 import LayeredSoundDemo from '../.vitepress/theme/components/LayeredSoundDemo.vue'
 </script>
 
-# LayeredSound — Synchronized Multi-Layer Playback
+# Synchronized Multi-Sound Playback
 
-LayeredSound plays multiple Sound or Oscillator instances at exactly the same moment using the Web Audio API's precise timing. All layers start at the same `audioContext.currentTime` value for sample-accurate synchronization.
+EZ Web Audio provides two ways to play multiple sounds at exactly the same moment using the Web Audio API's precise timing:
 
-**You'll learn:**
-- Creating a LayeredSound with `createLayeredSound()`
-- Synchronized multi-layer playback
-- Master gain/pan control affecting all layers
-- Per-layer gain control for mixing
-- Responding to `play`, `stop`, and `end` events
+- **`playTogether()`** — A one-liner for fire-and-forget synchronized playback
+- **`LayeredSound`** — A class with master gain/pan and per-layer control
 
-## Interactive Demo
+## playTogether()
 
-<LayeredSoundDemo />
+The simplest way to play multiple sounds at the same time:
 
-## Basic Usage
+```typescript
+import { createSound, playTogether } from 'ez-web-audio'
 
-Load your sounds first, then combine them into a LayeredSound:
+const kick = await createSound('kick.mp3')
+const snare = await createSound('snare.mp3')
+const hihat = await createSound('hihat.mp3')
+
+// All three start at the exact same AudioContext time
+await playTogether([kick, snare, hihat])
+```
+
+`playTogether()` gets the current `audioContext.currentTime`, adds a tiny scheduling offset, and calls `playAt()` on every sound with the same timestamp. Works with any mix of Sounds, Tracks, and Oscillators.
+
+### Interactive Demo
+
+<llm-exclude>
+<PlayTogetherDemo />
+</llm-exclude>
+
+<llm-only>
+Play multiple sounds simultaneously using playTogether() for perfectly synchronized one-shot triggering.
+</llm-only>
+
+## LayeredSound
+
+When you need ongoing control over a group of synchronized sounds — master volume, panning, per-layer mixing — use `LayeredSound`:
 
 ```typescript
 import { createLayeredSound, createSound } from 'ez-web-audio'
@@ -39,7 +59,17 @@ const layered = await createLayeredSound([bass, melody, synth])
 await layered.play()
 ```
 
-## Master Controls
+### Interactive Demo
+
+<llm-exclude>
+<LayeredSoundDemo />
+</llm-exclude>
+
+<llm-only>
+LayeredSound demo with individual volume sliders for each layer and a master gain control for the combined output.
+</llm-only>
+
+### Master Controls
 
 Control all layers together using master gain and pan:
 
@@ -53,7 +83,7 @@ layered.setPan(-0.2)
 await layered.play()
 ```
 
-## Individual Layer Access
+### Individual Layer Access
 
 Get a specific layer by index for individual control:
 
@@ -72,7 +102,7 @@ melodyLayer?.changeGainTo(0.6)
 console.log(layered.layerCount) // 3
 ```
 
-## Timed Playback
+### Timed Playback
 
 Play all layers for a fixed duration, then auto-stop:
 
@@ -81,7 +111,7 @@ Play all layers for a fixed duration, then auto-stop:
 await layered.playFor(2)
 ```
 
-## Event Handling
+### Event Handling
 
 Listen for playback lifecycle events:
 
@@ -104,7 +134,7 @@ layered.on('warning', (event) => {
 })
 ```
 
-## Stopping All Layers
+### Stopping All Layers
 
 Stop all layers at once:
 
@@ -120,6 +150,34 @@ LayeredSound will log a console warning if you create an instance with 8 or more
 // Customize the warning threshold
 const layered = await createLayeredSound(sounds, { warnLayerCount: 16 })
 ```
+
+## Which Should I Use?
+
+`playTogether()` is a single function call — no class, no instance, no cleanup. It fires the sounds and you're done:
+
+```typescript
+// That's it. One line.
+await playTogether([kick, snare, hihat])
+```
+
+`LayeredSound` is a persistent object that holds references to your sounds and gives you ongoing control — master volume, panning, per-layer mixing, events. It's more powerful but more to manage:
+
+```typescript
+const layered = await createLayeredSound([bass, melody, synth])
+layered.setGain(0.75)
+layered.setPan(-0.2)
+await layered.play()
+// ... later
+await layered.stop()
+```
+
+| | `playTogether()` | `LayeredSound` |
+|--|------------------|----------------|
+| **Complexity** | One function call | Class instance with lifecycle |
+| **Synchronized start** | Yes | Yes |
+| **Master gain/pan** | No | Yes |
+| **Per-layer control** | Manual | Built-in |
+| **Best for** | One-shot triggers (chords, percussion hits) | Ongoing mixing and control |
 
 ## Next Steps
 

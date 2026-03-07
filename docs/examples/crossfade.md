@@ -19,7 +19,13 @@ The `crossfade()` function creates a smooth, DJ-style transition between two Tra
 
 ## Interactive Demo
 
+<llm-exclude>
 <CrossfadeDemo />
+</llm-exclude>
+
+<llm-only>
+Crossfade between two audio tracks using equal-power curves. Adjustable crossfade duration with play controls for both tracks.
+</llm-only>
 
 ## Basic Usage
 
@@ -36,14 +42,35 @@ await trackA.play()
 
 // Later: crossfade from A to B over 2 seconds
 await crossfade(trackA, trackB, 2)
-// Track A is now stopped, Track B is playing at full gain
+// Track A is paused, Track B is playing at full gain
 ```
+
+## Outgoing Track Behavior
+
+By default, the outgoing track is **paused** after the fade, preserving its position. You can control this with the `afterFade` option:
+
+```typescript
+// Default: pause the outgoing track (preserves position, frees resources)
+await crossfade(trackA, trackB, 2)
+await crossfade(trackA, trackB, 2, { afterFade: 'pause' }) // same as above
+
+// DJ-style: outgoing track keeps playing silently at gain 0
+await crossfade(trackA, trackB, 2, { afterFade: 'continue' })
+// When you crossfade back, trackA is right where it would naturally be
+
+// Full stop: reset outgoing track to the beginning
+await crossfade(trackA, trackB, 2, { afterFade: 'stop' })
+```
+
+::: tip When to use `'continue'`
+Use `afterFade: 'continue'` when crossfading back and forth between tracks (like a DJ mixer). The outgoing track keeps playing silently, so when you crossfade back to it, there's no jump in playback position. Keep in mind that the silent track still uses audio resources — if you're done with a track, `'pause'` or `'stop'` is more efficient.
+:::
 
 ## Crossfade Behavior
 
-- **Source track** (first argument): fades out from current gain to 0, then automatically stops
+- **Source track** (first argument): fades out from current gain to 0 using equal-power curves
 - **Destination track** (second argument): fades in from 0 to full gain (or from current gain if already playing)
-- The source track's gain is reset to 1.0 after it stops
+- If the destination was previously paused (e.g., from an earlier crossfade), it resumes from its paused position
 - The `await` resolves when the fade duration completes
 
 ```typescript
@@ -53,7 +80,7 @@ await crossfade(trackA, trackB, 4) // Slow 4-second crossfade
 
 // Crossfade to a track that's already playing at a specific position
 await trackB.play()
-// Both tracks play during the crossfade, then A stops
+// Both tracks play during the crossfade
 await crossfade(trackA, trackB, 2)
 ```
 

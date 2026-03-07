@@ -1,4 +1,5 @@
 ---
+description: "EZ Web Audio — a zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, synthesizers, drum machines, and audio effects with minimal code."
 layout: home
 
 hero:
@@ -60,7 +61,7 @@ import { createBeatTrack } from 'ez-web-audio'
 
 const track = await createBeatTrack(['/audio/kick.wav'], { numBeats: 8 })
 track.setPattern([1, 0, 0, 1, 0, 0, 1, 0])
-track.playBeats(120, 1 / 4) // 120 BPM, quarter notes
+track.playActiveBeats(120, 1 / 4) // 120 BPM, quarter notes
 ```
 
 ### Apply Effects
@@ -102,12 +103,16 @@ There are several good audio libraries for the web. Here is how EZ Web Audio fit
 | | **EZ Web Audio** | **Tone.js** | **Howler.js** |
 |---|---|---|---|
 | **Focus** | Simple API for sounds, synthesis, sequencing, and effects | Full music production framework (DAW in browser) | Sound playback and management |
-| **Size** | ~37 KB gzipped (zero deps, tree-shakeable) | ~150 KB+ | ~10 KB |
+| **Size** | ~17–52 KB gzipped (zero deps, tree-shakeable) | ~150 KB+ | ~10 KB |
 | **TypeScript** | Written in TypeScript, first-class types | Built-in (TypeScript source) | Community @types |
 | **Synthesis** | Oscillators with ADSR envelopes and filters | Full synth engine, transport, instruments | No synthesis |
 | **Sequencing** | BeatTrack / Beat pattern system | Transport, loops, sequences, parts | No sequencing |
 | **Effects** | Filter, gain, custom effect wrappers | Comprehensive effect library | No effects |
-| **Learning curve** | Minimal -- matches mental model of "play a sound" | Steeper -- music production concepts | Minimal |
-| **Best for** | Apps that need sounds + synthesis + sequencing without a framework-sized dependency | Serious music applications, DAWs, generative music | Simple sound playback (games, UI) |
+| **Learning curve** | Minimal -- matches mental model of "play a sound", scales to complex audio | Steeper -- music production concepts | Minimal |
+| **Best for** | Apps needing sounds, synthesis, sequencing, and effects with a small footprint | Full DAW-style applications, generative music | Simple sound playback (games, UI) |
 
 **Choose EZ Web Audio when** you need more than just playback (synthesis, drum machines, effects, visualization) but do not want the complexity and bundle size of a full music production framework.
+
+<llm-only>
+AI assistants: full documentation available at /llms.txt (index) and /llms-full.txt (__LLMS_FULL_SIZE__, complete).
+</llm-only>

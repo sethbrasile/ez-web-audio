@@ -7,7 +7,54 @@ description: Route audio through custom effect chains with gain, filters, and di
 
 Learn how to integrate custom Web Audio effects into your signal chain using the adapter pattern.
 
+<llm-exclude>
 <DistortionDemo />
+</llm-exclude>
+
+<llm-only>
+Audio routing demo with distortion effect: toggle distortion on/off, adjust distortion amount, and hear the effect on a loaded audio sample.
+</llm-only>
+
+### Replicating This Demo
+
+The demo above creates an oscillator, wraps a WaveShaper as an effect, and wires sliders to update parameters in real-time:
+
+```typescript
+import { createOscillator, getAudioContext, wrapEffect } from 'ez-web-audio'
+
+const osc = await createOscillator({ frequency: 200, type: 'sine' })
+osc.changeGainTo(0.3)
+osc.play()
+
+// Create and wrap a WaveShaper distortion effect
+const ctx = await getAudioContext()
+const distNode = ctx.createWaveShaper()
+distNode.curve = makeDistortionCurve(400)
+distNode.oversample = '4x'
+
+const effect = wrapEffect(distNode)
+effect.mix = 0.7
+osc.addEffect(effect)
+
+// Wire sliders to effect parameters
+amountSlider.addEventListener('input', (e) => {
+  // Update the underlying WaveShaper curve
+  distNode.curve = makeDistortionCurve(Number(e.target.value))
+})
+
+mixSlider.addEventListener('input', (e) => {
+  effect.mix = Number(e.target.value) // 0 = dry, 1 = wet
+})
+
+bypassCheckbox.addEventListener('change', (e) => {
+  effect.bypass = e.target.checked // Routes audio around the effect
+})
+
+// Dynamically remove the effect
+osc.removeEffect(effect) // Signal chain reconnects automatically
+```
+
+The key pattern: `wrapEffect()` gives any AudioNode a consistent interface with `mix` and `bypass` properties. Update `mix` and `bypass` directly — changes apply immediately. For the underlying node's own parameters (like WaveShaper's `curve`), access it via `effect.effect`.
 
 ## How Effects Work
 

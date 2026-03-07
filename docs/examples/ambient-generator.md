@@ -11,7 +11,13 @@ Create layered ambient soundscapes by combining oscillators and filtered white n
 import AmbientGenerator from '../.vitepress/theme/components/AmbientGenerator.vue'
 </script>
 
+<llm-exclude>
 <AmbientGenerator />
+</llm-exclude>
+
+<llm-only>
+Ambient soundscape generator with layered detuned oscillators, randomized panning, and fade-in/fade-out controls.
+</llm-only>
 
 ## How It Works
 
@@ -88,16 +94,26 @@ drone.play()
 texture.play()
 shimmer.play()
 
-// Update parameters in real-time
-drone.update('frequency').to(100).as('ratio')
-lowpass.frequency = 1200
-shimmer.update('frequency').to(700).as('ratio')
+// Wire sliders for real-time control
+droneSlider.addEventListener('input', (e) => {
+  drone.update('frequency').to(Number(e.target.value)).as('ratio')
+})
+
+textureSlider.addEventListener('input', (e) => {
+  lowpass.frequency = Number(e.target.value) // 200–4000 Hz
+})
+
+shimmerSlider.addEventListener('input', (e) => {
+  shimmer.update('frequency').to(Number(e.target.value)).as('ratio')
+})
 
 // Stop all layers
 drone.stop()
 texture.stop()
 shimmer.stop()
 ```
+
+Oscillator frequencies use `update().to().as('ratio')` for smooth transitions. Filter parameters like `frequency` and `q` can be assigned directly.
 
 ## API Used
 

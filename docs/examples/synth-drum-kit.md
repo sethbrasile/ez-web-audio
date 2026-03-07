@@ -11,7 +11,13 @@ Create realistic drum sounds entirely from synthesis — no audio files needed. 
 
 Tap the pads to hear drum sounds created entirely from synthesis. Each sound is generated in real-time using oscillators and filters.
 
+<llm-exclude>
 <SynthDrumKit />
+</llm-exclude>
+
+<llm-only>
+Synthesized drum kit generating kick, snare, and hi-hat sounds purely from oscillators. Clickable pads with no audio files required.
+</llm-only>
 
 ## How Each Sound Works
 
@@ -152,11 +158,21 @@ bassDrop.playFor(10)
 
 ## Try the Snare Breakdown
 
-Use the breakdown buttons above to hear the snare components separately:
+Use the breakdown buttons above to hear the snare components separately. Each button plays a single layer in isolation:
 
-- **Meat Only** - Just the sine oscillator (tonal body)
-- **Crack Only** - Just the filtered white noise (snare wires)
-- **Full Snare** - Both layers together
+```typescript
+// Play just the tonal body
+const meat = await createSnareMeat() // Sine oscillator, 100→60 Hz sweep
+meat.playFor(0.1)
+
+// Play just the snare crack
+const crack = await createSnareCrack() // Filtered white noise
+crack.playFor(0.1)
+
+// Play both together — createLayeredSound ensures exact same start time
+const snare = await createLayeredSound([meat, crack])
+snare.playFor(0.1)
+```
 
 This demonstrates how layering different synthesis techniques creates realistic, complex sounds.
 

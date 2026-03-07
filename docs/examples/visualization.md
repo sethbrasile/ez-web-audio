@@ -11,7 +11,13 @@ Visualize audio in real-time using the Analyzer API. This demo shows both freque
 import VisualizationDemo from '../.vitepress/theme/components/VisualizationDemo.vue'
 </script>
 
+<llm-exclude>
 <VisualizationDemo />
+</llm-exclude>
+
+<llm-only>
+Real-time audio visualization demo: waveform and frequency spectrum displays rendered on canvas using AnalyserNode with configurable FFT size.
+</llm-only>
 
 ## How It Works
 

@@ -11,7 +11,13 @@ Learn how to load and play audio files with EZ Web Audio. This page covers the t
 
 Click the button to play a sound effect. Adjust volume and pan before or after playing.
 
+<llm-exclude>
 <AudioDemo />
+</llm-exclude>
+
+<llm-only>
+Basic audio playback demo: click to load and play a sound effect with volume and pan controls.
+</llm-only>
 
 ### Code
 
@@ -27,32 +33,55 @@ button.addEventListener('click', async () => {
 
 ## Try It: Track Demo
 
-Tracks provide full playback control for music: play, pause, resume, seek, and position tracking.
+Tracks provide full playback control for music: play, pause, resume, seek, and position tracking. The demo above is built with the code below.
 
+<llm-exclude>
 <TrackDemo />
+</llm-exclude>
+
+<llm-only>
+Music track demo with play/pause/stop controls, seek slider, and real-time position display showing current time and progress percentage.
+</llm-only>
 
 ### Code
 
 ```typescript
 import { createTrack } from 'ez-web-audio'
 
-async function playMusic() {
-  const song = await createTrack('/audio/music.mp3')
+const track = await createTrack('/audio/music.mp3')
 
-  // Play the track
-  song.play()
-
-  // Pause and resume
-  song.pause()
-  song.resume()
-
-  // Seek to 30 seconds
-  song.seek(30).as('seconds')
-
-  // Get current position
-  console.log(song.position.string) // '0:30'
-  console.log(song.percentPlayed) // 25 (25%)
+// Play / pause toggle
+function playPause() {
+  if (track.isPlaying) {
+    track.pause()
+  }
+  else {
+    track.play()
+  }
 }
+
+// Stop resets to the beginning
+function stop() {
+  track.stop()
+}
+
+// Seek to a specific time (e.g. from a slider's value)
+function onSeek(seconds: number) {
+  track.seek(seconds).as('seconds')
+}
+
+// Live position tracking with requestAnimationFrame
+function updateDisplay() {
+  if (track.isPlaying) {
+    console.log(track.position.string) // '0:45'
+    console.log(track.percentPlayed) // 25
+    requestAnimationFrame(updateDisplay)
+  }
+}
+
+// Start the display loop whenever playback begins or resumes
+track.on('play', updateDisplay)
+track.on('resume', updateDisplay)
 ```
 
 ## Sound vs Track
@@ -114,82 +143,32 @@ sound.play()
 
 ## Track Position and Duration
 
-Track provides detailed timing information:
+Track provides timing info in multiple formats:
 
 ```typescript
 const track = await createTrack('song.mp3')
 
-// Duration (read-only)
-console.log(track.duration.raw) // 180.5 (seconds)
-console.log(track.duration.string) // '3:00'
-console.log(track.duration.pojo) // { minutes: 3, seconds: 0 }
+// Duration
+track.duration.raw // 180.5 (seconds)
+track.duration.string // '3:00'
+track.duration.pojo // { minutes: 3, seconds: 0 }
 
 // Current position (updates during playback)
-console.log(track.position.raw) // 45.2 (seconds)
-console.log(track.position.string) // '0:45'
+track.position.raw // 45.2 (seconds)
+track.position.string // '0:45'
 
-// Progress percentage (0 to 100)
-console.log(track.percentPlayed) // 25
+// Progress as percentage (0–100)
+track.percentPlayed // 25
 ```
 
 ## Track Events
 
-Track emits events for playback state changes:
-
 ```typescript
-const track = await createTrack('song.mp3')
-
-// When playback starts
-track.on('play', () => {
-  console.log('Started playing')
-})
-
-// When playback ends naturally
-track.on('end', () => {
-  console.log('Finished playing')
-})
-
-// When stopped programmatically
-track.on('stop', () => {
-  console.log('Stopped by user')
-})
-
-// When paused
-track.on('pause', () => {
-  console.log('Paused')
-})
-
-// When resumed after pause
-track.on('resume', () => {
-  console.log('Resumed')
-})
-
-track.play()
-```
-
-### Building a Progress Bar
-
-```typescript
-const track = await createTrack('song.mp3')
-const progressBar = document.getElementById('progress')
-
-// Update progress during playback
-function updateProgress() {
-  if (track.isPlaying) {
-    progressBar.style.width = `${track.percentPlayed}%`
-    requestAnimationFrame(updateProgress)
-  }
-}
-
-track.on('play', updateProgress)
-track.on('resume', updateProgress)
-
-// Click to seek
-progressBar.parentElement.addEventListener('click', (e) => {
-  const rect = e.target.getBoundingClientRect()
-  const percent = (e.clientX - rect.left) / rect.width
-  track.seek(percent).as('ratio')
-})
+track.on('play', () => { /* playback started */ })
+track.on('pause', () => { /* paused */ })
+track.on('resume', () => { /* resumed after pause */ })
+track.on('stop', () => { /* stopped programmatically */ })
+track.on('end', () => { /* reached the end naturally */ })
 ```
 
 ## Preloading Audio

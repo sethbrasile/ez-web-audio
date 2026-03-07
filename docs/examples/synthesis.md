@@ -11,23 +11,48 @@ Generate sounds programmatically with oscillators. This page covers waveform typ
 
 Experiment with different waveforms and frequencies. The note name updates in real-time as you change the frequency.
 
+<llm-exclude>
 <OscillatorDemo />
+</llm-exclude>
+
+<llm-only>
+Interactive oscillator demo: select waveform type (sine, square, sawtooth, triangle), adjust frequency with a slider, and hear the result in real time. Includes lowpass, highpass, and bandpass filter controls.
+</llm-only>
 
 ### Code
 
 ```typescript
 import { createOscillator } from 'ez-web-audio'
 
-async function playSynth() {
-  const synth = await createOscillator({
-    frequency: 440, // A4 note
-    type: 'sine' // Waveform type
-  })
+const synth = await createOscillator({
+  frequency: 440, // A4 note
+  type: 'sine' // Waveform type
+})
+synth.changeGainTo(0.3)
+synth.play()
 
-  synth.play()
+// Update frequency from a slider — changes are instant
+frequencySlider.addEventListener('input', (e) => {
+  const freq = Number(e.target.value)
+  synth.update('frequency').to(freq).as('ratio')
 
-  // Stop after 1 second
-  setTimeout(() => synth.stop(), 1000)
+  // Display the nearest note name
+  noteLabel.textContent = frequencyToNote(freq) // e.g. "A4"
+})
+
+// Stop after 1 second
+setTimeout(() => synth.stop(), 1000)
+```
+
+The note name display uses a simple formula to find the nearest note from any frequency:
+
+```typescript
+function frequencyToNote(freq: number): string {
+  const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const semitones = 12 * Math.log2(freq / 440)
+  const noteIndex = Math.round(semitones + 9) % 12
+  const octave = Math.floor((Math.round(semitones + 9) + 48) / 12)
+  return `${notes[noteIndex < 0 ? noteIndex + 12 : noteIndex]}${octave}`
 }
 ```
 

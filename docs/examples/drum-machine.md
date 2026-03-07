@@ -11,7 +11,13 @@ import DrumMachine from '../.vitepress/theme/components/DrumMachine.vue'
 
 Create rhythmic patterns with a step sequencer using the BeatTrack API.
 
+<llm-exclude>
 <DrumMachine />
+</llm-exclude>
+
+<llm-only>
+Step sequencer drum machine with kick, snare, and hi-hat tracks. 16-step grid with clickable cells, BPM slider, and visual playhead highlighting the current beat.
+</llm-only>
 
 ## How to Use
 
@@ -38,7 +44,7 @@ kick.playBeats(120, 1 / 16) // 120 BPM, sixteenth notes
 
 ## Visual Sync
 
-Each Beat object has properties that auto-toggle on the scheduler's timeline:
+The playhead highlighting in the demo above works because each Beat object has properties that auto-toggle on the scheduler's timeline:
 
 | Property | When true | Use for |
 |---|---|---|

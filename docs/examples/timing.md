@@ -29,7 +29,13 @@ osc2.playAt(now)
 osc3.playAt(now)
 ```
 
+<llm-exclude>
 <TimingDemo />
+</llm-exclude>
+
+<llm-only>
+Timing and scheduling demo: immediate playback with play(), delayed playback with playIn(), and precise scheduled playback with playAt().
+</llm-only>
 
 ## Why Timing Matters
 
