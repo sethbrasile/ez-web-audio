@@ -230,9 +230,12 @@ export type AudioInput = string | ArrayBuffer | Blob | File
 async function loadFromBuffer(
   buffer: ArrayBuffer,
   type: 'sound' | 'track',
+  audioContext?: AudioContext,
 ): Promise<Sound | Track> {
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
+  if (!audioContext) {
+    await initAudio()
+    audioContext = getOrCreateAudioContext()
+  }
   let audioBuffer: AudioBuffer
   try {
     audioBuffer = await audioContext.decodeAudioData(buffer)
@@ -243,7 +246,7 @@ async function loadFromBuffer(
       '[ArrayBuffer]',
     )
   }
-  return createSoundFor(type, audioBuffer)
+  return createSoundFor(type, audioBuffer, audioContext)
 }
 
 /**
@@ -251,16 +254,16 @@ async function loadFromBuffer(
  * Handles string URLs via load() and ArrayBuffer/Blob/File via loadFromBuffer().
  * @private
  */
-async function resolveSound(input: AudioInput): Promise<Sound> {
+async function resolveSound(input: AudioInput, audioContext?: AudioContext): Promise<Sound> {
   if (typeof input === 'string') {
-    return load(input, 'sound') as Promise<Sound>
+    return load(input, 'sound', audioContext) as Promise<Sound>
   }
   if (input instanceof ArrayBuffer) {
-    return loadFromBuffer(input, 'sound') as Promise<Sound>
+    return loadFromBuffer(input, 'sound', audioContext) as Promise<Sound>
   }
   // Blob or File
   const buffer = await input.arrayBuffer()
-  return loadFromBuffer(buffer, 'sound') as Promise<Sound>
+  return loadFromBuffer(buffer, 'sound', audioContext) as Promise<Sound>
 }
 
 /**
@@ -990,8 +993,10 @@ export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sou
  * @param props - Audio buffer to pass to the constructor
  * @returns Sound or Track instance
  */
-function createSoundFor(type: 'sound' | 'track', props: AudioBuffer): Sound | Track {
-  const audioContext = getOrCreateAudioContext()
+function createSoundFor(type: 'sound' | 'track', props: AudioBuffer, audioContext?: AudioContext): Sound | Track {
+  if (!audioContext) {
+    audioContext = getOrCreateAudioContext()
+  }
   switch (type) {
     case 'track':
       return new Track(audioContext, props)
@@ -1011,14 +1016,16 @@ function createSoundFor(type: 'sound' | 'track', props: AudioBuffer): Sound | Tr
  * @returns Promise resolving to Sound, Track, or Sampler instance
  * @throws {AudioLoadError} If the file cannot be loaded or decoded
  */
-async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track> {
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
+async function load(src: string, type: 'sound' | 'track', audioContext?: AudioContext): Promise<Sound | Track> {
+  if (!audioContext) {
+    await initAudio()
+    audioContext = getOrCreateAudioContext()
+  }
 
   if (hasInCache(src)) {
     const res = await getFromCache(src)!.clone()
     const buffer = await audioContext.decodeAudioData(await res.arrayBuffer())
-    return createSoundFor(type, buffer)
+    return createSoundFor(type, buffer, audioContext)
   }
 
   let response: Response
@@ -1055,7 +1062,7 @@ async function load(src: string, type: 'sound' | 'track'): Promise<Sound | Track
     )
   }
 
-  return createSoundFor(type, buffer)
+  return createSoundFor(type, buffer, audioContext)
 }
 
 export interface InteractionTarget {
