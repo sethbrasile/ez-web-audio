@@ -21,9 +21,9 @@ let layered: any = null
 let sounds: any[] = []
 let lib: any = null
 
-async function initialize() {
-  if (loaded.value || loading.value)
-    return
+async function ensureLoaded() {
+  if (loaded.value) return true
+  if (loading.value) return false
 
   try {
     loading.value = true
@@ -42,9 +42,11 @@ async function initialize() {
     layered = await lib.createLayeredSound(sounds)
 
     loaded.value = true
+    return true
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load sounds'
+    return false
   }
   finally {
     loading.value = false
@@ -52,8 +54,7 @@ async function initialize() {
 }
 
 async function playAll() {
-  if (!layered)
-    return
+  if (!(await ensureLoaded())) return
 
   try {
     error.value = ''
@@ -86,8 +87,8 @@ async function stopAll() {
 }
 
 async function playLayer(index: number) {
-  if (!sounds[index])
-    return
+  if (!(await ensureLoaded())) return
+  if (!sounds[index]) return
 
   try {
     sounds[index].changeGainTo(layerGains.value[index])
@@ -127,23 +128,14 @@ onUnmounted(() => {
 
 <template>
   <div class="layered-demo">
-    <div v-if="!loaded" class="init-section">
-      <button :disabled="loading" class="init-btn" @click="initialize">
-        {{ loading ? 'Loading sounds...' : 'Load Layered Sounds' }}
-      </button>
-      <p class="hint">
-        Loads kick, snare, and hi-hat samples as synchronized layers
-      </p>
-    </div>
-
-    <div v-else class="controls">
+    <div class="controls">
       <div class="master-controls">
         <button
           class="play-all-btn"
           :disabled="loading"
           @click="playAll"
         >
-          Play All Together
+          {{ loading ? 'Loading...' : 'Play All Together' }}
         </button>
         <button class="stop-btn" @click="stopAll">
           Stop
@@ -169,8 +161,8 @@ onUnmounted(() => {
           class="layer-row"
           :class="{ playing: layerPlaying[i] }"
         >
-          <button class="layer-btn" @click="playLayer(i)">
-            {{ label }}
+          <button class="layer-btn" :disabled="loading" @click="playLayer(i)">
+            {{ loading && !loaded ? 'Loading...' : label }}
           </button>
           <div class="layer-indicator">
             {{ layerPlaying[i] ? 'Playing' : 'Ready' }}
@@ -209,19 +201,6 @@ onUnmounted(() => {
   padding: 1.5rem;
   margin: 1rem 0;
   background: var(--vp-c-bg-soft);
-}
-
-.init-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin: 0;
 }
 
 .controls {
@@ -284,7 +263,6 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.init-btn,
 .play-all-btn,
 .stop-btn,
 .layer-btn {
@@ -298,23 +276,6 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.init-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
-}
-
-.init-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.init-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .play-all-btn {
   background: var(--vp-c-brand);
   color: white;
@@ -326,13 +287,14 @@ onUnmounted(() => {
   background: var(--vp-c-brand-dark);
 }
 
-.play-all-btn:disabled {
+.play-all-btn:disabled,
+.layer-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 .stop-btn:hover,
-.layer-btn:hover {
+.layer-btn:hover:not(:disabled) {
   background: var(--vp-c-bg-mute);
   border-color: var(--vp-c-brand);
 }
