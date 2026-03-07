@@ -298,8 +298,16 @@ async function resolveSound(input: AudioInput, audioContext?: AudioContext): Pro
  * })
  * ```
  */
-export async function createSound(input: AudioInput): Promise<Sound> {
-  return resolveSound(input)
+export async function createSound(input: AudioInput): Promise<Sound>
+export async function createSound(audioContext: BaseAudioContext, input: AudioInput): Promise<Sound>
+export async function createSound(
+  audioContextOrInput: BaseAudioContext | AudioInput,
+  maybeInput?: AudioInput,
+): Promise<Sound> {
+  if (audioContextOrInput instanceof BaseAudioContext) {
+    return resolveSound(maybeInput!, audioContextOrInput as AudioContext)
+  }
+  return resolveSound(audioContextOrInput)
 }
 
 /**
@@ -332,15 +340,28 @@ export async function createSound(input: AudioInput): Promise<Sound> {
  * console.log(song.position.string) // '0:30'
  * ```
  */
-export async function createTrack(input: AudioInput): Promise<Track> {
-  if (typeof input === 'string') {
-    return load(input, 'track') as Promise<Track>
+export async function createTrack(input: AudioInput): Promise<Track>
+export async function createTrack(audioContext: BaseAudioContext, input: AudioInput): Promise<Track>
+export async function createTrack(
+  audioContextOrInput: BaseAudioContext | AudioInput,
+  maybeInput?: AudioInput,
+): Promise<Track> {
+  if (audioContextOrInput instanceof BaseAudioContext) {
+    const input = maybeInput!
+    const ctx = audioContextOrInput as AudioContext
+    if (typeof input === 'string') return load(input, 'track', ctx) as Promise<Track>
+    if (input instanceof ArrayBuffer) return loadFromBuffer(input, 'track', ctx) as Promise<Track>
+    const buffer = await input.arrayBuffer()
+    return loadFromBuffer(buffer, 'track', ctx) as Promise<Track>
   }
-  if (input instanceof ArrayBuffer) {
-    return loadFromBuffer(input, 'track') as Promise<Track>
+  if (typeof audioContextOrInput === 'string') {
+    return load(audioContextOrInput, 'track') as Promise<Track>
+  }
+  if (audioContextOrInput instanceof ArrayBuffer) {
+    return loadFromBuffer(audioContextOrInput, 'track') as Promise<Track>
   }
   // Blob or File
-  const buffer = await input.arrayBuffer()
+  const buffer = await audioContextOrInput.arrayBuffer()
   return loadFromBuffer(buffer, 'track') as Promise<Track>
 }
 
@@ -369,12 +390,36 @@ export async function createTrack(input: AudioInput): Promise<Track> {
 export async function createSounds(
   urls: string[],
   onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Sound[]>
+export async function createSounds(
+  audioContext: BaseAudioContext,
+  urls: string[],
+  onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Sound[]>
+export async function createSounds(
+  audioContextOrUrls: BaseAudioContext | string[],
+  urlsOrOnProgress?: string[] | ((loaded: number, total: number, url: string) => void),
+  maybeOnProgress?: (loaded: number, total: number, url: string) => void,
 ): Promise<Sound[]> {
+  let urls: string[]
+  let onProgress: ((loaded: number, total: number, url: string) => void) | undefined
+  let ctx: AudioContext | undefined
+
+  if (audioContextOrUrls instanceof BaseAudioContext) {
+    ctx = audioContextOrUrls as AudioContext
+    urls = urlsOrOnProgress as string[]
+    onProgress = maybeOnProgress
+  }
+  else {
+    urls = audioContextOrUrls
+    onProgress = urlsOrOnProgress as ((loaded: number, total: number, url: string) => void) | undefined
+  }
+
   const total = urls.length
   let loaded = 0
 
   const promises = urls.map(async (url) => {
-    const sound = await load(url, 'sound') as Sound
+    const sound = await load(url, 'sound', ctx) as Sound
     loaded++
     onProgress?.(loaded, total, url)
     return sound
@@ -407,12 +452,36 @@ export async function createSounds(
 export async function createTracks(
   urls: string[],
   onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Track[]>
+export async function createTracks(
+  audioContext: BaseAudioContext,
+  urls: string[],
+  onProgress?: (loaded: number, total: number, url: string) => void,
+): Promise<Track[]>
+export async function createTracks(
+  audioContextOrUrls: BaseAudioContext | string[],
+  urlsOrOnProgress?: string[] | ((loaded: number, total: number, url: string) => void),
+  maybeOnProgress?: (loaded: number, total: number, url: string) => void,
 ): Promise<Track[]> {
+  let urls: string[]
+  let onProgress: ((loaded: number, total: number, url: string) => void) | undefined
+  let ctx: AudioContext | undefined
+
+  if (audioContextOrUrls instanceof BaseAudioContext) {
+    ctx = audioContextOrUrls as AudioContext
+    urls = urlsOrOnProgress as string[]
+    onProgress = maybeOnProgress
+  }
+  else {
+    urls = audioContextOrUrls
+    onProgress = urlsOrOnProgress as ((loaded: number, total: number, url: string) => void) | undefined
+  }
+
   const total = urls.length
   let loaded = 0
 
   const promises = urls.map(async (url) => {
-    const track = await load(url, 'track') as Track
+    const track = await load(url, 'track', ctx) as Track
     loaded++
     onProgress?.(loaded, total, url)
     return track
@@ -450,9 +519,21 @@ export async function createTracks(
  * kick.play()
  * ```
  */
-export async function createBeatTrack(inputs: AudioInput[], opts?: BeatTrackOptions): Promise<BeatTrack> {
-  const sounds = await Promise.all(inputs.map(resolveSound))
-  return new BeatTrack(getOrCreateAudioContext(), sounds, opts)
+export async function createBeatTrack(inputs: AudioInput[], opts?: BeatTrackOptions): Promise<BeatTrack>
+export async function createBeatTrack(audioContext: BaseAudioContext, inputs: AudioInput[], opts?: BeatTrackOptions): Promise<BeatTrack>
+export async function createBeatTrack(
+  audioContextOrInputs: BaseAudioContext | AudioInput[],
+  inputsOrOpts?: AudioInput[] | BeatTrackOptions,
+  maybeOpts?: BeatTrackOptions,
+): Promise<BeatTrack> {
+  if (audioContextOrInputs instanceof BaseAudioContext) {
+    const ctx = audioContextOrInputs as AudioContext
+    const inputs = inputsOrOpts as AudioInput[]
+    const sounds = await Promise.all(inputs.map(i => resolveSound(i, ctx)))
+    return new BeatTrack(ctx, sounds, maybeOpts)
+  }
+  const sounds = await Promise.all(audioContextOrInputs.map(i => resolveSound(i)))
+  return new BeatTrack(getOrCreateAudioContext(), sounds, inputsOrOpts as BeatTrackOptions | undefined)
 }
 
 /**
@@ -486,10 +567,22 @@ export async function createBeatTrack(inputs: AudioInput[], opts?: BeatTrackOpti
  * gunshot.play() // shot1 (wraps around)
  * ```
  */
-export async function createSampler(inputs: AudioInput[], opts?: SamplerOptions): Promise<Sampler> {
-  const sounds = await Promise.all(inputs.map(resolveSound))
+export async function createSampler(inputs: AudioInput[], opts?: SamplerOptions): Promise<Sampler>
+export async function createSampler(audioContext: BaseAudioContext, inputs: AudioInput[], opts?: SamplerOptions): Promise<Sampler>
+export async function createSampler(
+  audioContextOrInputs: BaseAudioContext | AudioInput[],
+  inputsOrOpts?: AudioInput[] | SamplerOptions,
+  maybeOpts?: SamplerOptions,
+): Promise<Sampler> {
+  if (audioContextOrInputs instanceof BaseAudioContext) {
+    const ctx = audioContextOrInputs as AudioContext
+    const inputs = inputsOrOpts as AudioInput[]
+    const sounds = await Promise.all(inputs.map(i => resolveSound(i, ctx)))
+    return new Sampler(sounds, maybeOpts)
+  }
+  const sounds = await Promise.all(audioContextOrInputs.map(i => resolveSound(i)))
   await initAudio()
-  return new Sampler(sounds, opts)
+  return new Sampler(sounds, inputsOrOpts as SamplerOptions | undefined)
 }
 
 /**
@@ -524,9 +617,17 @@ export async function createSampler(inputs: AudioInput[], opts?: SamplerOptions)
  * a4.play()
  * ```
  */
-export async function createOscillator(options?: OscillatorOptions): Promise<Oscillator> {
+export async function createOscillator(options?: OscillatorOptions): Promise<Oscillator>
+export async function createOscillator(audioContext: BaseAudioContext, options?: OscillatorOptions): Promise<Oscillator>
+export async function createOscillator(
+  audioContextOrOptions?: BaseAudioContext | OscillatorOptions,
+  maybeOptions?: OscillatorOptions,
+): Promise<Oscillator> {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
+    return new Oscillator(audioContextOrOptions as AudioContext, maybeOptions)
+  }
   await initAudio()
-  return new Oscillator(getOrCreateAudioContext(), options)
+  return new Oscillator(getOrCreateAudioContext(), audioContextOrOptions)
 }
 
 /**
@@ -560,9 +661,17 @@ export async function createOscillator(options?: OscillatorOptions): Promise<Osc
  * synth.addEffect(delay)
  * ```
  */
-export async function createPolySynth(options?: PolySynthOptions): Promise<PolySynth> {
+export async function createPolySynth(options?: PolySynthOptions): Promise<PolySynth>
+export async function createPolySynth(audioContext: BaseAudioContext, options?: PolySynthOptions): Promise<PolySynth>
+export async function createPolySynth(
+  audioContextOrOptions?: BaseAudioContext | PolySynthOptions,
+  maybeOptions?: PolySynthOptions,
+): Promise<PolySynth> {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
+    return new PolySynth(audioContextOrOptions as AudioContext, maybeOptions)
+  }
   await initAudio()
-  return new PolySynth(getOrCreateAudioContext(), options)
+  return new PolySynth(getOrCreateAudioContext(), audioContextOrOptions)
 }
 
 /**
@@ -607,12 +716,18 @@ export async function createPolySynth(options?: PolySynthOptions): Promise<PolyS
  * grains.addEffect(reverb)
  * ```
  */
+export async function createGrainPlayer(buffer: AudioBuffer, options?: GrainPlayerOptions): Promise<GrainPlayer>
+export async function createGrainPlayer(audioContext: BaseAudioContext, buffer: AudioBuffer, options?: GrainPlayerOptions): Promise<GrainPlayer>
 export async function createGrainPlayer(
-  buffer: AudioBuffer,
-  options?: GrainPlayerOptions,
+  audioContextOrBuffer: BaseAudioContext | AudioBuffer,
+  bufferOrOptions?: AudioBuffer | GrainPlayerOptions,
+  maybeOptions?: GrainPlayerOptions,
 ): Promise<GrainPlayer> {
+  if (audioContextOrBuffer instanceof BaseAudioContext) {
+    return new GrainPlayer(audioContextOrBuffer as AudioContext, bufferOrOptions as AudioBuffer, maybeOptions)
+  }
   await initAudio()
-  return new GrainPlayer(getOrCreateAudioContext(), buffer, options)
+  return new GrainPlayer(getOrCreateAudioContext(), audioContextOrBuffer, bufferOrOptions as GrainPlayerOptions | undefined)
 }
 
 /**
@@ -645,13 +760,13 @@ export async function createGrainPlayer(
  * ```
  */
 export async function createAnalyzer(options?: AnalyzerOptions): Promise<Analyzer>
-export async function createAnalyzer(audioContext: AudioContext, options?: AnalyzerOptions): Promise<Analyzer>
+export async function createAnalyzer(audioContext: BaseAudioContext, options?: AnalyzerOptions): Promise<Analyzer>
 export async function createAnalyzer(
-  audioContextOrOptions?: AudioContext | AnalyzerOptions,
+  audioContextOrOptions?: BaseAudioContext | AnalyzerOptions,
   maybeOptions?: AnalyzerOptions,
 ): Promise<Analyzer> {
-  if (audioContextOrOptions instanceof AudioContext) {
-    return new Analyzer(audioContextOrOptions, maybeOptions)
+  if (audioContextOrOptions instanceof BaseAudioContext) {
+    return new Analyzer(audioContextOrOptions as AudioContext, maybeOptions)
   }
   await initAudio()
   return new Analyzer(getOrCreateAudioContext(), audioContextOrOptions)
@@ -723,9 +838,17 @@ export function createLFO(options?: LFOOptions): LFO {
  * })
  * ```
  */
-export async function createTransport(options: TransportOptions): Promise<Transport> {
+export async function createTransport(options: TransportOptions): Promise<Transport>
+export async function createTransport(audioContext: BaseAudioContext, options: TransportOptions): Promise<Transport>
+export async function createTransport(
+  audioContextOrOptions: BaseAudioContext | TransportOptions,
+  maybeOptions?: TransportOptions,
+): Promise<Transport> {
+  if (audioContextOrOptions instanceof BaseAudioContext) {
+    return new Transport(audioContextOrOptions as AudioContext, maybeOptions!)
+  }
   await initAudio()
-  return new Transport(getOrCreateAudioContext(), options)
+  return new Transport(getOrCreateAudioContext(), audioContextOrOptions)
 }
 
 /**
@@ -778,12 +901,18 @@ export function createSequence(transport: Transport, options: SequenceOptions): 
  * layered.setGain(0.5) // Affects all layers
  * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
  */
+export async function createLayeredSound(layers: (Sound | Oscillator)[], opts?: LayeredSoundOptions): Promise<LayeredSound>
+export async function createLayeredSound(audioContext: BaseAudioContext, layers: (Sound | Oscillator)[], opts?: LayeredSoundOptions): Promise<LayeredSound>
 export async function createLayeredSound(
-  layers: (Sound | Oscillator)[],
-  opts?: LayeredSoundOptions,
+  audioContextOrLayers: BaseAudioContext | (Sound | Oscillator)[],
+  layersOrOpts?: (Sound | Oscillator)[] | LayeredSoundOptions,
+  maybeOpts?: LayeredSoundOptions,
 ): Promise<LayeredSound> {
+  if (audioContextOrLayers instanceof BaseAudioContext) {
+    return new LayeredSound(audioContextOrLayers as AudioContext, layersOrOpts as (Sound | Oscillator)[], maybeOpts)
+  }
   await initAudio()
-  return new LayeredSound(getOrCreateAudioContext(), layers, opts)
+  return new LayeredSound(getOrCreateAudioContext(), audioContextOrLayers, layersOrOpts as LayeredSoundOptions | undefined)
 }
 
 /**
@@ -810,7 +939,23 @@ export async function createLayeredSound(
  * piano.play('G4')  // G above middle C
  * ```
  */
-export async function createFont(url: string): Promise<Font> {
+export async function createFont(url: string): Promise<Font>
+export async function createFont(audioContext: BaseAudioContext, url: string): Promise<Font>
+export async function createFont(
+  audioContextOrUrl: BaseAudioContext | string,
+  maybeUrl?: string,
+): Promise<Font> {
+  let url: string
+  let audioContext: AudioContext | undefined
+
+  if (audioContextOrUrl instanceof BaseAudioContext) {
+    audioContext = audioContextOrUrl as AudioContext
+    url = maybeUrl!
+  }
+  else {
+    url = audioContextOrUrl
+  }
+
   try {
     const response = await fetch(url)
     if (!response.ok) {
@@ -821,8 +966,10 @@ export async function createFont(url: string): Promise<Font> {
     }
     const text = await response.text()
     const audioData = mungeSoundFont(text)
-    await initAudio()
-    const audioContext = getOrCreateAudioContext()
+    if (!audioContext) {
+      await initAudio()
+      audioContext = getOrCreateAudioContext()
+    }
     const keyValuePairs = await extractDecodedKeyValuePairs(audioContext, audioData)
     const notes = createNoteObjectsForFont(audioContext, keyValuePairs)
     return new Font(notes)
@@ -855,9 +1002,29 @@ export async function createFont(url: string): Promise<Font> {
  * })
  * sprite.play('laser', { gain: 0.5 })
  */
-export async function createSprite(audioUrl: string, manifest: SpriteManifest): Promise<AudioSprite> {
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
+export async function createSprite(audioUrl: string, manifest: SpriteManifest): Promise<AudioSprite>
+export async function createSprite(audioContext: BaseAudioContext, audioUrl: string, manifest: SpriteManifest): Promise<AudioSprite>
+export async function createSprite(
+  audioContextOrUrl: BaseAudioContext | string,
+  urlOrManifest: string | SpriteManifest,
+  maybeManifest?: SpriteManifest,
+): Promise<AudioSprite> {
+  let audioUrl: string
+  let manifest: SpriteManifest
+  let audioContext: AudioContext
+
+  if (audioContextOrUrl instanceof BaseAudioContext) {
+    audioContext = audioContextOrUrl as AudioContext
+    audioUrl = urlOrManifest as string
+    manifest = maybeManifest!
+  }
+  else {
+    audioUrl = audioContextOrUrl
+    manifest = urlOrManifest as SpriteManifest
+    await initAudio()
+    audioContext = getOrCreateAudioContext()
+  }
+
   let buffer: AudioBuffer
 
   if (hasInCache(audioUrl)) {
@@ -908,18 +1075,26 @@ export async function createSprite(audioUrl: string, manifest: SpriteManifest): 
  * wind.play()
  * ```
  */
-export async function createWhiteNoise(): Promise<Sound> {
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
-  const bufferSize = audioContext.sampleRate
-  const audioBuffer = audioContext.createBuffer(1, bufferSize, bufferSize)
+export async function createWhiteNoise(): Promise<Sound>
+export async function createWhiteNoise(audioContext: BaseAudioContext): Promise<Sound>
+export async function createWhiteNoise(audioContext?: BaseAudioContext): Promise<Sound> {
+  let ctx: AudioContext
+  if (audioContext instanceof BaseAudioContext) {
+    ctx = audioContext as AudioContext
+  }
+  else {
+    await initAudio()
+    ctx = getOrCreateAudioContext()
+  }
+  const bufferSize = ctx.sampleRate
+  const audioBuffer = ctx.createBuffer(1, bufferSize, bufferSize)
   const output = audioBuffer.getChannelData(0)
 
   for (let i = 0; i < bufferSize; i++) {
     output[i] = Math.random() * 2 - 1
   }
 
-  const sound = new Sound(audioContext, audioBuffer)
+  const sound = new Sound(ctx, audioBuffer)
   sound.loop = true
   return sound
 }
@@ -955,23 +1130,38 @@ export async function createWhiteNoise(): Promise<Sound> {
  * white.play()
  * ```
  */
-export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sound> {
-  await initAudio()
-  const audioContext = getOrCreateAudioContext()
+export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sound>
+export async function createNoise(audioContext: BaseAudioContext, type: 'white' | 'pink' | 'brown'): Promise<Sound>
+export async function createNoise(
+  audioContextOrType: BaseAudioContext | 'white' | 'pink' | 'brown',
+  maybeType?: 'white' | 'pink' | 'brown',
+): Promise<Sound> {
+  let type: 'white' | 'pink' | 'brown'
+  let ctx: AudioContext
+
+  if (audioContextOrType instanceof BaseAudioContext) {
+    ctx = audioContextOrType as AudioContext
+    type = maybeType!
+  }
+  else {
+    type = audioContextOrType
+    await initAudio()
+    ctx = getOrCreateAudioContext()
+  }
 
   let audioBuffer: AudioBuffer
 
   switch (type) {
     case 'pink':
-      audioBuffer = createPinkNoiseBuffer(audioContext)
+      audioBuffer = createPinkNoiseBuffer(ctx)
       break
     case 'brown':
-      audioBuffer = createBrownNoiseBuffer(audioContext)
+      audioBuffer = createBrownNoiseBuffer(ctx)
       break
     case 'white':
     default: {
-      const bufferSize = audioContext.sampleRate
-      audioBuffer = audioContext.createBuffer(1, bufferSize, bufferSize)
+      const bufferSize = ctx.sampleRate
+      audioBuffer = ctx.createBuffer(1, bufferSize, bufferSize)
       const output = audioBuffer.getChannelData(0)
       for (let i = 0; i < bufferSize; i++) {
         output[i] = Math.random() * 2 - 1
@@ -980,7 +1170,7 @@ export async function createNoise(type: 'white' | 'pink' | 'brown'): Promise<Sou
     }
   }
 
-  const sound = new Sound(audioContext, audioBuffer)
+  const sound = new Sound(ctx, audioBuffer)
   sound.loop = true
   return sound
 }
