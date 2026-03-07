@@ -1031,7 +1031,7 @@ Plans:
   3. Audio sprite example should not have an INIT button — Play buttons init audio like all other examples
   4. Audio visualization example: "Failed to execute 'connect' on 'AudioNode': Overload resolution failed" on Play
   5. Vue and Vanilla drum machine examples play every sound on every step regardless of active state
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 64-01-PLAN.md — Fix visualization await bug and drum machine playBeats method
