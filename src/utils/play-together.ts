@@ -3,11 +3,11 @@ import { getOrCreateAudioContext } from '@/audio-context'
 
 /** Minimal interface for objects that expose an AudioContext instance */
 interface WithAudioContext {
-  audioContext: AudioContext
+  audioContext: BaseAudioContext
 }
 
 function hasAudioContext(p: unknown): p is WithAudioContext {
-  return typeof p === 'object' && p !== null && 'audioContext' in p && (p as WithAudioContext).audioContext instanceof AudioContext
+  return typeof p === 'object' && p !== null && 'audioContext' in p && (p as WithAudioContext).audioContext instanceof BaseAudioContext
 }
 
 /**
@@ -19,6 +19,7 @@ function hasAudioContext(p: unknown): p is WithAudioContext {
  * timing differences.
  *
  * @param playables - Array of Playable instances (Sound, Track, Oscillator, etc.)
+ * @param audioContext - Optional BaseAudioContext to use for timing
  * @returns Promise that resolves when all sounds have started
  *
  * @example
@@ -31,17 +32,26 @@ function hasAudioContext(p: unknown): p is WithAudioContext {
  *
  * await playTogether([kick, snare, hihat])
  * // All three start at the exact same AudioContext time
+ *
+ * // With explicit AudioContext
+ * await playTogether(myAudioContext, [kick, snare, hihat])
  * ```
  */
-export async function playTogether(playables: Playable[]): Promise<void> {
-  if (playables.length === 0)
-    return
+export async function playTogether(playables: Playable[]): Promise<void>
+export async function playTogether(audioContext: BaseAudioContext, playables: Playable[]): Promise<void>
+export async function playTogether(
+  audioContextOrPlayables: BaseAudioContext | Playable[],
+  maybePlayables?: Playable[],
+): Promise<void> {
+  const isExplicitCtx = audioContextOrPlayables instanceof BaseAudioContext
+  const playables = isExplicitCtx ? maybePlayables! : audioContextOrPlayables as Playable[]
 
-  // Get audioContext from first playable that has it, or use shared context
-  const firstWithCtx = playables.find(p => hasAudioContext(p))
-  const ctx = firstWithCtx && hasAudioContext(firstWithCtx)
-    ? firstWithCtx.audioContext
-    : getOrCreateAudioContext()
+  if (playables.length === 0) return
+
+  const ctx = isExplicitCtx
+    ? audioContextOrPlayables as AudioContext
+    : (playables.find(p => hasAudioContext(p)) as WithAudioContext | undefined)?.audioContext as AudioContext | undefined
+      ?? getOrCreateAudioContext()
 
   // Schedule slightly in the future to ensure all sources start simultaneously
   const startTime = ctx.currentTime + 0.01
