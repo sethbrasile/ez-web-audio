@@ -196,6 +196,12 @@ export class DistortionEffect extends BaseEffect {
     this.waveShaperNode.oversample = v
   }
 
+  public override dispose(): void {
+    try { this.waveShaperNode.disconnect() } catch { /* already disconnected */ }
+    try { this.toneFilter.disconnect() } catch { /* already disconnected */ }
+    super.dispose()
+  }
+
   protected getAudioParam(name: string): AudioParam | null {
     switch (name) {
       case 'tone': return this.toneFilter.frequency

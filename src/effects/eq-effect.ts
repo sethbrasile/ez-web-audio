@@ -150,6 +150,13 @@ export class EQEffect extends BaseEffect {
     this.midFilter.Q.value = v
   }
 
+  public override dispose(): void {
+    try { this.lowFilter.disconnect() } catch { /* already disconnected */ }
+    try { this.midFilter.disconnect() } catch { /* already disconnected */ }
+    try { this.highFilter.disconnect() } catch { /* already disconnected */ }
+    super.dispose()
+  }
+
   protected getAudioParam(name: string): AudioParam | null {
     switch (name) {
       case 'low': return this.lowFilter.gain

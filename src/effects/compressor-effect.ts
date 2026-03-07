@@ -128,6 +128,11 @@ export class CompressorEffect extends BaseEffect {
     return this.compressorNode.reduction
   }
 
+  public override dispose(): void {
+    try { this.compressorNode.disconnect() } catch { /* already disconnected */ }
+    super.dispose()
+  }
+
   protected getAudioParam(name: string): AudioParam | null {
     switch (name) {
       case 'threshold': return this.compressorNode.threshold

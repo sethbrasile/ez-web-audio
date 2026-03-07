@@ -113,6 +113,11 @@ export class FilterEffect extends BaseEffect {
     this.filterNode.type = v
   }
 
+  public override dispose(): void {
+    try { this.filterNode.disconnect() } catch { /* already disconnected */ }
+    super.dispose()
+  }
+
   protected getAudioParam(name: string): AudioParam | null {
     switch (name) {
       case 'frequency': return this.filterNode.frequency

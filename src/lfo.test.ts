@@ -416,6 +416,38 @@ describe('lfo', () => {
       expect(lfo.isRunning).toBe(false)
     })
 
+    it('syncLifecycle: stopping one target does not stop modulation of other targets', async () => {
+      const sound1 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const sound2 = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO()
+      lfo.connect(sound1, 'gain', { syncLifecycle: true })
+      lfo.connect(sound2, 'gain', { syncLifecycle: true })
+
+      // Start both sounds — LFO should start
+      await sound1.play()
+      expect(lfo.isRunning).toBe(true)
+      await sound2.play()
+      expect(lfo.isRunning).toBe(true)
+
+      // Stop sound1 — LFO should still be running (sound2 still connected)
+      await sound1.stop()
+      expect(lfo.isRunning).toBe(true)
+
+      // Stop sound2 — now LFO should stop (no connections remain)
+      await sound2.stop()
+      expect(lfo.isRunning).toBe(false)
+    })
+
+    it('syncLifecycle: stopping only target stops the LFO', async () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO()
+      lfo.connect(sound, 'gain', { syncLifecycle: true })
+      await sound.play()
+      expect(lfo.isRunning).toBe(true)
+      await sound.stop()
+      expect(lfo.isRunning).toBe(false)
+    })
+
     it('retrigger=true: oscillator recreated on sound "play" event', async () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO()

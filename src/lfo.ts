@@ -31,9 +31,23 @@ export interface LFOConnectOptions {
   syncLifecycle?: boolean
   /** Reset LFO phase on sound play event (default: false) */
   retrigger?: boolean
-  /** Depth unit: 'ratio' (most params), 'cents' (frequency), or 'absolute' */
+  /**
+   * Depth unit: 'ratio' (most params), 'cents' (frequency), or 'absolute'.
+   *
+   * **Note:** When depthUnit is 'ratio' or 'cents', depth is calculated from the
+   * parameter's current value at connection time. If the parameter value changes
+   * later (e.g., gain is adjusted), the modulation depth will NOT automatically
+   * update. Use 'absolute' for fixed depth, or call disconnect()/connect() to
+   * recalculate.
+   */
   depthUnit?: 'ratio' | 'cents' | 'absolute'
-  /** Per-connection depth override (overrides LFO-level depth) */
+  /**
+   * Per-connection depth override (overrides LFO-level depth).
+   *
+   * **Note:** For 'ratio' and 'cents' depthUnit, this value is multiplied against
+   * the target parameter's value at connection time. The resulting absolute depth
+   * is fixed for the lifetime of the connection.
+   */
   depth?: number
 }
 
@@ -225,7 +239,10 @@ export class LFO {
       }) as EventListener
 
       record.stopListener = (() => {
-        if (this._isRunning) {
+        // Disconnect only this target — not the entire LFO (QC-1-04)
+        this.disconnect(target)
+        // If no connections remain, stop the oscillator
+        if (this._connections.length === 0 && this._isRunning) {
           this.stop()
         }
       }) as EventListener

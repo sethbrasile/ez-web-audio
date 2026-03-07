@@ -185,8 +185,21 @@ export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> i
   }
 
   /**
-   * Disconnect all internal audio nodes. Subclasses should override
-   * to also disconnect effect-specific nodes (e.g., feedback loops).
+   * Disconnect all internal audio nodes and emit a 'dispose' event.
+   *
+   * **Subclass disposal contract:** Subclasses that create additional audio nodes
+   * (e.g., BiquadFilterNode, DynamicsCompressorNode, WaveShaperNode) MUST override
+   * dispose() to disconnect those nodes before calling super.dispose().
+   *
+   * @example
+   * ```typescript
+   * public override dispose(): void {
+   *   try { this.myNode.disconnect() } catch { /* already disconnected *\/ }
+   *   super.dispose()
+   * }
+   * ```
+   *
+   * Idempotent — safe to call multiple times.
    */
   public dispose(): void {
     if (this._disposed) return
