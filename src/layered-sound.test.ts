@@ -171,7 +171,7 @@ describe('layeredSound', () => {
   })
 
   describe('master Controls', () => {
-    it('setGain affects all layers', async () => {
+    it('setGain modifies output bus, not individual layer gains (QC-1-18)', () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
       const sound1 = new Sound(audioContext, buffer)
       const sound2 = new Sound(audioContext, buffer)
@@ -183,8 +183,9 @@ describe('layeredSound', () => {
 
       layered.setGain(0.5)
 
-      expect(changeGainSpy1).toHaveBeenCalledWith(0.5)
-      expect(changeGainSpy2).toHaveBeenCalledWith(0.5)
+      // Individual layer gains should NOT be modified — setGain targets the output bus
+      expect(changeGainSpy1).not.toHaveBeenCalled()
+      expect(changeGainSpy2).not.toHaveBeenCalled()
     })
 
     it('setPan affects all layers', async () => {

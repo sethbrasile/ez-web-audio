@@ -210,7 +210,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
     if (this._disposed) {
       throw new Error('Cannot set gain on a disposed LayeredSound.')
     }
-    this.layers.forEach(layer => layer.changeGainTo(value))
+    this.outputBus.gain.setValueAtTime(value, this.audioContext.currentTime)
   }
 
   /**
