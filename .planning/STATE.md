@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 63 of 63 — in progress (llms.txt Support)
+Phase: 60.2 — complete (Documentation Sync)
 Plan: 2 of 2 complete
-Status: Phase 63 complete. All docs annotated with llm-exclude/llm-only tags, build verified.
-Last activity: 2026-03-07 — Phase 63 plan 02 complete
+Status: Phase 60.2 complete. Homepage, getting-started, multiple-contexts updated for M5. 5 new guide pages created.
+Last activity: 2026-03-07 — Phase 60.2 plans 01+02 complete
 
 Progress: [██████████] 100% (116/116 plans complete in Milestone 6)
 
