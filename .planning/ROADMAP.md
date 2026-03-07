@@ -943,7 +943,8 @@ Plans:
   3. BaseEffect has documentation of the subclass disposal contract
   4. LFO depth limitation (baked at connection time) is documented in JSDoc
   5. All existing LFO and effects tests pass
-**Plans**: TBD
+**Plans**: 54.2-01 (LFO lifecycle fix, effect dispose overrides, JSDoc)
+**Completed**: All 3 QC findings fixed. 1891 tests passing.
 
 ### Phase 57.1: Transport, Sequence & PolySynth Core Fixes (COMPLETE - 2026-03-07)
 **Goal**: Fix architectural bugs in M5 orchestration classes — voice state machine, type safety, event system consistency, performance
@@ -972,7 +973,8 @@ Plans:
   2. GrainPlayer uses WorkerTimer instead of setTimeout for background-tab resilience
   3. Dead code in loop offset handling is removed
   4. All existing GrainPlayer tests pass
-**Plans**: TBD
+**Plans**: 58.1-01 (overlap clamping, WorkerTimer migration, dead code removal)
+**Completed**: All 3 QC findings fixed. 1891 tests passing.
 
 ### Phase 59.1: Shared API Utilities & Crossfade Fixes
 **Goal**: Fix fluent API conversion bug, crossfade state sync, LayeredSound gain routing, AudioSprite validation
@@ -987,7 +989,8 @@ Plans:
   5. crossfade `afterFade:'stop'` doesn't produce unhandled rejections
   6. crossfade restores `_targetGain` via `changeGainTo()` instead of raw AudioParam manipulation
   7. All existing tests pass
-**Plans**: TBD
+**Plans**: 59.1-01 (convertValue utility, crossfade fixes, AudioSprite validation, LayeredSound gain)
+**Completed**: All 5 QC findings fixed. 1891 tests passing.
 
 ### Phase 60.1: Test Coverage Gaps
 **Goal**: Close testing gaps for new M5 features and options
@@ -1001,7 +1004,9 @@ Plans:
   5. Edge case tests for PolySynth rapid play/stop, Transport live BPM change, Sequence post-dispose
   6. GrainPlayer edge case tests for overlap boundaries
   7. createSprite with Howler manifest format has a factory test
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 60.1-01-PLAN.md — BeatTrack.setPattern, LFO depth numeric, createFont ctx overload tests (QC-1-06, QC-1-15, QC-1-17)
+- [ ] 60.1-02-PLAN.md — PolySynth, Transport, Sequence, musical-time, GrainPlayer, Howler manifest edge case tests (L4-L6, L10-L11, L21)
 
 ### Phase 60.2: Documentation Sync
 **Goal**: Update docs to reflect M5 capabilities
@@ -1013,7 +1018,8 @@ Plans:
   3. Multiple-contexts guide: sinkId example uses `ctx.setSinkId()`, reference table includes all M5 factories
   4. Howler manifest example in audio-sprite docs is consistent with implementation
   5. At least stub guide pages exist for Transport, Sequence, PolySynth, GrainPlayer, LFO
-**Plans**: TBD
+**Plans**: 60.2-01 (homepage, getting-started, multiple-contexts updates), 60.2-02 (guide pages for M5 features)
+**Completed**: All docs updated for M5.
 
 ---
 
