@@ -1,3 +1,5 @@
+import { convertValue } from '@utils/convert-value'
+
 /**
  * Map of built-in control type names to their string literals.
  * @internal
@@ -174,19 +176,7 @@ export class BaseParamController {
       to: (value: number) => {
         return {
           as: (method: RatioType) => {
-            switch (method) {
-              case 'ratio':
-                this._update(type, value)
-                break
-              case 'inverseRatio':
-                this._update(type, 1 - value)
-                break
-              case 'percent':
-                this._update(type, value / 100)
-                break
-              default:
-                throw new Error(`Unsupported ratio type: '${method}'. Supported types: 'ratio', 'inverseRatio', 'percent'.`)
-            }
+            this._update(type, convertValue(value, method))
           },
         }
       },

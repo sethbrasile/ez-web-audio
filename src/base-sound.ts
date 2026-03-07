@@ -6,6 +6,7 @@ import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { BaseSoundEventMap } from './events/event-types'
 import audioContextAwareTimeout from '@utils/timeout'
+import { convertValue } from '@utils/convert-value'
 import { debugConnection, debugEvent } from './debug'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
@@ -639,15 +640,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
             as: (method: RatioType) => {
               this.controller.update(type).to(value).as(method)
               // Mirror the resolved gain in _targetGain
-              if (method === 'ratio') {
-                this._targetGain = value
-              }
-              else if (method === 'percent') {
-                this._targetGain = value / 100
-              }
-              else if (method === 'inverseRatio') {
-                this._targetGain = 1 - value
-              }
+              this._targetGain = convertValue(value, method)
             },
           }
         },
