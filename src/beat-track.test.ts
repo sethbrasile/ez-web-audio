@@ -732,6 +732,77 @@ describe('on(), off(), once() convenience methods', () => {
   })
 })
 
+describe('setPattern()', () => {
+  it('basic pattern [1,0,1,0] sets beats correctly', () => {
+    const track = createBeatTrack()
+    track.setPattern([1, 0, 1, 0])
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[1].active).toBe(false)
+    expect(track.beats[2].active).toBe(true)
+    expect(track.beats[3].active).toBe(false)
+  })
+
+  it('short array defaults remaining beats to inactive', () => {
+    const track = createBeatTrack()
+    track.numBeats = 8
+    track.setPattern([1, 0])
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[1].active).toBe(false)
+    expect(track.beats[2].active).toBe(false)
+    expect(track.beats[3].active).toBe(false)
+    expect(track.beats[4].active).toBe(false)
+    expect(track.beats[5].active).toBe(false)
+    expect(track.beats[6].active).toBe(false)
+    expect(track.beats[7].active).toBe(false)
+  })
+
+  it('long array ignores extra values beyond numBeats', () => {
+    const track = createBeatTrack() // 4 beats
+    track.setPattern([1, 1, 1, 1, 1, 1, 1, 1])
+    expect(track.beats.length).toBe(4)
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[1].active).toBe(true)
+    expect(track.beats[2].active).toBe(true)
+    expect(track.beats[3].active).toBe(true)
+  })
+
+  it('boolean inputs work identically to numeric', () => {
+    const track = createBeatTrack()
+    track.setPattern([true, false, true, false])
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[1].active).toBe(false)
+    expect(track.beats[2].active).toBe(true)
+    expect(track.beats[3].active).toBe(false)
+  })
+
+  it('returns this for chaining', () => {
+    const track = createBeatTrack()
+    const result = track.setPattern([1, 0, 1, 0])
+    expect(result).toBe(track)
+  })
+
+  it('truthy coercion: non-zero values become active', () => {
+    const track = createBeatTrack()
+    track.numBeats = 3
+    track.setPattern([2, 0, -1])
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[1].active).toBe(false)
+    expect(track.beats[2].active).toBe(true)
+  })
+
+  it('empty array sets all beats inactive', () => {
+    const track = createBeatTrack()
+    // First set some beats active
+    track.beats[0].active = true
+    track.beats[2].active = true
+    track.setPattern([])
+    expect(track.beats[0].active).toBe(false)
+    expect(track.beats[1].active).toBe(false)
+    expect(track.beats[2].active).toBe(false)
+    expect(track.beats[3].active).toBe(false)
+  })
+})
+
 describe('dispose() (SAFE-03)', () => {
   it('clears beats array after dispose', () => {
     const track = createBeatTrack()
