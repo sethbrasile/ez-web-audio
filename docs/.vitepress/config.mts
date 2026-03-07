@@ -116,6 +116,16 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Synthesis & Sequencing',
+          items: [
+            { text: 'Transport', link: '/guide/transport' },
+            { text: 'Sequence', link: '/guide/sequence' },
+            { text: 'PolySynth', link: '/guide/poly-synth' },
+            { text: 'GrainPlayer', link: '/guide/grain-player' },
+            { text: 'LFO', link: '/guide/lfo' },
+          ],
+        },
+        {
           text: 'Advanced',
           items: [
             { text: 'Multiple AudioContexts', link: '/guide/multiple-contexts' },
