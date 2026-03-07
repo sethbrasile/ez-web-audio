@@ -97,7 +97,7 @@ async function startVisualization() {
     const ctx = await getAudioContext()
 
     // Create analyzer
-    analyzer = createAnalyzer(ctx, { fftSize: fftSize.value })
+    analyzer = await createAnalyzer(ctx, { fftSize: fftSize.value })
 
     // Connect oscillator to analyzer
     oscillator.setAnalyzer(analyzer)
