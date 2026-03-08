@@ -1,473 +1,134 @@
-# Stack Research
+# Technology Stack
 
-**Domain:** Web Audio library — built-in effects, LFO, transport/clock, sequencer, polyphony, granular synthesis
-**Researched:** 2026-02-28
-**Confidence:** HIGH
+**Project:** EZ Web Audio — Milestone 7 Feature Demo Pages
+**Researched:** 2026-03-08
 
 ## Context: What Is NOT Being Researched
 
-The existing stack (TypeScript, Vite, Vitest, Playwright, VitePress, happy-dom, standardized-audio-context-mock) is proven and unchanged. This document covers only what is needed for the **Effects & Transport milestone**: what native Web Audio nodes handle each feature, what needs custom code, and what (if anything) to import.
+The core library, build tooling, and docs infrastructure are all proven and unchanged. This research covers ONLY what is needed for building **5 new interactive demo pages** in the existing VitePress + Vue 3 docs site. All M5 audio features (effects, LFO, PolySynth, Transport/Sequencer, GrainPlayer) are already built and exported.
+
+## Recommendation: No New Dependencies
+
+**Confidence:** HIGH
+
+After reviewing all 22 existing demo components, the established patterns already cover every UI need for the M7 demos. The project has a strong zero-dependency philosophy for good reason, and adding UI component libraries for 5 demo pages would be architectural debt for marginal gain.
+
+### Evidence from Existing Components
+
+| UI Need | Already Solved By | Component Example |
+|---------|-------------------|-------------------|
+| Sliders/Range inputs | Native `<input type="range">` + scoped CSS | FilterDemo.vue, DistortionDemo.vue |
+| Waveform/spectrum visualization | Canvas 2D + `requestAnimationFrame` | VisualizationDemo.vue |
+| Piano keyboard | Custom CSS + mouse/touch/keyboard events | PianoKeyboard.vue (reusable) |
+| Signal chain diagram | CSS flexbox + styled divs | DistortionDemo.vue |
+| Parameter controls with labels | `<label>` + range + value display pattern | FilterDemo.vue (logarithmic mapping included) |
+| 2D XY pad control | Canvas-based with mouse/touch tracking | XYPad.vue |
+| Button groups/toggles | CSS-styled buttons with `:class="{ active }"` | FilterDemo.vue, SynthKeyboard.vue |
+| ADSR controls | Four range sliders with presets | SynthKeyboard.vue |
+| Drum machine grid | CSS grid + BeatTrack reactive integration | DrumMachine.vue, DrumMachineVue.vue |
+| Dropdowns/selects | Native `<select>` + `v-model` | FilterDemo.vue, VisualizationDemo.vue |
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies (New Additions)
+### Core Framework (unchanged)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Web Audio API — native nodes | Current (W3C 1.1) | All effects, LFO, compressor, EQ | Zero-dependency; these nodes were built for exactly this purpose |
-| Web Worker (inline Blob URL) | Native browser | Transport clock reliability | Prevents timer throttling in background tabs; same pattern Tone.js uses in production |
-| AudioWorklet | Baseline (since April 2021) | GrainPlayer only | Only place where native nodes cannot express the logic; all other features avoid it |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Vue 3 | (via VitePress 1.6.4) | Demo component framework | Already in use; all 22 demos are Vue SFCs |
+| VitePress | ^1.6.4 | Docs site with Vue component embedding | Already configured and working |
+| TypeScript | ^5.9.3 | Type safety in demo components | Already configured |
 
-### No New npm Dependencies
+### UI Controls: Native HTML + Scoped CSS
 
-Every feature in this milestone can be built from:
-1. Native Web Audio nodes (effects, LFO, compressor, limiter, EQ, chorus, delay, reverb, PolySynth)
-2. Vanilla TypeScript scheduling loops (transport, sequencer, granular)
-3. A single inline Web Worker created from a Blob URL (transport clock)
+| Control Type | Implementation | Why Not a Library |
+|-------------|----------------|-------------------|
+| Knobs/rotary controls | Native `<input type="range">` styled vertically, or CSS-styled circular knob using `transform: rotate()` | @slipmatio/control-knob has 11 GitHub stars, last updated April 2024, 8 open issues -- too unmaintained to depend on |
+| Sliders | Native `<input type="range">` with custom CSS | Already used in 6+ components; consistent, accessible, zero-bundle-cost |
+| Waveform display | `<canvas>` with Canvas 2D API | VisualizationDemo.vue already implements this pattern with DPI-aware rendering |
+| Frequency spectrum | `<canvas>` with Canvas 2D API | VisualizationDemo.vue already has frequency bar rendering |
+| Piano keyboard | PianoKeyboard.vue (existing reusable component) | Already built with mouse, touch, and keyboard support including glissando |
 
-Do not add Tone.js, tuna.js, or any other audio library as a dependency. The effects adapter pattern (`wrapEffect`) already lets users bring those if they want them.
+### Visualization: Canvas 2D API (native)
 
----
+| Technology | Purpose | Why |
+|------------|---------|-----|
+| Canvas 2D | Waveform, spectrum, LFO wave, grain position display | Already proven in VisualizationDemo.vue; zero dependencies; full control over rendering |
+| `requestAnimationFrame` | Animation loop for real-time visualizations | Already used in VisualizationDemo.vue and XYPad.vue |
+| `devicePixelRatio` scaling | Crisp rendering on Retina/HiDPI | Pattern already established in VisualizationDemo.vue |
 
-## Feature-by-Feature Implementation Stack
+### Audio Integration: ez-web-audio (the library itself)
 
-### 1. Built-in Effects
-
-#### Delay — Native DelayNode + GainNode feedback loop
-
-**Confidence:** HIGH — Verified via MDN
-
-```
-signal → DelayNode → GainNode(feedback) ↰
-       ↓
-     output
-```
-
-- `DelayNode.delayTime` — a-rate AudioParam, max value set at construction (pass `maxDelayTime` to `createDelay(maxSeconds)`)
-- Feedback gain must stay < 1.0 or signal diverges
-- For stereo ping-pong: two `DelayNode`s + `ChannelSplitterNode` + `ChannelMergerNode`
-- Integration: implement as a class following the existing `Effect` interface (has `input`, `output`, `bypass`, `mix`)
-
-**What it takes:** ~60 lines. No external code needed.
-
-#### Reverb — ConvolverNode (convolution) with synthesized IR fallback
-
-**Confidence:** HIGH for convolution approach; MEDIUM for algorithmic
-
-Two approaches:
-
-| Approach | Quality | File dependency | Realtime param control | Recommendation |
-|----------|---------|-----------------|----------------------|----------------|
-| `ConvolverNode` + IR file | Professional | Yes (WAV/MP3, 1–5 MB) | No (re-buffer to change) | Primary for quality reverb |
-| Algorithmic (delay network) | Decent | None | Yes | Fallback / "instant" reverb |
-
-For the IR approach: `ConvolverNode.buffer` is set to a decoded `AudioBuffer` from a WAV file. The library should ship a `createReverb(url)` factory that fetches and decodes the IR, and also a `createReverb({ decay, preDelay })` overload that synthesizes a simple IR programmatically (no file needed, lower quality).
-
-Synthesizing a simple IR: fill an `AudioBuffer` with exponentially-decaying noise. This gives usable spring/room reverb without requiring a file.
-
-```typescript
-// Synthesize IR: exponentially-decaying white noise
-function createSyntheticIR(ctx: AudioContext, decay = 2, preDelay = 0): AudioBuffer {
-  const sampleRate = ctx.sampleRate
-  const length = sampleRate * decay
-  const buf = ctx.createBuffer(2, length, sampleRate)
-  const preDelaySamples = Math.floor(preDelay * sampleRate)
-  for (let ch = 0; ch < 2; ch++) {
-    const data = buf.getChannelData(ch)
-    for (let i = preDelaySamples; i < length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - (i - preDelaySamples) / length, decay)
-    }
-  }
-  return buf
-}
-```
-
-**What it takes:** ~80 lines. No external code needed.
-
-#### Distortion — WaveShaperNode
-
-**Confidence:** HIGH — Verified via MDN
-
-`WaveShaperNode.curve` accepts a `Float32Array` waveshaping function. Standard distortion curve:
-
-```typescript
-function makeDistortionCurve(amount: number): Float32Array {
-  const samples = 256
-  const curve = new Float32Array(samples)
-  const k = amount
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / samples - 1
-    curve[i] = ((Math.PI + k) * x) / (Math.PI + k * Math.abs(x))
-  }
-  return curve
-}
-```
-
-- `oversample` property: `'none'` | `'2x'` | `'4x'` — use `'4x'` to reduce aliasing at high drive
-- Integration: wrap in `Effect` interface; expose `drive` param that regenerates the curve
-
-**What it takes:** ~40 lines.
-
-#### Compressor — DynamicsCompressorNode
-
-**Confidence:** HIGH — Verified via MDN
-
-Native node with five `AudioParam`s:
-
-| Param | Default | Typical Range | Notes |
-|-------|---------|---------------|-------|
-| `threshold` | -24 dB | -60 to 0 | Level above which compression kicks in |
-| `knee` | 30 dB | 0 to 40 | Soft knee width |
-| `ratio` | 12 | 1 to 20 | Input:output ratio above threshold |
-| `attack` | 0.003 s | 0 to 1 | How fast compressor engages |
-| `release` | 0.25 s | 0 to 1 | How fast compressor releases |
-
-Read-only `reduction` property shows current gain reduction in dB — useful for a gain-reduction meter in the UI.
-
-**What it takes:** ~30 lines (thinnest wrapper in the milestone).
-
-#### Limiter — DynamicsCompressorNode with extreme settings
-
-**Confidence:** HIGH
-
-A limiter is a compressor with ratio ≥ 20:1. Recommended preset:
-
-```typescript
-// Limiter = compressor with hard settings
-compressor.threshold.value = -3   // dB
-compressor.knee.value = 0         // Hard knee
-compressor.ratio.value = 20       // 20:1 = effectively infinite
-compressor.attack.value = 0.001   // Very fast
-compressor.release.value = 0.1    // Fast
-```
-
-**What it takes:** A `createLimiter()` factory that calls `createCompressor()` with these defaults. Literally a preset, not a new node type.
-
-#### Chorus — Two DelayNodes + LFO modulating delayTime
-
-**Confidence:** HIGH — Verified via Tone.js source analysis and MDN
-
-Pattern from Tone.js (production-proven): stereo chorus uses two `DelayNode`s (left and right channels), each with an `OscillatorNode` LFO modulating its `delayTime`. The delay times oscillate between 2–20ms at low frequency (0.5–4 Hz).
-
-```
-signal → ChannelSplitter → DelayL (delayTime ← LFO-L) → ChannelMerger → output
-                        ↘ DelayR (delayTime ← LFO-R) ↗
-```
-
-Key parameter ranges (from Tone.js):
-- `delayTime`: 2–20ms nominal; depth makes it modulate ±delayTime around nominal
-- `frequency`: LFO rate in Hz (0.5–4 Hz typical)
-- `feedback`: Routes output back to input for flanger effect
-
-**What it takes:** ~80 lines. LFO can reuse the `LFO` class being built separately.
-
-#### EQ (3-band) — Three chained BiquadFilterNodes
-
-**Confidence:** HIGH — Verified via MDN
-
-Three `BiquadFilterNode`s chained in series:
-
-| Band | Filter Type | Default Frequency | Parameter |
-|------|-------------|-------------------|-----------|
-| Bass | `lowshelf` | 200 Hz | `gain` (±dB) |
-| Mid | `peaking` | 1000 Hz | `gain` (±dB), `Q` |
-| Treble | `highshelf` | 3000 Hz | `gain` (±dB) |
-
-All parameters are `AudioParam`s (a-rate), so they can be automated or connected to an LFO. A parametric EQ simply exposes `frequency` and `Q` on the peaking band as well.
-
-**What it takes:** ~50 lines.
+| Feature | API to Use | Notes |
+|---------|-----------|-------|
+| Effects chain | `createDelay()`, `createReverb()`, `createCompressor()`, `createFilterEffect()`, `createDistortion()` | All M5 effect factories are exported |
+| LFO | `createLFO()` | Connects to any AudioParam |
+| PolySynth | `createPolySynth()` | Voice allocation with steal strategies |
+| Transport | `createTransport()` | BPM clock, position tracking |
+| Sequencer | `createSequencer()` | Musical time notation scheduling |
+| GrainPlayer | `createGrainPlayer()` | Pitch/time independent control |
+| Analyzer | `createAnalyzer()` | `getFrequencyData()`, `getTimeDomainData()` for visualizations |
 
 ---
 
-### 2. LFO (Low-Frequency Oscillator)
-
-**Confidence:** HIGH — Verified via MDN `AudioNode.connect(AudioParam)` documentation
-
-Native `OscillatorNode` can connect directly to `AudioParam`. This is the canonical Web Audio pattern for modulation:
-
-```typescript
-const lfo = audioContext.createOscillator()
-const lfoGain = audioContext.createGain()
-
-lfo.frequency.value = 2        // 2 Hz rate
-lfoGain.gain.value = 50        // ±50 Hz modulation depth
-lfo.connect(lfoGain)
-lfo.start()
-
-// Connect to any AudioParam
-lfoGain.connect(oscillator.frequency)   // vibrato
-lfoGain.connect(gainNode.gain)          // tremolo
-lfoGain.connect(filter.frequency)       // auto-filter
-```
-
-The `LFO` class needs to manage:
-- `rate` — LFO frequency (Hz)
-- `depth` — amplitude of LFO output (scales effect)
-- `type` — waveform: `'sine'` | `'triangle'` | `'square'` | `'sawtooth'`
-- `connect(param: AudioParam)` — hook to any param
-- `disconnect()` — unhook
-- `start()` / `stop()`
-
-**Integration with existing architecture:** LFO output connects to `AudioParam` directly via native API. No existing code needs to change — LFO is a standalone utility.
-
-**What it takes:** ~60 lines. The only design decision is the API for specifying target and depth.
-
----
-
-### 3. Transport / Clock
-
-**Confidence:** HIGH for the Web Worker clock approach — verified via Tone.js Ticker.ts source and Chris Wilson's "A Tale of Two Clocks" (web.dev)
-
-#### Why Transport Needs a Web Worker Clock
-
-`setTimeout`/`setInterval` on the main thread can be throttled to 1Hz in background tabs (Chrome/Safari). An audio transport running in a background tab will drift catastrophically. The solution (used by Tone.js in production) is to run the clock tick inside a Web Worker, which is not throttled.
-
-#### Pattern: Blob-URL Web Worker + Lookahead Scheduler
-
-```typescript
-// Clock worker created as inline Blob (no separate file needed)
-const workerCode = `
-  let interval;
-  self.onmessage = (e) => {
-    if (e.data === 'start') {
-      interval = setInterval(() => self.postMessage('tick'), ${UPDATE_INTERVAL_MS})
-    } else if (e.data === 'stop') {
-      clearInterval(interval)
-    }
-  }
-`
-const blob = new Blob([workerCode], { type: 'text/javascript' })
-const worker = new Worker(URL.createObjectURL(blob))
-```
-
-The worker sends a `'tick'` message every `UPDATE_INTERVAL_MS` (e.g. 25ms). The main thread receives the tick and schedules any audio events in the next lookahead window (e.g. 100ms ahead) using `audioContext.currentTime`. This two-clock approach separates:
-
-- **JavaScript timer** (imprecise, for scheduling checks)
-- **Web Audio clock** (`audioContext.currentTime`, sample-accurate, for actual event timing)
-
-#### CSP Consideration
-
-Blob URLs require `worker-src 'self' blob:` in Content Security Policy. This is a known Tone.js limitation. Document it clearly; most users won't be affected. The fallback is a `setTimeout`-based clock for environments where Blob workers are blocked.
-
-#### Transport State Machine
-
-```
-stopped → playing → paused → playing
-       ↖_________|
-```
-
-The Transport manages:
-- `bpm` — beats per minute (default 120)
-- `timeSignature` — beats per bar (default 4)
-- `currentBeat` — which beat within the bar
-- `currentBar` — bar count
-- `position` — readable position in `bar:beat:subdivision` notation
-
-#### Musical Time to Seconds
-
-```typescript
-function beatsToSeconds(beats: number, bpm: number): number {
-  return (beats / bpm) * 60
-}
-
-// Support Tone.js-style notation (optional convenience)
-// "4n" = quarter note, "8n" = eighth, "1m" = 1 measure
-function parseMusicalTime(notation: string, bpm: number, timeSignature = 4): number {
-  // "4n" → 1 beat; "8n" → 0.5 beat; "1m" → timeSignature beats
-}
-```
-
-Musical time notation (`"4n"`, `"8n"`, `"1m"`) is a nice-to-have convenience layer on top of the seconds-based scheduler. It requires a parser but no external library.
-
-**What it takes:** ~200 lines (the largest single piece in this milestone). Splits into:
-1. `Ticker` class (Web Worker clock + setTimeout fallback)
-2. `Transport` class (BPM, position tracking, event scheduling)
-
----
-
-### 4. Sequencer / Pattern
-
-**Confidence:** HIGH — Conceptually straightforward extension of existing BeatTrack
-
-The `Sequencer` generalizes `BeatTrack` from "array of on/off beats" to "array of arbitrary events with callbacks":
-
-```typescript
-interface SequencerEvent {
-  time: number        // Position in beats
-  callback: (time: number) => void  // Called with precise audio time
-}
-
-class Sequencer {
-  events: SequencerEvent[]
-  loop: boolean
-  loopLength: number  // In beats
-}
-```
-
-Key differences from `BeatTrack`:
-- `BeatTrack` is tied to `Sound` playback; `Sequencer` takes arbitrary callbacks
-- `Sequencer` integrates with `Transport` for shared BPM
-- Events can be at any beat position (not just subdivisions)
-
-**Integration:** `BeatTrack` can optionally lock to a `Transport` instance for BPM sync, keeping backwards compatibility for standalone use.
-
-**What it takes:** ~100 lines.
-
----
-
-### 5. PolySynth (Polyphonic Oscillator Wrapper)
-
-**Confidence:** HIGH — Well-understood voice allocation problem
-
-A `PolySynth` maintains a pool of `Oscillator` instances and allocates them for chord/polyphonic playback:
-
-```typescript
-class PolySynth {
-  private voices: Oscillator[]    // Pool of oscillators
-  private activeVoices: Map<string, Oscillator>  // note → voice
-
-  playNote(note: string, velocity?: number): void
-  stopNote(note: string): void
-  stopAll(): void
-}
-```
-
-Voice allocation strategies (in priority order):
-1. **Steal oldest** — when all voices busy, retrigger the longest-running voice
-2. **Steal quietest** — steal voice in release phase if available
-3. **Expand** — create new voice if under `maxVoices` limit
-
-The `Oscillator` class already handles ADSR and has `play()`/`stop()`. `PolySynth` just manages which voice gets which note.
-
-**What it takes:** ~80 lines. Complexity is in the voice-stealing logic, not in the audio graph.
-
----
-
-### 6. GrainPlayer (Granular Synthesis)
-
-**Confidence:** MEDIUM-HIGH — AudioBufferSourceNode scheduling works; AudioWorklet adds pitch independence
-
-#### Approach: AudioBufferSourceNode Scheduling (No AudioWorklet)
-
-Granular synthesis without AudioWorklet is achievable and the pattern is proven. Each "grain" is a short `AudioBufferSourceNode` with:
-- A start offset into the source buffer (position in source)
-- A `playbackRate` for pitch control
-- An envelope (ramp up/down to avoid clicks)
-
-Grains are scheduled via `audioContext.currentTime` lookahead, same as the transport scheduler.
-
-```typescript
-function scheduleGrain(ctx: AudioContext, buffer: AudioBuffer, params: GrainParams): void {
-  const source = ctx.createBufferSource()
-  source.buffer = buffer
-  source.playbackRate.value = params.pitch  // Pitch without affecting position
-  source.start(params.when, params.offset, params.duration)
-
-  // Envelope to avoid clicks
-  const env = ctx.createGain()
-  env.gain.setValueAtTime(0, params.when)
-  env.gain.linearRampToValueAtTime(1, params.when + params.attack)
-  env.gain.setValueAtTime(1, params.when + params.duration - params.release)
-  env.gain.linearRampToValueAtTime(0, params.when + params.duration)
-}
-```
-
-**Key parameters:**
-
-| Parameter | Description | Typical Range |
-|-----------|-------------|---------------|
-| `position` | Playhead in source buffer (0–1) | 0–1 |
-| `pitch` | playbackRate multiplier | 0.25–4 |
-| `grainSize` | Duration of each grain | 0.02–0.2s |
-| `overlap` | Grain overlap (density) | 0–grainSize |
-| `spread` | Random position scatter | 0–0.5s |
-| `detune` | Random pitch scatter | 0–100 cents |
-
-**Limitation of no-AudioWorklet approach:** When stretching time without changing pitch, `playbackRate` affects both simultaneously. True independent time-stretching requires AudioWorklet (or a WASM lib). For v1, the `position` + `pitch` approach gives pitch shifting and position scrubbing, which covers most use cases (Tone.js `GrainPlayer` uses this same approach).
-
-#### When to Use AudioWorklet (Future v2)
-
-AudioWorklet enables sample-accurate grain scheduling on the audio thread (zero jitter) and true time-stretching algorithms. Document this as a future upgrade path rather than blocking v1.
-
-**What it takes:** ~150 lines (scheduler loop + grain factory + parameter management).
-
----
-
-## Integration Points with Existing Codebase
-
-### Effects integrate via the existing `Effect` interface
-
-All new built-in effects (`DelayEffect`, `ReverbEffect`, `DistortionEffect`, `ChorusEffect`, `CompressorEffect`, `LimiterEffect`, `EQ3Effect`) must implement the existing `Effect` interface:
-
-```typescript
-interface Effect {
-  input: AudioNode
-  output: AudioNode
-  bypass: boolean
-  mix: number
-}
-```
-
-This means they can be added via the existing `sound.addEffect(effect)` API with zero changes to `BaseSound`. Factory functions follow the context-free pattern already established:
-
-```typescript
-// Context-free (uses shared AudioContext)
-const delay = createDelay({ time: 0.3, feedback: 0.4 })
-sound.addEffect(delay)
-```
-
-### LFO integrates via AudioParam connection
-
-No changes to existing classes. LFO connects directly to any `AudioParam` on any existing node. The user gets the `AudioParam` reference via existing controller accessors and passes it to `lfo.connect(param)`.
-
-### Transport integrates via BeatTrack
-
-`BeatTrack` gets an optional `transport?: Transport` constructor option. When set, the BeatTrack locks to the transport BPM/clock instead of its own internal timer. When not set, existing behavior is unchanged — full backwards compatibility.
-
-### PolySynth wraps the existing Oscillator
-
-`PolySynth` creates instances of the existing `Oscillator` class. No changes to `Oscillator` required.
-
----
-
-## What NOT to Add
-
-| Avoid | Why | What to Do Instead |
-|-------|-----|--------------------|
-| Tone.js as dependency | 200KB+, duplicates ez-audio's purpose | Build native; use as reference only |
-| tuna.js as dependency | Adds dependency; `wrapEffect` already handles it | Keep `wrapEffect` as the integration point for tuna |
-| ScriptProcessorNode | Deprecated in all browsers | Use AudioWorklet (GrainPlayer) or native nodes (everything else) |
-| AudioWorklet for effects | Requires HTTPS, separate file, more complexity | Native nodes handle delay/reverb/distortion/compressor cleanly |
-| `requestAnimationFrame` for transport | Throttled when tab is hidden | Use Web Worker clock |
-| Infinite voice pools in PolySynth | Memory unbounded | Fixed pool with voice stealing |
-| Full time-stretch GrainPlayer | Requires AudioWorklet, significant complexity | `playbackRate`-based pitch shift covers most v1 use cases |
+## What Each Demo Page Needs (Stack-wise)
+
+### 1. Effects Chain Demo
+- **Controls:** Range sliders for each effect parameter (delay time, feedback, reverb decay, EQ bands, compressor threshold/ratio)
+- **Visualization:** Signal chain diagram (CSS boxes + arrows, same pattern as DistortionDemo.vue), optional real-time waveform before/after
+- **Stack needs:** Nothing new. Copy pattern from DistortionDemo.vue and FilterDemo.vue.
+
+### 2. LFO Modulation Demo
+- **Controls:** Rate slider, depth slider, waveform select, target param select
+- **Visualization:** Canvas showing LFO waveform shape in real-time (draw sine/triangle/square/sawtooth at current rate)
+- **Stack needs:** Nothing new. Canvas rendering from VisualizationDemo.vue + sliders from FilterDemo.vue.
+
+### 3. PolySynth Demo
+- **Controls:** PianoKeyboard.vue (reuse), voice count selector, steal strategy selector, ADSR sliders
+- **Visualization:** Active voice indicators (CSS boxes showing which voices are playing and their notes)
+- **Stack needs:** PianoKeyboard.vue already exists. Voice display is just reactive state rendered as styled divs.
+
+### 4. Transport + Sequencer Demo
+- **Controls:** Play/pause/stop buttons, BPM slider, time signature select, pattern grid
+- **Visualization:** Beat position indicator (CSS animation or reactive class), bar counter
+- **Stack needs:** Nothing new. DrumMachine.vue already shows the pattern grid approach. Transport state is reactive Vue refs.
+
+### 5. GrainPlayer Demo
+- **Controls:** Position slider, pitch slider, grain size slider, overlap slider, spread slider
+- **Visualization:** Waveform display with playhead position marker (Canvas), grain scatter visualization
+- **Stack needs:** Waveform rendering from VisualizationDemo.vue. Position overlay is a Canvas drawing on top.
 
 ---
 
 ## Alternatives Considered
 
-| Feature | Recommended | Alternative | Why Not Alternative |
-|---------|-------------|-------------|---------------------|
-| Reverb | ConvolverNode + synthetic IR | Freeverb via AudioWorklet | AudioWorklet complexity for marginal quality gain |
-| Transport clock | Web Worker (Blob URL) | `setInterval` on main thread | Throttled to 1Hz in background tabs |
-| Transport clock | Web Worker (Blob URL) | `AudioWorkletProcessor` tick | Overkill; adds HTTPS requirement for simple tick |
-| Chorus | DelayNode + LFO | ScriptProcessorNode | Deprecated; native approach is better |
-| GrainPlayer | `AudioBufferSourceNode` scheduling | AudioWorklet grain engine | AudioWorklet = HTTPS required, separate file, much more complex |
-| PolySynth voices | Reuse `Oscillator` class | New voice class | `Oscillator` already handles ADSR, gain, play/stop |
-| EQ | 3× `BiquadFilterNode` | Single `BiquadFilterNode` | Single node = only 1 band; 3 separate nodes = bass/mid/treble independently |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Knob controls | Native range inputs or CSS rotate knob | @slipmatio/control-knob | 11 stars, unmaintained since April 2024, adds dependency for cosmetic improvement |
+| Waveform viz | Raw Canvas 2D | wavesurfer.js | 35KB+ dependency for one demo page; existing Canvas pattern is proven |
+| Waveform viz | Raw Canvas 2D | vue-audio-visual | Adds dependency; less control than raw Canvas which is already working |
+| UI components | Native HTML + scoped CSS | Vuetify/PrimeVue | Massive bundle for 5 demo pages; conflicts with VitePress theme; overkill |
+| Keyboard UI | PianoKeyboard.vue (existing) | @tonejs/piano | Separate dependency for something already built and working |
+| Animation | `requestAnimationFrame` | GSAP/anime.js | Dependency for simple animations that CSS transitions and rAF already handle |
 
 ---
 
-## Version Compatibility
+## Shared Component Extraction
 
-| Feature | Browser Support | Notes |
-|---------|-----------------|-------|
-| All native effect nodes | All modern browsers (Chrome 36+, Firefox 53+, Safari 14.1+, Edge 79+) | Web Audio API 1.1 — stable |
-| AudioWorklet | Baseline since April 2021 | Chrome 66+, Firefox 76+, Safari 14.1+, Edge 79+; HTTPS required |
-| Web Worker (Blob URL) | All modern browsers | CSP `worker-src blob:` may need explicit allowlist |
-| `OscillatorNode.connect(AudioParam)` | All modern browsers | Core Web Audio feature |
+Several patterns repeat across the 5 demos. Extract these as reusable components within `docs/.vitepress/theme/components/`:
+
+| Component | Purpose | Used By |
+|-----------|---------|---------|
+| PianoKeyboard.vue | Already exists | PolySynth demo, potentially LFO demo |
+| (new) ParameterSlider.vue | Labeled range input with value display, optional log scale | All 5 demos |
+| (new) SignalChainDiagram.vue | Visual audio routing display | Effects chain demo, LFO demo |
+
+**ParameterSlider.vue rationale:** The pattern of `<label>` + `<input type="range">` + `<span class="value">` appears in DistortionDemo, FilterDemo, SynthKeyboard, and VisualizationDemo with slight variations. A shared component reduces duplication across the 5 new demos. Keep it simple -- props for min/max/step/label/unit/logScale, emits modelValue.
+
+**SignalChainDiagram.vue rationale:** DistortionDemo already has a signal chain visualization. Effects chain and LFO demos both need similar routing diagrams. Extract the CSS-box-and-arrow pattern into a reusable component that accepts a chain definition as props.
+
+Whether to extract these is a judgment call during implementation. The demos work fine without extraction (copy-paste the pattern), but extraction would reduce ~30 lines of repeated template/style per slider across 5 demos.
 
 ---
 
@@ -475,7 +136,7 @@ No changes to existing classes. LFO connects directly to any `AudioParam` on any
 
 ```bash
 # No new dependencies needed.
-# All features use native Web Audio API + TypeScript.
+# All demo pages use existing stack: VitePress + Vue 3 + Canvas API + ez-web-audio.
 pnpm install   # existing dependencies only
 ```
 
@@ -483,17 +144,11 @@ pnpm install   # existing dependencies only
 
 ## Sources
 
-- [MDN: DynamicsCompressorNode](https://developer.mozilla.org/en-US/docs/Web/API/DynamicsCompressorNode) — compressor AudioParams and ranges; HIGH confidence
-- [MDN: DelayNode](https://developer.mozilla.org/en-US/docs/Web/API/DelayNode) — delay time param, feedback loop pattern; HIGH confidence
-- [MDN: BiquadFilterNode](https://developer.mozilla.org/en-US/docs/Web/API/BiquadFilterNode) — all 8 filter types, EQ implementation; HIGH confidence
-- [MDN: ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode) — IR reverb, buffer property; HIGH confidence
-- [MDN: AudioNode.connect(AudioParam)](https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect) — LFO modulation pattern; HIGH confidence
-- [MDN: AudioWorklet](https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet) — browser support, HTTPS requirement; HIGH confidence
-- [web.dev: A Tale of Two Clocks](https://web.dev/articles/audio-scheduling) — lookahead scheduler pattern; HIGH confidence
-- [Tone.js Ticker.ts source](https://github.com/Tonejs/Tone.js/blob/dev/Tone/core/clock/Ticker.ts) — Web Worker Blob URL clock implementation; HIGH confidence
-- [Tone.js Chorus docs](https://tonejs.github.io/docs/15.0.4/classes/Chorus.html) — stereo chorus pattern with LFO on delayTime; MEDIUM-HIGH confidence
-- [DEV: Granular Synthesis with Web Audio API](https://dev.to/hexshift/granular-synthesis-in-the-browser-using-web-audio-api-and-audiobuffer-slicing-2o9h) — AudioBufferSourceNode grain scheduling pattern; MEDIUM confidence
+- [DistortionDemo.vue, FilterDemo.vue, VisualizationDemo.vue, PianoKeyboard.vue, SynthKeyboard.vue, XYPad.vue](local codebase) -- existing patterns reviewed; HIGH confidence
+- [@slipmatio/control-knob GitHub](https://github.com/slipmatio/control-knob) -- evaluated and rejected (11 stars, last commit April 2024, 8 open issues); HIGH confidence in rejection
+- [vue-audio-visual npm](https://www.npmjs.com/package/vue-audio-visual) -- evaluated and rejected (adds dependency for capability already built); MEDIUM confidence
+- [MDN: Visualizations with Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API) -- Canvas visualization patterns; HIGH confidence
 
 ---
-*Stack research for: ez-audio Effects & Transport milestone*
-*Researched: 2026-02-28*
+*Stack research for: ez-audio Milestone 7 Feature Demo Pages*
+*Researched: 2026-03-08*
