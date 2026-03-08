@@ -1055,10 +1055,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `PlayTogetherDemo.vue` either has a corresponding docs page or is removed
   2. No orphaned Vue components exist in `docs/.vitepress/theme/components/`
-**Plans**: 2 plans
+**Plans**: 1 plan
 Plans:
-- [ ] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
-- [ ] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos
+- [ ] 66-01-PLAN.md — Verify PlayTogetherDemo usage, run full orphan scan, close audit finding
 
 ---
 
