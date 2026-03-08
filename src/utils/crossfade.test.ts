@@ -198,9 +198,11 @@ describe('crossfade', () => {
     const setValueAtTimeSpy = vi.spyOn(toGain, 'setValueAtTime')
     const setValueCurveAtTimeSpy = vi.spyOn(toGain, 'setValueCurveAtTime')
 
-    const fadePromise = crossfade(fromTrack, toTrack, 0.01)
+    // crossfade now calls play() first, then schedules the curve after.
+    // Both calls use the same gainNode.gain reference.
+    await crossfade(fromTrack, toTrack, 0.01)
 
-    // Should set initial value to 0 and apply fade curve
+    // Should set initial value to 0 and apply fade curve (after play)
     expect(setValueAtTimeSpy).toHaveBeenCalled()
     expect(setValueCurveAtTimeSpy).toHaveBeenCalledWith(
       expect.any(Float32Array),
@@ -212,8 +214,6 @@ describe('crossfade', () => {
     const curveCall = setValueCurveAtTimeSpy.mock.calls[0]
     const curve = curveCall[0] as Float32Array
     expect(curve[0]).toBeLessThan(curve[curve.length - 1])
-
-    await fadePromise
   })
 
   it('pauses source track after fade completes (default afterFade behavior)', async () => {

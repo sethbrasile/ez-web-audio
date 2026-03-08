@@ -23,10 +23,10 @@ const segments = [
   { name: 'whoosh', label: 'Whoosh', start: 2.904, end: 3.966, color: '#2196F3' },
   { name: 'bling', label: 'Bling', start: 4.166, end: 6.49, color: '#FF9800' },
   { name: 'punch', label: 'Punch', start: 6.69, end: 7.484, color: '#9C27B0' },
-  { name: 'fanfare', label: 'Fanfare', start: 7.684, end: 11.317, color: '#00BCD4' },
+  { name: 'fanfare', label: 'Fanfare', start: 7.684, end: 11.316, color: '#00BCD4' },
 ]
 
-const totalDuration = 11.317
+const totalDuration = 11.316
 
 const manifest = {
   spritemap: {
@@ -35,7 +35,7 @@ const manifest = {
     whoosh: { start: 2.904, end: 3.966, loop: false },
     bling: { start: 4.166, end: 6.49, loop: false },
     punch: { start: 6.69, end: 7.484, loop: false },
-    fanfare: { start: 7.684, end: 11.317, loop: false },
+    fanfare: { start: 7.684, end: 11.316, loop: false },
   },
 }
 

@@ -101,20 +101,23 @@ export async function crossfade(
 
   // Fade in destination track
   const toGain = toTrack.getGainNode().gain
-  toGain.cancelScheduledValues(startTime)
   if (!isToTrackPlaying) {
-    // Not playing — set gain to 0 slightly before the curve starts, then resume or play
-    toGain.setValueAtTime(0, Math.max(0, startTime - 0.001))
-    toGain.setValueCurveAtTime(fadeInCurve, startTime, duration)
-    // If track was previously paused (e.g., from a prior crossfade), resume from position
+    // Start playback first — play()/resume() calls setup() which schedules
+    // setValueAtTime on gain. We must let that happen, then override with our curve.
     if (toTrack.position.raw > 0) {
       toTrack.resume()
     }
     else {
       await toTrack.play()
     }
+    // Now cancel whatever setup() scheduled and apply our fade-in curve
+    const curTime = audioContext.currentTime
+    toGain.cancelScheduledValues(curTime)
+    toGain.setValueAtTime(0, curTime)
+    toGain.setValueCurveAtTime(fadeInCurve, curTime, duration)
   }
   else {
+    toGain.cancelScheduledValues(startTime)
     toGain.setValueAtTime(toGain.value, startTime)
     toGain.setValueCurveAtTime(fadeInCurve, startTime, duration)
   }

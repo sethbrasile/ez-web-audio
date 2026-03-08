@@ -115,6 +115,13 @@ async function togglePlay() {
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack?.stop())
     playing.value = false
+
+    // Clear playhead highlights from DOM (added via direct manipulation)
+    if (rootEl.value) {
+      rootEl.value.querySelectorAll('.vanilla-beat-cell.current').forEach(
+        el => el.classList.remove('current'),
+      )
+    }
   }
   else {
     tracks.value.forEach(t => t.beatTrack?.playActiveBeats(bpm.value, 1 / 16))

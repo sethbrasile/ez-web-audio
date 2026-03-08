@@ -6,6 +6,6 @@
     "whoosh": { "start": 2.904, "end": 3.966, "loop": false },
     "bling": { "start": 4.166, "end": 6.49, "loop": false },
     "punch": { "start": 6.69, "end": 7.484, "loop": false },
-    "fanfare": { "start": 7.684, "end": 11.317, "loop": false }
+    "fanfare": { "start": 7.684, "end": 11.316, "loop": false }
   }
 }
