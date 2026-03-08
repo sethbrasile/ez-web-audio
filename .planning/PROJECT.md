@@ -58,7 +58,13 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 ### Active
 
-No active requirements. All 6 milestones complete. Next milestone TBD.
+**Milestone 7: Feature Demos** — Interactive demo pages for all M5 features lacking examples.
+
+- [ ] Effects chain demo (delay, reverb, compressor, EQ)
+- [ ] LFO modulation demo (tremolo, vibrato, filter sweep)
+- [ ] PolySynth demo (voice allocation, steal strategies)
+- [ ] Transport + Sequencer demo (BPM clock, musical time, mute/solo)
+- [ ] GrainPlayer demo (independent pitch/time control)
 
 ### Out of Scope
 
@@ -70,9 +76,16 @@ No active requirements. All 6 milestones complete. Next milestone TBD.
 - **MIDI support** — specialized, can be a separate package
 - **Audio worklets** — too low-level for "easy" API
 
-## Current Status
+## Current Milestone: Milestone 7 — Feature Demos
 
-All 6 milestones complete. No active milestone. Next milestone TBD via `/gsd:new-milestone`.
+**Goal:** Build interactive demo pages for all M5 features (effects, LFO, PolySynth, Transport/Sequencer, GrainPlayer) that currently lack examples.
+
+**Target features:**
+- Effects chain demo page (delay, reverb, compressor, EQ — toggle, adjust, stack)
+- LFO modulation demo page (tremolo, vibrato, wah — visual modulation wave)
+- PolySynth demo page (keyboard with voice allocation and steal strategies)
+- Transport + Sequencer demo page (BPM clock, musical time notation, mute/solo)
+- GrainPlayer demo page (granular synthesis with independent pitch/time)
 
 **Note:** Milestones are numbered sequentially and do not correspond to npm versions. The library ships when it's ready.
 
@@ -127,4 +140,4 @@ All 6 milestones complete. No active milestone. Next milestone TBD via `/gsd:new
 | Lazy init pattern for demos | No load buttons; first user interaction triggers AudioContext + asset loading | ✓ Good |
 
 ---
-*Last updated: 2026-03-08 after Milestone 6 (DX & Discoverability) shipped*
+*Last updated: 2026-03-08 after Milestone 7 (Feature Demos) started*
