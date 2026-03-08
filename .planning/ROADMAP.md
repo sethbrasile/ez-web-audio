@@ -882,6 +882,8 @@ Plans:
 - [x] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page (completed 2026-03-07)
 - [x] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs (completed 2026-03-07)
 - [x] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions (completed 2026-03-07)
+- [x] **Phase 64: Demo Example UX Fixes** - Remove load buttons, fix visualization/drum machine bugs, add playhead (completed 2026-03-07)
+- [x] **Phase 65: Rebuild & Validation Cleanup** - Rebuild dist, finalize VALIDATIONs, human verification + 3 bugfixes (completed 2026-03-08)
 
 ### Phase 61: Audio Sprites Redesign
 **Goal**: Users form the correct mental model ("many distinct sounds packed into one file") through a compelling demo, and can use either Howler-style or audiosprite-style manifests
@@ -1037,22 +1039,14 @@ Plans:
 - [ ] 64-01-PLAN.md — Fix visualization await bug and drum machine playBeats method
 - [ ] 64-02-PLAN.md — Remove load buttons from AudioSpriteDemo and LayeredSoundDemo, add playhead and stop
 
-### Phase 65: Rebuild & Validation Cleanup
+### Phase 65: Rebuild & Validation Cleanup (COMPLETE - 2026-03-08)
 **Goal**: Close all tech debt from M6 audit — rebuild dist to fix llms.txt URLs, create/finalize VALIDATION.md for all M6 phases, and confirm human verification items
 **Depends on**: Phase 64
 **Gap Closure**: Closes tech debt items 1-7 from v6-MILESTONE-AUDIT.md
-**Success Criteria** (what must be TRUE):
-  1. `pnpm build` completes successfully and llms.txt/llms-full.txt contain correct (non-doubled) base-path URLs
-  2. Phase 61 VALIDATION.md finalized with `nyquist_compliant: true`
-  3. Phase 62 VALIDATION.md finalized with `nyquist_compliant: true`
-  4. Phase 63 VALIDATION.md created with `nyquist_compliant: true`
-  5. Phase 64 VALIDATION.md created with `nyquist_compliant: true`
-  6. Phase 61 human verification checks confirmed (full file playback, segment highlighting, visual timeline)
-  7. Phase 64 human verification checks confirmed (visualization, drum machines, sprite playhead, lazy init)
-**Plans**: 2 plans
+**Completed**: All 7 success criteria satisfied. Human verification found 3 bugs (fanfare sprite timing, vanilla drum machine playhead, crossfade AudioParam overlap) — all fixed in commit a2fff1d.
 Plans:
-- [ ] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
-- [ ] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos
+- [x] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
+- [x] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos + 3 bugfixes
 
 ### Phase 66: Orphaned Component Cleanup
 **Goal**: Remove or restore orphaned PlayTogetherDemo.vue component (pre-existing issue surfaced by M6 audit)
