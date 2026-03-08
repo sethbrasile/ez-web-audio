@@ -1,0 +1,96 @@
+# Requirements: EZ Audio — Milestone 7 (Feature Demos)
+
+**Defined:** 2026-03-08
+**Core Value:** Make the Web Audio API easy to use
+
+## Milestone 7 Requirements
+
+Interactive demo pages for all M5 features that currently lack examples.
+
+### LFO Modulation
+
+- [ ] **LFO-01**: User can hear LFO tremolo (gain modulation) on an oscillator
+- [ ] **LFO-02**: User can hear LFO vibrato (frequency modulation) on an oscillator
+- [ ] **LFO-03**: User can hear LFO filter sweep (cutoff modulation) on a filtered oscillator
+- [ ] **LFO-04**: User can see real-time canvas visualization of the LFO waveform
+- [ ] **LFO-05**: User can adjust LFO rate and depth per modulation target
+
+### PolySynth
+
+- [ ] **POLY-01**: User can play polyphonic notes via keyboard UI (reuses PianoKeyboard.vue)
+- [ ] **POLY-02**: User can see active voice count and max voices displayed
+- [ ] **POLY-03**: User can switch between steal strategies (oldest/quietest/newest) live
+- [ ] **POLY-04**: User can adjust ADSR envelope parameters for synth voices
+
+### Effects Chain
+
+- [ ] **FX-01**: User can toggle delay, reverb, compressor, and EQ effects on/off via bypass
+- [ ] **FX-02**: User can adjust parameters for each effect (delay time, reverb mix, threshold, EQ bands)
+- [ ] **FX-03**: User can reorder effects in the chain
+- [ ] **FX-04**: User can switch between oscillator and loaded audio file as source
+- [ ] **FX-05**: User can see a signal flow diagram showing audio path through active effects
+
+### Transport + Sequencer
+
+- [ ] **TSEQ-01**: User can play/pause/stop transport with adjustable BPM
+- [ ] **TSEQ-02**: User can mute/solo individual tracks
+- [ ] **TSEQ-03**: User can hear a sequence using musical time notation (4n, 8t, 2m)
+- [ ] **TSEQ-04**: User can see current beat/bar position with visual playhead
+
+### GrainPlayer
+
+- [ ] **GRAIN-01**: User can independently control pitch without changing playback speed
+- [ ] **GRAIN-02**: User can independently control playback speed without changing pitch
+- [ ] **GRAIN-03**: User can adjust grain size for texture variation
+- [ ] **GRAIN-04**: User can see source waveform with grain position overlay on canvas
+
+## Future Requirements
+
+None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone 8.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Pseudo DAW showcase | Deferred to Milestone 8 — build individual demos first |
+| Guitar effects pedalboard showcase | Deferred to Milestone 8 — build individual demos first |
+| Drag-and-drop effect reordering | Button-based reordering sufficient for demo |
+| MIDI input for PolySynth | Specialized, out of scope for docs demos |
+| File upload for GrainPlayer | Use bundled audio asset, not user uploads |
+| Shared component extraction (ParameterSlider) | Not worth the abstraction for 5 pages |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| LFO-01 | Pending | Pending |
+| LFO-02 | Pending | Pending |
+| LFO-03 | Pending | Pending |
+| LFO-04 | Pending | Pending |
+| LFO-05 | Pending | Pending |
+| POLY-01 | Pending | Pending |
+| POLY-02 | Pending | Pending |
+| POLY-03 | Pending | Pending |
+| POLY-04 | Pending | Pending |
+| FX-01 | Pending | Pending |
+| FX-02 | Pending | Pending |
+| FX-03 | Pending | Pending |
+| FX-04 | Pending | Pending |
+| FX-05 | Pending | Pending |
+| TSEQ-01 | Pending | Pending |
+| TSEQ-02 | Pending | Pending |
+| TSEQ-03 | Pending | Pending |
+| TSEQ-04 | Pending | Pending |
+| GRAIN-01 | Pending | Pending |
+| GRAIN-02 | Pending | Pending |
+| GRAIN-03 | Pending | Pending |
+| GRAIN-04 | Pending | Pending |
+
+**Coverage:**
+- Milestone 7 requirements: 22 total
+- Mapped to phases: 0
+- Unmapped: 22 ⚠️
+
+---
+*Requirements defined: 2026-03-08*
+*Last updated: 2026-03-08 after initial definition*
