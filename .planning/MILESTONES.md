@@ -1,5 +1,26 @@
 # Milestones
 
+## Milestone 6: DX & Discoverability (Shipped: 2026-03-08)
+
+**Phases:** 61-66 (6 phases, 12 plans)
+**Stats:** ~48 commits, 15 files changed, +836/-36 lines
+**Tests:** 1920 unit + 20 E2E = 1940 total
+**Timeline:** 2 days (2026-03-07 → 2026-03-08)
+
+**Delivered:** Developer experience and AI discoverability improvements — Howler manifest support, multiple AudioContext overloads, llms.txt for AI assistants, demo UX fixes, and human-verified bugfixes.
+
+**Key accomplishments:**
+- Audio Sprites Redesign: Howler-style manifest auto-detection, 6-sound demo with visual timeline and segment highlighting
+- Multiple AudioContext Support: All 16+ factory functions accept optional BaseAudioContext first param, advanced usage guide
+- llms.txt AI Discoverability: vitepress-plugin-llms generates llms.txt/llms-full.txt, 20 demos annotated with llm-exclude/llm-only
+- Demo UX Fixes: Removed load buttons, fixed visualization/drum machine bugs, lazy init and animated playhead patterns
+- Human Verification: Found and fixed 3 bugs (fanfare sprite timing, vanilla drum machine playhead, crossfade AudioParam overlap)
+- Zero Orphaned Components: Full audit confirmed all 24 Vue components actively referenced
+
+**Git range:** `feat(61-01)..docs(phase-66)` (2026-03-07 → 2026-03-08)
+
+---
+
 ## v1.1 Quality & Polish (Shipped: 2026-02-16)
 
 **Phases:** 12-16 (5 phases, 20 plans)

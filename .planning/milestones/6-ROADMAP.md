@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-07
 
 ## Milestones
 
@@ -12,7 +12,7 @@
 - ✅ **Milestone 3: Stable Release** — Phases 17-46 (complete)
 - ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
 - ✅ **Milestone 5: Effects & Transport** — Phases 53-60 (complete)
-- ✅ **Milestone 6: DX & Discoverability** — Phases 61-66 (shipped 2026-03-08)
+- 📋 **Milestone 6: DX & Discoverability** — Phases 61-66
 
 ## Phases
 
@@ -877,17 +877,187 @@ Plans:
 
 ---
 
-<details>
-<summary>✅ Milestone 6: DX & Discoverability (Phases 61-66) — SHIPPED 2026-03-08</summary>
+### 📋 Milestone 6: DX & Discoverability (Phases 61-64)
 
-- [x] Phase 61: Audio Sprites Redesign (2/2 plans) — completed 2026-03-07
-- [x] Phase 62: Multiple AudioContext Support (3/3 plans) — completed 2026-03-07
-- [x] Phase 63: llms.txt Support (2/2 plans) — completed 2026-03-07
-- [x] Phase 64: Demo Example UX Fixes (2/2 plans) — completed 2026-03-07
-- [x] Phase 65: Rebuild & Validation Cleanup (2/2 plans) — completed 2026-03-08
-- [x] Phase 66: Orphaned Component Cleanup (1/1 plan) — completed 2026-03-08
+- [x] **Phase 61: Audio Sprites Redesign** - Howler-style manifest support, new demo with soundfx sounds + visual timeline, rewritten docs page (completed 2026-03-07)
+- [x] **Phase 62: Multiple AudioContext Support** - Optional AudioContext first-param overloads on all factory functions, advanced usage docs (completed 2026-03-07)
+- [x] **Phase 63: llms.txt Support** - vitepress-plugin-llms integration, auto-sized footer message on every page, frontmatter descriptions (completed 2026-03-07)
+- [x] **Phase 64: Demo Example UX Fixes** - Remove load buttons, fix visualization/drum machine bugs, add playhead (completed 2026-03-07)
+- [x] **Phase 65: Rebuild & Validation Cleanup** - Rebuild dist, finalize VALIDATIONs, human verification + 3 bugfixes (completed 2026-03-08)
 
-</details>
+### Phase 61: Audio Sprites Redesign
+**Goal**: Users form the correct mental model ("many distinct sounds packed into one file") through a compelling demo, and can use either Howler-style or audiosprite-style manifests
+**Depends on**: None
+**Spec**: `.planning/specs/audio-sprites-redesign.md`
+**Success Criteria** (what must be TRUE):
+  1. `SpriteManifest` accepts both Howler-style tuples (`sprite` key, ms) and audiosprite-style objects (`spritemap` key, seconds)
+  2. Format detection is automatic — no user configuration needed
+  3. Demo page plays the full combined file first, then individual named segments
+  4. Visual timeline shows colored segments with highlight on play
+  5. Spritemap JSON is displayed on the page
+  6. Both manifest formats documented with use cases
+  7. audiosprite CLI and soundfx library mentioned in docs
+  8. CC-BY-3.0 attribution displayed on page
+  9. All existing sprite tests continue to pass
+**Plans**: 2 plans
+- [ ] 61-01-PLAN.md — Howler-style manifest types, normalizeManifest, TDD tests
+- [ ] 61-02-PLAN.md — Sprite audio file, AudioSpriteDemo.vue with timeline, docs rewrite
+
+### Phase 62: Multiple AudioContext Support
+**Goal**: Power users can use multiple AudioContexts via optional first-param overloads on factory functions, following the existing effect factory convention
+**Depends on**: None
+**Spec**: `.planning/specs/multiple-audiocontext.md`
+**Success Criteria** (what must be TRUE):
+  1. All factory functions accept optional AudioContext as first parameter
+  2. Existing code without AudioContext param works identically (no breaking changes)
+  3. Sounds created with an explicit AudioContext use that context, not the singleton
+  4. Effect factories already have the pattern — verify consistency
+  5. Advanced usage guide documents: why, browser limits, the shared-context constraint, full example
+  6. Tests verify both overloaded and default paths
+**Plans**: 3 plans
+- [ ] 62-01-PLAN.md — Migrate effect factories and playTogether to instanceof BaseAudioContext
+- [ ] 62-02-PLAN.md — Add BaseAudioContext overloads to all 16 index.ts factory functions
+- [ ] 62-03-PLAN.md — Tests for overloaded paths and multiple-contexts guide page
+
+### Phase 63: llms.txt Support
+**Goal**: AI coding assistants can efficiently discover and ingest the full documentation (guides + API reference) via standard llms.txt files
+**Depends on**: None
+**Spec**: `.planning/specs/llms-txt.md`
+**Success Criteria** (what must be TRUE):
+  1. `vitepress-plugin-llms` installed and configured
+  2. `/llms.txt` generated at build time with useful section descriptions
+  3. `/llms-full.txt` generated containing both guide pages AND TypeDoc API reference
+  4. Guide/example pages have `description` frontmatter
+  5. Every page footer includes message pointing to llms.txt with auto-generated file size of llms-full.txt
+  6. Build order correct (TypeDoc → VitePress build → llms.txt generation)
+**Plans**: 2 plans
+- [ ] 63-01-PLAN.md — Install vitepress-plugin-llms, footer component, custom layout, post-build size script
+- [ ] 63-02-PLAN.md — Annotate 20 Vue demos with llm-exclude/llm-only, build and verify output
+
+### Phase 54.2: Effects & LFO Lifecycle Fixes
+**Goal**: Fix LFO multi-target lifecycle bug, add missing dispose() overrides to 4 effect subclasses, document BaseEffect disposal contract
+**Depends on**: None
+**QC Findings**: QC-1-04 (high), QC-1-13 (medium), QC-1-14 (medium)
+**Structural Pattern**: missing-effect-dispose
+**Success Criteria** (what must be TRUE):
+  1. LFO `syncLifecycle` disconnects only the stopped target, not the entire oscillator
+  2. CompressorEffect, DistortionEffect, EQEffect, FilterEffect all override dispose() to disconnect internal nodes
+  3. BaseEffect has documentation of the subclass disposal contract
+  4. LFO depth limitation (baked at connection time) is documented in JSDoc
+  5. All existing LFO and effects tests pass
+**Plans**: 54.2-01 (LFO lifecycle fix, effect dispose overrides, JSDoc)
+**Completed**: All 3 QC findings fixed. 1891 tests passing.
+
+### Phase 57.1: Transport, Sequence & PolySynth Core Fixes (COMPLETE - 2026-03-07)
+**Goal**: Fix architectural bugs in M5 orchestration classes — voice state machine, type safety, event system consistency, performance
+**Depends on**: None
+**QC Findings**: QC-1-01 (high), QC-1-02 (high), QC-1-08 (medium), QC-1-09 (medium), QC-1-10 (medium), QC-1-12 (medium), QC-1-21 (medium), QC-1-22 (medium)
+**Structural Pattern**: inconsistent-event-systems
+**Success Criteria** (what must be TRUE):
+  1. PolySynth voice state machine has proper `released` → `available` transition after envelope release
+  2. Transport uses a `SyncableBeatTrack` interface instead of `(track as any)` casts
+  3. Transport and Sequence use TypedEventEmitter instead of manual EventTarget
+  4. Sequence correctly handles multiple events at the same beat position
+  5. PolySynth cleans up event listeners on voice stealing (no orphaned listeners)
+  6. Sequence position is correct across loop iterations
+  7. MusicalTime correctly handles beatUnit from time signature
+  8. PolySynth.activeVoices and Transport.tracks getters don't allocate on every access
+  9. All existing Transport, Sequence, and PolySynth tests pass
+**Plans**: 57.1-01 (PolySynth fixes), 57.1-02 (Transport/Sequence/MusicalTime fixes)
+**Completed**: All 8 QC findings fixed + TypedEventEmitter migration. 1891 tests passing.
+
+### Phase 58.1: GrainPlayer Hardening
+**Goal**: Fix performance cliffs and architectural gaps in GrainPlayer
+**Depends on**: None
+**QC Findings**: QC-1-03 (high), QC-1-11 (medium), QC-1-25 (medium)
+**Success Criteria** (what must be TRUE):
+  1. GrainPlayer overlap setter validates and clamps to prevent 1000+ grains/sec
+  2. GrainPlayer uses WorkerTimer instead of setTimeout for background-tab resilience
+  3. Dead code in loop offset handling is removed
+  4. All existing GrainPlayer tests pass
+**Plans**: 58.1-01 (overlap clamping, WorkerTimer migration, dead code removal)
+**Completed**: All 3 QC findings fixed. 1891 tests passing.
+
+### Phase 59.1: Shared API Utilities & Crossfade Fixes
+**Goal**: Fix fluent API conversion bug, crossfade state sync, LayeredSound gain routing, AudioSprite validation
+**Depends on**: None
+**QC Findings**: QC-1-07 (high), QC-1-16 (medium), QC-1-18 (medium), QC-1-19 (medium), QC-1-20 (medium)
+**Structural Pattern**: fluent-api-conversion-gap
+**Success Criteria** (what must be TRUE):
+  1. A shared `convertValue(value, method: RatioType)` utility exists and is used by BaseParamController, GrainPlayer, and PolySynth
+  2. GrainPlayer and PolySynth `update().as('decibels')` correctly converts values
+  3. AudioSprite validates `end < start` at creation time with descriptive error
+  4. LayeredSound `setGain()` modifies the output bus, not individual layer gains
+  5. crossfade `afterFade:'stop'` doesn't produce unhandled rejections
+  6. crossfade restores `_targetGain` via `changeGainTo()` instead of raw AudioParam manipulation
+  7. All existing tests pass
+**Plans**: 59.1-01 (convertValue utility, crossfade fixes, AudioSprite validation, LayeredSound gain)
+**Completed**: All 5 QC findings fixed. 1891 tests passing.
+
+### Phase 60.1: Test Coverage Gaps
+**Goal**: Close testing gaps for new M5 features and options
+**Depends on**: Phases 54.2, 57.1, 58.1, 59.1 (tests verify fixed behavior)
+**QC Findings**: QC-1-05 (high), QC-1-06 (high), QC-1-15 (medium), QC-1-17 (medium) + L4-L6, L10-L11, L21
+**Success Criteria** (what must be TRUE):
+  1. crossfade `afterFade: 'continue'` and `afterFade: 'stop'` have dedicated tests
+  2. BeatTrack.setPattern() has tests for basic, short/long arrays, booleans, chaining
+  3. LFO depth calculation tests verify numeric values for ratio/cents/absolute modes
+  4. createFont(ctx) explicit-context overload is tested
+  5. Edge case tests for PolySynth rapid play/stop, Transport live BPM change, Sequence post-dispose
+  6. GrainPlayer edge case tests for overlap boundaries
+  7. createSprite with Howler manifest format has a factory test
+**Plans**: 2 plans
+- [ ] 60.1-01-PLAN.md — BeatTrack.setPattern, LFO depth numeric, createFont ctx overload tests (QC-1-06, QC-1-15, QC-1-17)
+- [ ] 60.1-02-PLAN.md — PolySynth, Transport, Sequence, musical-time, GrainPlayer, Howler manifest edge case tests (L4-L6, L10-L11, L21)
+
+### Phase 60.2: Documentation Sync
+**Goal**: Update docs to reflect M5 capabilities
+**Depends on**: None
+**QC Findings**: QC-1-23 (medium), QC-1-24 (medium) + L20, L22
+**Success Criteria** (what must be TRUE):
+  1. Homepage features list and comparison table mention Transport, PolySynth, GrainPlayer, LFO, built-in effects
+  2. Getting-started includes M5 factory function examples
+  3. Multiple-contexts guide: sinkId example uses `ctx.setSinkId()`, reference table includes all M5 factories
+  4. Howler manifest example in audio-sprite docs is consistent with implementation
+  5. At least stub guide pages exist for Transport, Sequence, PolySynth, GrainPlayer, LFO
+**Plans**: 60.2-01 (homepage, getting-started, multiple-contexts updates), 60.2-02 (guide pages for M5 features)
+**Completed**: All docs updated for M5.
+
+### Phase 64: Demo Example UX Fixes
+
+**Goal:** Fix all demo/example components to follow correct UX patterns — no loading buttons, proper audio initialization on first user interaction, and fix broken examples
+**Depends on:** Phase 63
+**Issues:**
+  1. Remove "Load" buttons from all examples — render examples fully visible immediately, lazily init AudioContext on first user interaction (Play button etc.)
+  2. Audio sprite example needs visual playhead feedback scrolling across timeline during "full file" playback, plus a stop button
+  3. Audio sprite example should not have an INIT button — Play buttons init audio like all other examples
+  4. Audio visualization example: "Failed to execute 'connect' on 'AudioNode': Overload resolution failed" on Play
+  5. Vue and Vanilla drum machine examples play every sound on every step regardless of active state
+**Plans:** 2/2 plans complete
+
+Plans:
+- [ ] 64-01-PLAN.md — Fix visualization await bug and drum machine playBeats method
+- [ ] 64-02-PLAN.md — Remove load buttons from AudioSpriteDemo and LayeredSoundDemo, add playhead and stop
+
+### Phase 65: Rebuild & Validation Cleanup (COMPLETE - 2026-03-08)
+**Goal**: Close all tech debt from M6 audit — rebuild dist to fix llms.txt URLs, create/finalize VALIDATION.md for all M6 phases, and confirm human verification items
+**Depends on**: Phase 64
+**Gap Closure**: Closes tech debt items 1-7 from v6-MILESTONE-AUDIT.md
+**Completed**: All 7 success criteria satisfied. Human verification found 3 bugs (fanfare sprite timing, vanilla drum machine playhead, crossfade AudioParam overlap) — all fixed in commit a2fff1d.
+Plans:
+- [x] 65-01-PLAN.md — Rebuild dist, verify llms.txt URLs, create/finalize all 4 VALIDATION.md files
+- [x] 65-02-PLAN.md — Human verification of Phase 61 and Phase 64 demos + 3 bugfixes
+
+### Phase 66: Orphaned Component Cleanup
+**Goal**: Remove or restore orphaned PlayTogetherDemo.vue component (pre-existing issue surfaced by M6 audit)
+**Depends on**: None
+**Gap Closure**: Closes tech debt item 8 from v6-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. `PlayTogetherDemo.vue` either has a corresponding docs page or is removed
+  2. No orphaned Vue components exist in `docs/.vitepress/theme/components/`
+**Plans**: 1 plan
+Plans:
+- [ ] 66-01-PLAN.md — Verify PlayTogetherDemo usage, run full orphan scan, close audit finding
 
 ---
 
@@ -896,8 +1066,5 @@ Plans:
 - `milestones/v1.1-phases/` — Milestone 2 phase directories (Phases 12-16)
 - `milestones/v1.1-ROADMAP.md` — Milestone 2 phase details
 - `milestones/v1.1-REQUIREMENTS.md` — Milestone 2 requirements with outcomes
-- `milestones/6-ROADMAP.md` — Milestone 6 phase details
-- `milestones/6-REQUIREMENTS.md` — Milestone 6 requirements (M5 REQUIREMENTS.md, inherited)
-- `milestones/6-phases/` — Milestone 6 phase directories (Phases 61-66)
 
-*Last updated: 2026-03-08 after Milestone 6 shipped*
+*Last updated: 2026-03-01 after Milestone 6 phases 61-63 added*

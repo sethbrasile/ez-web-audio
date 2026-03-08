@@ -1,74 +1,40 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: milestone
+milestone: 6
+milestone_name: DX & Discoverability
 status: completed
-stopped_at: Completed 66-01-PLAN.md
-last_updated: "2026-03-08T15:54:28.408Z"
-last_activity: 2026-03-07 — Phase 60.1 plan 01 complete
+stopped_at: Milestone 6 archived
+last_updated: "2026-03-08"
+last_activity: 2026-03-08 — Milestone 6 archived
 progress:
-  total_phases: 56
-  completed_phases: 56
-  total_plans: 130
-  completed_plans: 130
-  percent: 99
+  total_phases: 66
+  completed_phases: 66
+  total_plans: 142
+  completed_plans: 142
+  percent: 100
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-03-01 (Milestone 6 created — DX & Discoverability)
-**Current Focus:** Milestone 6 — Phases 61-63
+**Last Updated:** 2026-03-08 (Milestone 6 archived — DX & Discoverability)
+**Current Focus:** No active milestone. Next: `/gsd:new-milestone`
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-28)
+See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Make the Web Audio API easy to use
-**Current milestone:** Milestone 6 — DX & Discoverability (Phases 61-63)
+**Current milestone:** None — all 6 milestones complete
 
 ## Current Position
 
-Phase: 60.1 — Test Coverage Gaps
-Plan: 1 of 2 complete
-Status: Plan 01 complete. 13 new tests closing QC-1-06, QC-1-15, QC-1-17 gaps.
-Last activity: 2026-03-07 — Phase 60.1 plan 01 complete
-
-Progress: [██████████] 99% (124/125 plans complete)
-
-## Performance Metrics
-
-**Prior milestones:**
-- Milestone 1 (MVP): Phases 1-11 (48 plans)
-- Milestone 2 (Quality & Polish): Phases 12-16 (20 plans)
-- Milestone 3 (Stable Release): Phases 17-46 (52+ plans)
-- Milestone 4 (Deep Review Hardening): Phases 47-52 (13 plans)
-
-**By Phase (this milestone):**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 53. Built-in Effects | 4/4 | 210 tests | 52.5 |
-| 54. LFO | 2/2 | 52 tests | - |
-| 54.1. Deep Review Fixes | 4/4 complete | 14 new tests (plan 04) | - |
-| 55. Transport + BeatTrack Sync | 4/4 complete | 95 new tests (23+41+31) | 23.75 |
-| 56. Sequencer + Musical Time | 2/2 complete | 51 tests | 25.5 |
-| 57. PolySynth | 2/2 complete | 55 tests | 27.5 |
-| 57.1. Transport/Sequence/PolySynth Fixes | 2/2 complete | 8 QC fixes | - |
-| 58. GrainPlayer | 2/2 complete | 71 tests | 35.5 |
-| Phase 61 P01 | 5min | 1 tasks | 3 files |
-| Phase 61 P02 | 3min | 4 tasks | 5 files |
-| Phase 62 P02 | 4min | 2 tasks | 1 file |
-| Phase 62 P01 | 3min | 2 tasks | 9 files |
-| Phase 62 P03 | 3min | 2 tasks | 4 files |
-| Phase 63 P01 | 2min | 2 tasks | 6 files |
-| Phase 63 P02 | 6min | 2 tasks | 19 files |
-| Phase 60.1 P01 | 2min | 2 tasks | 3 files |
-| Phase 60.1 P02 | 4min | 2 tasks | 6 files |
-| Phase 64 P01 | 2min | 2 tasks | 3 files |
-| Phase 64 P02 | 2min | 2 tasks | 2 files |
-| Phase 65 P01 | 2min | 2 tasks | 4 files |
-| Phase 65 P02 | 1min | 2 tasks | 0 files |
-| Phase 66 P01 | 1min | 1 tasks | 1 files |
+All milestones complete. 6 milestones shipped:
+- Milestone 1: MVP (Phases 1-11)
+- Milestone 2: Quality & Polish (Phases 12-16)
+- Milestone 3: Stable Release (Phases 17-46)
+- Milestone 4: Deep Review Hardening (Phases 47-52)
+- Milestone 5: Effects & Transport (Phases 53-60)
+- Milestone 6: DX & Discoverability (Phases 61-66)
 
 ## Accumulated Context
 
@@ -76,81 +42,16 @@ Progress: [██████████] 99% (124/125 plans complete)
 
 See .planning/PROJECT.md Key Decisions table for full history.
 
-**Phase 53 decisions made:**
-- BaseEffect abstract class pattern for shared wet/dry, bypass, rampTo()
-- Duck-typing for AudioContext detection in factory functions (not instanceof)
-- Reverb smart factory: string=convolution, object=algorithmic, no-args=algorithmic defaults
-- Distortion: 4 built-in curve types + custom, post-distortion tone control (lowpass)
-- Compressor: 1:1 mapping to DynamicsCompressorNode with reduction metering
-- EQ: 3-band (lowshelf + peaking + highshelf) with configurable crossover frequencies
-
-**Phase 54/54.1 decisions made:**
-- Event-based LFO dispose cleanup: addEventListener('dispose') instead of monkey-patching
-- BaseSound emits 'dispose' CustomEvent before silencing dispatchEvent
-- LFO connect() throws on syncLifecycle+retrigger combination (mutually exclusive)
-- LFO frequency validation: positive finite only (zero invalid)
-- CURVE_SAMPLES=1024 for DistortionEffect (43x memory reduction, industry standard)
-- ReverbEffect decay/damping use setTargetAtTime for click-free transitions
-- dispose() uses try/catch per-node for safe teardown including feedback loops
-- getAudioContext() public accessor pattern avoids unsafe casts
-
-**Phase 55 decisions made:**
-- WorkerTimer: inline Blob Worker with setTimeout fallback, lazy creation, 20ms interval
-- Transport follows BeatTrack's EventTarget + CustomEvent pattern
-- start() after pause() emits 'resume' (not 'start') to differentiate
-- Position: 1-indexed bar/beat, 0-indexed tick (musical convention)
-- syncTo/unsync pattern: synced tracks throw on standalone methods
-- internalStop() extracted to avoid guard-throw in dispose/unsync paths
-- Mute/solo: muted always silences; stackable solo (any soloed → only soloed play)
-- Beat events always fire even when muted (for UI sync)
-- Beat.triggerVisualOnly() for muted/non-soloed visual indication
-
-**Phase 57 decisions made:**
-- PolySynth extends TypedEventEmitter (not BaseSound) — owns its shared bus
-- VoiceHandle class-based (not Proxy) for TypeScript compatibility
-- Array-based voice pool (small maxVoices, typically ≤32)
-- On-demand voice creation with recycling (not pre-allocated)
-- Same-frequency retrigger: scan active voices for matching frequency before allocating
-- Three steal strategies: 'lru' (default), 'oldest-active', 'quietest'
-- Custom voice factory via createVoice option
-- [Phase 61]: normalizeManifest returns same reference for audiosprite format; AudioSprite constructor narrowed to AudiospriteManifest
-- [Phase 61]: Separate Sound instance for full-file playback (AudioSprite only plays named segments)
-- [Phase 62]: BaseAudioContext polyfill needed for happy-dom test environment using Symbol.hasInstance
-- [Phase 63]: CustomLayout wraps DefaultTheme Layout with doc-footer-before slot for footer injection
-- [Phase 63]: Blank lines required inside llm-only/llm-exclude tags for remark parser to preserve content
-- [Phase 60.1]: Used createGain spy pattern to capture depthGain nodes for LFO depth numeric assertions
-- [Phase 60.1]: Transport live BPM tests adapted for mock AudioContext fixed currentTime
-- [Phase 64]: Playhead uses performance.now() for smooth animation independent of audio context timing
-- [Phase 65]: No code changes needed -- domain fix from commit 486ff31 correctly propagated on rebuild
-- [Phase 65]: Auto-approved human verification checkpoint for phases 61/64 demos under auto_advance mode
-- [Phase 66]: No code changes needed -- M6 audit finding was false positive, all 24 Vue components actively referenced
-
-### Roadmap Evolution
-
-- Phase 54.1 inserted after Phase 54: Effects and LFO Deep Review Fixes
-- Milestone naming changed from version-based (v1.0, v1.1) to numbered (Milestone 1-5)
-- Phases 1-11 archived to .planning/milestones/mvp-phases/
-- Phase 64 added: Demo Example UX Fixes (remove loading buttons, fix audio sprites, drum machines, audio visualization)
-
 ### Pending Todos
 
 None active.
 
-**Phase 58 decisions made:**
-- GrainPlayer extends TypedEventEmitter (not BaseSound) — manages transient BufferSourceNodes
-- setTimeout-based scheduling loop (25ms interval, 50ms lookahead)
-- Hann window gain envelope per grain via linearRampToValueAtTime
-- Pitch shift via playbackRate with semitone conversion (2^(semitones/12))
-- Grain duration compensated for playbackRate to maintain consistent windowing
-- Position 0-1 normalized, jitter 0-1 for organic scatter
-- Shared bus pattern identical to PolySynth
-
 ### Blockers/Concerns
 
-None active. GrainPlayer limitation (playbackRate-based pitch shift) documented in JSDoc.
+None active.
 
 ## Session Continuity
 
-Last session: 2026-03-08T15:52:41.984Z
-Stopped at: Completed 66-01-PLAN.md
+Last session: 2026-03-08
+Stopped at: Milestone 6 archived
 Resume file: None

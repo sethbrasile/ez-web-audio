@@ -2,7 +2,7 @@
 
 ## What This Is
 
-EZ Audio is a TypeScript library that wraps the Web Audio API with a simpler, more intuitive interface. A spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt from scratch as a framework-agnostic, pure TypeScript library that makes audio on the web accessible without requiring deep Web Audio API knowledge. Includes ADSR envelopes, effects presets, drum machine patterns, visualization, and interactive documentation with 11+ demos.
+EZ Audio is a TypeScript library that wraps the Web Audio API with a simpler, more intuitive interface. A spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt from scratch as a framework-agnostic, pure TypeScript library that makes audio on the web accessible without requiring deep Web Audio API knowledge. Includes ADSR envelopes, built-in effects (delay, reverb, distortion, compressor, EQ), LFO modulation, transport/clock, sequencer, PolySynth, GrainPlayer, drum machine patterns, visualization, audio sprites, and interactive documentation with 11+ demos. AI-discoverable via llms.txt.
 
 ## Core Value
 
@@ -12,42 +12,53 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 ### Validated
 
-- ✓ Sound, Track, Oscillator, Sampler, BeatTrack, Beat, Note, SampledNote, Font — v1.0
-- ✓ MusicallyAware mixin, Playable/Connectable interfaces — v1.0
-- ✓ Factory functions (createSound, createTrack, createOscillator, etc.) — v1.0
-- ✓ Parameter control API (onPlaySet, onPlayRamp, update) — v1.0
-- ✓ ADSR envelopes with click-free retriggering — v1.0
-- ✓ Audio sprites, collection utilities, preload/cache — v1.0
-- ✓ LayeredSound, BeatTrack timing, crossfade — v1.0
-- ✓ Effects adapter pattern, visualization analyzer, debug mode — v1.0
-- ✓ iOS audio unlock — v1.0
-- ✓ Lazy AudioContext initialization — v1.0
-- ✓ VitePress docs site with interactive demos — v1.0
-- ✓ npm published (ESM-only, tree-shakeable) — v1.0
-- ✓ Code quality audit and refactoring — v1.1
-- ✓ DX review (API consistency, error messages, input validation) — v1.1
-- ✓ Documentation polish and 2 new creative demos — v1.1
-- ✓ Test coverage expansion (913 tests: 893 unit + 20 E2E) — v1.1
-- ✓ SEO optimization (meta tags, structured data, homepage messaging) — v1.1
-- ✓ Dependency security upgrades (vite 7, vitest 4, happy-dom 20, ESLint 10, TS 5.9) — v1.0 stable Phase 17
-- ✓ Breaking API cleanup (.as(), playInIfActive, protected internals, removed deprecated APIs) — v1.0 stable Phase 18
-- ✓ DX improvements (auto-rewire bypass, context-free effect factories, batch APIs, extensible ControlType) — v1.0 stable Phase 19
-- ✓ Defensive hardening (null guards, input validation, memory management) — v1.0 stable Phase 20
+- ✓ Sound, Track, Oscillator, Sampler, BeatTrack, Beat, Note, SampledNote, Font — M1
+- ✓ MusicallyAware mixin, Playable/Connectable interfaces — M1
+- ✓ Factory functions (createSound, createTrack, createOscillator, etc.) — M1
+- ✓ Parameter control API (onPlaySet, onPlayRamp, update) — M1
+- ✓ ADSR envelopes with click-free retriggering — M1
+- ✓ Audio sprites, collection utilities, preload/cache — M1
+- ✓ LayeredSound, BeatTrack timing, crossfade — M1
+- ✓ Effects adapter pattern, visualization analyzer, debug mode — M1
+- ✓ iOS audio unlock — M1
+- ✓ Lazy AudioContext initialization — M1
+- ✓ VitePress docs site with interactive demos — M1
+- ✓ npm published (ESM-only, tree-shakeable) — M1
+- ✓ Code quality audit and refactoring — M2
+- ✓ DX review (API consistency, error messages, input validation) — M2
+- ✓ Documentation polish and 2 new creative demos — M2
+- ✓ Test coverage expansion (913 tests: 893 unit + 20 E2E) — M2
+- ✓ SEO optimization (meta tags, structured data, homepage messaging) — M2
+- ✓ Dependency security upgrades (vite 7, vitest 4, happy-dom 20, ESLint 10, TS 5.9) — M3 Phase 17
+- ✓ Breaking API cleanup (.as(), playInIfActive, protected internals, removed deprecated APIs) — M3 Phase 18
+- ✓ DX improvements (auto-rewire bypass, context-free effect factories, batch APIs, extensible ControlType) — M3 Phase 19
+- ✓ Defensive hardening (null guards, input validation, memory management) — M3 Phase 20
 
-- ✓ Source code fixes: race conditions, memory leaks, missing exports, API contract violations — v1.0 stable Phase 26
-- ✓ Package quality: professional README, package.json metadata, CI gates, controller exports — v1.0 stable Phase 27
-- ✓ Documentation corrections: fixed 6 critical doc errors, added narrative docs for 7 features — v1.0 stable Phase 28
-- ✓ Demo component fixes: accessibility, touch handling, TypeScript types, API corrections — v1.0 stable Phase 29
-- ✓ DX convenience APIs: fadeIn/fadeOut, loop, dispose, context-free createAnalyzer, note-based oscillator, BeatTrack.setPattern — v1.0 stable Phase 33
-- ✓ Test gap closure: factory function tests, oscillator freq:0 fix, AudioSprite stop, gain guards, effects batch, BeatTrack events — v1.0 stable Phase 34
-- ✓ Documentation expansion: concepts split, AudioSprite/LayeredSound/Crossfade examples, React integration guide, API fixes — v1.0 stable Phase 35
-- ✓ Documentation sync: guide pages updated for Phase 33 APIs, TypeDoc regenerated, CHANGELOG updated, stale API sweep clean — v1.0 stable Phase 36
-- ✓ Nice-to-have DX: AudioInput flexibility, createNoise, volume alias, createTracks, typed events, narrowed ControlType, TypedEventEmitter mixin, onPlaySet docs — v1.0 stable Phase 37
-- ✓ Docs site SEO and accessibility: OG image, per-page meta, canonical URLs, JSON-LD, WCAG focus-visible, canvas ARIA, DrumMachine a11y, XY Pad keyboard operation — v1.0 stable Phase 44
+- ✓ Source code fixes: race conditions, memory leaks, missing exports, API contract violations — M3 Phase 26
+- ✓ Package quality: professional README, package.json metadata, CI gates, controller exports — M3 Phase 27
+- ✓ Documentation corrections: fixed 6 critical doc errors, added narrative docs for 7 features — M3 Phase 28
+- ✓ Demo component fixes: accessibility, touch handling, TypeScript types, API corrections — M3 Phase 29
+- ✓ DX convenience APIs: fadeIn/fadeOut, loop, dispose, context-free createAnalyzer, note-based oscillator, BeatTrack.setPattern — M3 Phase 33
+- ✓ Test gap closure: factory function tests, oscillator freq:0 fix, AudioSprite stop, gain guards, effects batch, BeatTrack events — M3 Phase 34
+- ✓ Documentation expansion: concepts split, AudioSprite/LayeredSound/Crossfade examples, React integration guide, API fixes — M3 Phase 35
+- ✓ Documentation sync: guide pages updated for Phase 33 APIs, TypeDoc regenerated, CHANGELOG updated, stale API sweep clean — M3 Phase 36
+- ✓ Nice-to-have DX: AudioInput flexibility, createNoise, volume alias, createTracks, typed events, narrowed ControlType, TypedEventEmitter mixin, onPlaySet docs — M3 Phase 37
+- ✓ Docs site SEO and accessibility: OG image, per-page meta, canonical URLs, JSON-LD, WCAG focus-visible, canvas ARIA, DrumMachine a11y, XY Pad keyboard operation — M3 Phase 44
+
+- ✓ Built-in effects: delay, reverb, distortion, compressor, EQ with BaseEffect pattern — M5
+- ✓ LFO modulation: connectable to any AudioParam, syncLifecycle, retrigger modes — M5
+- ✓ Transport/Clock: global BPM-synced timeline with mute/solo, BeatTrack sync — M5
+- ✓ Sequencer: musical time notation ("4n", "8t", "2m"), live BPM changes — M5
+- ✓ PolySynth: voice allocation with 3 steal strategies, custom voice factory — M5
+- ✓ GrainPlayer: granular synthesis with independent pitch/time control — M5
+- ✓ Audio Sprites Redesign: Howler + audiosprite manifest auto-detection — M6
+- ✓ Multiple AudioContext Support: optional BaseAudioContext first-param on all factories — M6
+- ✓ llms.txt AI Discoverability: llms.txt/llms-full.txt with llm-exclude/llm-only annotations — M6
+- ✓ Demo UX: lazy init on first interaction, no load buttons, animated playheads — M6
 
 ### Active
 
-Effects & Transport milestone — built-in effects, LFO, transport/clock, sequencer, PolySynth, GrainPlayer. See `.planning/REQUIREMENTS.md` for detailed REQ-IDs.
+No active requirements. All 6 milestones complete. Next milestone TBD.
 
 ### Out of Scope
 
@@ -56,37 +67,26 @@ Effects & Transport milestone — built-in effects, LFO, transport/clock, sequen
 - **Recording/capture** — requires MediaRecorder API integration, v2 feature
 - **Microphone input** — requires MediaStream API integration, v2 feature
 - **Central AudioManager/registry** — users manage their own collections; collection utilities are sufficient
-- **Multiple simultaneous AudioContexts** — single context pattern is simpler and sufficient
 - **MIDI support** — specialized, can be a separate package
 - **Audio worklets** — too low-level for "easy" API
 
-## Current Milestone: Effects & Transport
+## Current Status
 
-**Goal:** Close the feature gap between EZ Audio and full-featured audio frameworks by adding built-in effects, modulation (LFO), dynamics processing, and a global transport/clock for tempo-synced sequencing.
+All 6 milestones complete. No active milestone. Next milestone TBD via `/gsd:new-milestone`.
 
-**Target features:**
-- Built-in effects: delay, reverb, distortion, chorus, compressor, limiter, EQ
-- LFO: low-frequency oscillator connectable to parameters (enables tremolo, vibrato, auto-filter, auto-pan)
-- Transport/Clock: global BPM-synced timeline that multiple BeatTracks/sequences can lock to
-- Sequencer/Pattern: generalize BeatTrack concept into arbitrary event sequencing with musical time notation
-- PolySynth: voice allocation wrapper for polyphonic oscillator playback
-- GrainPlayer: granular synthesis with independent pitch and time control
-
-**Discussion topics for effects phase:** WASM-based effects, VST support feasibility, tuna.js integration patterns
-
-**Note:** This is pre-release work. The library ships to npm 1.0.0 when it's ready — no rush.
+**Note:** Milestones are numbered sequentially and do not correspond to npm versions. The library ships when it's ready.
 
 ## Context
 
 **Origins:** Spiritual successor to [ember-audio](https://sethbrasile.github.io/ember-audio/), rebuilt for vanilla TypeScript with no dependencies.
 
-**Current state:** Pre-release. Internal milestones v1.0-MVP, v1.1-Quality&Polish, and v1.0-Stable (phases 17-46) complete. TypeScript library with 1038+ tests, published to npm as `ez-web-audio@0.1.0` (pre-release). VitePress docs site with 11+ interactive demos, SEO-optimized with per-page OG tags, structured data, and WCAG accessibility improvements. Now addressing deep review findings for production readiness.
+**Current state:** All 6 milestones complete (MVP, Quality & Polish, Stable Release, Deep Review Hardening, Effects & Transport, DX & Discoverability). TypeScript library with 1920+ unit tests + 20 E2E tests, published to npm as `ez-web-audio@0.1.0` (pre-release). VitePress docs site with 11+ interactive demos, SEO-optimized, AI-discoverable via llms.txt. Full feature set: ADSR, effects, LFO, transport, sequencer, PolySynth, GrainPlayer, audio sprites, multiple AudioContext support.
 
-**Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference.
+**Tech stack:** Pure TypeScript, Vite build, Vitest + Playwright testing, VitePress + Vue docs site, TypeDoc API reference, vitepress-plugin-llms.
 
-**Bundle:** 125 kB (30.4 kB gzipped), tree-shakeable ESM-only.
+**Bundle:** ~62,570 LOC TypeScript, tree-shakeable ESM-only.
 
-**Note:** npm 0.1.0 is the only public release. Internal milestones (v1.0 MVP, v1.1, v1.0 Stable) are project phases, not npm versions. The npm 1.0.0 release happens when the library is ready — no timeline pressure.
+**Note:** npm 0.1.0 is the only public release. Milestones are numbered project phases, not npm versions. A versioned npm release happens when the library is ready.
 
 ## Constraints
 
@@ -121,6 +121,10 @@ Effects & Transport milestone — built-in effects, LFO, transport/clock, sequen
 | DEF-04 consume-once semantics | onPlaySet/onPlayRamp schedules cleared after each play; re-schedule before each play() for repeated automation | ✓ Good |
 
 | Phase 26 source code fixes | 18 bugs/leaks/contract violations fixed from code review | ✓ Good |
+| Howler manifest auto-detection | normalizeManifest() converts Howler tuples to audiosprite format; single internal type | ✓ Good |
+| BaseAudioContext overloads on all factories | Optional first-param pattern, non-breaking; instanceof detection | ✓ Good |
+| vitepress-plugin-llms for AI discoverability | llms.txt/llms-full.txt auto-generated; llm-exclude/llm-only for Vue demos | ✓ Good |
+| Lazy init pattern for demos | No load buttons; first user interaction triggers AudioContext + asset loading | ✓ Good |
 
 ---
-*Last updated: 2026-02-28 after Effects & Transport milestone started*
+*Last updated: 2026-03-08 after Milestone 6 (DX & Discoverability) shipped*

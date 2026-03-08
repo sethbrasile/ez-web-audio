@@ -1,3 +1,12 @@
+# Requirements Archive: 6 DX & Discoverability
+
+**Archived:** 2026-03-08
+**Status:** SHIPPED
+
+For current requirements, see `.planning/REQUIREMENTS.md`.
+
+---
+
 # Requirements: EZ Audio — Effects & Transport
 
 **Defined:** 2026-02-28
