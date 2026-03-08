@@ -19,7 +19,7 @@ describe('gain restoration after fadeOut/stop', () => {
     audioContext = createMockContext()
   })
 
-  describe('Sound gain restoration', () => {
+  describe('sound gain restoration', () => {
     it('play after fadeOut restores gain to default (1.0)', async () => {
       const sound = createSound(audioContext)
       await sound.play()
@@ -76,7 +76,7 @@ describe('gain restoration after fadeOut/stop', () => {
     })
   })
 
-  describe('Oscillator gain restoration', () => {
+  describe('oscillator gain restoration', () => {
     it('play after stop restores gain to default (1.0)', async () => {
       const osc = new Oscillator(audioContext, { frequency: 440 })
       await osc.play()

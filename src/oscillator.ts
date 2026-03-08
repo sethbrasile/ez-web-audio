@@ -424,24 +424,46 @@ export class Oscillator extends BaseSound {
    * @param time - The AudioContext time when playback should stop
    */
   public async stopAt(time: number): Promise<void> {
-    // Apply anti-click fade-out unless envelope release is handling the ramp
-    if (this._isPlaying && !this.envelope) {
-      const now = this.audioContext.currentTime
-      const fadeTime = 0.01 // 10ms — fast enough to be inaudible, long enough to prevent clicks
-      const fadeEnd = Math.max(time, now + fadeTime)
-      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, fadeEnd - fadeTime)
-      this.gainNode.gain.linearRampToValueAtTime(0, fadeEnd)
+    if (!this._isPlaying) {
+      await super.stopAt(time)
+      return
     }
-    await super.stopAt(time)
+
+    const now = this.audioContext.currentTime
+    const fadeTime = 0.01 // 10ms anti-click ramp
+    const fadeEnd = Math.max(time, now) + fadeTime
+
+    // Cancel any in-progress gain automation (envelope release, etc.)
+    // and ramp to exact silence before stopping the node
+    this.gainNode.gain.cancelScheduledValues(now)
+    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now)
+    this.gainNode.gain.linearRampToValueAtTime(0, fadeEnd)
+
+    // Stop the oscillator node after the fade completes
+    this.audioSourceNode.stop(fadeEnd)
+
+    // Mark as stopped immediately — the fade is an implementation detail
+    this._isPlaying = false
+    this.emit('stop', { time: now, source: this })
   }
 
   public async stop(): Promise<void> {
     if (this.envelope && this._isPlaying) {
-      const releaseTime = this.audioContext.currentTime
-      this.controller.triggerRelease(releaseTime)
-      // Schedule actual stop after release completes
-      const releaseEndTime = releaseTime + this.envelope.release
-      await this.stopAt(releaseEndTime)
+      const now = this.audioContext.currentTime
+      const release = this.envelope.release
+
+      // Trigger envelope release — handles cancelAndHoldAtTime + linear ramp
+      // to exact zero. All gain automation is managed by the envelope.
+      this.controller.triggerRelease(now)
+
+      // Stop oscillator slightly after release completes. The gain is already
+      // at zero by releaseEnd; the extra 10ms is a safety margin to ensure
+      // the zero-gain state has been rendered before the node is killed.
+      const padding = release < 0.001 ? 0 : 0.01
+      this.audioSourceNode.stop(now + release + padding)
+
+      this._isPlaying = false
+      this.emit('stop', { time: now, source: this })
     }
     else {
       await super.stop()

@@ -17,6 +17,7 @@ const durationString = ref('0:00')
 
 let track: any = null
 let animationFrame: number | null = null
+let isSeeking = false
 
 async function loadTrack() {
   if (loaded.value)
@@ -35,6 +36,9 @@ async function loadTrack() {
     durationString.value = track.duration.string
 
     track.on('stop', () => {
+      // Ignore stop events triggered by seek (seek does stop→play internally)
+      if (isSeeking)
+        return
       isPlaying.value = false
       seekPosition.value = 0
       positionString.value = '0:00'
@@ -42,6 +46,11 @@ async function loadTrack() {
         cancelAnimationFrame(animationFrame)
         animationFrame = null
       }
+    })
+
+    track.on('play', () => {
+      isPlaying.value = true
+      updatePosition()
     })
 
     loaded.value = true
@@ -79,12 +88,7 @@ async function playPause() {
   }
   else {
     track.changeGainTo(gain.value)
-    if (track.position.raw > 0) {
-      track.resume()
-    }
-    else {
-      track.play()
-    }
+    await track.play()
     isPlaying.value = true
     updatePosition()
   }
@@ -104,9 +108,11 @@ function stop() {
   }
 }
 
-function seek() {
+async function seek() {
   if (track) {
-    track.seek(seekPosition.value).as('seconds')
+    isSeeking = true
+    await track.seek(seekPosition.value).as('seconds')
+    isSeeking = false
     positionString.value = track.position.string
   }
 }
@@ -153,7 +159,7 @@ onUnmounted(() => {
           step="0.1"
           :disabled="!loaded"
           :aria-label="`Seek position: ${positionString}`"
-          @change="seek"
+          @input="seek"
         >
       </div>
 

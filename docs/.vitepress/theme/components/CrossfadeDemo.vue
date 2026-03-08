@@ -15,9 +15,11 @@ let trackB: any = null
 let lib: any = null
 let animFrame: number | null = null
 
-async function initialize() {
-  if (loaded.value || loading.value)
-    return
+async function ensureLoaded() {
+  if (loaded.value)
+    return true
+  if (loading.value)
+    return false
 
   try {
     loading.value = true
@@ -27,8 +29,6 @@ async function initialize() {
       lib = await import('ez-web-audio')
     }
 
-    // Load the same file twice as two separate tracks for crossfade demo
-    // In production, these would be different audio files
     const [a, b] = await Promise.all([
       lib.createTrack('/ez-web-audio/audio/short-music.mp3'),
       lib.createTrack('/ez-web-audio/audio/short-music.mp3'),
@@ -50,9 +50,11 @@ async function initialize() {
     })
 
     loaded.value = true
+    return true
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load tracks'
+    return false
   }
   finally {
     loading.value = false
@@ -60,17 +62,17 @@ async function initialize() {
 }
 
 function updatePositions() {
-  if (trackA && activeTrack.value === 'A') {
+  if (trackA?.isPlaying) {
     positionA.value = trackA.position?.string ?? '0:00'
   }
-  if (trackB && activeTrack.value === 'B') {
+  if (trackB?.isPlaying) {
     positionB.value = trackB.position?.string ?? '0:00'
   }
   animFrame = requestAnimationFrame(updatePositions)
 }
 
 async function playTrackA() {
-  if (!trackA || isCrossfading.value)
+  if (isCrossfading.value || !(await ensureLoaded()))
     return
 
   try {
@@ -90,7 +92,7 @@ async function playTrackA() {
 }
 
 async function playTrackB() {
-  if (!trackB || isCrossfading.value)
+  if (isCrossfading.value || !(await ensureLoaded()))
     return
 
   try {
@@ -127,7 +129,7 @@ async function doCrossfade() {
     error.value = ''
     isCrossfading.value = true
 
-    await lib.crossfade(from, to, fadeDuration.value)
+    await lib.crossfade(from, to, fadeDuration.value, { afterFade: 'continue' })
 
     activeTrack.value = toLabel
     isCrossfading.value = false
@@ -166,16 +168,7 @@ onUnmounted(async () => {
 
 <template>
   <div class="crossfade-demo">
-    <div v-if="!loaded" class="init-section">
-      <button :disabled="loading" class="init-btn" @click="initialize">
-        {{ loading ? 'Loading tracks...' : 'Load Tracks' }}
-      </button>
-      <p class="hint">
-        Loads two tracks for crossfade demonstration
-      </p>
-    </div>
-
-    <div v-else class="controls">
+    <div class="controls">
       <div class="tracks">
         <div
           class="track-card"

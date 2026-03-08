@@ -79,7 +79,7 @@ async function togglePlay() {
     playing.value = false
   }
   else {
-    tracks.value.forEach(t => t.beatTrack.playBeats(bpm.value, 1 / 16))
+    tracks.value.forEach(t => t.beatTrack.playActiveBeats(bpm.value, 1 / 16))
     playing.value = true
   }
 }

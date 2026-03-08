@@ -203,18 +203,40 @@ export class Envelope {
   /**
    * Applies the release phase to an AudioParam.
    *
-   * Uses setTargetAtTime for smooth exponential decay to zero.
-   * The time constant is calculated as releaseTime/5, which gives
-   * approximately 99% completion within releaseTime seconds.
+   * Cancels any in-progress attack/decay automation (preserving the current
+   * value via cancelAndHoldAtTime) and schedules a linear ramp to zero over
+   * the release duration. A linear ramp is used instead of setTargetAtTime
+   * because setTargetAtTime is an asymptotic exponential that never reaches
+   * zero — the residual amplitude causes an audible click when the oscillator
+   * node is stopped, especially on smooth waveforms (sine, triangle).
    *
    * @param gainParam - The AudioParam to schedule the release on
    * @param startTime - The audio context time to start the release phase
    */
   triggerRelease(gainParam: AudioParam, startTime: number): void {
-    // Use setTargetAtTime for smooth exponential decay to zero
-    // Time constant = release/5 gives ~99% completion in release seconds
-    const timeConstant = this.release / 5
-    gainParam.setTargetAtTime(0, startTime, timeConstant)
+    // Cancel in-progress attack/decay while preserving current computed value.
+    // cancelAndHoldAtTime freezes the param at whatever value the automation
+    // would have computed at startTime — unlike cancelScheduledValues which
+    // reverts to the last explicitly set value (causing clicks).
+    const paramWithCancelAndHold = gainParam as AudioParamWithCancelAndHold
+    if (typeof paramWithCancelAndHold.cancelAndHoldAtTime === 'function') {
+      paramWithCancelAndHold.cancelAndHoldAtTime(startTime)
+    }
+    else {
+      // Fallback: estimate current value and anchor manually
+      const currentValue = this.estimateCurrentValue(startTime)
+      gainParam.cancelScheduledValues(startTime)
+      gainParam.setValueAtTime(currentValue, startTime)
+    }
+
+    if (this.release < 0.001) {
+      // Instant release — snap to zero
+      gainParam.setValueAtTime(0, startTime)
+    }
+    else {
+      // Linear ramp guarantees reaching exactly zero
+      gainParam.linearRampToValueAtTime(0, startTime + this.release)
+    }
 
     // Mark envelope as inactive
     this._isActive = false

@@ -91,9 +91,8 @@ Audit found 8 pages where interactive demos and code examples are disconnected. 
 
 ## After Bugs: Discussion Topics
 
-- Tone.js feature gap analysis — what would it take to support "serious music applications"?
-- Audio sprites redesign — real sound sprite with laser/SFX, show full file then isolated segments
-- ~~Distortion/delay effect examples~~ — folded into v1.2 milestone (effects phase)
 - ~~Tone.js feature gap analysis~~ — completed, saved to `.planning/tone-gap-analysis.md`, driving v1.2 milestone
-- Multiple AudioContext use cases — worth supporting?
-- llms.txt — research current conventions, Astro/VitePress plugins for auto-generation, should include API docs + docs site content
+- ~~Distortion/delay effect examples~~ — folded into v1.2 milestone (effects phase)
+- ~~Audio sprites redesign~~ — discussed 2026-03-01, spec at `.planning/specs/audio-sprites-redesign.md`, Phase 61
+- ~~Multiple AudioContext use cases~~ — discussed 2026-03-01, spec at `.planning/specs/multiple-audiocontext.md`, Phase 62. Decision: add optional ctx first-param overloads to all factory functions (matches existing effect factory convention), document advanced pattern. No namespace abstraction needed.
+- ~~llms.txt~~ — discussed 2026-03-01, spec at `.planning/specs/llms-txt.md`, Phase 63. Using vitepress-plugin-llms, footer with auto-generated file size, API docs included automatically via TypeDoc markdown pages.

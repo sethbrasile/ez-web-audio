@@ -91,3 +91,7 @@ Tests use Vitest with happy-dom environment and `standardized-audio-context-mock
 **Beat/BeatTrack**: A `Beat` represents a single rhythmic position that can be active (plays sound) or inactive (rest). `BeatTrack` manages an array of beats for drum machine patterns.
 
 **TimeObject**: Duration and position are returned as `{ raw: seconds, string: 'MM:SS', pojo: { minutes, seconds } }`.
+
+### Demo/Example Components
+
+**No loading buttons**: Demo components must NOT have a separate "Load" or "Init" button that hides the example until clicked. The user's first interaction (e.g. clicking "Play") is what initializes the AudioContext and loads audio. Examples should render fully visible immediately and lazily initialize audio on first user interaction.

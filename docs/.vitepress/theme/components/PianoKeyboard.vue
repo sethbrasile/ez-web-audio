@@ -31,7 +31,6 @@ const keyboardMap: Record<string, string> = {
   h: 'A4',
   u: 'Bb4',
   j: 'B4',
-  k: 'C5',
 }
 
 // Track which keys are currently pressed to prevent key repeat
@@ -53,7 +52,6 @@ const allNotes = [
   { note: 'A4', type: 'white', label: 'A' },
   { note: 'Bb4', type: 'black', label: 'A#' },
   { note: 'B4', type: 'white', label: 'B' },
-  { note: 'C5', type: 'white', label: 'C' },
 ]
 
 // Calculate white key positions for black key positioning
@@ -185,9 +183,9 @@ onUnmounted(() => {
       id="keyboard-shortcut-hint"
       class="keyboard-hint"
       role="note"
-      aria-label="Keyboard shortcuts: Use keys A through K to play notes. W, E, T, Y, U for sharps."
+      aria-label="Keyboard shortcuts: Use keys A through J to play notes. W, E, T, Y, U for sharps."
     >
-      Use keys A-K to play (W, E, T, Y, U for sharps)
+      Use keys A-J to play (W, E, T, Y, U for sharps)
     </div>
     <div class="keys-container" aria-describedby="keyboard-shortcut-hint">
       <div
@@ -228,7 +226,7 @@ onUnmounted(() => {
 .keys-container {
   position: relative;
   height: 150px;
-  width: 320px;
+  width: 280px;
   margin: 0 auto;
 }
 

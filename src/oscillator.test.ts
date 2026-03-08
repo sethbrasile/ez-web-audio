@@ -1,8 +1,8 @@
+import frequencyMap from '@utils/frequency-map'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { Oscillator } from '@/oscillator'
 import { InvalidNoteError } from './errors'
-import frequencyMap from '@utils/frequency-map'
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext

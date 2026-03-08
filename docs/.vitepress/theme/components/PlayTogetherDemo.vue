@@ -4,7 +4,7 @@ import { onUnmounted, ref } from 'vue'
 const loading = ref(false)
 const loaded = ref(false)
 const error = ref('')
-const status = ref('Click Init to start')
+const status = ref('Ready')
 
 const soundPlaying = ref([false, false, false])
 
@@ -18,9 +18,11 @@ const soundUrls = [
 let sounds: any[] = []
 let lib: any = null
 
-async function initialize() {
-  if (loaded.value || loading.value)
-    return
+async function ensureLoaded() {
+  if (loaded.value)
+    return true
+  if (loading.value)
+    return false
 
   try {
     loading.value = true
@@ -31,18 +33,18 @@ async function initialize() {
       lib = await import('ez-web-audio')
     }
 
-    await lib.initAudio()
-
     sounds = await Promise.all(
       soundUrls.map(url => lib.createSound(url)),
     )
 
     loaded.value = true
     status.value = 'Ready'
+    return true
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load sounds'
-    status.value = 'Click Init to start'
+    status.value = 'Ready'
+    return false
   }
   finally {
     loading.value = false
@@ -50,7 +52,7 @@ async function initialize() {
 }
 
 async function playTogether() {
-  if (!lib || sounds.length === 0)
+  if (!(await ensureLoaded()))
     return
 
   try {
@@ -72,7 +74,7 @@ async function playTogether() {
 }
 
 async function playSequentially() {
-  if (!lib || sounds.length === 0)
+  if (!(await ensureLoaded()))
     return
 
   try {
@@ -98,7 +100,7 @@ async function playSequentially() {
 }
 
 async function playSound(index: number) {
-  if (!sounds[index])
+  if (!(await ensureLoaded()) || !sounds[index])
     return
 
   try {
@@ -126,16 +128,7 @@ onUnmounted(() => {
 
 <template>
   <div class="play-together-demo">
-    <div v-if="!loaded" class="init-section">
-      <button :disabled="loading" class="init-btn" @click="initialize">
-        {{ loading ? 'Loading sounds...' : 'Init Audio' }}
-      </button>
-      <p class="hint">
-        Loads kick, snare, and hi-hat for synchronized playback comparison
-      </p>
-    </div>
-
-    <div v-else class="controls">
+    <div class="controls">
       <div class="main-controls">
         <button class="together-btn" @click="playTogether">
           Play Together

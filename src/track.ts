@@ -325,7 +325,12 @@ export class Track extends Sound<TrackEventMap> {
         return
 
       if (_isPlaying) {
-        await this.stop() // await ensures startOffset=0 completes before new offset is set (C-4)
+        // Cancel RAF before stopping to prevent position overwrites
+        if (this.rafId !== null) {
+          cancelAnimationFrame(this.rafId)
+          this.rafId = null
+        }
+        await this.stop()
         if (seekId !== this._seekId)
           return // superseded by newer seek
         this.startOffset = adjustedOffset

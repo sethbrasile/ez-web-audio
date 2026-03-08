@@ -961,7 +961,7 @@ describe('sound', () => {
   describe('controller update on play (BUG-02 regression)', () => {
     it('calls controller.updateAudioSource with new source node on play()', async () => {
       const sound = createSound(audioContext)
-      const updateSpy = vi.spyOn(sound['controller'], 'updateAudioSource')
+      const updateSpy = vi.spyOn(sound.controller, 'updateAudioSource')
 
       await sound.play()
 
@@ -971,7 +971,7 @@ describe('sound', () => {
 
     it('calls controller.updateAudioSource on each play() with new source node', async () => {
       const sound = createSound(audioContext)
-      const updateSpy = vi.spyOn(sound['controller'], 'updateAudioSource')
+      const updateSpy = vi.spyOn(sound.controller, 'updateAudioSource')
 
       await sound.play()
       const firstSource = sound.audioSourceNode

@@ -35,5 +35,4 @@ export class SoundController extends BaseParamController implements ParamControl
     this.applyRampValues(this.linearValues, currentTime, 'linear')
     this.clearScheduledValues()
   }
-
 }

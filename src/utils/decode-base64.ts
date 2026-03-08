@@ -48,13 +48,20 @@ export function mungeSoundFont(soundfont: string): string[] {
   }
 
   const begin = equalIndex + 2
-  const end = soundfont.lastIndexOf('"') + 1
+  // Support both double-quoted and single-quoted soundfonts (e.g., linted/reformatted files)
+  let end = soundfont.lastIndexOf('"')
+  if (end < begin) {
+    end = soundfont.lastIndexOf('\'')
+  }
+  end += 1
 
   if (end <= begin) {
     throw new Error('mungeSoundFont: malformed soundfont — could not locate note data boundaries')
   }
 
   const string = `${soundfont.slice(begin, end)}}`
+    .replace(/'/g, '"') // normalize single quotes to double quotes for JSON.parse
+    .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":') // quote unquoted keys for JSON.parse
     .replace(/data:audio\/mp3;base64,/g, '')
     .replace(/data:audio\/mpeg;base64,/g, '')
     .replace(/data:audio\/ogg;base64,/g, '')

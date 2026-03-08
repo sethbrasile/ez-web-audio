@@ -220,7 +220,6 @@ describe('preload', () => {
     })
 
     it('setting limit to 0 evicts all entries', () => {
-
       setInCache('/a.mp3', createMockResponse())
       setInCache('/b.mp3', createMockResponse())
       expect(getCacheSize()).toBe(2)
@@ -230,7 +229,6 @@ describe('preload', () => {
     })
 
     it('reducing limit below current cache size evicts oldest entries', () => {
-
       setInCache('/a.mp3', createMockResponse())
       setInCache('/b.mp3', createMockResponse())
       setInCache('/c.mp3', createMockResponse())
@@ -281,7 +279,6 @@ describe('preload', () => {
     })
 
     it('evicts oldest entries first (FIFO) when over limit', () => {
-
       setInCache('/first.mp3', createMockResponse())
       setInCache('/second.mp3', createMockResponse())
       setInCache('/third.mp3', createMockResponse())
@@ -294,7 +291,6 @@ describe('preload', () => {
     })
 
     it('multiple evictions reduce to exactly the limit count', () => {
-
       for (let i = 0; i < 10; i++) {
         setInCache(`/audio-${i}.mp3`, createMockResponse())
       }

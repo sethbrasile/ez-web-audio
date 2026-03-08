@@ -152,32 +152,33 @@ describe('envelope', () => {
   })
 
   describe('release', () => {
-    it('schedules setTargetAtTime with correct time constant', () => {
+    it('schedules linear ramp to zero over release duration', () => {
       const envelope = new Envelope({ release: 0.3 })
-      const setTargetAtTimeSpy = vi.spyOn(gainNode.gain, 'setTargetAtTime')
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
 
       const release = 2.0
       envelope.triggerRelease(gainNode.gain, release)
 
-      expect(setTargetAtTimeSpy).toHaveBeenCalledWith(0, release, 0.3 / 5)
+      expect(linearRampSpy).toHaveBeenCalledWith(0, release + 0.3)
     })
 
-    it('uses release / 5 as time constant for 99% completion', () => {
+    it('uses cancelAndHoldAtTime to preserve current value when available', () => {
       const envelope = new Envelope({ release: 1.0 })
-      const setTargetAtTimeSpy = vi.spyOn(gainNode.gain, 'setTargetAtTime')
+      const cancelAndHoldSpy = vi.spyOn(gainNode.gain as any, 'cancelAndHoldAtTime')
 
       envelope.triggerRelease(gainNode.gain, 0)
 
-      expect(setTargetAtTimeSpy).toHaveBeenCalledWith(0, 0, 0.2)
+      expect(cancelAndHoldSpy).toHaveBeenCalledWith(0)
     })
 
-    it('handles very short release times', () => {
-      const envelope = new Envelope({ release: 0.01 })
-      const setTargetAtTimeSpy = vi.spyOn(gainNode.gain, 'setTargetAtTime')
+    it('handles very short release times with instant zero', () => {
+      const envelope = new Envelope({ release: 0.0005 })
+      const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
 
       envelope.triggerRelease(gainNode.gain, 0)
 
-      expect(setTargetAtTimeSpy).toHaveBeenCalledWith(0, 0, 0.01 / 5)
+      // Release < 0.001 snaps to zero instantly
+      expect(setValueSpy).toHaveBeenCalledWith(0, 0)
     })
   })
 
