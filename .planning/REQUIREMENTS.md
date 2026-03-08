@@ -63,34 +63,34 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LFO-01 | Pending | Pending |
-| LFO-02 | Pending | Pending |
-| LFO-03 | Pending | Pending |
-| LFO-04 | Pending | Pending |
-| LFO-05 | Pending | Pending |
-| POLY-01 | Pending | Pending |
-| POLY-02 | Pending | Pending |
-| POLY-03 | Pending | Pending |
-| POLY-04 | Pending | Pending |
-| FX-01 | Pending | Pending |
-| FX-02 | Pending | Pending |
-| FX-03 | Pending | Pending |
-| FX-04 | Pending | Pending |
-| FX-05 | Pending | Pending |
-| TSEQ-01 | Pending | Pending |
-| TSEQ-02 | Pending | Pending |
-| TSEQ-03 | Pending | Pending |
-| TSEQ-04 | Pending | Pending |
-| GRAIN-01 | Pending | Pending |
-| GRAIN-02 | Pending | Pending |
-| GRAIN-03 | Pending | Pending |
-| GRAIN-04 | Pending | Pending |
+| LFO-01 | Phase 67 | Pending |
+| LFO-02 | Phase 67 | Pending |
+| LFO-03 | Phase 67 | Pending |
+| LFO-04 | Phase 67 | Pending |
+| LFO-05 | Phase 67 | Pending |
+| POLY-01 | Phase 68 | Pending |
+| POLY-02 | Phase 68 | Pending |
+| POLY-03 | Phase 68 | Pending |
+| POLY-04 | Phase 68 | Pending |
+| FX-01 | Phase 69 | Pending |
+| FX-02 | Phase 69 | Pending |
+| FX-03 | Phase 69 | Pending |
+| FX-04 | Phase 69 | Pending |
+| FX-05 | Phase 69 | Pending |
+| TSEQ-01 | Phase 71 | Pending |
+| TSEQ-02 | Phase 71 | Pending |
+| TSEQ-03 | Phase 71 | Pending |
+| TSEQ-04 | Phase 71 | Pending |
+| GRAIN-01 | Phase 70 | Pending |
+| GRAIN-02 | Phase 70 | Pending |
+| GRAIN-03 | Phase 70 | Pending |
+| GRAIN-04 | Phase 70 | Pending |
 
 **Coverage:**
 - Milestone 7 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22 ⚠️
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after initial definition*
+*Last updated: 2026-03-08 after roadmap creation*
