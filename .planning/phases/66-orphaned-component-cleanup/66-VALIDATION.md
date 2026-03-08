@@ -38,8 +38,8 @@ created: 2026-03-08
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 66-01-01 | 01 | 1 | SC-1 | manual-only | `grep -rl "PlayTogetherDemo" docs/examples/` | N/A (audit) | ⬜ pending |
-| 66-01-02 | 01 | 1 | SC-2 | manual-only | orphan scan script | N/A (audit) | ⬜ pending |
+| 66-01-01 | 01 | 1 | SC-1 | manual-only | `grep -rl "PlayTogetherDemo" docs/examples/` | N/A (audit) | ✅ green |
+| 66-01-02 | 01 | 1 | SC-2 | manual-only | orphan scan script | N/A (audit) | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -69,4 +69,11 @@ Existing infrastructure covers all phase requirements.
 - [x] Feedback latency < 30s
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+## Scan Results
+
+- **SC-1:** `grep -rl "PlayTogetherDemo" docs/examples/` returned `docs/examples/layered-sound.md` -- confirmed active usage
+- **SC-2:** Full orphan scan of all 24 Vue components in `docs/.vitepress/theme/components/` found zero orphaned components. Every component has at least one reference from a docs page, theme file, or sibling component.
+
+The M6 audit finding (item 8) was a false positive. PlayTogetherDemo.vue was moved from its own page to layered-sound.md during a consolidation, not orphaned.
+
+**Approval: complete**
