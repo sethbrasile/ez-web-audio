@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-09
 
 ## Milestones
 
@@ -99,7 +99,10 @@ See milestones/ archive for full phase details.
   2. User can see an animated canvas showing the LFO waveform shape updating in real time while audio plays
   3. User can drag rate and depth sliders and hear the modulation change immediately while playing
   4. Demo renders fully visible on page load with no "Load" button -- first Play click initializes audio
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 67-01-PLAN.md — Build LFO demo component, VitePress page, sidebar registration
+- [ ] 67-02-PLAN.md — E2E tests and human verification
 
 ### Phase 68: PolySynth Demo
 **Goal**: Users can play polyphonic chords on a piano keyboard and observe voice allocation behavior across different steal strategies
@@ -153,7 +156,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 67. LFO Modulation Demo | M7 | 0/TBD | Not started | - |
+| 67. LFO Modulation Demo | M7 | 0/2 | Planning complete | - |
 | 68. PolySynth Demo | M7 | 0/TBD | Not started | - |
 | 69. Effects Chain Demo | M7 | 0/TBD | Not started | - |
 | 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |
@@ -170,4 +173,4 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 - `milestones/6-REQUIREMENTS.md` — Milestone 6 requirements (M5 REQUIREMENTS.md, inherited)
 - `milestones/6-phases/` — Milestone 6 phase directories (Phases 61-66)
 
-*Last updated: 2026-03-08 after Milestone 7 roadmap created*
+*Last updated: 2026-03-09 after Phase 67 planning*
