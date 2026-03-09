@@ -26,6 +26,7 @@ test.describe('Demo Pages - Error Detection', () => {
     'examples/ambient-generator',
     'examples/visualization',
     'examples/lfo-modulation',
+    'examples/polysynth',
   ]
 
   for (const path of demoPages) {

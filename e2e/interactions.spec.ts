@@ -304,6 +304,123 @@ test.describe('LFO Modulation page interactions', () => {
   })
 })
 
+test.describe('PolySynth page interactions', () => {
+  test('Piano keyboard renders and keys are clickable', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/polysynth')
+    await page.waitForSelector('.key.white', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Verify white and black keys are visible
+    expect(await page.locator('.key.white').count()).toBeGreaterThanOrEqual(7)
+    expect(await page.locator('.key.black').count()).toBeGreaterThanOrEqual(4)
+
+    // Click a white piano key (C4)
+    const c4Key = page.locator('[aria-label="Play C4"]')
+    expect(await c4Key.isVisible()).toBe(true)
+    await c4Key.click()
+
+    // Verify no JS errors after clicking
+    expect(errors, 'polysynth keyboard should have no page errors').toHaveLength(0)
+  })
+
+  test('Voice count display is visible', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/polysynth')
+    await page.waitForSelector('.voice-badge', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Verify voice label text is visible
+    expect(await page.locator('.voice-label').isVisible()).toBe(true)
+    expect(await page.locator('.voice-label').textContent()).toContain('Voices')
+
+    // Verify voice numbers display
+    expect(await page.locator('.voice-numbers').isVisible()).toBe(true)
+
+    // Verify fill bar element exists
+    expect(await page.locator('.fill-bar').isVisible()).toBe(true)
+
+    // Verify no JS errors
+    expect(errors, 'polysynth voice count should have no page errors').toHaveLength(0)
+  })
+
+  test('Steal strategy dropdown changes value', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/polysynth')
+    await page.waitForSelector('[aria-label="Steal strategy"]', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    const dropdown = page.locator('[aria-label="Steal strategy"]')
+
+    // Verify dropdown has expected options
+    const options = await dropdown.locator('option').allTextContents()
+    expect(options).toContain('Oldest (LRU)')
+    expect(options).toContain('Oldest Active')
+    expect(options).toContain('Quietest')
+
+    // Verify initial value is 'lru'
+    expect(await dropdown.inputValue()).toBe('lru')
+
+    // Change to 'oldest-active'
+    await dropdown.selectOption('oldest-active')
+
+    // Verify selection changed
+    expect(await dropdown.inputValue()).toBe('oldest-active')
+
+    // Verify no JS errors
+    expect(errors, 'polysynth strategy dropdown should have no page errors').toHaveLength(0)
+  })
+
+  test('ADSR sliders are present and interactive', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/polysynth')
+    await page.waitForSelector('.adsr-row', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Verify 4 ADSR sliders exist
+    const sliders = page.locator('.adsr-row input[type="range"]')
+    expect(await sliders.count()).toBe(4)
+
+    // Verify preset buttons exist
+    const presetBtns = page.locator('.preset-btn')
+    expect(await presetBtns.count()).toBe(4)
+    expect(await presetBtns.nth(0).textContent()).toContain('Piano')
+    expect(await presetBtns.nth(1).textContent()).toContain('Pad')
+    expect(await presetBtns.nth(2).textContent()).toContain('Pluck')
+    expect(await presetBtns.nth(3).textContent()).toContain('Lead')
+
+    // Read initial slider values (attack slider = first)
+    const attackBefore = await sliders.nth(0).inputValue()
+
+    // Click "Pad" preset (long attack = 0.5, different from default 0.01)
+    await presetBtns.nth(1).click()
+
+    // Wait for slider value to update
+    await page.waitForFunction(
+      () => {
+        const slider = document.querySelector('.adsr-row input[type="range"]') as HTMLInputElement
+        return slider && slider.value !== '0.01'
+      },
+      { timeout: 5000 },
+    )
+
+    // Verify at least one slider changed value
+    const attackAfter = await sliders.nth(0).inputValue()
+    expect(attackAfter).not.toBe(attackBefore)
+
+    // Verify no JS errors
+    expect(errors, 'polysynth ADSR should have no page errors').toHaveLength(0)
+  })
+})
+
 test.describe('Mobile viewport', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
