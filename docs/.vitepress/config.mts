@@ -157,6 +157,12 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Modulation',
+          items: [
+            { text: 'LFO Modulation', link: '/examples/lfo-modulation' },
+          ],
+        },
+        {
           text: 'Timing & Sequencing',
           items: [
             { text: 'Timing Basics', link: '/examples/timing' },
