@@ -154,6 +154,7 @@ export default defineConfig({
             { text: 'Synth Keyboard', link: '/examples/synth-keyboard' },
             { text: 'XY Pad', link: '/examples/xy-pad' },
             { text: 'Synth Drum Kit', link: '/examples/synth-drum-kit' },
+            { text: 'PolySynth', link: '/examples/polysynth' },
           ],
         },
         {
