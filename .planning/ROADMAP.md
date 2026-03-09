@@ -156,7 +156,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 67. LFO Modulation Demo | M7 | 0/2 | Planning complete | - |
+| 67. LFO Modulation Demo | 1/2 | In Progress|  | - |
 | 68. PolySynth Demo | M7 | 0/TBD | Not started | - |
 | 69. Effects Chain Demo | M7 | 0/TBD | Not started | - |
 | 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |

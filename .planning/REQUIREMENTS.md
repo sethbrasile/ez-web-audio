@@ -9,11 +9,11 @@ Interactive demo pages for all M5 features that currently lack examples.
 
 ### LFO Modulation
 
-- [ ] **LFO-01**: User can hear LFO tremolo (gain modulation) on an oscillator
-- [ ] **LFO-02**: User can hear LFO vibrato (frequency modulation) on an oscillator
-- [ ] **LFO-03**: User can hear LFO filter sweep (cutoff modulation) on a filtered oscillator
-- [ ] **LFO-04**: User can see real-time canvas visualization of the LFO waveform
-- [ ] **LFO-05**: User can adjust LFO rate and depth per modulation target
+- [x] **LFO-01**: User can hear LFO tremolo (gain modulation) on an oscillator
+- [x] **LFO-02**: User can hear LFO vibrato (frequency modulation) on an oscillator
+- [x] **LFO-03**: User can hear LFO filter sweep (cutoff modulation) on a filtered oscillator
+- [x] **LFO-04**: User can see real-time canvas visualization of the LFO waveform
+- [x] **LFO-05**: User can adjust LFO rate and depth per modulation target
 
 ### PolySynth
 
@@ -63,11 +63,11 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LFO-01 | Phase 67 | Pending |
-| LFO-02 | Phase 67 | Pending |
-| LFO-03 | Phase 67 | Pending |
-| LFO-04 | Phase 67 | Pending |
-| LFO-05 | Phase 67 | Pending |
+| LFO-01 | Phase 67 | Complete |
+| LFO-02 | Phase 67 | Complete |
+| LFO-03 | Phase 67 | Complete |
+| LFO-04 | Phase 67 | Complete |
+| LFO-05 | Phase 67 | Complete |
 | POLY-01 | Phase 68 | Pending |
 | POLY-02 | Phase 68 | Pending |
 | POLY-03 | Phase 68 | Pending |
