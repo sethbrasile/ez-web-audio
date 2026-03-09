@@ -18,7 +18,7 @@ test.describe('Basic Playback page interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/basic-playback')
+    await page.goto('examples/basic-playback')
     await page.waitForSelector('.play-btn', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -41,7 +41,7 @@ test.describe('Effects page (FilterDemo) interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/effects')
+    await page.goto('examples/effects')
     await page.waitForSelector('.play-button', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -79,7 +79,7 @@ test.describe('Drum Machine page interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/drum-machine')
+    await page.goto('examples/drum-machine')
     await page.waitForSelector('.beat-cell', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -103,7 +103,7 @@ test.describe('Drum Machine page interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/drum-machine')
+    await page.goto('examples/drum-machine')
     await page.waitForSelector('.play-btn', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -141,7 +141,7 @@ test.describe('Synthesis page (OscillatorDemo) interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/synthesis')
+    await page.goto('examples/synthesis')
     await page.waitForSelector('.VPContent', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -158,7 +158,7 @@ test.describe('Drum Machine Vue page interactions', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/drum-machine-vue')
+    await page.goto('examples/drum-machine-vue')
     await page.waitForSelector('.beat-cell', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
@@ -179,6 +179,131 @@ test.describe('Drum Machine Vue page interactions', () => {
   })
 })
 
+test.describe('LFO Modulation page interactions', () => {
+  test('Play/Stop button toggles text', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/lfo-modulation')
+    await page.waitForSelector('.play-button', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Verify initial button text contains "Play"
+    expect(await page.locator('.play-button').textContent()).toContain('Play')
+
+    // Click play button
+    await page.locator('.play-button').click()
+
+    // Wait for text to change to "Stop"
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Stop',
+      { timeout: 10000 },
+    )
+
+    // Verify button text is now "Stop"
+    expect(await page.locator('.play-button').textContent()).toContain('Stop')
+
+    // Click again to stop
+    await page.locator('.play-button').click()
+
+    // Wait for text to revert to "Play"
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Play',
+      { timeout: 10000 },
+    )
+
+    // Verify button text reverted
+    expect(await page.locator('.play-button').textContent()).toContain('Play')
+
+    // Verify no uncaught errors
+    expect(errors, 'lfo play/stop should have no page errors').toHaveLength(0)
+  })
+
+  test('Tab switching updates active tab', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/lfo-modulation')
+    await page.waitForSelector('.tab-button', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // First tab (Tremolo) should be active by default
+    const tabs = page.locator('.tab-button')
+    expect(await tabs.nth(0).getAttribute('class')).toContain('active')
+
+    // Click second tab (Vibrato)
+    await tabs.nth(1).click()
+
+    // Verify second tab is now active
+    await page.waitForFunction(
+      () => document.querySelectorAll('.tab-button')[1]?.classList.contains('active'),
+      { timeout: 5000 },
+    )
+    expect(await tabs.nth(1).getAttribute('class')).toContain('active')
+    expect(await tabs.nth(0).getAttribute('class')).not.toContain('active')
+
+    // Click third tab (Filter Sweep)
+    await tabs.nth(2).click()
+
+    // Verify third tab is now active
+    await page.waitForFunction(
+      () => document.querySelectorAll('.tab-button')[2]?.classList.contains('active'),
+      { timeout: 5000 },
+    )
+    expect(await tabs.nth(2).getAttribute('class')).toContain('active')
+    expect(await tabs.nth(1).getAttribute('class')).not.toContain('active')
+
+    // Verify no uncaught errors
+    expect(errors, 'lfo tab switching should have no page errors').toHaveLength(0)
+  })
+
+  test('Canvas element is present and visible', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/lfo-modulation')
+    await page.waitForSelector('.waveform-canvas', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Verify canvas element exists and is visible
+    expect(await page.locator('.waveform-canvas').isVisible()).toBe(true)
+
+    // Verify no uncaught errors
+    expect(errors, 'lfo canvas should have no page errors').toHaveLength(0)
+  })
+
+  test('Sliders are interactive after play', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/lfo-modulation')
+    await page.waitForSelector('.play-button', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Click Play button
+    await page.locator('.play-button').click()
+
+    // Wait for button to show "Stop"
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Stop',
+      { timeout: 10000 },
+    )
+
+    // Verify range inputs exist (rate and depth sliders)
+    const sliders = page.locator('input[type="range"]')
+    expect(await sliders.count()).toBeGreaterThanOrEqual(2)
+
+    // Verify sliders are visible and enabled
+    expect(await sliders.nth(0).isVisible()).toBe(true)
+    expect(await sliders.nth(1).isVisible()).toBe(true)
+    expect(await sliders.nth(0).isEnabled()).toBe(true)
+    expect(await sliders.nth(1).isEnabled()).toBe(true)
+
+    // Verify no uncaught errors
+    expect(errors, 'lfo sliders should have no page errors').toHaveLength(0)
+  })
+})
+
 test.describe('Mobile viewport', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
@@ -186,7 +311,7 @@ test.describe('Mobile viewport', () => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
-    await page.goto('/examples/drum-machine')
+    await page.goto('examples/drum-machine')
     await page.waitForSelector('.beat-cell', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 

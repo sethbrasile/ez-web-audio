@@ -10,21 +10,22 @@ import { expect, test } from '@playwright/test'
 
 test.describe('Demo Pages - Error Detection', () => {
   const demoPages = [
-    '/examples/basic-playback',
-    '/examples/synthesis',
-    '/examples/effects',
-    '/examples/audio-routing',
-    '/examples/timing',
-    '/examples/drum-machine',
-    '/examples/synth-keyboard',
-    '/examples/xy-pad',
-    '/examples/synth-drum-kit',
-    '/examples/sampled-drum-kit',
-    '/examples/soundfont-piano',
-    '/examples/drum-machine-vue',
-    '/examples/drum-machine-vanilla',
-    '/examples/ambient-generator',
-    '/examples/visualization',
+    'examples/basic-playback',
+    'examples/synthesis',
+    'examples/effects',
+    'examples/audio-routing',
+    'examples/timing',
+    'examples/drum-machine',
+    'examples/synth-keyboard',
+    'examples/xy-pad',
+    'examples/synth-drum-kit',
+    'examples/sampled-drum-kit',
+    'examples/soundfont-piano',
+    'examples/drum-machine-vue',
+    'examples/drum-machine-vanilla',
+    'examples/ambient-generator',
+    'examples/visualization',
+    'examples/lfo-modulation',
   ]
 
   for (const path of demoPages) {
