@@ -113,7 +113,10 @@ Plans:
   2. User can see a display showing active voice count out of max voices, updating in real time as notes are played and released
   3. User can select oldest/quietest/newest steal strategy from a dropdown and hear the difference when exceeding max voices
   4. User can adjust ADSR sliders (attack, decay, sustain, release) and hear the envelope shape change on subsequent notes
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
+- [ ] 68-02-PLAN.md — E2E tests and human verification
 
 ### Phase 69: Effects Chain Demo
 **Goal**: Users can build and tweak an audio effects chain by toggling, adjusting, and reordering effects, with a visual signal flow diagram showing the audio path
@@ -125,7 +128,10 @@ Plans:
   3. User can reorder effects in the chain (e.g., move reverb before delay) and hear the sonic difference of the new order
   4. User can switch between an oscillator and a loaded audio file as the sound source
   5. User can see a signal flow diagram that updates to show only active (non-bypassed) effects in their current order
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
+- [ ] 68-02-PLAN.md — E2E tests and human verification
 
 ### Phase 70: GrainPlayer Demo
 **Goal**: Users can explore granular synthesis by independently controlling pitch and playback speed, with a waveform display showing grain positions
@@ -136,7 +142,10 @@ Plans:
   2. User can drag a speed slider and hear the playback rate change without the pitch shifting
   3. User can adjust grain size and hear the texture change from smooth to granular artifacts
   4. User can see the source audio waveform on a canvas with an overlay indicating current grain playback position
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
+- [ ] 68-02-PLAN.md — E2E tests and human verification
 
 ### Phase 71: Transport + Sequencer Demo
 **Goal**: Users can control a BPM-synced transport with mute/solo tracks and hear musical sequences using time notation, with a visual beat/bar playhead
@@ -147,7 +156,10 @@ Plans:
   2. User can mute and solo individual tracks and hear them drop in/out of the mix independently
   3. User can hear a musical sequence that uses different note durations (quarter notes, eighth notes, etc.) playing in sync with the transport clock
   4. User can see a visual playhead showing current beat and bar position that advances in sync with the audio
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
+- [ ] 68-02-PLAN.md — E2E tests and human verification
 
 ## Progress
 
@@ -157,7 +169,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 67. LFO Modulation Demo | 2/2 | Complete    | 2026-03-09 | - |
-| 68. PolySynth Demo | M7 | 0/TBD | Not started | - |
+| 68. PolySynth Demo | M7 | 0/2 | Planning complete | - |
 | 69. Effects Chain Demo | M7 | 0/TBD | Not started | - |
 | 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |
 | 71. Transport + Sequencer Demo | M7 | 0/TBD | Not started | - |
