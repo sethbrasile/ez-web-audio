@@ -17,10 +17,10 @@ Interactive demo pages for all M5 features that currently lack examples.
 
 ### PolySynth
 
-- [ ] **POLY-01**: User can play polyphonic notes via keyboard UI (reuses PianoKeyboard.vue)
-- [ ] **POLY-02**: User can see active voice count and max voices displayed
-- [ ] **POLY-03**: User can switch between steal strategies (oldest/quietest/newest) live
-- [ ] **POLY-04**: User can adjust ADSR envelope parameters for synth voices
+- [x] **POLY-01**: User can play polyphonic notes via keyboard UI (reuses PianoKeyboard.vue)
+- [x] **POLY-02**: User can see active voice count and max voices displayed
+- [x] **POLY-03**: User can switch between steal strategies (oldest/quietest/newest) live
+- [x] **POLY-04**: User can adjust ADSR envelope parameters for synth voices
 
 ### Effects Chain
 
@@ -68,10 +68,10 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 | LFO-03 | Phase 67 | Complete |
 | LFO-04 | Phase 67 | Complete |
 | LFO-05 | Phase 67 | Complete |
-| POLY-01 | Phase 68 | Pending |
-| POLY-02 | Phase 68 | Pending |
-| POLY-03 | Phase 68 | Pending |
-| POLY-04 | Phase 68 | Pending |
+| POLY-01 | Phase 68 | Complete |
+| POLY-02 | Phase 68 | Complete |
+| POLY-03 | Phase 68 | Complete |
+| POLY-04 | Phase 68 | Complete |
 | FX-01 | Phase 69 | Pending |
 | FX-02 | Phase 69 | Pending |
 | FX-03 | Phase 69 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 68 context gathered
-last_updated: "2026-03-09T22:38:40.935Z"
+stopped_at: Completed 68-01-PLAN.md
+last_updated: "2026-03-09T22:53:53.428Z"
 last_activity: 2026-03-09 — Phase 67 LFO demo complete
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 94
 ---
 
@@ -53,6 +53,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - Skip ParameterSlider.vue extraction — copy pattern instead
 - [Phase 67]: One LFO instance with disconnect/reconnect on tab switch for seamless modulation transition
 - [Phase 67]: E2E tests must use relative paths (not absolute) since baseURL includes /ez-web-audio/ prefix
+- [Phase 68]: Dirty flag pattern for ADSR/waveform changes; immediate recreate for maxVoices/stealStrategy
 
 ### Pending Todos
 
@@ -65,6 +66,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-09T22:38:40.932Z
-Stopped at: Phase 68 context gathered
-Resume file: .planning/phases/68-polysynth-demo/68-CONTEXT.md
+Last session: 2026-03-09T22:53:53.426Z
+Stopped at: Completed 68-01-PLAN.md
+Resume file: None
