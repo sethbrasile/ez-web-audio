@@ -1,0 +1,756 @@
+<script setup lang="ts">
+import type { FilterEffect, LFO, Oscillator } from 'ez-web-audio'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+type TabType = 'tremolo' | 'vibrato' | 'filter'
+
+const TAB_COLORS: Record<TabType, string> = {
+  tremolo: '#4ecdc4',
+  vibrato: '#ff6b6b',
+  filter: '#ffd93d',
+}
+
+const initialized = ref(false)
+const playing = ref(false)
+const loading = ref(false)
+const error = ref('')
+const activeTab = ref<TabType>('tremolo')
+const rateSlider = ref(40) // 0-100
+const depthSlider = ref(50) // 0-100
+const waveformType = ref<'sine' | 'square' | 'sawtooth' | 'triangle'>('sine')
+
+let lib: any = null
+let oscillator: Oscillator | null = null
+let lfo: LFO | null = null
+let filter: FilterEffect | null = null
+let filterAttached = false
+let animationFrameId: number | null = null
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let animationPhase = 0
+let lastFrameTime = 0
+
+// Logarithmic rate mapping: 0-100 -> 0.1-20 Hz
+const rate = computed(() => {
+  return 0.1 * (200 ** (rateSlider.value / 100))
+})
+
+// Depth: 0-100 -> 0-1.0
+const depth = computed(() => {
+  return depthSlider.value / 100
+})
+
+function computeDepthForTab(): number {
+  const d = depth.value
+  switch (activeTab.value) {
+    case 'tremolo':
+      return d * 0.5 // max 50% gain wobble
+    case 'vibrato':
+      return d * 100 // max 100 cents
+    case 'filter':
+      return d * 2000 // max 2000 Hz sweep
+  }
+}
+
+function depthUnitForTab(): 'ratio' | 'cents' | 'absolute' {
+  switch (activeTab.value) {
+    case 'tremolo':
+      return 'ratio'
+    case 'vibrato':
+      return 'cents'
+    case 'filter':
+      return 'absolute'
+  }
+}
+
+async function ensureLoaded() {
+  if (!lib) {
+    lib = await import('ez-web-audio')
+    initialized.value = true
+  }
+}
+
+function connectLFOToTab() {
+  if (!lfo || !oscillator)
+    return
+
+  lfo.disconnect()
+
+  switch (activeTab.value) {
+    case 'tremolo':
+      lfo.connect(oscillator, 'gain', { depth: computeDepthForTab(), depthUnit: 'ratio' })
+      break
+    case 'vibrato':
+      lfo.connect(oscillator, 'frequency', { depth: computeDepthForTab(), depthUnit: 'cents' })
+      break
+    case 'filter':
+      if (filter && !filterAttached) {
+        oscillator.addEffect(filter)
+        filterAttached = true
+      }
+      if (filter) {
+        lfo.connect(filter, 'frequency', { depth: computeDepthForTab(), depthUnit: 'absolute' })
+      }
+      break
+  }
+}
+
+async function togglePlayback() {
+  if (playing.value) {
+    stopSound()
+  }
+  else {
+    await playSound()
+  }
+}
+
+async function playSound() {
+  if (loading.value)
+    return
+
+  try {
+    loading.value = true
+    error.value = ''
+
+    await ensureLoaded()
+
+    // Create oscillator
+    oscillator = await lib.createOscillator({ frequency: 330, type: 'sawtooth' })
+    oscillator!.update('gain').to(0.3).as('ratio')
+
+    // Create filter (stored for filter tab)
+    filter = lib.createFilterEffect('lowpass', { frequency: 1500, q: 2 })
+    filterAttached = false
+
+    // Create LFO
+    lfo = lib.createLFO({
+      frequency: rate.value,
+      depth: computeDepthForTab(),
+      type: waveformType.value,
+    })
+
+    // Connect based on active tab
+    connectLFOToTab()
+
+    // Start LFO and play oscillator
+    lfo!.start()
+    oscillator!.play()
+    playing.value = true
+
+    // Start visualization
+    lastFrameTime = performance.now()
+    animationPhase = 0
+    startAnimation()
+  }
+  catch (err: any) {
+    error.value = err instanceof Error ? err.message : 'Failed to play audio'
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+function stopSound() {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+
+  if (lfo) {
+    lfo.stop()
+    lfo.dispose()
+    lfo = null
+  }
+
+  if (oscillator) {
+    oscillator.stop()
+    oscillator = null
+  }
+
+  filter = null
+  filterAttached = false
+  playing.value = false
+}
+
+function applyPreset(preset: { tab: TabType, rate: number, depth: number, waveform: 'sine' | 'square' | 'sawtooth' | 'triangle' }) {
+  activeTab.value = preset.tab
+  rateSlider.value = preset.rate
+  depthSlider.value = preset.depth
+  waveformType.value = preset.waveform
+}
+
+const presets = [
+  { name: 'Slow Tremolo', tab: 'tremolo' as TabType, rate: 40, depth: 60, waveform: 'sine' as const },
+  { name: 'Fast Vibrato', tab: 'vibrato' as TabType, rate: 65, depth: 45, waveform: 'sine' as const },
+  { name: 'Wah Pedal', tab: 'filter' as TabType, rate: 35, depth: 55, waveform: 'triangle' as const },
+]
+
+// Watch parameters and update LFO in real-time
+watch(activeTab, () => {
+  if (playing.value && lfo) {
+    lfo.depth = computeDepthForTab()
+    connectLFOToTab()
+  }
+})
+
+watch(rate, (newRate) => {
+  if (lfo && playing.value) {
+    lfo.frequency = newRate
+  }
+})
+
+watch(depth, () => {
+  if (lfo && playing.value) {
+    // Reconnect to recalculate depth for current tab
+    connectLFOToTab()
+  }
+})
+
+watch(waveformType, (newType) => {
+  if (lfo && playing.value) {
+    lfo.type = newType
+  }
+})
+
+// Canvas visualization
+function setupCanvas() {
+  const canvas = canvasRef.value
+  if (!canvas)
+    return
+
+  const dpr = window.devicePixelRatio || 1
+  const container = canvas.parentElement!
+  const logicalWidth = container.clientWidth
+  const logicalHeight = 120
+
+  canvas.width = logicalWidth * dpr
+  canvas.height = logicalHeight * dpr
+  canvas.style.height = `${logicalHeight}px`
+  canvas.dataset.logicalWidth = String(logicalWidth)
+  canvas.dataset.logicalHeight = String(logicalHeight)
+
+  const ctx = canvas.getContext('2d')!
+  ctx.scale(dpr, dpr)
+}
+
+function computeWaveformY(t: number, type: string): number {
+  switch (type) {
+    case 'sine':
+      return Math.sin(t)
+    case 'square':
+      return Math.sign(Math.sin(t))
+    case 'sawtooth':
+      return 2 * ((t / (2 * Math.PI)) % 1) - 1
+    case 'triangle':
+      return 2 * Math.abs(2 * ((t / (2 * Math.PI)) % 1) - 1) - 1
+    default:
+      return Math.sin(t)
+  }
+}
+
+function drawLoop(timestamp: number) {
+  const canvas = canvasRef.value
+  if (!canvas)
+    return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx)
+    return
+
+  const logicalWidth = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
+  const logicalHeight = Number(canvas.dataset.logicalHeight) || 120
+
+  // Advance phase based on elapsed time and rate
+  const elapsed = (timestamp - lastFrameTime) / 1000
+  lastFrameTime = timestamp
+  animationPhase += rate.value * elapsed * Math.PI * 2
+
+  const accentColor = TAB_COLORS[activeTab.value]
+  const amplitude = logicalHeight * 0.35 * depth.value
+  const centerY = logicalHeight / 2
+
+  // Reset transform and clear
+  const dpr = window.devicePixelRatio || 1
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, logicalWidth, logicalHeight)
+
+  // Draw center line
+  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([4, 4])
+  ctx.beginPath()
+  ctx.moveTo(0, centerY)
+  ctx.lineTo(logicalWidth, centerY)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // Draw waveform
+  ctx.strokeStyle = accentColor
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+
+  const visibleCycles = 3
+  for (let x = 0; x < logicalWidth; x++) {
+    const t = (x / logicalWidth) * Math.PI * 2 * visibleCycles + animationPhase
+    const y = computeWaveformY(t, waveformType.value)
+    const py = centerY - y * amplitude
+
+    if (x === 0) {
+      ctx.moveTo(x, py)
+    }
+    else {
+      ctx.lineTo(x, py)
+    }
+  }
+  ctx.stroke()
+
+  animationFrameId = requestAnimationFrame(drawLoop)
+}
+
+function startAnimation() {
+  setupCanvas()
+  animationFrameId = requestAnimationFrame(drawLoop)
+}
+
+function handleResize() {
+  setupCanvas()
+}
+
+// Draw static waveform when not playing
+function drawStaticWaveform() {
+  const canvas = canvasRef.value
+  if (!canvas || playing.value)
+    return
+
+  setupCanvas()
+  const ctx = canvas.getContext('2d')
+  if (!ctx)
+    return
+
+  const logicalWidth = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
+  const logicalHeight = Number(canvas.dataset.logicalHeight) || 120
+  const accentColor = TAB_COLORS[activeTab.value]
+  const amplitude = logicalHeight * 0.35 * depth.value
+  const centerY = logicalHeight / 2
+
+  const dpr = window.devicePixelRatio || 1
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, logicalWidth, logicalHeight)
+
+  // Center line
+  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([4, 4])
+  ctx.beginPath()
+  ctx.moveTo(0, centerY)
+  ctx.lineTo(logicalWidth, centerY)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // Static waveform
+  ctx.strokeStyle = accentColor
+  ctx.lineWidth = 2.5
+  ctx.globalAlpha = 0.5
+  ctx.beginPath()
+
+  const visibleCycles = 3
+  for (let x = 0; x < logicalWidth; x++) {
+    const t = (x / logicalWidth) * Math.PI * 2 * visibleCycles
+    const y = computeWaveformY(t, waveformType.value)
+    const py = centerY - y * amplitude
+
+    if (x === 0) {
+      ctx.moveTo(x, py)
+    }
+    else {
+      ctx.lineTo(x, py)
+    }
+  }
+  ctx.stroke()
+  ctx.globalAlpha = 1
+}
+
+// Redraw static waveform when parameters change while not playing
+watch([waveformType, depthSlider, activeTab], () => {
+  if (!playing.value) {
+    drawStaticWaveform()
+  }
+})
+
+// Set up resize listener and draw initial static waveform
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  drawStaticWaveform()
+})
+
+onUnmounted(() => {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+  if (lfo) {
+    lfo.dispose()
+    lfo = null
+  }
+  if (oscillator) {
+    oscillator.stop()
+    oscillator = null
+  }
+  window.removeEventListener('resize', handleResize)
+})
+</script>
+
+<template>
+  <div class="lfo-demo">
+    <div class="warning">
+      <strong>Note:</strong> Audio sources can be loud. Start with low volume.
+    </div>
+
+    <!-- Presets -->
+    <div class="control-group">
+      <div class="row preset-row">
+        <label>Presets:</label>
+        <div class="button-group preset-group">
+          <button
+            v-for="preset in presets"
+            :key="preset.name"
+            class="preset-button"
+            @click="applyPreset(preset)"
+          >
+            {{ preset.name }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button
+        v-for="tab in (['tremolo', 'vibrato', 'filter'] as TabType[])"
+        :key="tab"
+        class="tab-button"
+        :class="{ active: activeTab === tab }"
+        :style="activeTab === tab ? { borderBottomColor: TAB_COLORS[tab], color: TAB_COLORS[tab] } : {}"
+        @click="activeTab = tab"
+      >
+        {{ tab === 'filter' ? 'Filter Sweep' : tab.charAt(0).toUpperCase() + tab.slice(1) }}
+      </button>
+    </div>
+
+    <!-- Canvas visualization -->
+    <div class="canvas-container">
+      <canvas ref="canvasRef" class="waveform-canvas" />
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-group">
+        <div class="row">
+          <button
+            class="play-button"
+            :disabled="loading"
+            @click="togglePlayback"
+          >
+            {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="row">
+          <label for="lfo-rate">Rate:</label>
+          <input
+            id="lfo-rate"
+            v-model.number="rateSlider"
+            type="range"
+            min="0"
+            max="100"
+            :aria-label="`LFO rate: ${rate.toFixed(1)} Hz`"
+          >
+          <span class="value">{{ rate.toFixed(1) }} Hz</span>
+        </div>
+
+        <div class="row">
+          <label for="lfo-depth">Depth:</label>
+          <input
+            id="lfo-depth"
+            v-model.number="depthSlider"
+            type="range"
+            min="0"
+            max="100"
+            :aria-label="`LFO depth: ${depthSlider}%`"
+          >
+          <span class="value">{{ depthSlider }}%</span>
+        </div>
+
+        <div class="row">
+          <label>Waveform:</label>
+          <div class="button-group waveform-group">
+            <button
+              v-for="wf in (['sine', 'square', 'sawtooth', 'triangle'] as const)"
+              :key="wf"
+              :class="{ active: waveformType === wf }"
+              :aria-label="`Waveform: ${wf}`"
+              @click="waveformType = wf"
+            >
+              <svg width="24" height="12" viewBox="0 0 24 12" class="waveform-icon">
+                <path
+                  v-if="wf === 'sine'"
+                  d="M0,6 C4,0 8,0 12,6 C16,12 20,12 24,6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  v-else-if="wf === 'square'"
+                  d="M0,10 L0,2 L6,2 L6,10 L12,10 L12,2 L18,2 L18,10 L24,10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  v-else-if="wf === 'sawtooth'"
+                  d="M0,10 L8,2 L8,10 L16,2 L16,10 L24,2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  v-else-if="wf === 'triangle'"
+                  d="M0,10 L6,2 L12,10 L18,2 L24,10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.lfo-demo {
+  padding: 1.5rem;
+  background: var(--vp-c-bg-soft);
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+.warning {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-warning-soft);
+  border-left: 3px solid var(--vp-c-warning);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.warning strong {
+  color: var(--vp-c-warning);
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.tab-button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: var(--vp-c-text-1);
+}
+
+.tab-button.active {
+  font-weight: 600;
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: -2px;
+}
+
+.canvas-container {
+  margin-bottom: 1rem;
+}
+
+.waveform-canvas {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.preset-row {
+  margin-bottom: 0.5rem;
+}
+
+label {
+  min-width: 100px;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+input[type="range"] {
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.value {
+  min-width: 80px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: var(--vp-c-text-2);
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.preset-group {
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--vp-c-bg-soft);
+  border-color: var(--vp-c-brand);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--vp-c-brand);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.active {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand);
+  color: var(--vp-c-brand);
+  font-weight: 600;
+}
+
+.preset-button {
+  font-size: 0.85em;
+  padding: 0.35rem 0.75rem;
+}
+
+.waveform-group button {
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waveform-icon {
+  display: block;
+}
+
+.play-button {
+  background: var(--vp-c-brand);
+  color: white;
+  border-color: var(--vp-c-brand);
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.play-button:hover:not(:disabled) {
+  background: var(--vp-c-brand-dark);
+}
+
+.status-bar {
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.error {
+  padding: 0.5rem;
+  background: var(--vp-c-danger-soft);
+  color: var(--vp-c-danger-1);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+@media (max-width: 640px) {
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  label {
+    min-width: auto;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .button-group {
+    width: 100%;
+  }
+
+  .button-group button {
+    flex: 1;
+  }
+
+  .tab-bar {
+    flex-wrap: wrap;
+  }
+}
+</style>
