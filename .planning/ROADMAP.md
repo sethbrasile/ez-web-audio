@@ -82,7 +82,7 @@ See milestones/ archive for full phase details.
 
 **Milestone Goal:** Build interactive demo pages for all M5 features (effects, LFO, PolySynth, Transport/Sequencer, GrainPlayer) that currently lack examples. Pure documentation/UX work -- no library code changes.
 
-- [ ] **Phase 67: LFO Modulation Demo** - Interactive demo showing tremolo, vibrato, and filter sweep with animated waveform visualization
+- [x] **Phase 67: LFO Modulation Demo** - Interactive demo showing tremolo, vibrato, and filter sweep with animated waveform visualization (completed 2026-03-09)
 - [ ] **Phase 68: PolySynth Demo** - Piano keyboard with polyphonic voice allocation, steal strategies, and ADSR controls
 - [ ] **Phase 69: Effects Chain Demo** - Toggle, adjust, reorder, and chain delay/reverb/compressor/EQ effects with signal flow diagram
 - [ ] **Phase 70: GrainPlayer Demo** - Granular synthesis with independent pitch/time control and waveform overlay
@@ -156,7 +156,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 67. LFO Modulation Demo | 1/2 | In Progress|  | - |
+| 67. LFO Modulation Demo | 2/2 | Complete   | 2026-03-09 | - |
 | 68. PolySynth Demo | M7 | 0/TBD | Not started | - |
 | 69. Effects Chain Demo | M7 | 0/TBD | Not started | - |
 | 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |
