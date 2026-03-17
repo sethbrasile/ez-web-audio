@@ -130,8 +130,8 @@ Plans:
   5. User can see a signal flow diagram that updates to show only active (non-bypassed) effects in their current order
 **Plans**: 2 plans
 Plans:
-- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
-- [ ] 68-02-PLAN.md — E2E tests and human verification
+- [ ] 69-01-PLAN.md — Build EffectsChainDemo component, VitePress page, sidebar entry
+- [ ] 69-02-PLAN.md — E2E tests and human verification
 
 ### Phase 70: GrainPlayer Demo
 **Goal**: Users can explore granular synthesis by independently controlling pitch and playback speed, with a waveform display showing grain positions
