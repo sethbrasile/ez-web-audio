@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 70 context gathered
-last_updated: "2026-03-18T06:16:39.127Z"
+stopped_at: Completed 70-01-PLAN.md
+last_updated: "2026-03-18T06:36:02.811Z"
 last_activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 100
 ---
 
@@ -58,6 +58,8 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 69]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
 - [Phase 69]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
 - [Phase 69]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
+- [Phase 70]: grain-sample.mp3 sourced from Db5.mp3 (CC0 piano note) — ideal clear pitch for granular demo
+- [Phase 70]: Speed slider drives RAF position advance (not playbackRate) for true pitch/speed independence
 
 ### Pending Todos
 
@@ -70,6 +72,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-18T06:16:39.124Z
-Stopped at: Phase 70 context gathered
-Resume file: .planning/phases/70-grainplayer-demo/70-CONTEXT.md
+Last session: 2026-03-18T06:36:02.808Z
+Stopped at: Completed 70-01-PLAN.md
+Resume file: None

@@ -39,10 +39,10 @@ Interactive demo pages for all M5 features that currently lack examples.
 
 ### GrainPlayer
 
-- [ ] **GRAIN-01**: User can independently control pitch without changing playback speed
-- [ ] **GRAIN-02**: User can independently control playback speed without changing pitch
-- [ ] **GRAIN-03**: User can adjust grain size for texture variation
-- [ ] **GRAIN-04**: User can see source waveform with grain position overlay on canvas
+- [x] **GRAIN-01**: User can independently control pitch without changing playback speed
+- [x] **GRAIN-02**: User can independently control playback speed without changing pitch
+- [x] **GRAIN-03**: User can adjust grain size for texture variation
+- [x] **GRAIN-04**: User can see source waveform with grain position overlay on canvas
 
 ## Future Requirements
 
@@ -81,10 +81,10 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 | TSEQ-02 | Phase 71 | Pending |
 | TSEQ-03 | Phase 71 | Pending |
 | TSEQ-04 | Phase 71 | Pending |
-| GRAIN-01 | Phase 70 | Pending |
-| GRAIN-02 | Phase 70 | Pending |
-| GRAIN-03 | Phase 70 | Pending |
-| GRAIN-04 | Phase 70 | Pending |
+| GRAIN-01 | Phase 70 | Complete |
+| GRAIN-02 | Phase 70 | Complete |
+| GRAIN-03 | Phase 70 | Complete |
+| GRAIN-04 | Phase 70 | Complete |
 
 **Coverage:**
 - Milestone 7 requirements: 22 total
