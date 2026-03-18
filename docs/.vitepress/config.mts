@@ -201,6 +201,12 @@ export default defineConfig({
             { text: 'Visualization', link: '/examples/visualization' },
           ],
         },
+        {
+          text: 'Granular',
+          items: [
+            { text: 'GrainPlayer', link: '/examples/grainplayer' },
+          ],
+        },
       ],
       '/api/': typedocSidebar,
     },
