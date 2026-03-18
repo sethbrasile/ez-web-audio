@@ -183,6 +183,7 @@ export default defineConfig({
           items: [
             { text: 'Effects', link: '/examples/effects' },
             { text: 'Audio Routing', link: '/examples/audio-routing' },
+            { text: 'Effects Chain', link: '/examples/effects-chain' },
           ],
         },
         {
