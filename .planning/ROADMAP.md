@@ -170,7 +170,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 |-------|-----------|----------------|--------|-----------|
 | 67. LFO Modulation Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 68. PolySynth Demo | 2/2 | Complete    | 2026-03-09 | - |
-| 69. Effects Chain Demo | 2/2 | Complete   | 2026-03-18 | - |
+| 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |
 | 71. Transport + Sequencer Demo | M7 | 0/TBD | Not started | - |
 
