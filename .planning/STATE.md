@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 70-01-PLAN.md
-last_updated: "2026-03-18T06:36:02.811Z"
+stopped_at: Completed 70-02-PLAN.md
+last_updated: "2026-03-18T06:52:28.374Z"
 last_activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 100
 ---
 
@@ -60,6 +60,8 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 69]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
 - [Phase 70]: grain-sample.mp3 sourced from Db5.mp3 (CC0 piano note) — ideal clear pitch for granular demo
 - [Phase 70]: Speed slider drives RAF position advance (not playbackRate) for true pitch/speed independence
+- [Phase 70-grainplayer-demo]: Used .play-button class selector for consistency with existing LFO/PolySynth test patterns
+- [Phase 70-grainplayer-demo]: Canvas 'loaded' class waitForFunction gates canvas click test — ensures waveform drawn before interaction
 
 ### Pending Todos
 
@@ -72,6 +74,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-18T06:36:02.808Z
-Stopped at: Completed 70-01-PLAN.md
+Last session: 2026-03-18T06:52:28.371Z
+Stopped at: Completed 70-02-PLAN.md
 Resume file: None
