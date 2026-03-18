@@ -3,42 +3,42 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 69-02-PLAN.md
-last_updated: "2026-03-18T05:53:56.888Z"
-last_activity: 2026-03-09 — Phase 67 LFO demo complete
+stopped_at: Phase 69 complete, ready to plan Phase 70
+last_updated: "2026-03-18T06:15:00.000Z"
+last_activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 6
   completed_plans: 6
-  percent: 94
+  percent: 97
 ---
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-03-09 (Phase 67 LFO demo complete)
-**Current Focus:** Phase 68 — PolySynth Demo
+**Last Updated:** 2026-03-18 (Phase 69 Effects Chain Demo complete)
+**Current Focus:** Phase 70 — GrainPlayer Demo
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-08)
+See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Make the Web Audio API easy to use
 **Current milestone:** 7 — Feature Demos (5 phases, 22 requirements)
 
 ## Current Position
 
-Phase: 68 of 71 (PolySynth Demo)
+Phase: 70 of 71 (GrainPlayer Demo)
 Plan: — (phase not yet planned)
 Status: Ready to plan
-Last activity: 2026-03-09 — Phase 67 LFO demo complete
+Last activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 
-Progress: [██████████████████░░] 94% (67/71 phases)
+Progress: [████████████████████] 124/124 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 144
+- Total plans completed: 150
 - Milestones shipped: 6
 
 ## Accumulated Context
@@ -55,10 +55,9 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 67]: E2E tests must use relative paths (not absolute) since baseURL includes /ez-web-audio/ prefix
 - [Phase 68]: Dirty flag pattern for ADSR/waveform changes; immediate recreate for maxVoices/stealStrategy
 - [Phase 68]: Used aria-label selectors for resilient E2E test targeting of piano keys and dropdowns
-- [Phase 69-effects-chain-demo]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
-- [Phase 69-effects-chain-demo]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
-- [Phase 69-effects-chain-demo]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
-- [Phase 69-effects-chain-demo]: toggleBypass null guard added: skip effect.bypass setter before ensureLoaded() to allow UI bypass toggle without audio errors
+- [Phase 69]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
+- [Phase 69]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
+- [Phase 69]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
 
 ### Pending Todos
 
@@ -71,6 +70,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-18T05:36:23.104Z
-Stopped at: Completed 69-02-PLAN.md
+Last session: 2026-03-18
+Stopped at: Phase 69 complete, ready to plan Phase 70
 Resume file: None

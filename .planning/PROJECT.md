@@ -60,7 +60,7 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 **Milestone 7: Feature Demos** — Interactive demo pages for all M5 features lacking examples.
 
-- [ ] Effects chain demo (delay, reverb, compressor, EQ)
+- ✓ Effects chain demo (delay, reverb, compressor, EQ) — Phase 69
 - [ ] LFO modulation demo (tremolo, vibrato, filter sweep)
 - [ ] PolySynth demo (voice allocation, steal strategies)
 - [ ] Transport + Sequencer demo (BPM clock, musical time, mute/solo)
@@ -140,4 +140,4 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 | Lazy init pattern for demos | No load buttons; first user interaction triggers AudioContext + asset loading | ✓ Good |
 
 ---
-*Last updated: 2026-03-08 after Milestone 7 (Feature Demos) started*
+*Last updated: 2026-03-18 after Phase 69 (Effects Chain Demo)*
