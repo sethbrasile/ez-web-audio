@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 69-01-PLAN.md
-last_updated: "2026-03-18T05:30:41.358Z"
+stopped_at: Completed 69-02-PLAN.md
+last_updated: "2026-03-18T05:36:23.107Z"
 last_activity: 2026-03-09 — Phase 67 LFO demo complete
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 94
 ---
 
@@ -58,6 +58,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 69-effects-chain-demo]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
 - [Phase 69-effects-chain-demo]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
 - [Phase 69-effects-chain-demo]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
+- [Phase 69-effects-chain-demo]: toggleBypass null guard added: skip effect.bypass setter before ensureLoaded() to allow UI bypass toggle without audio errors
 
 ### Pending Todos
 
@@ -70,6 +71,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-18T05:30:41.355Z
-Stopped at: Completed 69-01-PLAN.md
+Last session: 2026-03-18T05:36:23.104Z
+Stopped at: Completed 69-02-PLAN.md
 Resume file: None
