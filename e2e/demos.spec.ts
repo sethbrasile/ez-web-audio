@@ -28,6 +28,7 @@ test.describe('Demo Pages - Error Detection', () => {
     'examples/lfo-modulation',
     'examples/polysynth',
     'examples/effects-chain',
+    'examples/grainplayer',
   ]
 
   for (const path of demoPages) {

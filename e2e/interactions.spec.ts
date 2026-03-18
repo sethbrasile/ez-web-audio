@@ -549,6 +549,130 @@ test.describe('EffectsChain page interactions', () => {
   })
 })
 
+test.describe('GrainPlayer page interactions', () => {
+  test('Play/Stop button toggles correctly', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/grainplayer')
+    await page.waitForSelector('.play-button', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    expect(await page.locator('.play-button').textContent()).toContain('Play')
+
+    await page.locator('.play-button').click()
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Stop',
+      { timeout: 10000 },
+    )
+    expect(await page.locator('.play-button').textContent()).toContain('Stop')
+    expect(errors, 'grainplayer play should have no page errors').toHaveLength(0)
+  })
+
+  test('Waveform canvas is visible and responds to click', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/grainplayer')
+    await page.waitForSelector('.waveform-canvas', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    const canvas = page.locator('.waveform-canvas')
+    expect(await canvas.isVisible()).toBe(true)
+
+    // Start playing so waveform loads
+    await page.locator('.play-button').click()
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Stop',
+      { timeout: 10000 },
+    )
+
+    // Canvas should now have the 'loaded' class after waveform drawn
+    await page.waitForFunction(
+      () => document.querySelector('.waveform-canvas')?.classList.contains('loaded'),
+      { timeout: 5000 },
+    )
+
+    // Click in the middle of the canvas — should not throw
+    const box = await canvas.boundingBox()
+    if (box) {
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    }
+    expect(errors, 'grainplayer canvas click should have no page errors').toHaveLength(0)
+  })
+
+  test('All parameter sliders are present', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/grainplayer')
+    await page.waitForSelector('.grain-player-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Pitch slider
+    expect(await page.locator('[aria-label="Pitch in semitones"]').isVisible()).toBe(true)
+    // Speed slider (in playback row, no special aria-label — locate by control-group context)
+    const speedSlider = page.locator('.playback-row input[type="range"]')
+    expect(await speedSlider.isVisible()).toBe(true)
+    // Grain parameters
+    expect(await page.locator('[aria-label="Grain size"]').isVisible()).toBe(true)
+    expect(await page.locator('[aria-label="Grain overlap"]').isVisible()).toBe(true)
+    expect(await page.locator('[aria-label="Grain jitter"]').isVisible()).toBe(true)
+
+    expect(errors, 'grainplayer sliders should have no page errors').toHaveLength(0)
+  })
+
+  test('Preset buttons are present and clickable', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/grainplayer')
+    await page.waitForSelector('.presets-row', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Four preset buttons
+    const presetBtns = page.locator('.presets-row button')
+    expect(await presetBtns.count()).toBe(4)
+
+    // Click each preset — should not throw
+    await presetBtns.nth(0).click() // Smooth Pad
+    await presetBtns.nth(1).click() // Choppy
+    await presetBtns.nth(2).click() // Scatter
+    await presetBtns.nth(3).click() // Freeze
+
+    expect(errors, 'grainplayer presets should have no page errors').toHaveLength(0)
+  })
+
+  test('Canvas drag interaction updates position without errors', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/grainplayer')
+    await page.waitForSelector('.waveform-canvas', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Start playing
+    await page.locator('.play-button').click()
+    await page.waitForFunction(
+      () => document.querySelector('.play-button')?.textContent?.trim() === 'Stop',
+      { timeout: 10000 },
+    )
+
+    // Simulate drag across canvas
+    const canvas = page.locator('.waveform-canvas')
+    const box = await canvas.boundingBox()
+    if (box) {
+      await page.mouse.move(box.x + box.width * 0.1, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2)
+      await page.mouse.move(box.x + box.width * 0.9, box.y + box.height / 2)
+      await page.mouse.up()
+    }
+
+    expect(errors, 'grainplayer drag should have no page errors').toHaveLength(0)
+  })
+})
+
 test.describe('Mobile viewport', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
