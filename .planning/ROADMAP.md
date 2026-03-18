@@ -3,7 +3,7 @@
 **Project:** EZ Web Audio Library
 **Core Value:** Make the Web Audio API easy to use
 **Created:** 2026-01-31
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-18
 
 ## Milestones
 
@@ -144,8 +144,8 @@ Plans:
   4. User can see the source audio waveform on a canvas with an overlay indicating current grain playback position
 **Plans**: 2 plans
 Plans:
-- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
-- [ ] 68-02-PLAN.md — E2E tests and human verification
+- [ ] 70-01-PLAN.md — Build GrainPlayerDemo component, CC0 audio asset, VitePress page, sidebar registration
+- [ ] 70-02-PLAN.md — E2E tests and human verification
 
 ### Phase 71: Transport + Sequencer Demo
 **Goal**: Users can control a BPM-synced transport with mute/solo tracks and hear musical sequences using time notation, with a visual beat/bar playhead
@@ -158,8 +158,8 @@ Plans:
   4. User can see a visual playhead showing current beat and bar position that advances in sync with the audio
 **Plans**: 2 plans
 Plans:
-- [ ] 68-01-PLAN.md — Build PolySynthDemo component, VitePress page, sidebar registration
-- [ ] 68-02-PLAN.md — E2E tests and human verification
+- [ ] 71-01-PLAN.md — Build TransportSequencerDemo component, VitePress page, sidebar registration
+- [ ] 71-02-PLAN.md — E2E tests and human verification
 
 ## Progress
 
@@ -171,7 +171,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | 67. LFO Modulation Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 68. PolySynth Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
-| 70. GrainPlayer Demo | M7 | 0/TBD | Not started | - |
+| 70. GrainPlayer Demo | M7 | 0/2 | Planned | - |
 | 71. Transport + Sequencer Demo | M7 | 0/TBD | Not started | - |
 
 ---
@@ -185,4 +185,4 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 - `milestones/6-REQUIREMENTS.md` — Milestone 6 requirements (M5 REQUIREMENTS.md, inherited)
 - `milestones/6-phases/` — Milestone 6 phase directories (Phases 61-66)
 
-*Last updated: 2026-03-09 after Phase 67 planning*
+*Last updated: 2026-03-18 after Phase 70 planning*
