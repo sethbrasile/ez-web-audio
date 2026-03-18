@@ -24,11 +24,11 @@ Interactive demo pages for all M5 features that currently lack examples.
 
 ### Effects Chain
 
-- [ ] **FX-01**: User can toggle delay, reverb, compressor, and EQ effects on/off via bypass
-- [ ] **FX-02**: User can adjust parameters for each effect (delay time, reverb mix, threshold, EQ bands)
-- [ ] **FX-03**: User can reorder effects in the chain
-- [ ] **FX-04**: User can switch between oscillator and loaded audio file as source
-- [ ] **FX-05**: User can see a signal flow diagram showing audio path through active effects
+- [x] **FX-01**: User can toggle delay, reverb, compressor, and EQ effects on/off via bypass
+- [x] **FX-02**: User can adjust parameters for each effect (delay time, reverb mix, threshold, EQ bands)
+- [x] **FX-03**: User can reorder effects in the chain
+- [x] **FX-04**: User can switch between oscillator and loaded audio file as source
+- [x] **FX-05**: User can see a signal flow diagram showing audio path through active effects
 
 ### Transport + Sequencer
 
@@ -72,11 +72,11 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 | POLY-02 | Phase 68 | Complete |
 | POLY-03 | Phase 68 | Complete |
 | POLY-04 | Phase 68 | Complete |
-| FX-01 | Phase 69 | Pending |
-| FX-02 | Phase 69 | Pending |
-| FX-03 | Phase 69 | Pending |
-| FX-04 | Phase 69 | Pending |
-| FX-05 | Phase 69 | Pending |
+| FX-01 | Phase 69 | Complete |
+| FX-02 | Phase 69 | Complete |
+| FX-03 | Phase 69 | Complete |
+| FX-04 | Phase 69 | Complete |
+| FX-05 | Phase 69 | Complete |
 | TSEQ-01 | Phase 71 | Pending |
 | TSEQ-02 | Phase 71 | Pending |
 | TSEQ-03 | Phase 71 | Pending |

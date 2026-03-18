@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 68-02-PLAN.md
-last_updated: "2026-03-09T23:01:03.628Z"
+stopped_at: Completed 69-01-PLAN.md
+last_updated: "2026-03-18T05:30:41.358Z"
 last_activity: 2026-03-09 — Phase 67 LFO demo complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
   percent: 94
 ---
 
@@ -55,6 +55,9 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 67]: E2E tests must use relative paths (not absolute) since baseURL includes /ez-web-audio/ prefix
 - [Phase 68]: Dirty flag pattern for ADSR/waveform changes; immediate recreate for maxVoices/stealStrategy
 - [Phase 68]: Used aria-label selectors for resilient E2E test targeting of piano keys and dropdowns
+- [Phase 69-effects-chain-demo]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
+- [Phase 69-effects-chain-demo]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
+- [Phase 69-effects-chain-demo]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
 
 ### Pending Todos
 
@@ -67,6 +70,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-09T22:58:42.407Z
-Stopped at: Completed 68-02-PLAN.md
+Last session: 2026-03-18T05:30:41.355Z
+Stopped at: Completed 69-01-PLAN.md
 Resume file: None
