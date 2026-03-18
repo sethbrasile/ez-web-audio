@@ -27,6 +27,7 @@ test.describe('Demo Pages - Error Detection', () => {
     'examples/visualization',
     'examples/lfo-modulation',
     'examples/polysynth',
+    'examples/effects-chain',
   ]
 
   for (const path of demoPages) {

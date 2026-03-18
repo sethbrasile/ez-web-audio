@@ -421,6 +421,134 @@ test.describe('PolySynth page interactions', () => {
   })
 })
 
+test.describe('EffectsChain page interactions', () => {
+  test('Play button is present and clickable', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('[aria-label="Play"]', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    expect(await page.locator('[aria-label="Play"]').isVisible()).toBe(true)
+    await page.locator('[aria-label="Play"]').click()
+    expect(errors, 'effects-chain play should have no page errors').toHaveLength(0)
+  })
+
+  test('Effect cards and bypass toggle buttons are present', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('.effect-card', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Four effect cards should exist
+    expect(await page.locator('.effect-card').count()).toBe(4)
+
+    // Each effect card has a bypass toggle with aria-pressed
+    const bypassBtns = page.locator('.bypass-btn')
+    expect(await bypassBtns.count()).toBe(4)
+
+    // Initial state: all effects active (aria-pressed="true")
+    expect(await bypassBtns.nth(0).getAttribute('aria-pressed')).toBe('true')
+
+    // Click bypass on first effect — aria-pressed should toggle to false
+    await bypassBtns.nth(0).click()
+    expect(await bypassBtns.nth(0).getAttribute('aria-pressed')).toBe('false')
+    // The effect card should gain 'bypassed' class
+    expect(await page.locator('.effect-card.bypassed').count()).toBe(1)
+
+    expect(errors, 'effects-chain bypass should have no page errors').toHaveLength(0)
+  })
+
+  test('Parameter sliders are present for each effect', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('.effect-card', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // At minimum 11 sliders: 3 delay + 3 reverb + 2 compressor + 3 eq
+    const sliders = page.locator('.effect-card input[type="range"]')
+    expect(await sliders.count()).toBeGreaterThanOrEqual(11)
+
+    expect(errors, 'effects-chain sliders should have no page errors').toHaveLength(0)
+  })
+
+  test('Move up and move down buttons exist for reordering', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('.effect-card', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Each card should have move up and move down buttons (by aria-label)
+    // First card: move-up disabled, move-down enabled
+    const firstCard = page.locator('.effect-card').nth(0)
+    const moveUpFirst = firstCard.locator('[aria-label*="up"]')
+    const moveDownFirst = firstCard.locator('[aria-label*="down"]')
+    expect(await moveUpFirst.isDisabled()).toBe(true)
+    expect(await moveDownFirst.isDisabled()).toBe(false)
+
+    // Last card: move-down disabled, move-up enabled
+    const lastCard = page.locator('.effect-card').nth(3)
+    const moveUpLast = lastCard.locator('[aria-label*="up"]')
+    const moveDownLast = lastCard.locator('[aria-label*="down"]')
+    expect(await moveUpLast.isDisabled()).toBe(false)
+    expect(await moveDownLast.isDisabled()).toBe(true)
+
+    expect(errors, 'effects-chain move buttons should have no page errors').toHaveLength(0)
+  })
+
+  test('Source switch buttons are present and clickable', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('[aria-label="Source: oscillator"]', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    expect(await page.locator('[aria-label="Source: oscillator"]').isVisible()).toBe(true)
+    expect(await page.locator('[aria-label="Source: file"]').isVisible()).toBe(true)
+
+    // Clicking source buttons should not throw
+    await page.locator('[aria-label="Source: file"]').click()
+    expect(errors, 'effects-chain source switch should have no page errors').toHaveLength(0)
+  })
+
+  test('Signal flow diagram renders with Source and Output nodes', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/effects-chain')
+    await page.waitForSelector('.signal-flow', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Signal flow container exists
+    expect(await page.locator('.signal-flow').isVisible()).toBe(true)
+
+    // Source and Output nodes exist
+    expect(await page.locator('.flow-node.source').isVisible()).toBe(true)
+    expect(await page.locator('.flow-node.output').isVisible()).toBe(true)
+
+    // All 4 effects are active by default so 4 effect nodes should appear
+    expect(await page.locator('.flow-node.effect').count()).toBe(4)
+
+    // Bypass an effect and verify diagram updates (one fewer node)
+    await page.locator('.bypass-btn').nth(0).click()
+    await page.waitForFunction(
+      () => document.querySelectorAll('.flow-node.effect').length === 3,
+      { timeout: 3000 },
+    )
+    expect(await page.locator('.flow-node.effect').count()).toBe(3)
+
+    expect(errors, 'effects-chain signal flow should have no page errors').toHaveLength(0)
+  })
+})
+
 test.describe('Mobile viewport', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 

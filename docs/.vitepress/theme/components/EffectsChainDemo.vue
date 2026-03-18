@@ -200,7 +200,8 @@ async function switchSource(type: 'oscillator' | 'file') {
 }
 
 function toggleBypass(entry: ChainEntry) {
-  entry.effect.bypass = !entry.effect.bypass
+  if (entry.effect)
+    entry.effect.bypass = !entry.effect.bypass
   entry.bypassed = !entry.bypassed
 }
 
