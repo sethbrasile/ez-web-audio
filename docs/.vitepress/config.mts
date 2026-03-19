@@ -168,6 +168,7 @@ export default defineConfig({
           items: [
             { text: 'Timing Basics', link: '/examples/timing' },
             { text: 'Drum Machine', link: '/examples/drum-machine' },
+            { text: 'Transport + Sequencer', link: '/examples/transport-sequencer' },
           ],
         },
         {
