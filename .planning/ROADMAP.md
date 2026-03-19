@@ -86,7 +86,7 @@ See milestones/ archive for full phase details.
 - [x] **Phase 68: PolySynth Demo** - Piano keyboard with polyphonic voice allocation, steal strategies, and ADSR controls (completed 2026-03-09)
 - [x] **Phase 69: Effects Chain Demo** - Toggle, adjust, reorder, and chain delay/reverb/compressor/EQ effects with signal flow diagram (completed 2026-03-18)
 - [x] **Phase 70: GrainPlayer Demo** - Granular synthesis with independent pitch/time control and waveform overlay (completed 2026-03-18)
-- [ ] **Phase 71: Transport + Sequencer Demo** - BPM clock, musical time notation, mute/solo, and visual playhead
+- [x] **Phase 71: Transport + Sequencer Demo** - BPM clock, musical time notation, mute/solo, and visual playhead (completed 2026-03-19)
 
 ## Phase Details
 
@@ -172,7 +172,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | 68. PolySynth Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 70. GrainPlayer Demo | 2/2 | Complete    | 2026-03-18 | - |
-| 71. Transport + Sequencer Demo | 1/2 | In Progress|  | - |
+| 71. Transport + Sequencer Demo | 2/2 | Complete   | 2026-03-19 | - |
 
 ---
 
