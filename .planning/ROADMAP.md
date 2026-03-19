@@ -172,7 +172,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | 68. PolySynth Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 70. GrainPlayer Demo | 2/2 | Complete    | 2026-03-18 | - |
-| 71. Transport + Sequencer Demo | 2/2 | Complete   | 2026-03-19 | - |
+| 71. Transport + Sequencer Demo | 2/2 | Complete    | 2026-03-19 | - |
 
 ---
 
