@@ -29,6 +29,7 @@ test.describe('Demo Pages - Error Detection', () => {
     'examples/polysynth',
     'examples/effects-chain',
     'examples/grainplayer',
+    'examples/transport-sequencer',
   ]
 
   for (const path of demoPages) {

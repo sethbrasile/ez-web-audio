@@ -673,6 +673,149 @@ test.describe('GrainPlayer page interactions', () => {
   })
 })
 
+test.describe('TransportSequencer page interactions', () => {
+  test('Play button starts transport and Pause/Stop controls work', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Play button present and labeled
+    const playBtn = page.locator('.transport-buttons .play-btn')
+    expect(await playBtn.isVisible()).toBe(true)
+
+    // Click Play — button should change to show Pause is available
+    // Uses 30s timeout: piano.js soundfont (1.4MB) must load before transport starts
+    await playBtn.click()
+    await page.waitForFunction(
+      () => document.querySelector('.transport-buttons .pause-btn') !== null ||
+            document.querySelector('.transport-buttons .play-btn')?.textContent?.includes('Pause'),
+      { timeout: 30000 },
+    )
+
+    // BPM slider present and interactive (aria-label starts with "BPM:")
+    const bpmSlider = page.locator('[aria-label^="BPM:"]')
+    expect(await bpmSlider.isVisible()).toBe(true)
+
+    // Change BPM via slider — should not error
+    await bpmSlider.fill('140')
+
+    // Stop button
+    const stopBtn = page.locator('.transport-buttons .stop-btn')
+    await stopBtn.click()
+
+    expect(errors, 'transport controls should have no page errors').toHaveLength(0)
+  })
+
+  test('Mute and Solo buttons toggle visual state', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Mute button for first track (Kick) — click and verify muted class
+    const muteButtons = page.locator('.mute-btn')
+    expect(await muteButtons.count()).toBeGreaterThanOrEqual(5)
+
+    await muteButtons.nth(0).click()
+    await page.waitForFunction(
+      () => document.querySelectorAll('.mute-btn.muted').length > 0,
+      { timeout: 3000 },
+    )
+    expect(await page.locator('.mute-btn.muted').count()).toBeGreaterThanOrEqual(1)
+
+    // Solo button for second track (Snare) — click and verify soloed class
+    const soloButtons = page.locator('.solo-btn')
+    expect(await soloButtons.count()).toBeGreaterThanOrEqual(5)
+
+    await soloButtons.nth(1).click()
+    await page.waitForFunction(
+      () => document.querySelectorAll('.solo-btn.soloed').length > 0,
+      { timeout: 3000 },
+    )
+    expect(await page.locator('.solo-btn.soloed').count()).toBeGreaterThanOrEqual(1)
+
+    expect(errors, 'mute/solo should have no page errors').toHaveLength(0)
+  })
+
+  test('Step grid renders 5 track rows with 32 step cells each', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // 5 track rows
+    const trackRows = page.locator('.track-row')
+    expect(await trackRows.count()).toBe(5)
+
+    // 32 step cells per row = 160 total
+    const stepCells = page.locator('.step-cell')
+    expect(await stepCells.count()).toBe(160)
+
+    // Preset buttons — 3 presets (using .preset-btn class)
+    const presetBtns = page.locator('.preset-row .preset-btn')
+    expect(await presetBtns.count()).toBe(3)
+
+    // Switch presets — should not error
+    await presetBtns.nth(1).click() // Funk Groove
+    await presetBtns.nth(2).click() // Triplet Feel
+    await presetBtns.nth(0).click() // Back to Straight Rock
+
+    expect(errors, 'step grid and presets should have no page errors').toHaveLength(0)
+  })
+
+  test('Step grid playhead advances after transport starts', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Before play — no playhead active (currentStep = -1)
+    expect(await page.locator('.step-cell.playhead').count()).toBe(0)
+
+    // Click Play
+    await page.locator('.transport-buttons .play-btn').click()
+
+    // Wait for playhead to appear — transport starts after all audio loads (piano.js = 1.4MB)
+    // Uses 30s timeout to account for soundfont loading time
+    await page.waitForFunction(
+      () => document.querySelectorAll('.step-cell.playhead').length > 0,
+      { timeout: 30000 },
+    )
+    expect(await page.locator('.step-cell.playhead').count()).toBeGreaterThan(0)
+
+    // Wait briefly and verify playhead has moved to a different column
+    const firstStep = await page.evaluate(
+      () => Array.from(document.querySelectorAll('.track-row')[0].querySelectorAll('.step-cell'))
+        .findIndex(el => el.classList.contains('playhead')),
+    )
+
+    // Give it 600ms to advance (at 120 BPM, ~125ms per 16th note)
+    await page.waitForTimeout(600)
+
+    const laterStep = await page.evaluate(
+      () => Array.from(document.querySelectorAll('.track-row')[0].querySelectorAll('.step-cell'))
+        .findIndex(el => el.classList.contains('playhead')),
+    )
+
+    // Step should have advanced
+    expect(laterStep).not.toBe(firstStep)
+
+    // Stop transport
+    await page.locator('.transport-buttons .stop-btn').click()
+
+    expect(errors, 'playhead should advance without page errors').toHaveLength(0)
+  })
+})
+
 test.describe('Mobile viewport', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 

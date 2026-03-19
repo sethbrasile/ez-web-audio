@@ -55,7 +55,7 @@ const PRESETS: Record<string, Preset> = {
       { time: 0, freq: 82.4, duration: 0.4 }, // E2
       { time: '2n', freq: 110, duration: 0.4 }, // A2
       { time: '1m', freq: 98, duration: 0.4 }, // G2
-      { time: '1m+2n', freq: 73.4, duration: 0.4 }, // D2
+      { time: '2:3:0', freq: 73.4, duration: 0.4 }, // D2 (bar 2 beat 3)
     ],
     pianoNotes: [
       { time: '1:1:0', note: 'C4' },
@@ -147,9 +147,6 @@ const stepCells = computed(() => {
     }
     else if (note.time === '1m') {
       bassCells[16] = { active: true, noteName: freqToNoteName(note.freq) } // bar 2 = step 16
-    }
-    else if (note.time === '1m+2n') {
-      bassCells[24] = { active: true, noteName: freqToNoteName(note.freq) } // bar 2 beat 3 = step 24
     }
     else if (typeof note.time === 'string' && note.time.includes(':')) {
       // Parse "bar:beat:tick" format
