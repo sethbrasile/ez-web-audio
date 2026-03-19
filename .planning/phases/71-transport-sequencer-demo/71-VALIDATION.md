@@ -38,11 +38,11 @@ created: 2026-03-19
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 71-01-01 | 01 | 1 | TSEQ-01 | E2E | `pnpm exec playwright test transport` | ❌ W0 | ⬜ pending |
-| 71-01-02 | 01 | 1 | TSEQ-02 | E2E | `pnpm exec playwright test transport` | ❌ W0 | ⬜ pending |
-| 71-01-03 | 01 | 1 | TSEQ-03 | E2E | `pnpm exec playwright test transport` | ❌ W0 | ⬜ pending |
-| 71-01-04 | 01 | 1 | TSEQ-04 | E2E | `pnpm exec playwright test transport` | ❌ W0 | ⬜ pending |
-| 71-02-01 | 02 | 2 | TSEQ-01..04 | E2E | `pnpm exec playwright test transport` | ❌ W0 | ⬜ pending |
+| 71-01-01 | 01 | 1 | TSEQ-01 | typecheck | `test -f docs/.vitepress/theme/components/TransportSequencerDemo.vue && pnpm typecheck 2>&1 \| tail -5` | ❌ W0 | ⬜ pending |
+| 71-01-02 | 01 | 1 | TSEQ-02 | typecheck | `test -f docs/.vitepress/theme/components/TransportSequencerDemo.vue && pnpm typecheck 2>&1 \| tail -5` | ❌ W0 | ⬜ pending |
+| 71-01-03 | 01 | 1 | TSEQ-03 | typecheck | `test -f docs/.vitepress/theme/components/TransportSequencerDemo.vue && pnpm typecheck 2>&1 \| tail -5` | ❌ W0 | ⬜ pending |
+| 71-01-04 | 01 | 1 | TSEQ-04 | typecheck | `test -f docs/.vitepress/theme/components/TransportSequencerDemo.vue && pnpm typecheck 2>&1 \| tail -5` | ❌ W0 | ⬜ pending |
+| 71-02-01 | 02 | 2 | TSEQ-01..04 | E2E | `pnpm exec playwright test e2e/demos.spec.ts e2e/interactions.spec.ts --reporter=list 2>&1 \| tail -20` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -50,8 +50,10 @@ created: 2026-03-19
 
 ## Wave 0 Requirements
 
-- [ ] `e2e/transport-sequencer.spec.ts` — E2E test stubs for TSEQ-01..04
-- [ ] Audio playback assertions use `.play-button` class selector pattern (consistent with LFO/PolySynth)
+- [ ] `docs/.vitepress/theme/components/TransportSequencerDemo.vue` — component created (Plan 01, Task 1)
+- [ ] `e2e/demos.spec.ts` — `examples/transport-sequencer` added to smoke list (Plan 02, Task 1)
+- [ ] `e2e/interactions.spec.ts` — `TransportSequencer page interactions` describe block added (Plan 02, Task 1)
+- [ ] Audio playback assertions use `.play-btn` / `.stop-btn` class selector pattern (consistent with LFO/PolySynth)
 
 *Existing unit test infrastructure covers all unit-level needs.*
 
