@@ -32,10 +32,10 @@ Interactive demo pages for all M5 features that currently lack examples.
 
 ### Transport + Sequencer
 
-- [ ] **TSEQ-01**: User can play/pause/stop transport with adjustable BPM
-- [ ] **TSEQ-02**: User can mute/solo individual tracks
-- [ ] **TSEQ-03**: User can hear a sequence using musical time notation (4n, 8t, 2m)
-- [ ] **TSEQ-04**: User can see current beat/bar position with visual playhead
+- [x] **TSEQ-01**: User can play/pause/stop transport with adjustable BPM
+- [x] **TSEQ-02**: User can mute/solo individual tracks
+- [x] **TSEQ-03**: User can hear a sequence using musical time notation (4n, 8t, 2m)
+- [x] **TSEQ-04**: User can see current beat/bar position with visual playhead
 
 ### GrainPlayer
 
@@ -77,10 +77,10 @@ None — showcase examples (pseudo DAW, guitar pedalboard) deferred to Milestone
 | FX-03 | Phase 69 | Complete |
 | FX-04 | Phase 69 | Complete |
 | FX-05 | Phase 69 | Complete |
-| TSEQ-01 | Phase 71 | Pending |
-| TSEQ-02 | Phase 71 | Pending |
-| TSEQ-03 | Phase 71 | Pending |
-| TSEQ-04 | Phase 71 | Pending |
+| TSEQ-01 | Phase 71 | Complete |
+| TSEQ-02 | Phase 71 | Complete |
+| TSEQ-03 | Phase 71 | Complete |
+| TSEQ-04 | Phase 71 | Complete |
 | GRAIN-01 | Phase 70 | Complete |
 | GRAIN-02 | Phase 70 | Complete |
 | GRAIN-03 | Phase 70 | Complete |

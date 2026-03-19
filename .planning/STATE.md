@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 71 context gathered
-last_updated: "2026-03-19T21:57:18.699Z"
+stopped_at: Completed 71-01-PLAN.md (TransportSequencerDemo)
+last_updated: "2026-03-19T22:22:41.710Z"
 last_activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 10
+  completed_plans: 9
   percent: 100
 ---
 
@@ -62,6 +62,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 70]: Speed slider drives RAF position advance (not playbackRate) for true pitch/speed independence
 - [Phase 70-grainplayer-demo]: Used .play-button class selector for consistency with existing LFO/PolySynth test patterns
 - [Phase 70-grainplayer-demo]: Canvas 'loaded' class waitForFunction gates canvas click test — ensures waveform drawn before interaction
+- [Phase 71-transport-sequencer-demo]: tick handler drives currentStep via ((bar-1)*16)+((beat-1)*4)+tick % 32; shouldPlay() guards melody callbacks; applyPreset() uses seq.clear() for safe live preset switching
 
 ### Pending Todos
 
@@ -74,6 +75,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-19T21:57:18.689Z
-Stopped at: Phase 71 context gathered
-Resume file: .planning/phases/71-transport-sequencer-demo/71-CONTEXT.md
+Last session: 2026-03-19T22:22:41.707Z
+Stopped at: Completed 71-01-PLAN.md (TransportSequencerDemo)
+Resume file: None
