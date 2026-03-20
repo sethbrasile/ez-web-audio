@@ -64,31 +64,29 @@ completed: 2026-03-19
 ## Accomplishments
 
 - Added `examples/transport-sequencer` to smoke test list in `demos.spec.ts`
-- Added `TransportSequencer page interactions` describe block with 4 tests in `interactions.spec.ts`
+- Added `TransportSequencer page interactions` describe block with 4 tests in `interactions.spec.ts` (TSEQ-01 through TSEQ-04)
 - Fixed invalid musical time notation `'1m+2n'` in TransportSequencerDemo component (caused play to silently fail)
-- All 49 transport-sequencer tests pass (1 pre-existing unrelated Basic Playback failure documented)
+- All 5 TransportSequencer-specific tests pass (smoke test + 4 interaction tests)
 
 ## Task Commits
 
 Each task was committed atomically:
 
-1. **Task 1: Add E2E tests for TransportSequencer** - `42814ff` (feat)
-2. **Task 2: Human verify (auto-approved)** - no additional commit
-
-**Plan metadata:** (docs commit follows)
+1. **Task 1: Add E2E tests for TransportSequencer** - `42814ff` (feat(71-02): add E2E tests for TransportSequencer demo)
+2. **Task 2: Human verify (auto-approved via auto_advance)** - no additional commit
 
 ## Files Created/Modified
 
-- `e2e/demos.spec.ts` - Added `'examples/transport-sequencer'` to demoPages smoke test array
-- `e2e/interactions.spec.ts` - Added `TransportSequencer page interactions` describe block with 4 tests (TSEQ-01 through TSEQ-04)
-- `docs/.vitepress/theme/components/TransportSequencerDemo.vue` - Fixed invalid `'1m+2n'` time notation → `'2:3:0'`; removed dead `else if` branch for `'1m+2n'` in stepCells computed
+- `e2e/demos.spec.ts` — Added `'examples/transport-sequencer'` to demoPages smoke test array
+- `e2e/interactions.spec.ts` — Added `TransportSequencer page interactions` describe block with 4 tests (TSEQ-01 through TSEQ-04)
+- `docs/.vitepress/theme/components/TransportSequencerDemo.vue` — Fixed invalid `'1m+2n'` time notation to `'2:3:0'`
 
 ## Decisions Made
 
-- Used `.transport-buttons` selector instead of `.transport-controls` — plan specified the latter but the actual component used the former class name
+- Used `.transport-buttons` selector instead of `.transport-controls` — plan specified the latter but the actual component uses the former class name
 - Used `[aria-label^="BPM:"]` prefix selector because the aria-label is dynamic (`BPM: 120`, `BPM: 140`, etc.)
 - Used 30-second `waitForFunction` timeout for assertions that depend on transport starting — the piano soundfont (`piano.js`, 1.4MB) must fully load before `playing.value` is set to true
-- Pre-existing Basic Playback test failure (`.play-btn` strict mode with 2 matching elements) documented as out-of-scope — not caused by this plan's changes
+- Task 2 (human-verify checkpoint) auto-approved via `auto_advance: true` config
 
 ## Deviations from Plan
 
@@ -97,9 +95,8 @@ Each task was committed atomically:
 **1. [Rule 1 - Bug] Fixed invalid musical time notation '1m+2n' in Straight Rock preset**
 - **Found during:** Task 1 (Add E2E tests) — TSEQ-01 test timed out; debug revealed `.error-bar` showing "Invalid musical time notation: '1m+2n'"
 - **Issue:** `bassNotes` in Straight Rock preset used `{ time: '1m+2n', ... }` which the `Sequence.at()` API doesn't support (only supports note values like `'2n'`, measures like `'1m'`, bar:beat:tick like `'2:3:0'`, and numbers). The error was caught by the `try/catch` in `play()` — `error.value` was set but `playing.value` was never set to `true`, causing the pause button to never appear.
-- **Fix:** Replaced `'1m+2n'` with `'2:3:0'` (bar 2, beat 3, tick 0 — same 32nd-step position = step 24). Removed the now-dead `else if (note.time === '1m+2n')` branch from `stepCells` computed property (the `:` branch now handles `'2:3:0'`).
+- **Fix:** Replaced `'1m+2n'` with `'2:3:0'` (bar 2, beat 3, tick 0 — equivalent step position).
 - **Files modified:** `docs/.vitepress/theme/components/TransportSequencerDemo.vue`
-- **Verification:** Debug test confirmed pause button appears within 500ms of clicking Play, no error bar displayed
 - **Committed in:** `42814ff` (Task 1 commit)
 
 ---
@@ -109,18 +106,24 @@ Each task was committed atomically:
 
 ## Issues Encountered
 
-- The plan specified `.transport-controls` as the selector prefix for Play/Pause/Stop buttons, but the actual component used `.transport-buttons`. Adjusted selectors before running tests.
-- Pre-existing test failure: `Basic Playback page interactions → Play Sound button is present and clickable` fails with "strict mode violation: locator('.play-btn') resolved to 2 elements." This was failing before this plan's changes (confirmed via `git stash`). Not related to TransportSequencer. Deferred to separate fix.
+- The plan specified `.transport-controls` as the selector prefix for Play/Pause/Stop buttons, but the actual component used `.transport-buttons`. Adjusted selectors accordingly.
+- Pre-existing test failure: `Basic Playback page interactions → Play Sound button is present and clickable` fails with "strict mode violation: locator('.play-btn') resolved to 2 elements." This was not caused by this plan's changes and is out of scope. Deferred.
 
 ## User Setup Required
 
-None - no external service configuration required.
+None — no external service configuration required.
 
 ## Next Phase Readiness
 
 - Phase 71 complete — all 4 TSEQ requirements covered by E2E tests
 - Milestone 7 (Feature Demos) complete — all 5 demo phases (67-71) done
-- Pre-existing Basic Playback test failure should be fixed in a future cleanup pass
+
+## Self-Check: PASSED
+
+- FOUND: `e2e/demos.spec.ts` contains `'examples/transport-sequencer'`
+- FOUND: `e2e/interactions.spec.ts` contains `TransportSequencer page interactions` describe block
+- FOUND: All 5 TransportSequencer tests pass (verified via `pnpm exec playwright test --grep TransportSequencer|transport-sequencer`)
+- FOUND: commit `42814ff` (feat(71-02): add E2E tests for TransportSequencer demo)
 
 ---
 *Phase: 71-transport-sequencer-demo*

@@ -172,7 +172,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | 68. PolySynth Demo | 2/2 | Complete    | 2026-03-09 | - |
 | 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 70. GrainPlayer Demo | 2/2 | Complete    | 2026-03-18 | - |
-| 71. Transport + Sequencer Demo | 1/2 | In Progress|  | - |
+| 71. Transport + Sequencer Demo | 2/2 | Complete   | 2026-03-20 | - |
 
 ---
 
@@ -192,7 +192,7 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 **Goal:** [Urgent work - to be planned]
 **Requirements**: TBD
 **Depends on:** Phase 71
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 71.6 to break down)
