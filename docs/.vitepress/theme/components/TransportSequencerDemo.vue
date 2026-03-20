@@ -63,7 +63,7 @@ const PRESETS: Record<string, Preset> = {
       { time: '1:3:0', note: 'G4' },
       { time: '1:4:0', note: 'E4' },
       { time: '2:1:0', note: 'C4' },
-      { time: '2:2:0', note: 'D4' },
+      { time: '2:2:0', note: 'E4' }, // Fixed: was D4 which clashed with E minor bass
       { time: '2:3:0', note: 'G4' },
     ],
   },
@@ -75,12 +75,12 @@ const PRESETS: Record<string, Preset> = {
       { time: 0, freq: 55, duration: 0.2 }, // A1
       { time: 0.25, freq: 55, duration: 0.15 }, // A1 (16th note later)
       { time: '1:3:0', freq: 73.4, duration: 0.3 }, // D2
-      { time: '2:1:2', freq: 49, duration: 0.2 }, // G1
+      { time: 5, freq: 49, duration: 0.2 }, // G1 (bar 2 beat 2)
       { time: '2:3:0', freq: 55, duration: 0.3 }, // A1
     ],
     pianoNotes: [
       { time: '1:1:0', note: 'A3' },
-      { time: '1:2:2', note: 'C4' },
+      { time: '1:2:0', note: 'C4' },
       { time: '1:3:0', note: 'E4' },
       { time: '1:4:0', note: 'G4' },
       { time: '2:1:0', note: 'A3' },
@@ -88,9 +88,16 @@ const PRESETS: Record<string, Preset> = {
     ],
   },
   'Triplet Feel': {
+    // Hi-hat in triplet feel: hits on triplet subdivisions of each beat.
+    // 32 steps = 16th-note grid. Triplet feel approximation: hit at steps
+    // 1, 3, 5 of each 6-step group (2 beats) — gives shuffle/triplet character.
+    // Pattern per bar (16 steps): beats 1&2 triplets at 1,3,5 / 7,9,11; beats 3&4 at 13,15 / - / -
+    // Simplified shuffle: hit every 1st and 3rd 16th of each beat pair = steps 1,3,7,9,13,15 per bar
     kick: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     snare: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    // Shuffle hi-hat: hits at positions 1, 4, 7, 10, 13, 16 (every 3rd 16th-note step)
+    // giving a triplet-feel shuffle across the 16th-note grid
+    hihat: [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
     bassNotes: [
       { time: 0, freq: 41.2, duration: 0.3 }, // E1
       { time: 1 / 3, freq: 49, duration: 0.3 }, // G1
@@ -249,8 +256,15 @@ function toggleSolo(track: keyof typeof trackState.value) {
 }
 
 // Apply preset — update patterns and re-schedule melody
+// Audio-side calls are guarded: if audio not yet initialized, only visual state updates.
+// The preset is re-applied after ensureLoaded() completes.
 function applyPreset(name: string) {
   activePreset.value = name
+
+  // Guard: only apply audio-side if library is initialized
+  if (!lib)
+    return
+
   const preset = PRESETS[name]
 
   // Update drum patterns
@@ -291,10 +305,10 @@ async function ensureLoaded() {
     return
 
   lib = await import('ez-web-audio')
-  const { createTransport, createSequence, createBeatTrack, createFont, createOscillator } = lib
+  const { createTransport, createSequence, createBeatTrack, createFont, createOscillator, getAudioContext } = lib
 
-  transport = await createTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 4 })
-  audioContext = (transport as any).audioContext as AudioContext
+  transport = await createTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 12 })
+  audioContext = await getAudioContext() as AudioContext
 
   // Create drum BeatTracks
   const kickUrls = [
@@ -317,18 +331,13 @@ async function ensureLoaded() {
   snareTrack = await createBeatTrack(snareUrls, { numBeats: 32 })
   hihatTrack = await createBeatTrack(hihatUrls, { numBeats: 32 })
 
-  // Apply initial preset patterns
-  kickTrack.setPattern(PRESETS['Straight Rock'].kick)
-  snareTrack.setPattern(PRESETS['Straight Rock'].snare)
-  hihatTrack.setPattern(PRESETS['Straight Rock'].hihat)
-
   // Sync to transport
   kickTrack.syncTo(transport, { noteType: 1 / 16 })
   snareTrack.syncTo(transport, { noteType: 1 / 16 })
   hihatTrack.syncTo(transport, { noteType: 1 / 16 })
 
-  // Create bass oscillator (sawtooth, E1 ≈ 41.2 Hz)
-  bassOsc = await createOscillator({ frequency: 41.2, type: 'sawtooth' })
+  // Create bass oscillator (triangle wave — less harsh than sawtooth)
+  bassOsc = await createOscillator({ frequency: 41.2, type: 'triangle' })
 
   // Create piano soundfont
   pianoFont = await createFont('/ez-web-audio/audio/piano.js')
@@ -337,13 +346,17 @@ async function ensureLoaded() {
   bassSeq = createSequence(transport, { length: '2m', loop: true })
   pianoSeq = createSequence(transport, { length: '2m', loop: true })
 
-  // Schedule initial preset melody events
-  applyPreset('Straight Rock')
+  // Apply whatever preset was active when ensureLoaded was triggered
+  // (may differ from 'Straight Rock' if user clicked a preset before Play)
+  applyPreset(activePreset.value)
 
   // Register tick handler to drive step grid playhead
+  // ticksPerBeat:12 — scale tick to 16th-note step within beat (0-3)
   transport.on('tick', (e: CustomEvent<{ bar: number; beat: number; tick: number; seconds: number }>) => {
     const { bar, beat, tick } = e.detail
-    const step = ((bar - 1) * 16) + ((beat - 1) * 4) + tick
+    // Convert tick (0-11 with ticksPerBeat:12) to 16th-note position (0-3)
+    const sixteenthTick = Math.floor(tick * 4 / 12)
+    const step = ((bar - 1) * 16) + ((beat - 1) * 4) + sixteenthTick
     currentStep.value = step % 32
     positionDisplay.value = `${bar}:${beat}`
   })
@@ -388,7 +401,8 @@ function stop() {
   positionDisplay.value = '1:1'
 }
 
-// Handle preset button click
+// Handle preset button click — visual update is immediate;
+// audio is applied only if initialized (guarded inside applyPreset).
 function selectPreset(name: string) {
   applyPreset(name)
 }
@@ -396,6 +410,11 @@ function selectPreset(name: string) {
 // Cleanup on unmount
 onUnmounted(() => {
   transport?.dispose()
+  kickTrack?.dispose()
+  snareTrack?.dispose()
+  hihatTrack?.dispose()
+  bassSeq?.dispose()
+  pianoSeq?.dispose()
   kickTrack = null
   snareTrack = null
   hihatTrack = null
@@ -414,8 +433,8 @@ const tracks = [
   { key: 'kick' as const, label: 'Kick', isDrum: true },
   { key: 'snare' as const, label: 'Snare', isDrum: true },
   { key: 'hihat' as const, label: 'Hi-hat', isDrum: true },
-  { key: 'bass' as const, label: 'Synth (8th notes)', isDrum: false },
-  { key: 'piano' as const, label: 'Piano (quarter notes)', isDrum: false },
+  { key: 'bass' as const, label: 'Synth Bass', isDrum: false },
+  { key: 'piano' as const, label: 'Piano', isDrum: false },
 ]
 
 const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
@@ -431,21 +450,13 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
     <!-- Transport controls bar -->
     <div class="transport-bar">
       <div class="transport-buttons">
+        <!-- Single play/pause/resume button with fixed width to prevent layout shift -->
         <button
-          v-if="!playing || paused"
           class="transport-btn play-btn"
-          :aria-label="paused ? 'Resume' : 'Play'"
-          @click="paused ? resume() : play()"
+          :aria-label="playing && !paused ? 'Pause' : paused ? 'Resume' : 'Play'"
+          @click="playing && !paused ? pause() : paused ? resume() : play()"
         >
-          {{ paused ? 'Resume' : 'Play' }}
-        </button>
-        <button
-          v-if="playing && !paused"
-          class="transport-btn pause-btn"
-          aria-label="Pause"
-          @click="pause()"
-        >
-          Pause
+          {{ playing && !paused ? 'Pause' : paused ? 'Resume' : 'Play' }}
         </button>
         <button
           class="transport-btn stop-btn"
@@ -456,8 +467,11 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
         </button>
       </div>
 
-      <div class="position-display" aria-label="Transport position">
-        {{ positionDisplay }}
+      <div class="position-wrap">
+        <span class="position-label">Bar:Beat</span>
+        <div class="position-display" aria-label="Transport position (bar:beat)">
+          {{ positionDisplay }}
+        </div>
       </div>
 
       <div class="bpm-controls">
@@ -498,83 +512,91 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
       </button>
     </div>
 
-    <!-- Step grid -->
-    <div class="step-grid" aria-label="Step sequencer grid">
-      <!-- Beat markers header -->
-      <div class="grid-header">
-        <div class="header-controls-spacer" />
-        <div class="header-label-spacer" />
-        <div class="header-steps">
-          <template v-for="bar in 2" :key="`bar-${bar}`">
-            <div class="bar-label">
-              Bar {{ bar }}
-            </div>
-            <div class="beat-markers">
-              <div
-                v-for="step in 16"
-                :key="`header-${(bar - 1) * 16 + step - 1}`"
-                class="step-header-cell"
-                :class="{ 'beat-start': (step - 1) % 4 === 0 }"
-              >
-                {{ (step - 1) % 4 === 0 ? Math.floor((step - 1) / 4) + 1 : '' }}
+    <!-- Step grid — scrolls horizontally; track controls and labels are sticky -->
+    <div class="step-grid-wrap" aria-label="Step sequencer grid (read-only — use presets to change patterns)">
+      <p class="grid-read-only-note">
+        Patterns are preset-driven. Press Play and switch presets to hear the difference.
+      </p>
+
+      <div class="step-grid">
+        <!-- Beat markers header -->
+        <div class="grid-header">
+          <div class="header-controls-spacer sticky-col" />
+          <div class="header-label-spacer sticky-label" />
+          <div class="header-steps">
+            <template v-for="bar in 2" :key="`bar-${bar}`">
+              <div class="bar-group">
+                <div class="bar-label">
+                  Bar {{ bar }}
+                </div>
+                <div class="beat-markers">
+                  <div
+                    v-for="step in 16"
+                    :key="`header-${(bar - 1) * 16 + step - 1}`"
+                    class="step-header-cell"
+                    :class="{ 'beat-start': (step - 1) % 4 === 0 }"
+                  >
+                    {{ (step - 1) % 4 === 0 ? Math.floor((step - 1) / 4) + 1 : '' }}
+                  </div>
+                </div>
               </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Track rows -->
+        <div
+          v-for="track in tracks"
+          :key="track.key"
+          class="track-row"
+          :class="{ muted: trackState[track.key].muted, soloed: trackState[track.key].soloed }"
+        >
+          <!-- Track controls (M/S buttons) — sticky left -->
+          <div class="track-controls sticky-col">
+            <button
+              class="ms-btn mute-btn"
+              :class="{ muted: trackState[track.key].muted }"
+              :aria-label="`Mute ${track.label}`"
+              :aria-pressed="trackState[track.key].muted"
+              @click="toggleMute(track.key)"
+            >
+              M
+            </button>
+            <button
+              class="ms-btn solo-btn"
+              :class="{ soloed: trackState[track.key].soloed }"
+              :aria-label="`Solo ${track.label}`"
+              :aria-pressed="trackState[track.key].soloed"
+              @click="toggleSolo(track.key)"
+            >
+              S
+            </button>
+          </div>
+
+          <!-- Track label — sticky left after controls -->
+          <div class="track-label sticky-label">
+            {{ track.label }}
+          </div>
+
+          <!-- 32 step cells -->
+          <div class="step-cells">
+            <div
+              v-for="i in 32"
+              :key="`${track.key}-step-${i}`"
+              class="step-cell"
+              :class="{
+                active: stepCells[track.key]?.[i - 1]?.active,
+                playhead: (i - 1) === currentStep,
+                'drum-cell': track.isDrum,
+                'melody-cell': !track.isDrum,
+                'bar-divider': (i - 1) === 16,
+              }"
+              :aria-label="`${track.label} step ${i}${stepCells[track.key]?.[i - 1]?.active ? ' (active)' : ''}`"
+            >
+              <span v-if="!track.isDrum && stepCells[track.key]?.[i - 1]?.noteName" class="note-name">
+                {{ stepCells[track.key][i - 1].noteName }}
+              </span>
             </div>
-          </template>
-        </div>
-      </div>
-
-      <!-- Track rows -->
-      <div
-        v-for="track in tracks"
-        :key="track.key"
-        class="track-row"
-        :class="{ muted: trackState[track.key].muted, soloed: trackState[track.key].soloed }"
-      >
-        <!-- Track controls (M/S buttons) -->
-        <div class="track-controls">
-          <button
-            class="ms-btn mute-btn"
-            :class="{ muted: trackState[track.key].muted }"
-            :aria-label="`Mute ${track.label}`"
-            :aria-pressed="trackState[track.key].muted"
-            @click="toggleMute(track.key)"
-          >
-            M
-          </button>
-          <button
-            class="ms-btn solo-btn"
-            :class="{ soloed: trackState[track.key].soloed }"
-            :aria-label="`Solo ${track.label}`"
-            :aria-pressed="trackState[track.key].soloed"
-            @click="toggleSolo(track.key)"
-          >
-            S
-          </button>
-        </div>
-
-        <!-- Track label -->
-        <div class="track-label">
-          {{ track.label }}
-        </div>
-
-        <!-- 32 step cells -->
-        <div class="step-cells">
-          <div
-            v-for="i in 32"
-            :key="`${track.key}-step-${i}`"
-            class="step-cell"
-            :class="{
-              active: stepCells[track.key]?.[i - 1]?.active,
-              playhead: (i - 1) === currentStep,
-              'drum-cell': track.isDrum,
-              'melody-cell': !track.isDrum,
-              'bar-divider': (i - 1) === 16,
-            }"
-            :aria-label="`${track.label} step ${i}${stepCells[track.key]?.[i - 1]?.active ? ' (active)' : ''}`"
-          >
-            <span v-if="!track.isDrum && stepCells[track.key]?.[i - 1]?.noteName" class="note-name">
-              {{ stepCells[track.key][i - 1].noteName }}
-            </span>
           </div>
         </div>
       </div>
@@ -627,6 +649,9 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   font-size: 0.85rem;
   font-weight: 600;
   transition: all 0.15s;
+  /* Fixed min-width prevents layout shift when text changes Play/Pause/Resume */
+  min-width: 72px;
+  text-align: center;
 }
 
 .transport-btn:hover {
@@ -644,15 +669,23 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   background: var(--vp-c-brand-dark);
 }
 
-.pause-btn {
-  background: var(--vp-c-yellow-soft, #fef3c7);
-  border-color: #f59e0b;
-  color: #92400e;
-}
-
 .stop-btn {
   background: var(--vp-c-bg);
   border-color: var(--vp-c-divider);
+}
+
+/* Position display */
+.position-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.position-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  white-space: nowrap;
 }
 
 .position-display {
@@ -734,9 +767,22 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   font-weight: 600;
 }
 
-/* Step grid */
-.step-grid {
+/* Read-only note */
+.grid-read-only-note {
+  font-size: 0.75rem;
+  color: var(--vp-c-text-3);
+  margin: 0 0 0.5rem;
+  font-style: italic;
+}
+
+/* Step grid wrapper — handles horizontal scroll */
+.step-grid-wrap {
   overflow-x: auto;
+}
+
+/* Step grid — row layout, no overflow (handled by wrapper) */
+.step-grid {
+  min-width: max-content;
 }
 
 /* Grid header row */
@@ -746,13 +792,28 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   margin-bottom: 4px;
 }
 
+/* Sticky columns — controls and label stick to left during horizontal scroll */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--vp-c-bg-soft);
+}
+
+.sticky-label {
+  position: sticky;
+  left: 60px; /* width of sticky-col (52px) + gap (8px) */
+  z-index: 2;
+  background: var(--vp-c-bg-soft);
+}
+
 .header-controls-spacer {
-  width: 52px;
+  width: 60px;
   flex-shrink: 0;
 }
 
 .header-label-spacer {
-  min-width: 150px;
+  min-width: 130px;
   flex-shrink: 0;
 }
 
@@ -761,8 +822,13 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   gap: 0;
 }
 
+.bar-group {
+  display: flex;
+  flex-direction: column;
+}
+
 .bar-label {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--vp-c-text-2);
   text-transform: uppercase;
@@ -779,7 +845,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .step-header-cell {
   width: 24px;
   height: 16px;
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   color: var(--vp-c-text-3);
   display: flex;
   align-items: flex-end;
@@ -805,17 +871,19 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   opacity: 0.4;
 }
 
-/* Track controls (M/S buttons) */
+/* Track controls (M/S buttons) — sticky left */
 .track-controls {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  width: 52px;
+  width: 60px;
   flex-shrink: 0;
+  padding-right: 8px;
 }
 
 .ms-btn {
-  padding: 2px 6px;
+  /* Minimum 36px height for comfortable touch targets */
+  padding: 6px 8px;
   border-radius: 3px;
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg);
@@ -825,6 +893,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   font-weight: 700;
   transition: all 0.15s;
   line-height: 1.4;
+  min-height: 28px;
 }
 
 .ms-btn:hover {
@@ -832,20 +901,20 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .mute-btn.muted {
-  background: #d4a017;
-  border-color: #b8880f;
-  color: white;
+  background: var(--vp-c-yellow-soft, #fef3c7);
+  border-color: var(--vp-c-yellow, #f59e0b);
+  color: var(--vp-c-yellow-darker, #78350f);
 }
 
 .solo-btn.soloed {
-  background: #1a5a9a;
-  border-color: #1a5a9a;
-  color: white;
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand);
+  color: var(--vp-c-brand);
 }
 
-/* Track label */
+/* Track label — sticky left after controls */
 .track-label {
-  min-width: 150px;
+  min-width: 130px;
   font-size: 0.78rem;
   color: var(--vp-c-text-2);
   font-weight: 500;
@@ -858,6 +927,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .step-cells {
   display: flex;
   gap: 0;
+  position: relative;
 }
 
 .step-cell {
@@ -897,7 +967,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   color: #fff;
 }
 
-/* Playhead — yellow outline on current column */
+/* Playhead — yellow background column indicator */
 .step-cell.playhead {
   outline: 2px solid #f90;
   outline-offset: -2px;
@@ -930,6 +1000,10 @@ button:focus-visible {
 
   .header-label-spacer {
     min-width: 100px;
+  }
+
+  .sticky-label {
+    left: 60px;
   }
 
   .bpm-slider {
