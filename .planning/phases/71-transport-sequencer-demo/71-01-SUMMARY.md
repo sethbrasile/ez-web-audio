@@ -115,6 +115,15 @@ None — no external service configuration required.
 - Plan 02 adds Playwright E2E tests for the component interactions
 - Component uses `.transport-buttons` selector (not `.transport-controls`) — confirmed for E2E test targeting
 
+## Self-Check: PASSED
+
+- FOUND: `docs/.vitepress/theme/components/TransportSequencerDemo.vue` (1024 lines)
+- FOUND: `docs/examples/transport-sequencer.md`
+- FOUND: sidebar entry `transport-sequencer` in `docs/.vitepress/config.mts`
+- FOUND: commit `cb818af` (feat(71-01): build TransportSequencerDemo.vue component)
+- FOUND: commit `32c37bd` (feat(71-01): create transport-sequencer docs page and sidebar entry)
+- `pnpm typecheck` passes with no errors
+
 ---
 *Phase: 71-transport-sequencer-demo*
 *Completed: 2026-03-19*
