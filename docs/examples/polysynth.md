@@ -1,9 +1,11 @@
 ---
-title: Polyphonic Synth
+title: Polyphonic Synth - Web Audio Voice Allocation Demo
 description: Interactive demo of polyphonic voice allocation with steal strategies and ADSR envelopes
 ---
 
 # Polyphonic Synth
+
+Polyphonic synthesis means multiple notes can play simultaneously, each on its own independent voice. When you press more keys than the configured voice limit, the synth must decide which existing voice to silence and reuse -- this is called **voice stealing**.
 
 Play chords on the piano keyboard and explore how voice allocation works. Adjust the maximum number of voices, try different steal strategies, and shape the sound with ADSR envelope presets.
 
@@ -11,7 +13,15 @@ Play chords on the piano keyboard and explore how voice allocation works. Adjust
 import PolySynthDemo from '../.vitepress/theme/components/PolySynthDemo.vue'
 </script>
 
+<llm-exclude>
 <PolySynthDemo />
+</llm-exclude>
+
+<llm-only>
+
+Interactive polyphonic synthesizer demo with a one-octave piano keyboard playable by mouse, touch, or computer keyboard (A-J keys). Controls include max voices (1-8), steal strategy selector (LRU / Oldest Active / Quietest), ADSR envelope sliders, and preset buttons (Piano, Pad, Pluck, Lead). A voice count indicator shows how many voices are active in real time.
+
+</llm-only>
 
 ## How It Works
 
@@ -36,18 +46,40 @@ const synth = await createPolySynth({
   envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.5 },
 })
 
-// Play a chord
+// Play a chord — each call returns a VoiceHandle
 const c4 = synth.play({ frequency: frequencyMap['C4'] })
 const e4 = synth.play({ frequency: frequencyMap['E4'] })
 const g4 = synth.play({ frequency: frequencyMap['G4'] })
 
 // Listen for voice stealing
 synth.on('voicestolen', (event) => {
-  console.log('Voice stolen!', event.detail)
+  // event.detail contains the stolen voice information
+  const { frequency, startTime } = event.detail
+  console.log(`Voice stolen: ${frequency} Hz (started at ${startTime})`)
 })
 
 // Stop individual notes
-await c4.stop()
-await e4.stop()
-await g4.stop()
+c4.stop()
+e4.stop()
+g4.stop()
 ```
+
+### `voicestolen` Event Payload
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `frequency` | `number` | Frequency (Hz) of the stolen voice |
+| `startTime` | `number` | AudioContext time when the stolen voice started |
+
+### Cleanup
+
+```typescript
+synth.releaseAll() // Stop all active voices with their release envelopes
+synth.dispose()    // Full cleanup -- releases all voices and disconnects effects
+```
+
+## Further Reading
+
+- [PolySynth Guide](/guide/poly-synth) -- full API reference, voice handles, filters, and effects
+- [Synth Keyboard](/examples/synth-keyboard) -- manual polyphony with individual oscillators
+- [LFO Modulation](/examples/lfo-modulation) -- add tremolo or vibrato to synth voices

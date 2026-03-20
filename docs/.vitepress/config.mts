@@ -155,6 +155,7 @@ export default defineConfig({
             { text: 'XY Pad', link: '/examples/xy-pad' },
             { text: 'Synth Drum Kit', link: '/examples/synth-drum-kit' },
             { text: 'PolySynth', link: '/examples/polysynth' },
+            { text: 'GrainPlayer', link: '/examples/grainplayer' },
           ],
         },
         {
@@ -200,12 +201,6 @@ export default defineConfig({
           items: [
             { text: 'Ambient Generator', link: '/examples/ambient-generator' },
             { text: 'Visualization', link: '/examples/visualization' },
-          ],
-        },
-        {
-          text: 'Granular',
-          items: [
-            { text: 'GrainPlayer', link: '/examples/grainplayer' },
           ],
         },
       ],
