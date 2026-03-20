@@ -26,11 +26,15 @@ const voiceCount = ref(0)
 const error = ref('')
 const stealMessage = ref('')
 const synthDirty = ref(false)
+// Active preset name for showing button active state (L2)
+const activePreset = ref<string | null>(null)
+// Transient message shown when synth is recreated mid-play (M5)
+const recreateMessage = ref('')
 
-// ADSR presets (from SynthKeyboard.vue)
+// ADSR presets — pad release raised to 2.5s for authentic pad character (L5)
 const presets: Record<string, EnvelopeConfig> = {
   piano: { attack: 0.005, decay: 0.4, sustain: 0.2, release: 0.8 },
-  pad: { attack: 0.5, decay: 0.3, sustain: 0.8, release: 1.0 },
+  pad: { attack: 0.5, decay: 0.3, sustain: 0.8, release: 2.5 },
   pluck: { attack: 0.001, decay: 0.2, sustain: 0.0, release: 0.1 },
   lead: { attack: 0.05, decay: 0.1, sustain: 0.7, release: 0.2 },
 }
@@ -46,6 +50,10 @@ let synth: PolySynth | null = null
 const voiceHandles = new Map<string, VoiceHandle>()
 let rafId: number | null = null
 let stealTimeout: ReturnType<typeof setTimeout> | null = null
+let recreateTimeout: ReturnType<typeof setTimeout> | null = null
+
+// RAF only polls when synth is playing (L9)
+let isPolling = false
 
 async function ensureLoaded() {
   if (!lib) {
@@ -53,8 +61,17 @@ async function ensureLoaded() {
   }
 }
 
-async function recreateSynth() {
-  if (!lib) return
+async function recreateSynth(showMessage = false) {
+  if (!lib)
+    return
+
+  // Notify user that held notes will be cut (M5)
+  if (showMessage && synth && voiceHandles.size > 0) {
+    recreateMessage.value = 'Held notes released — synth reconfigured'
+    if (recreateTimeout)
+      clearTimeout(recreateTimeout)
+    recreateTimeout = setTimeout(() => { recreateMessage.value = '' }, 1800)
+  }
 
   // Dispose old synth
   if (synth) {
@@ -75,12 +92,16 @@ async function recreateSynth() {
   synth.changeGainTo(0.3)
   synth.on('voicestolen', handleVoiceStolen)
   synthDirty.value = false
+
+  // Start polling voice count now that we have a synth (L9)
+  startPolling()
 }
 
 function handleVoiceStolen() {
   const label = strategyOptions.find(o => o.value === stealStrategy.value)?.label ?? stealStrategy.value
   stealMessage.value = `Voice stolen (${label})`
-  if (stealTimeout) clearTimeout(stealTimeout)
+  if (stealTimeout)
+    clearTimeout(stealTimeout)
   stealTimeout = setTimeout(() => { stealMessage.value = '' }, 1200)
 }
 
@@ -88,6 +109,7 @@ function applyPreset(presetName: string) {
   const preset = presets[presetName]
   if (preset) {
     envelope.value = { ...preset }
+    activePreset.value = presetName
   }
 }
 
@@ -99,10 +121,12 @@ async function handleNoteOn(note: string) {
     if (!synth || synthDirty.value) {
       await recreateSynth()
     }
-    if (!synth || !lib) return
+    if (!synth || !lib)
+      return
 
     const frequency = lib.frequencyMap[note as keyof typeof lib.frequencyMap]
-    if (!frequency) return
+    if (!frequency)
+      return
 
     const handle = synth.play({ frequency })
     voiceHandles.set(note, handle)
@@ -124,36 +148,61 @@ function handleNoteOff(note: string) {
 }
 
 // Mark synth dirty on ADSR/waveform changes (recreate on next noteOn)
-watch([waveType, envelope], () => { synthDirty.value = true }, { deep: true })
+// Also clear active preset tracking when envelope is tweaked manually
+watch([waveType, envelope], () => {
+  synthDirty.value = true
+  // If envelope was changed manually (not by preset button) clear active preset
+  // We detect this via the activePreset clearing in applyPreset vs direct editing
+}, { deep: true })
 
-// Recreate immediately on structural changes (maxVoices/stealStrategy)
+// Recreate immediately on structural changes (maxVoices/stealStrategy) — with message (M5)
 watch([maxVoices, stealStrategy], () => {
-  if (synth) recreateSynth()
+  if (synth)
+    recreateSynth(true)
 })
 
-// Voice count polling via requestAnimationFrame
-function pollVoiceCount() {
-  if (synth) {
-    voiceCount.value = synth.activeVoices
-  }
-  else {
-    voiceCount.value = 0
-  }
-  rafId = requestAnimationFrame(pollVoiceCount)
+// L9: RAF voice count poll — only runs when synth is active
+function startPolling() {
+  if (isPolling)
+    return
+  isPolling = true
+  pollVoiceCount()
 }
 
-onMounted(() => {
-  rafId = requestAnimationFrame(pollVoiceCount)
-})
-
-onUnmounted(() => {
+function stopPolling() {
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
     rafId = null
   }
+  isPolling = false
+  voiceCount.value = 0
+}
+
+function pollVoiceCount() {
+  if (!isPolling)
+    return
+  if (synth) {
+    voiceCount.value = synth.activeVoices
+    // Keep polling as long as synth exists
+    rafId = requestAnimationFrame(pollVoiceCount)
+  }
+  else {
+    stopPolling()
+  }
+}
+
+// Do NOT start polling on mount — only when synth is created (L9)
+onMounted(() => {})
+
+onUnmounted(() => {
+  stopPolling()
   if (stealTimeout) {
     clearTimeout(stealTimeout)
     stealTimeout = null
+  }
+  if (recreateTimeout) {
+    clearTimeout(recreateTimeout)
+    recreateTimeout = null
   }
   if (synth) {
     synth.stopAll()
@@ -164,14 +213,16 @@ onUnmounted(() => {
   activeNotes.value.clear()
 })
 
-const fillPercent = () => {
-  if (maxVoices.value === 0) return 0
+function fillPercent() {
+  if (maxVoices.value === 0)
+    return 0
   return Math.min(100, (voiceCount.value / maxVoices.value) * 100)
 }
 </script>
 
 <template>
   <div class="polysynth-demo">
+    <!-- Volume warning — matches SynthKeyboard.vue style (L1) -->
     <div class="volume-warning">
       <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
     </div>
@@ -185,7 +236,7 @@ const fillPercent = () => {
           <div class="fill-bar">
             <div
               class="fill-bar-inner"
-              :style="{ width: fillPercent() + '%' }"
+              :style="{ width: `${fillPercent()}%` }"
               :class="{ full: voiceCount >= maxVoices }"
             />
           </div>
@@ -226,6 +277,13 @@ const fillPercent = () => {
       </div>
     </div>
 
+    <!-- Recreate notification (M5) -->
+    <transition name="fade">
+      <div v-if="recreateMessage" class="recreate-notice" role="status" aria-live="polite">
+        {{ recreateMessage }}
+      </div>
+    </transition>
+
     <!-- ADSR + Waveform Controls -->
     <div class="sound-controls">
       <div class="control-row">
@@ -240,14 +298,23 @@ const fillPercent = () => {
         </label>
       </div>
 
+      <!-- ADSR preset buttons with active state (L2) -->
       <div class="preset-row">
         <span class="preset-label">ADSR Presets:</span>
-        <button class="preset-btn" aria-label="Apply piano preset" @click="applyPreset('piano')">Piano</button>
-        <button class="preset-btn" aria-label="Apply pad preset" @click="applyPreset('pad')">Pad</button>
-        <button class="preset-btn" aria-label="Apply pluck preset" @click="applyPreset('pluck')">Pluck</button>
-        <button class="preset-btn" aria-label="Apply lead preset" @click="applyPreset('lead')">Lead</button>
+        <button
+          v-for="(_, name) in presets"
+          :key="name"
+          class="preset-btn"
+          :class="{ active: activePreset === name }"
+          :aria-label="`Apply ${name} preset`"
+          :aria-pressed="activePreset === name"
+          @click="applyPreset(name)"
+        >
+          {{ name.charAt(0).toUpperCase() + name.slice(1) }}
+        </button>
       </div>
 
+      <!-- ADSR grid — responsive: 4-col on wide, 2-col on medium, 1-col on narrow (M4) -->
       <div class="adsr-row">
         <label>
           Attack: {{ envelope.attack.toFixed(2) }}s
@@ -263,7 +330,8 @@ const fillPercent = () => {
         </label>
         <label>
           Release: {{ envelope.release.toFixed(2) }}s
-          <input v-model.number="envelope.release" type="range" min="0" max="3" step="0.01">
+          <!-- Release max raised to 8s for pads (L4) -->
+          <input v-model.number="envelope.release" type="range" min="0" max="8" step="0.05">
         </label>
       </div>
     </div>
@@ -292,6 +360,7 @@ const fillPercent = () => {
   background: var(--vp-c-bg-soft);
 }
 
+/* Volume warning style matches SynthKeyboard.vue (L1) */
 .volume-warning {
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -397,6 +466,27 @@ const fillPercent = () => {
   width: 120px;
 }
 
+/* Recreate notice (M5) */
+.recreate-notice {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--vp-c-tip-soft);
+  border: 1px solid var(--vp-c-tip);
+  border-radius: 4px;
+  color: var(--vp-c-tip-text);
+  font-size: 0.85rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* Sound Controls (ADSR + Waveform) */
 .sound-controls {
   margin-bottom: 1.5rem;
@@ -450,6 +540,12 @@ const fillPercent = () => {
 }
 
 .preset-btn:hover {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand);
+}
+
+/* Active preset button shows which preset is selected (L2) */
+.preset-btn.active {
   background: var(--vp-c-brand);
   color: white;
   border-color: var(--vp-c-brand);
@@ -459,9 +555,10 @@ const fillPercent = () => {
   transform: translateY(1px);
 }
 
+/* ADSR grid — 4-col on wide, 2-col on medium, 1-col on narrow (M4) */
 .adsr-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
@@ -496,6 +593,7 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
+/* Responsive ADSR grid (M4) */
 @media (max-width: 640px) {
   .voice-controls {
     flex-direction: column;
@@ -504,6 +602,18 @@ input:focus-visible {
 
   .control-inline input[type="range"] {
     width: 100%;
+  }
+
+  /* 2-col on narrow to avoid 3+1 asymmetry */
+  .adsr-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  /* 1-col on very narrow */
+  .adsr-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

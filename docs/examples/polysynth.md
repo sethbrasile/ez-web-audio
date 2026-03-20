@@ -53,9 +53,8 @@ const g4 = synth.play({ frequency: frequencyMap['G4'] })
 
 // Listen for voice stealing
 synth.on('voicestolen', (event) => {
-  // event.detail contains the stolen voice information
-  const { frequency, startTime } = event.detail
-  console.log(`Voice stolen: ${frequency} Hz (started at ${startTime})`)
+  const { stolenFrequency, newFrequency, time } = event.detail
+  console.log(`Voice at ${stolenFrequency} Hz stolen by ${newFrequency} Hz at t=${time}`)
 })
 
 // Stop individual notes
@@ -68,14 +67,16 @@ g4.stop()
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `frequency` | `number` | Frequency (Hz) of the stolen voice |
-| `startTime` | `number` | AudioContext time when the stolen voice started |
+| `stolenFrequency` | `number` | Frequency (Hz) of the voice that was stolen |
+| `newFrequency` | `number` | Frequency (Hz) of the incoming note that triggered the steal |
+| `time` | `number` | AudioContext time when the steal occurred |
+| `source` | `PolySynth` | The PolySynth instance that emitted the event |
 
 ### Cleanup
 
 ```typescript
-synth.releaseAll() // Stop all active voices with their release envelopes
-synth.dispose()    // Full cleanup -- releases all voices and disconnects effects
+synth.stopAll()  // Immediately stop all active voices
+synth.dispose()  // Full cleanup -- releases all voices and disconnects effects
 ```
 
 ## Further Reading

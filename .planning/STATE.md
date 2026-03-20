@@ -70,6 +70,15 @@ See .planning/PROJECT.md Key Decisions table for full history.
 
 None active.
 
+### Roadmap Evolution
+
+- Phase 71.1 inserted after Phase 71: LFO Demo — Musical Calibration + UX (URGENT)
+- Phase 71.2 inserted after Phase 71: TransportSequencer Demo — Musical + UX + Resource Leak (URGENT)
+- Phase 71.3 inserted after Phase 71: EffectsChain Demo — UX + Musical + Resource Leak (URGENT)
+- Phase 71.4 inserted after Phase 71: GrainPlayer Demo — Touch Fix + Polish (URGENT)
+- Phase 71.5 inserted after Phase 71: PianoKeyboard + PolySynth — A11y + Touch + Polish (URGENT)
+- Phase 71.6 inserted after Phase 71: Content/Docs Pages — Parity + LLM Tags (URGENT)
+
 ### Blockers/Concerns
 
 - GrainPlayer audio asset: decide between existing `short-music.mp3` (2.1MB) or adding shorter sample (Phase 70 planning)

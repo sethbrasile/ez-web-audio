@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FilterEffect, LFO, Oscillator } from 'ez-web-audio'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type * as EzWebAudio from 'ez-web-audio'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 type TabType = 'tremolo' | 'vibrato' | 'filter'
 
@@ -19,7 +20,7 @@ const rateSlider = ref(40) // 0-100
 const depthSlider = ref(50) // 0-100
 const waveformType = ref<'sine' | 'square' | 'sawtooth' | 'triangle'>('sine')
 
-let lib: any = null
+let lib: typeof EzWebAudio | null = null
 let oscillator: Oscillator | null = null
 let lfo: LFO | null = null
 let filter: FilterEffect | null = null
@@ -29,9 +30,10 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 let animationPhase = 0
 let lastFrameTime = 0
 
-// Logarithmic rate mapping: 0-100 -> 0.1-20 Hz
+// Logarithmic rate mapping: 0-100 -> ~0.1-20 Hz
+// Midpoint (50) -> ~3.2 Hz, which falls squarely in the tremolo/vibrato range
 const rate = computed(() => {
-  return 0.1 * (200 ** (rateSlider.value / 100))
+  return 0.1 * (100 ** (rateSlider.value / 100))
 })
 
 // Depth: 0-100 -> 0-1.0
@@ -43,11 +45,12 @@ function computeDepthForTab(): number {
   const d = depth.value
   switch (activeTab.value) {
     case 'tremolo':
-      return d * 0.5 // max 50% gain wobble
+      return d * 0.9 // max 90% gain wobble — audible, amp-style swing
     case 'vibrato':
-      return d * 100 // max 100 cents
+      return d * 50 // max 50 cents (half semitone) — musically expressive range
     case 'filter':
-      return d * 2000 // max 2000 Hz sweep
+      // Base frequency 2000 Hz, max sweep 1500 Hz — never goes below 500 Hz
+      return d * 1500
   }
 }
 
@@ -61,6 +64,19 @@ function depthUnitForTab(): 'ratio' | 'cents' | 'absolute' {
       return 'absolute'
   }
 }
+
+// Human-readable depth label with contextual units per tab
+const depthDisplayLabel = computed(() => {
+  const d = depthSlider.value
+  switch (activeTab.value) {
+    case 'tremolo':
+      return `${Math.round(d * 0.9)}% gain`
+    case 'vibrato':
+      return `${Math.round(d * 0.5)} cents`
+    case 'filter':
+      return `${Math.round(d * 15)} Hz`
+  }
+})
 
 async function ensureLoaded() {
   if (!lib) {
@@ -113,16 +129,16 @@ async function playSound() {
 
     await ensureLoaded()
 
-    // Create oscillator
-    oscillator = await lib.createOscillator({ frequency: 330, type: 'sawtooth' })
-    oscillator!.update('gain').to(0.3).as('ratio')
+    // Create oscillator at A4 (440 Hz) — standard musical reference
+    oscillator = await lib!.createOscillator({ frequency: 440, type: 'sawtooth' })
+    oscillator!.update('gain').to(0.7).as('ratio')
 
-    // Create filter (stored for filter tab)
-    filter = lib.createFilterEffect('lowpass', { frequency: 1500, q: 2 })
+    // Create filter for filter sweep tab — bandpass gives wah-pedal character
+    filter = lib!.createFilterEffect('bandpass', { frequency: 2000, q: 6 })
     filterAttached = false
 
     // Create LFO
-    lfo = lib.createLFO({
+    lfo = lib!.createLFO({
       frequency: rate.value,
       depth: computeDepthForTab(),
       type: waveformType.value,
@@ -141,7 +157,7 @@ async function playSound() {
     animationPhase = 0
     startAnimation()
   }
-  catch (err: any) {
+  catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Failed to play audio'
   }
   finally {
@@ -179,8 +195,11 @@ function applyPreset(preset: { tab: TabType, rate: number, depth: number, wavefo
 }
 
 const presets = [
-  { name: 'Slow Tremolo', tab: 'tremolo' as TabType, rate: 40, depth: 60, waveform: 'sine' as const },
-  { name: 'Fast Vibrato', tab: 'vibrato' as TabType, rate: 65, depth: 45, waveform: 'sine' as const },
+  // rate=52 -> ~1.7 Hz: clearly perceptible slow tremolo
+  { name: 'Slow Tremolo', tab: 'tremolo' as TabType, rate: 52, depth: 70, waveform: 'sine' as const },
+  // rate=75 -> ~5.6 Hz: sits in the classical vibrato 5-7 Hz range
+  { name: 'Fast Vibrato', tab: 'vibrato' as TabType, rate: 75, depth: 45, waveform: 'sine' as const },
+  // Wah Pedal: bandpass filter sweep — resonant mid-peak character
   { name: 'Wah Pedal', tab: 'filter' as TabType, rate: 35, depth: 55, waveform: 'triangle' as const },
 ]
 
@@ -212,6 +231,7 @@ watch(waveformType, (newType) => {
 })
 
 // Canvas visualization
+
 function setupCanvas() {
   const canvas = canvasRef.value
   if (!canvas)
@@ -227,9 +247,6 @@ function setupCanvas() {
   canvas.style.height = `${logicalHeight}px`
   canvas.dataset.logicalWidth = String(logicalWidth)
   canvas.dataset.logicalHeight = String(logicalHeight)
-
-  const ctx = canvas.getContext('2d')!
-  ctx.scale(dpr, dpr)
 }
 
 function computeWaveformY(t: number, type: string): number {
@@ -245,6 +262,57 @@ function computeWaveformY(t: number, type: string): number {
     default:
       return Math.sin(t)
   }
+}
+
+// Shared waveform drawing logic — used by both static and animated paths
+function drawWaveformToCanvas(
+  ctx: CanvasRenderingContext2D,
+  logicalWidth: number,
+  logicalHeight: number,
+  phase: number,
+  alpha: number,
+) {
+  const dpr = window.devicePixelRatio || 1
+  const accentColor = TAB_COLORS[activeTab.value]
+  const amplitude = logicalHeight * 0.35 * depth.value
+  const centerY = logicalHeight / 2
+
+  // Apply DPR scaling consistently with setTransform
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, logicalWidth, logicalHeight)
+
+  // Center line
+  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([4, 4])
+  ctx.globalAlpha = 1
+  ctx.beginPath()
+  ctx.moveTo(0, centerY)
+  ctx.lineTo(logicalWidth, centerY)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // Waveform
+  ctx.strokeStyle = accentColor
+  ctx.lineWidth = 2.5
+  ctx.globalAlpha = alpha
+  ctx.beginPath()
+
+  const visibleCycles = 3
+  for (let x = 0; x < logicalWidth; x++) {
+    const t = (x / logicalWidth) * Math.PI * 2 * visibleCycles + phase
+    const y = computeWaveformY(t, waveformType.value)
+    const py = centerY - y * amplitude
+
+    if (x === 0) {
+      ctx.moveTo(x, py)
+    }
+    else {
+      ctx.lineTo(x, py)
+    }
+  }
+  ctx.stroke()
+  ctx.globalAlpha = 1
 }
 
 function drawLoop(timestamp: number) {
@@ -264,44 +332,7 @@ function drawLoop(timestamp: number) {
   lastFrameTime = timestamp
   animationPhase += rate.value * elapsed * Math.PI * 2
 
-  const accentColor = TAB_COLORS[activeTab.value]
-  const amplitude = logicalHeight * 0.35 * depth.value
-  const centerY = logicalHeight / 2
-
-  // Reset transform and clear
-  const dpr = window.devicePixelRatio || 1
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, logicalWidth, logicalHeight)
-
-  // Draw center line
-  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
-  ctx.lineWidth = 1
-  ctx.setLineDash([4, 4])
-  ctx.beginPath()
-  ctx.moveTo(0, centerY)
-  ctx.lineTo(logicalWidth, centerY)
-  ctx.stroke()
-  ctx.setLineDash([])
-
-  // Draw waveform
-  ctx.strokeStyle = accentColor
-  ctx.lineWidth = 2.5
-  ctx.beginPath()
-
-  const visibleCycles = 3
-  for (let x = 0; x < logicalWidth; x++) {
-    const t = (x / logicalWidth) * Math.PI * 2 * visibleCycles + animationPhase
-    const y = computeWaveformY(t, waveformType.value)
-    const py = centerY - y * amplitude
-
-    if (x === 0) {
-      ctx.moveTo(x, py)
-    }
-    else {
-      ctx.lineTo(x, py)
-    }
-  }
-  ctx.stroke()
+  drawWaveformToCanvas(ctx, logicalWidth, logicalHeight, animationPhase, 1)
 
   animationFrameId = requestAnimationFrame(drawLoop)
 }
@@ -313,9 +344,12 @@ function startAnimation() {
 
 function handleResize() {
   setupCanvas()
+  if (!playing.value) {
+    drawStaticWaveform()
+  }
 }
 
-// Draw static waveform when not playing
+// Draw static (dimmed) waveform when not playing
 function drawStaticWaveform() {
   const canvas = canvasRef.value
   if (!canvas || playing.value)
@@ -328,45 +362,8 @@ function drawStaticWaveform() {
 
   const logicalWidth = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
   const logicalHeight = Number(canvas.dataset.logicalHeight) || 120
-  const accentColor = TAB_COLORS[activeTab.value]
-  const amplitude = logicalHeight * 0.35 * depth.value
-  const centerY = logicalHeight / 2
 
-  const dpr = window.devicePixelRatio || 1
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, logicalWidth, logicalHeight)
-
-  // Center line
-  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
-  ctx.lineWidth = 1
-  ctx.setLineDash([4, 4])
-  ctx.beginPath()
-  ctx.moveTo(0, centerY)
-  ctx.lineTo(logicalWidth, centerY)
-  ctx.stroke()
-  ctx.setLineDash([])
-
-  // Static waveform
-  ctx.strokeStyle = accentColor
-  ctx.lineWidth = 2.5
-  ctx.globalAlpha = 0.5
-  ctx.beginPath()
-
-  const visibleCycles = 3
-  for (let x = 0; x < logicalWidth; x++) {
-    const t = (x / logicalWidth) * Math.PI * 2 * visibleCycles
-    const y = computeWaveformY(t, waveformType.value)
-    const py = centerY - y * amplitude
-
-    if (x === 0) {
-      ctx.moveTo(x, py)
-    }
-    else {
-      ctx.lineTo(x, py)
-    }
-  }
-  ctx.stroke()
-  ctx.globalAlpha = 1
+  drawWaveformToCanvas(ctx, logicalWidth, logicalHeight, 0, 0.5)
 }
 
 // Redraw static waveform when parameters change while not playing
@@ -379,7 +376,10 @@ watch([waveformType, depthSlider, activeTab], () => {
 // Set up resize listener and draw initial static waveform
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  drawStaticWaveform()
+  // Use nextTick to ensure layout is complete before reading canvas dimensions
+  nextTick(() => {
+    drawStaticWaveform()
+  })
 })
 
 onUnmounted(() => {
@@ -422,6 +422,17 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Play button — prominent position above tab bar -->
+    <div class="play-row">
+      <button
+        class="play-button"
+        :disabled="loading"
+        @click="togglePlayback"
+      >
+        {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
+      </button>
+    </div>
+
     <!-- Tab bar -->
     <div class="tab-bar">
       <button
@@ -445,18 +456,6 @@ onUnmounted(() => {
     <div class="controls">
       <div class="control-group">
         <div class="row">
-          <button
-            class="play-button"
-            :disabled="loading"
-            @click="togglePlayback"
-          >
-            {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="row">
           <label for="lfo-rate">Rate:</label>
           <input
             id="lfo-rate"
@@ -477,9 +476,9 @@ onUnmounted(() => {
             type="range"
             min="0"
             max="100"
-            :aria-label="`LFO depth: ${depthSlider}%`"
+            :aria-label="`LFO depth: ${depthDisplayLabel}`"
           >
-          <span class="value">{{ depthSlider }}%</span>
+          <span class="value">{{ depthDisplayLabel }}</span>
         </div>
 
         <div class="row">
@@ -522,6 +521,7 @@ onUnmounted(() => {
                   stroke-width="1.5"
                 />
               </svg>
+              <span class="waveform-label">{{ wf }}</span>
             </button>
           </div>
         </div>
@@ -556,6 +556,12 @@ onUnmounted(() => {
 
 .warning strong {
   color: var(--vp-c-warning);
+}
+
+.play-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .tab-bar {
@@ -693,12 +699,21 @@ button.active {
 .waveform-group button {
   padding: 0.4rem 0.6rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.25rem;
+  min-width: 64px;
 }
 
 .waveform-icon {
   display: block;
+}
+
+.waveform-label {
+  font-size: 0.75em;
+  text-transform: capitalize;
+  line-height: 1;
 }
 
 .play-button {

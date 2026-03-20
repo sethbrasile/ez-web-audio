@@ -44,7 +44,7 @@ kick.syncTo(transport, { noteType: 1/16 })           // lock to transport grid
 The Synth and Piano tracks use `createSequence()` to schedule notes at precise musical time positions. `Sequence` supports bar:beat:tick notation, note names (`'4n'`, `'8t'`), and raw beat numbers -- making it easy to express straight 8ths, syncopation, or triplets in the same API:
 
 ```typescript
-import { createTransport, createSequence, createOscillator, createFont } from 'ez-web-audio'
+import { createTransport, createSequence, createOscillator, createFont, getAudioContext } from 'ez-web-audio'
 
 const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
 
@@ -60,6 +60,7 @@ seq.at(1/3, (time) => { bass.frequency = 49; bass.playFor(0.3) })  // G1 -- 8th 
 
 // Piano soundfont sequence
 const piano = await createFont('/audio/piano.js')
+const audioContext = await getAudioContext()
 seq.at('1:2:0', (time) => piano.getNote('E4')?.playIn(time - audioContext.currentTime))
 
 transport.start()

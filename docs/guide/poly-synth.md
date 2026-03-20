@@ -29,7 +29,7 @@ e4.stop()
 g4.stop()
 
 // Or stop all at once
-synth.releaseAll()
+synth.stopAll()
 ```
 
 ## Voice Handles

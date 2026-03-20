@@ -8,8 +8,8 @@
       <canvas
         ref="waveformCanvas"
         class="waveform-canvas"
-        :class="{ dragging: isDragging, loaded: waveformLoaded }"
-        style="touch-action: none; cursor: crosshair;"
+        :class="{ dragging: isDragging }"
+        :style="{ cursor: waveformLoaded ? (isDragging ? 'grabbing' : 'crosshair') : 'default', touchAction: 'none' }"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
         @touchstart.prevent="handleTouchStart"
@@ -31,7 +31,7 @@
 
       <label class="control-group">
         <span>Speed</span>
-        <input type="range" min="0" max="3" step="0.05" v-model.number="speed" />
+        <input type="range" min="0.1" max="3" step="0.05" v-model.number="speed" />
         <span class="readout">{{ speed.toFixed(2) }}x</span>
       </label>
 
@@ -46,7 +46,7 @@
       <label class="control-group wide">
         <span>Pitch</span>
         <input type="range" min="-24" max="24" step="1" v-model.number="pitch" aria-label="Pitch in semitones" />
-        <span class="readout">{{ pitch > 0 ? '+' : '' }}{{ pitch }} st</span>
+        <span class="readout">{{ pitch > 0 ? '+' : '' }}{{ pitch }} semitones</span>
       </label>
     </div>
 
@@ -62,6 +62,7 @@
         <span>Overlap</span>
         <input type="range" min="0" :max="grainSize - 0.001" step="0.001" v-model.number="overlap" aria-label="Grain overlap" />
         <span class="readout">{{ (overlap * 1000).toFixed(0) }}ms</span>
+        <span v-if="overlapClamped" class="clamp-hint" aria-live="polite">clamped to grain max</span>
       </label>
 
       <label class="control-group">
@@ -74,16 +75,35 @@
     <!-- Preset buttons -->
     <div class="presets-row">
       <span class="presets-label">Presets:</span>
-      <button @click="applyPreset('smooth')">Smooth Pad</button>
-      <button @click="applyPreset('choppy')">Choppy</button>
-      <button @click="applyPreset('scatter')">Scatter</button>
-      <button @click="applyPreset('freeze')">Freeze</button>
+      <button
+        v-for="preset in PRESET_NAMES"
+        :key="preset.id"
+        :class="{ active: activePreset === preset.id }"
+        @click="applyPreset(preset.id)"
+      >{{ preset.label }}</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+
+// Module-level preset constant — allocated once, not per call
+const PRESETS: Record<string, { grainSize: number; overlap: number; jitter: number; speed: number; pitch: number }> = {
+  smooth:  { grainSize: 0.25,  overlap: 0.12,  jitter: 0.02, speed: 1,   pitch: 0 },
+  // choppy: 40ms grains ensure tonal material completes a full cycle above ~25 Hz (M25)
+  choppy:  { grainSize: 0.04,  overlap: 0.005, jitter: 0.1,  speed: 1,   pitch: 0 },
+  scatter: { grainSize: 0.08,  overlap: 0.02,  jitter: 0.8,  speed: 0.5, pitch: 0 },
+  // freeze: near-zero jitter and overlap close to grain size for stable freeze texture (M24)
+  freeze:  { grainSize: 0.15,  overlap: 0.14,  jitter: 0.02, speed: 0.1, pitch: 0 },
+}
+
+const PRESET_NAMES = [
+  { id: 'smooth',  label: 'Smooth Pad' },
+  { id: 'choppy',  label: 'Choppy' },
+  { id: 'scatter', label: 'Scatter' },
+  { id: 'freeze',  label: 'Freeze' },
+]
 
 // Module-level audio state (outside reactive — created once)
 let lib: any = null
@@ -100,12 +120,14 @@ const loading = ref(false)
 const error = ref('')
 const waveformLoaded = ref(false)
 const isDragging = ref(false)
+const overlapClamped = ref(false)
+const activePreset = ref<string | null>(null)
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Parameters (synced to grainPlayer via watch)
 const position = ref(0)
 const pitch = ref(0)           // semitones
-const speed = ref(1)           // 0–3x multiplier
+const speed = ref(1)           // 0.1–3x multiplier
 const grainSize = ref(0.1)     // seconds
 const overlap = ref(0.05)      // seconds
 const jitter = ref(0)          // 0–1
@@ -115,8 +137,12 @@ const loop = ref(true)
 watch(pitch, (v) => { if (grainPlayer) grainPlayer.pitch = v })
 watch(grainSize, (v) => {
   if (grainPlayer) grainPlayer.grainSize = v
-  // Clamp overlap if needed
-  if (overlap.value >= v) overlap.value = Math.max(0, v - 0.001)
+  // Clamp overlap if needed — show feedback to user (M14)
+  if (overlap.value >= v) {
+    overlap.value = Math.max(0, v - 0.001)
+    overlapClamped.value = true
+    setTimeout(() => { overlapClamped.value = false }, 2000)
+  }
 })
 watch(overlap, (v) => { if (grainPlayer) grainPlayer.overlap = v })
 watch(jitter, (v) => { if (grainPlayer) grainPlayer.jitter = v })
@@ -138,7 +164,7 @@ async function ensureLoaded() {
   // Apply initial position
   grainPlayer.position = position.value
   setupCanvas()
-  drawStaticWaveform()
+  drawWaveform()
   waveformLoaded.value = true
 }
 
@@ -187,8 +213,23 @@ function setupCanvas() {
   if (ctx) ctx.scale(dpr, dpr)
 }
 
-// Static waveform from AudioBuffer channel data
-function drawStaticWaveform() {
+// Resolve CSS custom properties for canvas drawing (light/dark mode aware) (H10)
+function resolveCanvasColors() {
+  const style = getComputedStyle(document.documentElement)
+  const bg = style.getPropertyValue('--vp-c-bg-soft').trim() || '#f6f6f7'
+  const stroke = style.getPropertyValue('--vp-c-brand-1').trim() || '#3c8cf8'
+  return {
+    bg,
+    stroke,
+    position: '#ff6b6b',
+    jitterFill: 'rgba(60,140,248,0.15)',
+  }
+}
+
+// Unified waveform drawing — renders waveform from AudioBuffer (M29)
+// Pass withOverlay=true to skip caching and immediately draw position/jitter on top.
+// Pass withOverlay=false (default) to cache the result as ImageData for fast overlay redraws.
+function drawWaveform(withOverlay = false) {
   const canvas = waveformCanvas.value
   if (!canvas || !cachedBuffer) return
   const ctx = canvas.getContext('2d')
@@ -197,10 +238,11 @@ function drawStaticWaveform() {
   const height = Number(canvas.dataset.logicalHeight) || canvas.clientHeight
   const data = cachedBuffer.getChannelData(0)
   const step = Math.max(1, Math.floor(data.length / width))
+  const colors = resolveCanvasColors()
 
-  ctx.fillStyle = '#1a1a2e'
+  ctx.fillStyle = colors.bg
   ctx.fillRect(0, 0, width, height)
-  ctx.strokeStyle = '#4ecdc4'
+  ctx.strokeStyle = colors.stroke
   ctx.lineWidth = 1
   ctx.beginPath()
   for (let x = 0; x < width; x++) {
@@ -218,31 +260,33 @@ function drawStaticWaveform() {
     ctx.lineTo(x + 0.5, yHigh)
   }
   ctx.stroke()
-  // Cache as ImageData for overlay redraws
-  waveformImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+  if (withOverlay) {
+    drawOverlayOnCtx(ctx, width, height, colors)
+  } else {
+    // Cache as ImageData for overlay redraws
+    waveformImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  }
 }
 
-// Overlay: position line + jitter zone, redrawn each RAF frame
-function drawOverlay() {
-  const canvas = waveformCanvas.value
-  if (!canvas || !waveformImageData) return
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-  const width = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
-  const height = Number(canvas.dataset.logicalHeight) || canvas.clientHeight
-
-  ctx.putImageData(waveformImageData, 0, 0)
+// Draws position line and jitter zone onto an already-prepared canvas context
+function drawOverlayOnCtx(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  colors: ReturnType<typeof resolveCanvasColors>,
+) {
   const posX = position.value * width
 
   // Jitter zone (translucent shaded region around position)
   if (jitter.value > 0) {
     const jitterPx = jitter.value * width * 0.5
-    ctx.fillStyle = 'rgba(78, 205, 196, 0.15)'
+    ctx.fillStyle = colors.jitterFill
     ctx.fillRect(posX - jitterPx, 0, jitterPx * 2, height)
   }
 
   // Position line
-  ctx.strokeStyle = '#ff6b6b'
+  ctx.strokeStyle = colors.position
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(posX, 0)
@@ -250,10 +294,24 @@ function drawOverlay() {
   ctx.stroke()
 
   // Position dot at vertical center
-  ctx.fillStyle = '#ff6b6b'
+  ctx.fillStyle = colors.position
   ctx.beginPath()
   ctx.arc(posX, height / 2, 5, 0, Math.PI * 2)
   ctx.fill()
+}
+
+// Overlay: restore cached waveform then draw position/jitter on top
+function drawOverlay() {
+  const canvas = waveformCanvas.value
+  if (!canvas || !waveformImageData) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const width = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
+  const height = Number(canvas.dataset.logicalHeight) || canvas.clientHeight
+  const colors = resolveCanvasColors()
+
+  ctx.putImageData(waveformImageData, 0, 0)
+  drawOverlayOnCtx(ctx, width, height, colors)
 }
 
 // RAF loop: auto-advance position by speed + redraw overlay
@@ -322,22 +380,22 @@ function handleTouchMove(e: TouchEvent) {
   if (grainPlayer) grainPlayer.position = newPos
 }
 
+// H1: touchend/touchcancel handlers — prevent isDragging from staying stuck on mobile
+function handleTouchEnd() {
+  isDragging.value = false
+}
+
 // Resize: re-setup canvas and redraw cached waveform
 function handleResize() {
   setupCanvas()
-  if (cachedBuffer) drawStaticWaveform()
+  if (cachedBuffer) drawWaveform()
 }
 
-// Preset configurations
+// Apply a named preset and track which is active (M15)
 function applyPreset(name: string) {
-  const presets: Record<string, { grainSize: number; overlap: number; jitter: number; speed: number; pitch: number }> = {
-    smooth: { grainSize: 0.25, overlap: 0.12, jitter: 0.02, speed: 1, pitch: 0 },
-    choppy: { grainSize: 0.02, overlap: 0.005, jitter: 0.1, speed: 1, pitch: 0 },
-    scatter: { grainSize: 0.08, overlap: 0.02, jitter: 0.8, speed: 0.5, pitch: 0 },
-    freeze: { grainSize: 0.15, overlap: 0.07, jitter: 0.15, speed: 0, pitch: 0 },
-  }
-  const p = presets[name]
+  const p = PRESETS[name]
   if (!p) return
+  activePreset.value = name
   grainSize.value = p.grainSize
   overlap.value = p.overlap
   jitter.value = p.jitter
@@ -347,6 +405,10 @@ function applyPreset(name: string) {
 
 onMounted(() => {
   document.addEventListener('mouseup', handleMouseUp)
+  // H1: register touch-end/cancel on document so drag always releases even if
+  // finger lifts outside the canvas element
+  document.addEventListener('touchend', handleTouchEnd)
+  document.addEventListener('touchcancel', handleTouchEnd)
   window.addEventListener('resize', handleResize)
 })
 
@@ -357,15 +419,21 @@ onUnmounted(() => {
     grainPlayer.dispose()
   }
   document.removeEventListener('mouseup', handleMouseUp)
+  document.removeEventListener('touchend', handleTouchEnd)
+  document.removeEventListener('touchcancel', handleTouchEnd)
   window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style scoped>
+/* M31: bordered card container matching EffectsChainDemo.vue pattern */
 .grain-player-demo {
   max-width: 800px;
   margin: auto;
-  padding: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
 }
 
 .canvas-container {
@@ -379,13 +447,9 @@ onUnmounted(() => {
   width: 100%;
   height: 160px;
   border-radius: 4px;
-  background: #1a1a2e;
-  cursor: crosshair;
+  /* H10: background uses theme token — renders correctly in light and dark mode */
+  background: var(--vp-c-bg-soft);
   user-select: none;
-}
-
-.waveform-canvas.dragging {
-  cursor: grabbing;
 }
 
 .canvas-placeholder {
@@ -394,7 +458,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--vp-c-text-3);
   pointer-events: none;
 }
 
@@ -433,12 +497,12 @@ onUnmounted(() => {
 
 .play-button {
   padding: 0.5rem 1.5rem;
-  background: #4ecdc4;
+  background: var(--vp-c-brand-1);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
-  color: #fff;
+  color: var(--vp-c-white);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -449,7 +513,7 @@ onUnmounted(() => {
 }
 
 .play-button:hover:not(:disabled) {
-  background: #3bb8b0;
+  background: var(--vp-c-brand-2);
 }
 
 .readout {
@@ -458,7 +522,15 @@ onUnmounted(() => {
   text-align: right;
   white-space: nowrap;
   font-size: 0.9em;
-  color: #888;
+  color: var(--vp-c-text-2);
+}
+
+/* M14: inline feedback when overlap is silently clamped */
+.clamp-hint {
+  font-size: 0.75em;
+  color: var(--vp-c-warning-1, #e6a817);
+  white-space: nowrap;
+  margin-left: 0.25rem;
 }
 
 .presets-row {
@@ -471,26 +543,34 @@ onUnmounted(() => {
 
 .presets-label {
   font-size: 0.9em;
-  color: #888;
+  color: var(--vp-c-text-2);
 }
 
 .presets-row button {
   padding: 0.3rem 0.75rem;
   background: transparent;
-  border: 1px solid #4ecdc4;
+  border: 1px solid var(--vp-c-brand-1);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #4ecdc4;
+  color: var(--vp-c-brand-1);
+  transition: background 0.15s, color 0.15s;
 }
 
 .presets-row button:hover {
-  background: rgba(78, 205, 196, 0.1);
+  background: var(--vp-c-brand-soft);
+}
+
+/* M15: active preset indicator */
+.presets-row button.active {
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
 }
 
 .error-banner {
-  background: #ff6b6b;
-  color: white;
+  background: var(--vp-c-danger-soft);
+  color: var(--vp-c-danger-1);
+  border: 1px solid var(--vp-c-danger-1);
   padding: 0.5rem 1rem;
   border-radius: 4px;
   margin-bottom: 0.5rem;

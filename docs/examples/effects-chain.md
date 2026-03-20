@@ -63,12 +63,13 @@ delay.bypass = false // Effect re-enters the signal chain
 
 ### Reordering Effects
 
-Reorder by calling `removeEffects()` and `addEffects()` with the new order:
+Reorder by removing and re-adding effects in the new order:
 
 ```typescript
 // Move compressor before reverb
-source.removeEffects()
-source.addEffects([delay, compressor, reverb, eq])
+source.removeEffect(reverb)
+source.removeEffect(compressor)
+source.addEffects([compressor, reverb])
 ```
 
 ### Cleanup

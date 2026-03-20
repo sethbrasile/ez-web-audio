@@ -186,3 +186,63 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 - `milestones/6-phases/` — Milestone 6 phase directories (Phases 61-66)
 
 *Last updated: 2026-03-18 after Phase 70 planning*
+
+### Phase 71.6: Content/Docs Pages — Parity + LLM Tags (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.6 to break down)
+
+### Phase 71.5: PianoKeyboard + PolySynth — A11y + Touch + Polish (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.5 to break down)
+
+### Phase 71.4: GrainPlayer Demo — Touch Fix + Polish (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.4 to break down)
+
+### Phase 71.3: EffectsChain Demo — UX + Musical + Resource Leak (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.3 to break down)
+
+### Phase 71.2: TransportSequencer Demo — Musical + UX + Resource Leak (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.2 to break down)
+
+### Phase 71.1: LFO Demo — Musical Calibration + UX (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 71.1 to break down)
