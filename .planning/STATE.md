@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 71-02-PLAN.md (TransportSequencer E2E Tests)
-last_updated: "2026-03-19T22:40:37.090Z"
+stopped_at: Completed 71-transport-sequencer-demo 71-01-PLAN.md (Transport+Sequencer Demo Component)
+last_updated: "2026-03-20T05:30:44.479Z"
 last_activity: 2026-03-18 — Phase 69 Effects Chain Demo complete
 progress:
-  total_phases: 5
-  completed_phases: 5
+  total_phases: 11
+  completed_phases: 4
   total_plans: 10
-  completed_plans: 10
+  completed_plans: 9
   percent: 100
 ---
 
@@ -65,6 +65,7 @@ See .planning/PROJECT.md Key Decisions table for full history.
 - [Phase 71-transport-sequencer-demo]: tick handler drives currentStep via ((bar-1)*16)+((beat-1)*4)+tick % 32; shouldPlay() guards melody callbacks; applyPreset() uses seq.clear() for safe live preset switching
 - [Phase 71-02]: Use .transport-buttons selector (not .transport-controls) — actual class name from component implementation
 - [Phase 71-02]: [Rule 1 - Bug] Replace invalid '1m+2n' time notation with '2:3:0' — Sequence API doesn't support compound notation
+- [Phase 71-transport-sequencer-demo]: ticksPerBeat:12 for Sequence scheduling compatibility; scale to 16th-note display with Math.floor(tick*4/12)
 
 ### Pending Todos
 
@@ -86,6 +87,6 @@ None active.
 
 ## Session Continuity
 
-Last session: 2026-03-19T22:36:46.689Z
-Stopped at: Completed 71-02-PLAN.md (TransportSequencer E2E Tests)
+Last session: 2026-03-20T05:30:39.991Z
+Stopped at: Completed 71-transport-sequencer-demo 71-01-PLAN.md (Transport+Sequencer Demo Component)
 Resume file: None
