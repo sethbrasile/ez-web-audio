@@ -11,5 +11,20 @@
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "files": ["LICENSE", "README.md", "dist"],
   "engines": { "node": ">=18" },
-  "peerDependencies": { "ez-web-audio": "workspace:^", "vue": "^3.4.0" }
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "peerDependencies": { "ez-web-audio": "workspace:^", "vue": "^3.4.0" },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.0",
+    "ez-web-audio": "workspace:*",
+    "happy-dom": "^20.6.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.18",
+    "vue": "^3.4.0"
+  }
 }
