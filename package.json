@@ -47,18 +47,21 @@
   },
   "scripts": {
     "dev": "pnpm build:lib && vitepress dev docs",
-    "build": "npm run build:lib && npm run docs:build",
-    "build:lib": "tsc --noEmit && vite build",
+    "build": "pnpm build:lib && pnpm docs:build",
+    "build:lib": "pnpm --filter ez-web-audio build",
     "docs:dev": "typedoc && vitepress dev docs",
     "docs:build": "typedoc && vitepress build docs && node scripts/patch-llms-size.mjs",
     "docs:preview": "vitepress preview docs",
     "preview": "vitepress preview docs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest",
-    "test:e2e": "playwright test",
-    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test --run && pnpm build:lib"
+    "test": "pnpm -r --parallel test --run",
+    "test:watch": "pnpm --filter ez-web-audio test",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "ez-web-audio": "workspace:*"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^7.4.3",
@@ -66,20 +69,15 @@
     "@playwright/test": "^1.58.2",
     "@types/prismjs": "^1.26.4",
     "eslint": "10.0.0",
-    "happy-dom": "^20.6.1",
     "prismjs": "^1.29.0",
-    "standardized-audio-context": "^25.3.77",
-    "standardized-audio-context-mock": "^9.7.9",
     "typedoc": "^0.28.16",
     "typedoc-plugin-markdown": "^4.9.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-plugin-dts": "^4.5.4",
     "vite-plugin-prismjs": "^0.0.11",
     "vite-tsconfig-paths": "^6.1.1",
     "vitepress": "^1.6.4",
-    "vitepress-plugin-llms": "^1.11.0",
-    "vitest": "^4.0.18"
+    "vitepress-plugin-llms": "^1.11.0"
   }
 }

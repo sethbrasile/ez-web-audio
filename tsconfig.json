@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleDetection": "force",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": ["docs/.vitepress/**/*.mts", "docs/.vitepress/**/*.ts", "docs/.vitepress/**/*.vue", "e2e", "local-docs-server.ts", "playwright.config.ts", "vite.docs.config.js", "eslint.config.js", "typedoc.config.mjs", "scripts"],
+  "exclude": ["node_modules", "dist", "dist-app", "docs/.vitepress/dist", "docs/.vitepress/cache", "packages"]
+}

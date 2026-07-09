@@ -1,14 +1,14 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "./packages/core/tsconfig.json",
   "compilerOptions": {
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src"],
+  "include": ["packages/core/src"],
   "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/app/**",
-    "src/test/**"
+    "packages/core/src/**/*.test.ts",
+    "packages/core/src/**/*.spec.ts",
+    "packages/core/src/app/**",
+    "packages/core/src/test/**"
   ]
 }

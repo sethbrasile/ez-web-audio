@@ -1,5 +1,5 @@
 {
-  "entryPoints": ["src/index.ts"],
+  "entryPoints": ["packages/core/src/index.ts"],
   "out": "docs/api",
   "tsconfig": "tsconfig.typedoc.json",
   "docsRoot": "./docs",
@@ -10,8 +10,8 @@
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts",
-    "src/app/**",
-    "src/test/**"
+    "packages/core/src/app/**",
+    "packages/core/src/test/**"
   ],
   "excludePrivate": true,
   "excludeProtected": false,
