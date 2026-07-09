@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: 7
 milestone_name: Feature Demos
 status: awaiting_uat
-stopped_at: Planning reconciliation complete — 71.x deep-review phases closed against commit b0dee2f
-last_updated: "2026-07-09T00:00:00.000Z"
-last_activity: 2026-07-09 — Reconciled planning docs; transport resume() regression fixed; UAT pending
+stopped_at: M8 phase 72-01 complete (pnpm workspace conversion + pre-existing E2E/lint/CI fixes)
+last_updated: "2026-07-09T22:00:00.000Z"
+last_activity: 2026-07-09 — Design packet returned (gate 1 ✓); M8 execution started per playbook order; 72-01 shipped; M7 UAT waived to parallel by Seth
 progress:
   total_phases: 11
   completed_phases: 11
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 ## Current Position
 
-Phase: 71.6 of 71.6 (all M7 phases code-complete)
-Status: Awaiting human UAT (`phases/71-transport-sequencer-demo/71-UAT.md`, 7 tests) + listen-through of all 6 demos
-Next: quick M7 UAT (user, ~30 min) → `/gsd-complete-milestone` → Milestone 8 execution (phases 72-78 outlined in ROADMAP; formalize requirements via `/gsd-new-milestone`)
+Phase: M8 72-01 complete (workspace conversion; 22 demos' E2E green again)
+Status: Executing M8 per `.planning/M8-PLAYBOOK.md`. Design packet at `.planning/DESIGN-HANDOFF/` (gate 1 done). M7 UAT waived to run in parallel (Seth, 2026-07-09).
+Next: 72-02 (Vue bindings) → 73-01 (composables refactor) → 74-02 (design implementation). Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is 12+ commits ahead of origin — pushing redeploys docs site (stale since March).
 
 ## Milestone 8 Scope Decisions (user, 2026-07-09)
 

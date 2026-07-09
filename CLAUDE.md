@@ -8,28 +8,33 @@ EZ Web Audio is a TypeScript library that wraps the Web Audio API with a simpler
 
 ## Commands
 
+This is a pnpm workspace. The library lives in `packages/core` (npm name `ez-web-audio`); `packages/vue` (`@ez-web-audio/vue`) and `packages/react` (`@ez-web-audio/react`) hold framework bindings. The root package is a private orchestration shell for docs (VitePress at `docs/`), E2E, and lint tooling. All packages are version-locked at the same version.
+
 ```bash
 # Development (runs docs site with hot reload)
 pnpm dev
 
 # Build library only
-pnpm build:lib
+pnpm build:lib          # = pnpm --filter ez-web-audio build
 
 # Build everything (lib + docs app + typedoc)
 pnpm build
 
-# Run tests (Vitest with happy-dom)
+# Run all workspace tests (Vitest with happy-dom)
 pnpm test
 
-# Run a single test file
-pnpm test src/beat.test.ts
+# Run a single core test file (watch: pnpm test:watch)
+pnpm --filter ez-web-audio test src/beat.test.ts
 
-# Type checking
+# Type checking (recursive)
 pnpm typecheck
 
-# Linting
+# Linting (repo-wide from root)
 pnpm lint
 pnpm lint:fix
+
+# E2E (Playwright, starts docs dev server itself)
+pnpm test:e2e
 ```
 
 ## Architecture
@@ -67,14 +72,18 @@ sound.onPlayRamp('gain').from(0).to(1).in(0.5) // ramp 0→1 in 0.5 sec
 
 ### Module Structure
 
-- `src/index.ts` - Public API with factory functions (`createSound`, `createOscillator`, `createBeatTrack`, etc.)
-- `src/interfaces/` - `Playable` (play/stop methods) and `Connectable` (audio routing)
-- `src/controllers/` - Parameter management with scheduled value changes
-- `src/utils/` - Frequency map, time formatting, base64 decoding for sound fonts
+Library source lives in `packages/core/src/`:
+
+- `packages/core/src/index.ts` - Public API with factory functions (`createSound`, `createOscillator`, `createBeatTrack`, etc.)
+- `packages/core/src/interfaces/` - `Playable` (play/stop methods) and `Connectable` (audio routing)
+- `packages/core/src/controllers/` - Parameter management with scheduled value changes
+- `packages/core/src/utils/` - Frequency map, time formatting, base64 decoding for sound fonts
+
+Docs demo components live in `docs/.vitepress/theme/components/` and import the library by package name (`ez-web-audio`, resolved via `workspace:*`).
 
 ### Path Aliases
 
-Defined in `tsconfig.json`:
+Defined in `packages/core/tsconfig.json` (core-internal only; docs/e2e don't use them):
 - `@/*` → `src/*`
 - `@utils/*` → `src/utils/*`
 - `@controllers/*` → `src/controllers/*`
