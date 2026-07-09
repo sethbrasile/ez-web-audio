@@ -197,8 +197,14 @@ export class DistortionEffect extends BaseEffect {
   }
 
   public override dispose(): void {
-    try { this.waveShaperNode.disconnect() } catch { /* already disconnected */ }
-    try { this.toneFilter.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.waveShaperNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.toneFilter.disconnect()
+    }
+    catch { /* already disconnected */ }
     super.dispose()
   }
 

@@ -80,19 +80,19 @@ describe('delayEffect', () => {
     })
 
     // M9: time clamping to [0, maxTime]
-    it('M9: time > maxTime is clamped to maxTime', () => {
+    it('m9: time > maxTime is clamped to maxTime', () => {
       const effect = new DelayEffect(audioContext, { maxTime: 2.0 })
       effect.time = 5.0
       expect(effect.time).toBeLessThanOrEqual(2.0)
     })
 
-    it('M9: time = -1 is clamped to 0', () => {
+    it('m9: time = -1 is clamped to 0', () => {
       const effect = new DelayEffect(audioContext)
       effect.time = -1
       expect(effect.time).toBeGreaterThanOrEqual(0)
     })
 
-    it('M9: time = maxTime is valid (boundary)', () => {
+    it('m9: time = maxTime is valid (boundary)', () => {
       const effect = new DelayEffect(audioContext, { maxTime: 2.0 })
       effect.time = 2.0
       expect(effect.time).toBe(2.0)

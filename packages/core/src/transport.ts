@@ -14,7 +14,7 @@ export interface SyncableBeatTrack {
   /** Note type this track syncs at (e.g., 1/4 for quarter notes). */
   _syncNoteType: number
   /** Schedule a single beat at the given audio time. */
-  _scheduleBeatFromTransport(beatIndex: number, time: number): void
+  _scheduleBeatFromTransport: (beatIndex: number, time: number) => void
 }
 
 /**
@@ -199,7 +199,8 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     if (this._disposed) {
       throw new Error('Transport has been disposed')
     }
-    if (this._playing) return
+    if (this._playing)
+      return
 
     if (this._paused) {
       // Resume from paused state
@@ -256,7 +257,8 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    * No-op if not playing or already paused.
    */
   pause(): void {
-    if (!this._playing || this._paused) return
+    if (!this._playing || this._paused)
+      return
 
     this.workerTimer.stop()
     this._playing = false
@@ -343,7 +345,8 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    * @internal
    */
   _addTrack(track: SyncableBeatTrack): void {
-    if (this._syncedTracks.has(track)) return
+    if (this._syncedTracks.has(track))
+      return
     this._syncedTracks.add(track)
     this._tracksCache = null // Invalidate cache
 
@@ -384,7 +387,8 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    * @internal
    */
   _addSequence(sequence: Sequence): void {
-    if (this._syncedSequences.has(sequence)) return
+    if (this._syncedSequences.has(sequence))
+      return
     this._syncedSequences.add(sequence)
 
     if (this._playing) {

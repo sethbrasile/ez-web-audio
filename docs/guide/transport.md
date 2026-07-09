@@ -56,7 +56,7 @@ import { formatPosition } from 'ez-web-audio'
 transport.on('tick', (e) => {
   const pos = e.detail
   console.log(formatPosition(pos)) // "1:3:2"
-  console.log(pos.seconds)         // elapsed time
+  console.log(pos.seconds) // elapsed time
 })
 ```
 
@@ -73,8 +73,8 @@ transport.bpm = 140 // Immediate tempo change
 Control which synced tracks are audible:
 
 ```typescript
-kick.muted = true     // Silence kick (beats still fire for UI)
-hihat.soloed = true   // Only hihat is audible
+kick.muted = true // Silence kick (beats still fire for UI)
+hihat.soloed = true // Only hihat is audible
 ```
 
 ## Cleanup

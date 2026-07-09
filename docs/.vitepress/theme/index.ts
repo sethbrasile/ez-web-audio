@@ -1,7 +1,6 @@
 import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 
-import CustomLayout from './CustomLayout.vue'
 import AudioDemo from './components/AudioDemo.vue'
 import AudioSpriteDemo from './components/AudioSpriteDemo.vue'
 import CrossfadeDemo from './components/CrossfadeDemo.vue'
@@ -18,6 +17,7 @@ import SynthKeyboard from './components/SynthKeyboard.vue'
 import TimingDemo from './components/TimingDemo.vue'
 import TrackDemo from './components/TrackDemo.vue'
 import XYPad from './components/XYPad.vue'
+import CustomLayout from './CustomLayout.vue'
 
 export default {
   extends: DefaultTheme,

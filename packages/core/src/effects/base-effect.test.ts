@@ -133,20 +133,20 @@ describe('baseEffect', () => {
     })
 
     // L3: rampTo with duration=0 should use setValueAtTime (no RangeError)
-    it('L3: rampTo(param, value, 0) uses setValueAtTime — no RangeError', () => {
+    it('l3: rampTo(param, value, 0) uses setValueAtTime — no RangeError', () => {
       const effect = new TestEffect(audioContext)
       const spy = vi.spyOn(effect.testGain.gain, 'setValueAtTime')
       expect(() => effect.rampTo('gain', 0.5, 0)).not.toThrow()
       expect(spy).toHaveBeenCalledWith(0.5, audioContext.currentTime)
     })
 
-    it('L3: rampTo("mix", value, 0) uses instant mix setter', () => {
+    it('l3: rampTo("mix", value, 0) uses instant mix setter', () => {
       const effect = new TestEffect(audioContext)
       expect(() => effect.rampTo('mix', 0.3, 0)).not.toThrow()
       expect(effect.mix).toBe(0.3)
     })
 
-    it('L3: rampTo(unknownParam, value, 0) is a no-op — no throw', () => {
+    it('l3: rampTo(unknownParam, value, 0) is a no-op — no throw', () => {
       const effect = new TestEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 0)).not.toThrow()
     })
@@ -237,7 +237,9 @@ describe('baseEffect', () => {
     it('addEventListener("dispose", handler) fires handler on dispose', () => {
       const effect = new TestEffect(audioContext)
       let fired = false
-      effect.addEventListener('dispose', () => { fired = true })
+      effect.addEventListener('dispose', () => {
+        fired = true
+      })
       effect.dispose()
       expect(fired).toBe(true)
     })

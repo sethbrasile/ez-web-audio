@@ -65,7 +65,8 @@ export class WorkerTimer {
     if (this._isDisposed) {
       throw new Error('WorkerTimer has been disposed')
     }
-    if (this._isRunning) return
+    if (this._isRunning)
+      return
 
     this.callback = callback
 
@@ -75,7 +76,9 @@ export class WorkerTimer {
         const blob = new Blob([code], { type: 'application/javascript' })
         this.blobUrl = URL.createObjectURL(blob)
         this.worker = new Worker(this.blobUrl)
-        this.worker.onmessage = () => { this.callback?.() }
+        this.worker.onmessage = () => {
+          this.callback?.()
+        }
       }
       this.worker.postMessage('start')
     }
@@ -84,7 +87,8 @@ export class WorkerTimer {
         'ez-web-audio: Web Workers unavailable, using setTimeout fallback for scheduling. Background tab timing may drift.',
       )
       const loop = (): void => {
-        if (!this._isRunning) return
+        if (!this._isRunning)
+          return
         this.callback?.()
         this.fallbackId = setTimeout(loop, this.interval)
       }
@@ -99,7 +103,8 @@ export class WorkerTimer {
    * No-op if not currently running.
    */
   stop(): void {
-    if (!this._isRunning) return
+    if (!this._isRunning)
+      return
 
     if (this.useWorker && this.worker) {
       this.worker.postMessage('stop')

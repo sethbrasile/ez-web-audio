@@ -1,10 +1,10 @@
 import type { ControlType, RampType, RatioType } from '@controllers/base-param-controller'
-import { convertValue } from '@utils/convert-value'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { EnvelopeOptions } from './envelope'
 import type { PolySynthEventMap } from './events/event-types'
 import type { OscillatorFilterOptions } from './oscillator'
+import { convertValue } from '@utils/convert-value'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import { Oscillator } from './oscillator'
 

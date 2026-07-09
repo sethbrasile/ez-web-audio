@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Sequence } from './sequence'
 import { Transport } from './transport'
 
-describe('Sequence', () => {
+describe('sequence', () => {
   let audioContext: AudioContext
   let transport: Transport
 
@@ -361,8 +361,8 @@ describe('Sequence', () => {
     })
   })
 
-  describe('Transport lifecycle integration', () => {
-    it('Transport.start() enables scheduling', () => {
+  describe('transport lifecycle integration', () => {
+    it('transport.start() enables scheduling', () => {
       const seq = new Sequence(transport, { length: '1m' })
       const cb = vi.fn()
       seq.at(0, cb)
@@ -404,7 +404,7 @@ describe('Sequence', () => {
       seq.dispose()
     })
 
-    it('Transport.stop() resets sequences', () => {
+    it('transport.stop() resets sequences', () => {
       const seq = new Sequence(transport, { length: '1m' })
       const cb = vi.fn()
       seq.at(0, cb)
@@ -424,7 +424,7 @@ describe('Sequence', () => {
       seq.dispose()
     })
 
-    it('Transport.pause() stops scheduling', () => {
+    it('transport.pause() stops scheduling', () => {
       const seq = new Sequence(transport, { length: '4m' })
       const cb = vi.fn()
       seq.at(0, cb)
@@ -500,7 +500,7 @@ describe('Sequence', () => {
 
     it('clears all events', () => {
       const seq = new Sequence(transport, { length: '1m' })
-      const id = seq.at(0, vi.fn())
+      seq.at(0, vi.fn())
       seq.dispose()
 
       // After dispose, events are cleared

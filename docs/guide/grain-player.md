@@ -15,9 +15,9 @@ import { createGrainPlayer, createSound } from 'ez-web-audio'
 // Load an audio buffer
 const sound = await createSound('/sounds/pad.mp3')
 const grains = await createGrainPlayer(sound.audioBuffer, {
-  grainSize: 0.1,   // 100ms grains
-  overlap: 0.05,    // 50ms overlap
-  jitter: 0.1       // Random scatter for organic texture
+  grainSize: 0.1, // 100ms grains
+  overlap: 0.05, // 50ms overlap
+  jitter: 0.1 // Random scatter for organic texture
 })
 
 grains.play()
@@ -28,11 +28,11 @@ grains.play()
 All parameters can be changed in real-time during playback:
 
 ```typescript
-grains.position = 0.5   // Scrub to middle of buffer (0-1)
-grains.pitch = 7         // Pitch up a perfect fifth (semitones)
-grains.grainSize = 0.2   // Larger grains = smoother, more recognizable
-grains.overlap = 0.1     // More overlap = denser texture
-grains.jitter = 0.3      // More scatter = less repetitive
+grains.position = 0.5 // Scrub to middle of buffer (0-1)
+grains.pitch = 7 // Pitch up a perfect fifth (semitones)
+grains.grainSize = 0.2 // Larger grains = smoother, more recognizable
+grains.overlap = 0.1 // More overlap = denser texture
+grains.jitter = 0.3 // More scatter = less repetitive
 ```
 
 | Parameter | Range | Default | Effect |
@@ -48,9 +48,9 @@ grains.jitter = 0.3      // More scatter = less repetitive
 
 ```typescript
 grains.play()
-grains.pause()   // Freeze grain scheduling
-grains.play()    // Resume from where you paused
-grains.stop()    // Stop and reset
+grains.pause() // Freeze grain scheduling
+grains.play() // Resume from where you paused
+grains.stop() // Stop and reset
 ```
 
 ## Effects and Volume

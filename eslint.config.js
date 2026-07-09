@@ -3,6 +3,7 @@ import antfu from '@antfu/eslint-config'
 export default antfu(
   {
     ignores: [
+      '.claude/**',
       'packages/core/src/app/public',
       '.planning/**',
       'docs/assets/**',

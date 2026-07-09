@@ -6,7 +6,6 @@
  * provide it, so we create a minimal polyfill that allows `instanceof
  * BaseAudioContext` checks to work with mock AudioContext instances.
  */
-import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 
 if (typeof globalThis.BaseAudioContext === 'undefined') {
   // Create a BaseAudioContext class that the mock AudioContext is an instance of.

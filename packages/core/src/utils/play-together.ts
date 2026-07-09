@@ -46,7 +46,8 @@ export async function playTogether(
   const isExplicitCtx = audioContextOrPlayables instanceof BaseAudioContext
   const playables = isExplicitCtx ? maybePlayables! : audioContextOrPlayables as Playable[]
 
-  if (playables.length === 0) return
+  if (playables.length === 0)
+    return
 
   const ctx = isExplicitCtx
     ? audioContextOrPlayables as AudioContext

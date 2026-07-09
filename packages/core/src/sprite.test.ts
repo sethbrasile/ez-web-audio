@@ -591,7 +591,7 @@ describe('audioSprite', () => {
     })
   })
 
-  describe('Howler manifest normalization', () => {
+  describe('howler manifest normalization', () => {
     describe('isHowlerManifest()', () => {
       it('returns true for manifest with sprite key', () => {
         const howler: HowlerSpriteManifest = {
@@ -688,7 +688,7 @@ describe('audioSprite', () => {
       })
     })
 
-    describe('SpriteManifest union type', () => {
+    describe('spriteManifest union type', () => {
       it('accepts audiosprite format as SpriteManifest', () => {
         const manifest: SpriteManifest = {
           spritemap: { test: { start: 0, end: 1 } },

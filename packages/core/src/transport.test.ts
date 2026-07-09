@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AudioContext } from 'standardized-audio-context-mock'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatPosition, Transport } from './transport'
 
-describe('Transport', () => {
+describe('transport', () => {
   let audioContext: AudioContext
 
   beforeEach(() => {
@@ -87,8 +87,12 @@ describe('Transport', () => {
 
     it('throws if new bpm <= 0', () => {
       const transport = new Transport(audioContext as any, { bpm: 120 })
-      expect(() => { transport.bpm = 0 }).toThrow('BPM must be greater than 0')
-      expect(() => { transport.bpm = -5 }).toThrow('BPM must be greater than 0')
+      expect(() => {
+        transport.bpm = 0
+      }).toThrow('BPM must be greater than 0')
+      expect(() => {
+        transport.bpm = -5
+      }).toThrow('BPM must be greater than 0')
       transport.dispose()
     })
   })

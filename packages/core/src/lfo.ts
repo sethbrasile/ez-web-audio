@@ -137,7 +137,7 @@ export class LFO {
 
   set depth(value: number) {
     if (!Number.isFinite(value)) {
-      throw new Error(`LFO depth must be a finite number, got ${value}`)
+      throw new TypeError(`LFO depth must be a finite number, got ${value}`)
     }
     this._depth = value
     this._updateAllDepthGains()
@@ -153,7 +153,8 @@ export class LFO {
     this._type = value
     const isSH = this._isSampleAndHold()
 
-    if (!this._isRunning) return
+    if (!this._isRunning)
+      return
 
     if (wasSH !== isSH) {
       // Switching between S&H and standard — must recreate node

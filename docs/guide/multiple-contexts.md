@@ -20,7 +20,7 @@ for most applications. But advanced use cases sometimes need multiple contexts.
 Every factory function accepts an optional `AudioContext` as its first parameter:
 
 ```typescript
-import { createSound, createOscillator, createDelay } from 'ez-web-audio'
+import { createDelay, createOscillator, createSound } from 'ez-web-audio'
 
 // Default — uses the shared singleton (recommended for most apps)
 const sound = await createSound('click.mp3')
@@ -90,7 +90,7 @@ Signs you do **not** need multiple contexts:
 ## Full Example: Monitoring Output
 
 ```typescript
-import { createSound, createTrack, createDelay } from 'ez-web-audio'
+import { createDelay, createSound, createTrack } from 'ez-web-audio'
 
 // Main mix — default speakers
 const mainCtx = new AudioContext()
@@ -104,11 +104,11 @@ await monitorCtx.setSinkId('headphone-device-id')
 const click = await createSound(monitorCtx, 'metronome.mp3')
 
 // Each context is independent
-music.play()     // Goes to speakers
-click.play()     // Goes to headphones
+music.play() // Goes to speakers
+click.play() // Goes to headphones
 
 // Clean up one without affecting the other
-monitorCtx.close()  // click stops, music continues
+monitorCtx.close() // click stops, music continues
 ```
 
 ## Supported Factory Functions

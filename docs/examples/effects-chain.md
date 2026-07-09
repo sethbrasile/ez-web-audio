@@ -35,11 +35,11 @@ Each effect is inserted using `addEffects()`, which wires the effects into the a
 
 ```typescript
 import {
-  createOscillator,
-  createDelay,
-  createReverb,
   createCompressor,
+  createDelay,
   createEQ,
+  createOscillator,
+  createReverb,
 } from 'ez-web-audio'
 
 const source = await createOscillator({ frequency: 440, type: 'sawtooth' })
@@ -57,7 +57,7 @@ source.play()
 ### Bypassing an Effect
 
 ```typescript
-delay.bypass = true  // Dry signal passes through unaffected
+delay.bypass = true // Dry signal passes through unaffected
 delay.bypass = false // Effect re-enters the signal chain
 ```
 

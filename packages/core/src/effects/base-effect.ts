@@ -1,6 +1,6 @@
 import type { Effect } from './index'
-import { TypedEventEmitter } from '../events/typed-event-emitter'
 import { applyEqualPowerCrossfade } from '@utils/equal-power-crossfade'
+import { TypedEventEmitter } from '../events/typed-event-emitter'
 
 /**
  * Event map for BaseEffect instances.
@@ -202,12 +202,25 @@ export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> i
    * Idempotent — safe to call multiple times.
    */
   public dispose(): void {
-    if (this._disposed) return
+    if (this._disposed)
+      return
 
-    try { this.inputNode.disconnect() } catch { /* already disconnected */ }
-    try { this.outputNode.disconnect() } catch { /* already disconnected */ }
-    try { this.dryGain.disconnect() } catch { /* already disconnected */ }
-    try { this.wetGain.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.inputNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.outputNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.dryGain.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.wetGain.disconnect()
+    }
+    catch { /* already disconnected */ }
 
     // Emit dispose BEFORE silencing (matches BaseSound pattern)
     this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))

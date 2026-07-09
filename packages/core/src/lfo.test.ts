@@ -527,7 +527,7 @@ describe('lfo', () => {
     })
 
     // ===== C1: Event-based cleanup tests (two LFOs on same target) =====
-    it('C1: two LFOs on same target — target.dispose() cleans up both', () => {
+    it('c1: two LFOs on same target — target.dispose() cleans up both', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo1 = new LFO({ frequency: 2 })
       const lfo2 = new LFO({ frequency: 5 })
@@ -550,7 +550,7 @@ describe('lfo', () => {
       expect(lfo2.isRunning).toBe(true)
     })
 
-    it('C1: LFO-A dispose then target dispose — LFO-B cleanup still works', () => {
+    it('c1: LFO-A dispose then target dispose — LFO-B cleanup still works', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo1 = new LFO({ frequency: 2 })
       const lfo2 = new LFO({ frequency: 5 })
@@ -569,7 +569,7 @@ describe('lfo', () => {
       expect(lfo2.isRunning).toBe(true)
     })
 
-    it('C1: BaseSound emits dispose event before silencing dispatchEvent', () => {
+    it('c1: BaseSound emits dispose event before silencing dispatchEvent', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       let disposeEventFired = false
 
@@ -606,7 +606,7 @@ describe('lfo', () => {
       expect(lfo2.isRunning).toBe(true)
     })
 
-    it('LFO.dispose() removes dispose listeners from BaseEffect targets', () => {
+    it('lFO.dispose() removes dispose listeners from BaseEffect targets', () => {
       const effect = new TestEffect(ctx)
       const lfo = new LFO()
       lfo.connect(effect, 'frequency')
@@ -627,7 +627,7 @@ describe('lfo', () => {
       expect(() => effect.dispose()).not.toThrow()
     })
 
-    it('BaseEffect emits dispose event before silencing dispatchEvent', () => {
+    it('baseEffect emits dispose event before silencing dispatchEvent', () => {
       const effect = new TestEffect(ctx)
       let disposeEventFired = false
       effect.addEventListener('dispose', () => {
@@ -640,7 +640,7 @@ describe('lfo', () => {
 
   // ===== H1/H2: Mutual exclusion and error propagation =====
   describe('mutual exclusion and error handling', () => {
-    it('H1: connect() throws when both syncLifecycle and retrigger are true', () => {
+    it('h1: connect() throws when both syncLifecycle and retrigger are true', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO()
       expect(() =>
@@ -648,7 +648,7 @@ describe('lfo', () => {
       ).toThrow(/mutually exclusive/)
     })
 
-    it('H2: start() re-throws non-InvalidStateError exceptions', () => {
+    it('h2: start() re-throws non-InvalidStateError exceptions', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO()
       lfo.connect(sound, 'gain')
@@ -666,33 +666,45 @@ describe('lfo', () => {
     // H4: frequency setter
     it('frequency = NaN throws a descriptive error', () => {
       const lfo = new LFO()
-      expect(() => { lfo.frequency = Number.NaN }).toThrow(/must be a positive finite number/)
+      expect(() => {
+        lfo.frequency = Number.NaN
+      }).toThrow(/must be a positive finite number/)
     })
 
     it('frequency = -1 throws', () => {
       const lfo = new LFO()
-      expect(() => { lfo.frequency = -1 }).toThrow(/must be a positive finite number/)
+      expect(() => {
+        lfo.frequency = -1
+      }).toThrow(/must be a positive finite number/)
     })
 
     it('frequency = Infinity throws', () => {
       const lfo = new LFO()
-      expect(() => { lfo.frequency = Infinity }).toThrow(/must be a positive finite number/)
+      expect(() => {
+        lfo.frequency = Infinity
+      }).toThrow(/must be a positive finite number/)
     })
 
     it('frequency = 0 throws', () => {
       const lfo = new LFO()
-      expect(() => { lfo.frequency = 0 }).toThrow(/must be a positive finite number/)
+      expect(() => {
+        lfo.frequency = 0
+      }).toThrow(/must be a positive finite number/)
     })
 
     // L2: depth setter
     it('depth = NaN throws a descriptive error', () => {
       const lfo = new LFO()
-      expect(() => { lfo.depth = Number.NaN }).toThrow(/must be a finite number/)
+      expect(() => {
+        lfo.depth = Number.NaN
+      }).toThrow(/must be a finite number/)
     })
 
     it('depth = Infinity throws', () => {
       const lfo = new LFO()
-      expect(() => { lfo.depth = Infinity }).toThrow(/must be a finite number/)
+      expect(() => {
+        lfo.depth = Infinity
+      }).toThrow(/must be a finite number/)
     })
 
     // H4: syncToBPM validation
@@ -717,21 +729,23 @@ describe('lfo', () => {
     })
 
     // L1: type setter — standard-to-standard should NOT call _restart()
-    it('L1: standard-to-standard type change while running does NOT cause a new start', () => {
+    it('l1: standard-to-standard type change while running does NOT cause a new start', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO({ type: 'sine' })
       lfo.connect(sound, 'gain')
       lfo.start()
       // We verify that changing standard→standard doesn't throw and LFO stays running
-      expect(() => { lfo.type = 'square' }).not.toThrow()
+      expect(() => {
+        lfo.type = 'square'
+      }).not.toThrow()
       expect(lfo.isRunning).toBe(true)
       expect(lfo.type).toBe('square')
     })
   })
 
   // ===== 12. S&H Buffer Optimization (L4) =====
-  describe('S&H buffer optimization', () => {
-    it('L4: S&H buffer produces correct step pattern (values constant within each step)', () => {
+  describe('s&H buffer optimization', () => {
+    it('l4: S&H buffer produces correct step pattern (values constant within each step)', () => {
       const sound = new Sound(ctx, createMockAudioBuffer(ctx))
       const lfo = new LFO({ type: 'sample-and-hold', frequency: 4 })
       lfo.connect(sound, 'gain')
@@ -782,7 +796,7 @@ describe('lfo', () => {
   })
 
   // ===== GrainPlayer and PolySynth targeting =====
-  describe('GrainPlayer targeting', () => {
+  describe('grainPlayer targeting', () => {
     it('connects to GrainPlayer gain', () => {
       const buffer = createMockAudioBuffer(ctx)
       const gp = new GrainPlayer(ctx, buffer)
@@ -830,7 +844,7 @@ describe('lfo', () => {
     })
   })
 
-  describe('PolySynth targeting', () => {
+  describe('polySynth targeting', () => {
     it('connects to PolySynth gain', () => {
       const ps = new PolySynth(ctx, { maxVoices: 4 })
       const lfo = new LFO({ frequency: 5, depth: 0.3 })

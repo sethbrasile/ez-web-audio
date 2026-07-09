@@ -406,8 +406,10 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    * ```
    */
   public syncTo(transport: Transport, opts: { noteType: number }): void {
-    if (this._syncedTo === transport) return // already synced to this transport
-    if (this._syncedTo) this.unsync() // detach from previous
+    if (this._syncedTo === transport)
+      return // already synced to this transport
+    if (this._syncedTo)
+      this.unsync() // detach from previous
     this._syncedTo = transport
     this._syncNoteType = opts.noteType
     transport._addTrack(this)
@@ -426,7 +428,8 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    * ```
    */
   public unsync(): void {
-    if (!this._syncedTo) return
+    if (!this._syncedTo)
+      return
     this._syncedTo._removeTrack(this)
     this._syncedTo = null
     this.internalStop()
@@ -444,8 +447,10 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    * @internal
    */
   _shouldPlay(): boolean {
-    if (this.muted) return false
-    if (!this._syncedTo) return true // standalone: solo has no effect
+    if (this.muted)
+      return false
+    if (!this._syncedTo)
+      return true // standalone: solo has no effect
     const siblings = this._syncedTo.tracks
     const anySoloed = siblings.some(t => (t as BeatTrack).solo)
     return !anySoloed || this.solo

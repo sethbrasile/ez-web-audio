@@ -105,19 +105,21 @@ describe('distortionEffect', () => {
     })
 
     // M5: custom type without curve throws
-    it('M5: type="custom" without curve in constructor throws descriptive error', () => {
+    it('m5: type="custom" without curve in constructor throws descriptive error', () => {
       expect(() => new DistortionEffect(audioContext, { type: 'custom' })).toThrow(/custom/)
     })
 
-    it('M5: set type to "custom" without providing curve at construction throws', () => {
+    it('m5: set type to "custom" without providing curve at construction throws', () => {
       const effect = new DistortionEffect(audioContext, { type: 'soft' })
-      expect(() => { effect.type = 'custom' }).toThrow(/custom/)
+      expect(() => {
+        effect.type = 'custom'
+      }).toThrow(/custom/)
     })
   })
 
   describe('curve performance', () => {
     // M6: curve buffer should use 1024 samples, not 44100
-    it('M6: generated curve has 1024 samples (not 44100)', () => {
+    it('m6: generated curve has 1024 samples (not 44100)', () => {
       const effect = new DistortionEffect(audioContext, { type: 'soft', amount: 50 })
       // Access the internal waveShaperNode's curve — check length via the mock
       // We can verify indirectly: any curve set should be 1024 length

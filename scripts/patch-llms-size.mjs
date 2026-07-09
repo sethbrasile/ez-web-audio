@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import process from 'node:process'
 
 const distDir = 'docs/.vitepress/dist'
 const llmsFullPath = join(distDir, 'llms-full.txt')

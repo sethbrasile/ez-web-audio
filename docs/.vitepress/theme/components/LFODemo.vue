@@ -75,6 +75,8 @@ const depthDisplayLabel = computed(() => {
       return `${Math.round(d * 0.5)} cents`
     case 'filter':
       return `${Math.round(d * 15)} Hz`
+    default:
+      return ''
   }
 })
 

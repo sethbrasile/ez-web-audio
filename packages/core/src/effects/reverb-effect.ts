@@ -274,22 +274,43 @@ export class ReverbEffect extends BaseEffect {
   public override dispose(): void {
     if (this.combFilters) {
       for (const comb of this.combFilters) {
-        try { comb.delay.disconnect() } catch { /* already disconnected */ }
-        try { comb.feedback.disconnect() } catch { /* already disconnected */ }
-        try { comb.damping.disconnect() } catch { /* already disconnected */ }
+        try {
+          comb.delay.disconnect()
+        }
+        catch { /* already disconnected */ }
+        try {
+          comb.feedback.disconnect()
+        }
+        catch { /* already disconnected */ }
+        try {
+          comb.damping.disconnect()
+        }
+        catch { /* already disconnected */ }
       }
     }
     if (this.allpassFilters) {
       for (const ap of this.allpassFilters) {
-        try { ap.delay.disconnect() } catch { /* already disconnected */ }
-        try { ap.gain.disconnect() } catch { /* already disconnected */ }
+        try {
+          ap.delay.disconnect()
+        }
+        catch { /* already disconnected */ }
+        try {
+          ap.gain.disconnect()
+        }
+        catch { /* already disconnected */ }
       }
     }
     if (this.preDelayNode) {
-      try { this.preDelayNode.disconnect() } catch { /* already disconnected */ }
+      try {
+        this.preDelayNode.disconnect()
+      }
+      catch { /* already disconnected */ }
     }
     if (this.convolverNode) {
-      try { this.convolverNode.disconnect() } catch { /* already disconnected */ }
+      try {
+        this.convolverNode.disconnect()
+      }
+      catch { /* already disconnected */ }
     }
     super.dispose()
   }

@@ -129,7 +129,10 @@ export class CompressorEffect extends BaseEffect {
   }
 
   public override dispose(): void {
-    try { this.compressorNode.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.compressorNode.disconnect()
+    }
+    catch { /* already disconnected */ }
     super.dispose()
   }
 

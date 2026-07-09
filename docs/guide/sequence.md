@@ -16,14 +16,14 @@ const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
 const bell = await createSound('/sounds/bell.mp3')
 
 const seq = createSequence(transport, {
-  length: '2m',   // 2 measures long
-  loop: true       // Repeat
+  length: '2m', // 2 measures long
+  loop: true // Repeat
 })
 
 // Schedule events at musical positions
-seq.at('1:1:0', () => bell.play())  // Bar 1, Beat 1
-seq.at('1:3:0', () => bell.play())  // Bar 1, Beat 3
-seq.at('2:1:0', () => bell.play())  // Bar 2, Beat 1
+seq.at('1:1:0', () => bell.play()) // Bar 1, Beat 1
+seq.at('1:3:0', () => bell.play()) // Bar 1, Beat 3
+seq.at('2:1:0', () => bell.play()) // Bar 2, Beat 1
 
 transport.start() // Events fire at correct musical positions
 ```

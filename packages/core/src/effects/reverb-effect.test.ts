@@ -137,7 +137,7 @@ describe('reverbEffect', () => {
       })
 
       // M7: Reverb decay/damping setters use setTargetAtTime for smooth transitions
-      it('M7: decay setter uses setTargetAtTime on comb filter delays', () => {
+      it('m7: decay setter uses setTargetAtTime on comb filter delays', () => {
         // Use a fresh context where we can spy on delay nodes
         const spyCtx = createMockContext()
         const setTargetAtTimeCalls: unknown[][] = []
@@ -163,10 +163,12 @@ describe('reverbEffect', () => {
         expect(setTargetAtTimeCalls.length).toBeGreaterThanOrEqual(4)
       })
 
-      it('M7: damping setter uses setTargetAtTime on comb filter biquad filters', () => {
+      it('m7: damping setter uses setTargetAtTime on comb filter biquad filters', () => {
         const effect = new ReverbEffect(audioContext)
         // Verify functionally: setter should not throw and update stored value
-        expect(() => { effect.damping = 0.7 }).not.toThrow()
+        expect(() => {
+          effect.damping = 0.7
+        }).not.toThrow()
         expect(effect.damping).toBe(0.7)
       })
     })
@@ -329,7 +331,9 @@ describe('reverbEffect', () => {
     describe('reverb algorithmic boundary values', () => {
       it('decay=0 is handled without throwing', () => {
         const effect = new ReverbEffect(audioContext)
-        expect(() => { effect.decay = 0 }).not.toThrow()
+        expect(() => {
+          effect.decay = 0
+        }).not.toThrow()
       })
 
       it('damping=0 (brightest) is handled', () => {

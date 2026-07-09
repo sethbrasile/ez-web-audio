@@ -47,9 +47,9 @@ const synth = await createPolySynth({
 })
 
 // Play a chord — each call returns a VoiceHandle
-const c4 = synth.play({ frequency: frequencyMap['C4'] })
-const e4 = synth.play({ frequency: frequencyMap['E4'] })
-const g4 = synth.play({ frequency: frequencyMap['G4'] })
+const c4 = synth.play({ frequency: frequencyMap.C4 })
+const e4 = synth.play({ frequency: frequencyMap.E4 })
+const g4 = synth.play({ frequency: frequencyMap.G4 })
 
 // Listen for voice stealing
 synth.on('voicestolen', (event) => {
@@ -75,8 +75,8 @@ g4.stop()
 ### Cleanup
 
 ```typescript
-synth.stopAll()  // Immediately stop all active voices
-synth.dispose()  // Full cleanup -- releases all voices and disconnects effects
+synth.stopAll() // Immediately stop all active voices
+synth.dispose() // Full cleanup -- releases all voices and disconnects effects
 ```
 
 ## Further Reading

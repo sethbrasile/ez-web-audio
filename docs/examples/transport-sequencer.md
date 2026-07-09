@@ -30,13 +30,13 @@ The Transport clock is the heartbeat of the whole demo. It fires a `tick` event 
 Each drum track (Kick, Snare, Hi-hat) is a `BeatTrack` that loads three sample variations and uses round-robin playback for a natural feel. Calling `syncTo(transport)` locks the beat track to the transport clock:
 
 ```typescript
-import { createTransport, createBeatTrack } from 'ez-web-audio'
+import { createBeatTrack, createTransport } from 'ez-web-audio'
 
 const transport = await createTransport({ bpm: 120, timeSignature: [4, 4], ticksPerBeat: 4 })
 const kick = await createBeatTrack(['/kick1.wav', '/kick2.wav', '/kick3.wav'], { numBeats: 32 })
 
-kick.setPattern([1,0,0,0, 0,0,0,0, 1,0,0,0, ...])  // 32-step pattern
-kick.syncTo(transport, { noteType: 1/16 })           // lock to transport grid
+kick.setPattern([1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]) // first 12 of the 32-step pattern
+kick.syncTo(transport, { noteType: 1 / 16 }) // lock to transport grid
 ```
 
 ### Melody Tracks via Sequence
@@ -44,7 +44,7 @@ kick.syncTo(transport, { noteType: 1/16 })           // lock to transport grid
 The Synth and Piano tracks use `createSequence()` to schedule notes at precise musical time positions. `Sequence` supports bar:beat:tick notation, note names (`'4n'`, `'8t'`), and raw beat numbers -- making it easy to express straight 8ths, syncopation, or triplets in the same API:
 
 ```typescript
-import { createTransport, createSequence, createOscillator, createFont, getAudioContext } from 'ez-web-audio'
+import { createFont, createOscillator, createSequence, createTransport, getAudioContext } from 'ez-web-audio'
 
 const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
 
@@ -52,16 +52,16 @@ const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
 const bass = await createOscillator({ frequency: 82.4, type: 'sawtooth' })
 const seq = createSequence(transport, { length: '2m', loop: true }) // SYNC -- no await
 
-seq.at('1:1:0', (time) => { bass.frequency = 82.4; bass.playFor(0.4) })  // E2
-seq.at('2n',    (time) => { bass.frequency = 110;  bass.playFor(0.4) })  // A2 at beat 2
+seq.at('1:1:0', (time) => { bass.frequency = 82.4; bass.playFor(0.4) }) // E2
+seq.at('2n', (time) => { bass.frequency = 110; bass.playFor(0.4) }) // A2 at beat 2
 
 // Triplet feel uses fractional beat values
-seq.at(1/3, (time) => { bass.frequency = 49; bass.playFor(0.3) })  // G1 -- 8th triplet
+seq.at(1 / 3, (time) => { bass.frequency = 49; bass.playFor(0.3) }) // G1 -- 8th triplet
 
 // Piano soundfont sequence
 const piano = await createFont('/audio/piano.js')
 const audioContext = await getAudioContext()
-seq.at('1:2:0', (time) => piano.getNote('E4')?.playIn(time - audioContext.currentTime))
+seq.at('1:2:0', time => piano.getNote('E4')?.playIn(time - audioContext.currentTime))
 
 transport.start()
 ```
@@ -73,7 +73,8 @@ Drum tracks use `BeatTrack.muted` and `BeatTrack.solo` properties directly -- th
 ```typescript
 function shouldPlay(name: 'bass' | 'piano'): boolean {
   const anySoloed = Object.values(trackState).some(t => t.soloed)
-  if (anySoloed) return trackState[name].soloed
+  if (anySoloed)
+    return trackState[name].soloed
   return !trackState[name].muted
 }
 ```
@@ -86,7 +87,7 @@ The `transport.on('tick')` event drives the step-grid highlight. Each tick carri
 transport.on('tick', (e) => {
   const { bar, beat, tick } = e.detail
   const step = ((bar - 1) * 16) + ((beat - 1) * 4) + tick
-  currentStep.value = step % 32  // 32-step loop
+  currentStep.value = step % 32 // 32-step loop
   positionDisplay.value = `${bar}:${beat}` // bar : beat
 })
 ```

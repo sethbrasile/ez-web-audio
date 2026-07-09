@@ -114,7 +114,10 @@ export class FilterEffect extends BaseEffect {
   }
 
   public override dispose(): void {
-    try { this.filterNode.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.filterNode.disconnect()
+    }
+    catch { /* already disconnected */ }
     super.dispose()
   }
 

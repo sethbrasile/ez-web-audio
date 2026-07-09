@@ -87,43 +87,43 @@ describe('compressorEffect', () => {
     })
 
     // M8: Parameter range clamping
-    it('M8: ratio=0.5 is clamped to 1', () => {
+    it('m8: ratio=0.5 is clamped to 1', () => {
       const effect = new CompressorEffect(audioContext)
       effect.ratio = 0.5
       expect(effect.ratio).toBeGreaterThanOrEqual(1)
     })
 
-    it('M8: ratio=25 is clamped to 20', () => {
+    it('m8: ratio=25 is clamped to 20', () => {
       const effect = new CompressorEffect(audioContext)
       effect.ratio = 25
       expect(effect.ratio).toBeLessThanOrEqual(20)
     })
 
-    it('M8: attack=2 is clamped to 1', () => {
+    it('m8: attack=2 is clamped to 1', () => {
       const effect = new CompressorEffect(audioContext)
       effect.attack = 2
       expect(effect.attack).toBeLessThanOrEqual(1)
     })
 
-    it('M8: attack=-1 is clamped to 0', () => {
+    it('m8: attack=-1 is clamped to 0', () => {
       const effect = new CompressorEffect(audioContext)
       effect.attack = -1
       expect(effect.attack).toBeGreaterThanOrEqual(0)
     })
 
-    it('M8: release=2 is clamped to 1', () => {
+    it('m8: release=2 is clamped to 1', () => {
       const effect = new CompressorEffect(audioContext)
       effect.release = 2
       expect(effect.release).toBeLessThanOrEqual(1)
     })
 
-    it('M8: release=-1 is clamped to 0', () => {
+    it('m8: release=-1 is clamped to 0', () => {
       const effect = new CompressorEffect(audioContext)
       effect.release = -1
       expect(effect.release).toBeGreaterThanOrEqual(0)
     })
 
-    it('M8: threshold clamped to [-100, 0] range', () => {
+    it('m8: threshold clamped to [-100, 0] range', () => {
       const effect = new CompressorEffect(audioContext)
       effect.threshold = 10
       expect(effect.threshold).toBeLessThanOrEqual(0)
@@ -131,7 +131,7 @@ describe('compressorEffect', () => {
       expect(effect.threshold).toBeGreaterThanOrEqual(-100)
     })
 
-    it('M8: knee clamped to [0, 40] range', () => {
+    it('m8: knee clamped to [0, 40] range', () => {
       const effect = new CompressorEffect(audioContext)
       effect.knee = -5
       expect(effect.knee).toBeGreaterThanOrEqual(0)

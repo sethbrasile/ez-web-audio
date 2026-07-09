@@ -151,9 +151,18 @@ export class EQEffect extends BaseEffect {
   }
 
   public override dispose(): void {
-    try { this.lowFilter.disconnect() } catch { /* already disconnected */ }
-    try { this.midFilter.disconnect() } catch { /* already disconnected */ }
-    try { this.highFilter.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.lowFilter.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.midFilter.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.highFilter.disconnect()
+    }
+    catch { /* already disconnected */ }
     super.dispose()
   }
 

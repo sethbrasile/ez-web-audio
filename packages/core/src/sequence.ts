@@ -1,7 +1,8 @@
 import type { SequenceEventMap } from './events/event-types'
 import type { Transport, TransportPosition } from './transport'
+import type { MusicalTimeNotation } from './utils/musical-time'
 import { TypedEventEmitter } from './events/typed-event-emitter'
-import { musicalTimeToBeats, type MusicalTimeNotation } from './utils/musical-time'
+import { musicalTimeToBeats } from './utils/musical-time'
 
 /**
  * Callback function invoked when a scheduled event fires.
@@ -167,7 +168,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
    */
   remove(id: string): boolean {
     const index = this.events.findIndex(e => e.id === id)
-    if (index === -1) return false
+    if (index === -1)
+      return false
     this.events.splice(index, 1)
     return true
   }
@@ -202,7 +204,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
     timeSignature: [number, number],
     ticksPerBeat: number,
   ): void {
-    if (this._disposed || !this._started) return
+    if (this._disposed || !this._started)
+      return
 
     const beatsPerSecond = bpm / 60
     const beatsPerBar = timeSignature[0]
@@ -222,7 +225,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
     else {
       currentSeqBeat = elapsedBeats
       // One-shot: if we've passed the entire sequence, stop
-      if (currentSeqBeat >= this.lengthInBeats) return
+      if (currentSeqBeat >= this.lengthInBeats)
+        return
     }
 
     const windowEndBeat = currentSeqBeat + lookaheadBeats
@@ -239,7 +243,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
     }
 
     // No events to schedule
-    if (this.events.length === 0) return
+    if (this.events.length === 0)
+      return
 
     // Schedule events in window — track highest beat to update lastScheduledBeat
     // once after the loop (QC-1-08: fixes same-beat events being dropped)
@@ -345,7 +350,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
    * After disposal, the Sequence should not be used.
    */
   dispose(): void {
-    if (this._disposed) return
+    if (this._disposed)
+      return
     this._disposed = true
     this._started = false
 

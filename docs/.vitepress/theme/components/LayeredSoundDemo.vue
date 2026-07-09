@@ -22,8 +22,10 @@ let sounds: any[] = []
 let lib: any = null
 
 async function ensureLoaded() {
-  if (loaded.value) return true
-  if (loading.value) return false
+  if (loaded.value)
+    return true
+  if (loading.value)
+    return false
 
   try {
     loading.value = true
@@ -54,7 +56,8 @@ async function ensureLoaded() {
 }
 
 async function playAll() {
-  if (!(await ensureLoaded())) return
+  if (!(await ensureLoaded()))
+    return
 
   try {
     error.value = ''
@@ -87,8 +90,10 @@ async function stopAll() {
 }
 
 async function playLayer(index: number) {
-  if (!(await ensureLoaded())) return
-  if (!sounds[index]) return
+  if (!(await ensureLoaded()))
+    return
+  if (!sounds[index])
+    return
 
   try {
     sounds[index].changeGainTo(layerGains.value[index])

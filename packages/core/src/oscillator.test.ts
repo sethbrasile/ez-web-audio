@@ -312,7 +312,7 @@ describe('note-based creation', () => {
   it('invalid note throws InvalidNoteError with identifier', () => {
     expect(() => new Oscillator(audioContext, { note: 'X9' })).toThrow(InvalidNoteError)
     try {
-      new Oscillator(audioContext, { note: 'X9' })
+      void new Oscillator(audioContext, { note: 'X9' })
     }
     catch (e) {
       expect(e).toBeInstanceOf(InvalidNoteError)

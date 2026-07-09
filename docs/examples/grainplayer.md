@@ -28,19 +28,19 @@ The `createGrainPlayer()` function reads tiny overlapping slices of audio (calle
 ### Key API
 
 ```typescript
-import { createSound, createGrainPlayer } from 'ez-web-audio'
+import { createGrainPlayer, createSound } from 'ez-web-audio'
 
 const sound = await createSound('/audio/sample.mp3')
 const grain = await createGrainPlayer(sound.audioBuffer, {
-  grainSize: 0.1,  // seconds per grain
-  overlap: 0.05,   // grain crossfade overlap in seconds
-  jitter: 0,       // position randomization (0-1)
+  grainSize: 0.1, // seconds per grain
+  overlap: 0.05, // grain crossfade overlap in seconds
+  jitter: 0, // position randomization (0-1)
   loop: true,
 })
 
 grain.play()
-grain.pitch = 7       // up a perfect fifth (semitones) -- speed unchanged
-grain.position = 0.5  // jump to middle of buffer
+grain.pitch = 7 // up a perfect fifth (semitones) -- speed unchanged
+grain.position = 0.5 // jump to middle of buffer
 grain.grainSize = 0.2 // larger grains = smoother texture
 ```
 

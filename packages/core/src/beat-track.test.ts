@@ -3,8 +3,8 @@ import type { Playable } from './interfaces/playable'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BeatTrack as RealBeatTrack } from '@/beat-track'
-import { Transport } from './transport'
 import { Sound } from './sound'
+import { Transport } from './transport'
 
 /**
  * Extended BeatTrack class that exposes internal state for testing
@@ -1150,8 +1150,8 @@ describe('syncTo / unsync', () => {
     })
   })
 
-  describe('Transport-driven playback', () => {
-    it('Transport.start() schedules beats on synced tracks', () => {
+  describe('transport-driven playback', () => {
+    it('transport.start() schedules beats on synced tracks', () => {
       const transport = createTestTransport()
       const track = createSyncableBeatTrack()
       track.beats[0].active = true

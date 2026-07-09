@@ -234,7 +234,8 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * @returns this for chaining
    */
   addEffect(effect: Effect, position?: number): this {
-    if (this._disposed) throw new Error('Cannot add effect to a disposed LayeredSound.')
+    if (this._disposed)
+      throw new Error('Cannot add effect to a disposed LayeredSound.')
     if (position !== undefined) {
       this.effects.splice(position, 0, effect)
     }
@@ -252,7 +253,8 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * @returns this for chaining
    */
   removeEffect(effect: Effect): this {
-    if (this._disposed) throw new Error('Cannot remove effect from a disposed LayeredSound.')
+    if (this._disposed)
+      throw new Error('Cannot remove effect from a disposed LayeredSound.')
     const index = this.effects.indexOf(effect)
     if (index !== -1) {
       this.effects.splice(index, 1)
@@ -356,7 +358,10 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    * @internal
    */
   private safeDisconnect(node: AudioNode): void {
-    try { node.disconnect() } catch { /* already disconnected */ }
+    try {
+      node.disconnect()
+    }
+    catch { /* already disconnected */ }
   }
 
   /**

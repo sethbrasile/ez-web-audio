@@ -42,8 +42,10 @@ const manifest = {
 const manifestJson = JSON.stringify(manifest, null, 2)
 
 async function ensureLoaded() {
-  if (loaded.value) return true
-  if (loading.value) return false
+  if (loaded.value)
+    return true
+  if (loading.value)
+    return false
 
   try {
     loading.value = true
@@ -67,7 +69,8 @@ async function ensureLoaded() {
 }
 
 async function playSegment(name: string) {
-  if (!(await ensureLoaded())) return
+  if (!(await ensureLoaded()))
+    return
 
   try {
     if (playTimer) {
@@ -104,7 +107,8 @@ function animatePlayhead() {
   playheadPosition.value = (elapsed / totalDuration) * 100
   if (elapsed < totalDuration && playingFull.value) {
     playheadFrame = requestAnimationFrame(animatePlayhead)
-  } else {
+  }
+  else {
     playheadPosition.value = 0
     playingFull.value = false
   }
@@ -122,7 +126,8 @@ async function toggleFullPlayback() {
   if (playingFull.value) {
     // Stop playback
     if (fullSound) {
-      try { fullSound.stop() } catch {}
+      try { fullSound.stop() }
+      catch {}
     }
     if (fullTimer) {
       clearTimeout(fullTimer)
@@ -133,7 +138,8 @@ async function toggleFullPlayback() {
     return
   }
 
-  if (!(await ensureLoaded())) return
+  if (!(await ensureLoaded()))
+    return
 
   try {
     if (fullTimer) {

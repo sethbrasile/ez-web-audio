@@ -42,8 +42,8 @@ interface Preset {
   kick: number[]
   snare: number[]
   hihat: number[]
-  bassNotes: { time: string | number; freq: number; duration: number }[]
-  pianoNotes: { time: string | number; note: string }[]
+  bassNotes: { time: string | number, freq: number, duration: number }[]
+  pianoNotes: { time: string | number, note: string }[]
 }
 
 const PRESETS: Record<string, Preset> = {
@@ -120,7 +120,7 @@ const PRESETS: Record<string, Preset> = {
 // Each track gets a map: stepIndex (0-31) -> { active: boolean, noteName: string | null }
 const stepCells = computed(() => {
   const preset = PRESETS[activePreset.value]
-  const result: Record<string, { active: boolean; noteName: string | null }[]> = {}
+  const result: Record<string, { active: boolean, noteName: string | null }[]> = {}
 
   // Drum tracks — direct from pattern array
   for (const drumName of ['kick', 'snare', 'hihat'] as const) {
@@ -136,7 +136,7 @@ const stepCells = computed(() => {
   }
 
   // Bass cells
-  const bassCells: { active: boolean; noteName: string | null }[] = Array.from({ length: 32 }, () => ({
+  const bassCells: { active: boolean, noteName: string | null }[] = Array.from({ length: 32 }, () => ({
     active: false,
     noteName: null,
   }))
@@ -170,7 +170,7 @@ const stepCells = computed(() => {
   result.bass = bassCells
 
   // Piano cells
-  const pianoCells: { active: boolean; noteName: string | null }[] = Array.from({ length: 32 }, () => ({
+  const pianoCells: { active: boolean, noteName: string | null }[] = Array.from({ length: 32 }, () => ({
     active: false,
     noteName: null,
   }))
@@ -202,7 +202,13 @@ function freqToNoteName(freq?: number): string {
   if (!freq)
     return ''
   const noteNames: Record<number, string> = {
-    41.2: 'E1', 49: 'G1', 55: 'A1', 73.4: 'D2', 82.4: 'E2', 98: 'G2', 110: 'A2',
+    41.2: 'E1',
+    49: 'G1',
+    55: 'A1',
+    73.4: 'D2',
+    82.4: 'E2',
+    98: 'G2',
+    110: 'A2',
   }
   // Find closest match
   let closestNote = ''
@@ -352,7 +358,7 @@ async function ensureLoaded() {
 
   // Register tick handler to drive step grid playhead
   // ticksPerBeat:12 — scale tick to 16th-note step within beat (0-3)
-  transport.on('tick', (e: CustomEvent<{ bar: number; beat: number; tick: number; seconds: number }>) => {
+  transport.on('tick', (e: CustomEvent<{ bar: number, beat: number, tick: number, seconds: number }>) => {
     const { bar, beat, tick } = e.detail
     // Convert tick (0-11 with ticksPerBeat:12) to 16th-note position (0-3)
     const sixteenthTick = Math.floor(tick * 4 / 12)
@@ -585,8 +591,8 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
               :key="`${track.key}-step-${i}`"
               class="step-cell"
               :class="{
-                active: stepCells[track.key]?.[i - 1]?.active,
-                playhead: (i - 1) === currentStep,
+                'active': stepCells[track.key]?.[i - 1]?.active,
+                'playhead': (i - 1) === currentStep,
                 'drum-cell': track.isDrum,
                 'melody-cell': !track.isDrum,
                 'bar-divider': (i - 1) === 16,

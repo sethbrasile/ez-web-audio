@@ -349,8 +349,10 @@ export async function createTrack(
   if (audioContextOrInput instanceof BaseAudioContext) {
     const input = maybeInput!
     const ctx = audioContextOrInput as AudioContext
-    if (typeof input === 'string') return load(input, 'track', ctx) as Promise<Track>
-    if (input instanceof ArrayBuffer) return loadFromBuffer(input, 'track', ctx) as Promise<Track>
+    if (typeof input === 'string')
+      return load(input, 'track', ctx) as Promise<Track>
+    if (input instanceof ArrayBuffer)
+      return loadFromBuffer(input, 'track', ctx) as Promise<Track>
     const buffer = await input.arrayBuffer()
     return loadFromBuffer(buffer, 'track', ctx) as Promise<Track>
   }

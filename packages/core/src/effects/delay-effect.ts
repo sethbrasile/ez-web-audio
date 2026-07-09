@@ -98,8 +98,14 @@ export class DelayEffect extends BaseEffect {
   }
 
   public override dispose(): void {
-    try { this.delayNode.disconnect() } catch { /* already disconnected */ }
-    try { this.feedbackGain.disconnect() } catch { /* already disconnected */ }
+    try {
+      this.delayNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.feedbackGain.disconnect()
+    }
+    catch { /* already disconnected */ }
     super.dispose()
   }
 

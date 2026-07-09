@@ -51,3 +51,6 @@ test-results/
 .grepai/
 .bg-shell/
 .gsd/
+
+# Claude Code harness state (worktrees, local settings)
+.claude/

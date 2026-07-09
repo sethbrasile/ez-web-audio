@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { WorkerTimer } from './worker-timer'
 
-describe('WorkerTimer', () => {
+describe('workerTimer', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })
@@ -178,10 +178,10 @@ describe('WorkerTimer', () => {
     })
   })
 
-  describe('Worker mock path', () => {
+  describe('worker mock path', () => {
     let originalWorker: typeof Worker | undefined
-    let originalBlob: typeof Blob
-    let originalURL: typeof URL
+    let _originalBlob: typeof Blob
+    let _originalURL: typeof URL
 
     // Mock Worker class
     class MockWorker {
@@ -217,8 +217,8 @@ describe('WorkerTimer', () => {
 
     beforeEach(() => {
       originalWorker = globalThis.Worker
-      originalBlob = globalThis.Blob
-      originalURL = globalThis.URL
+      _originalBlob = globalThis.Blob
+      _originalURL = globalThis.URL
 
       // Install mock Worker
       ;(globalThis as any).Worker = MockWorker
@@ -230,8 +230,8 @@ describe('WorkerTimer', () => {
         }
       }
 
-      const originalCreateObjectURL = URL.createObjectURL
-      const originalRevokeObjectURL = URL.revokeObjectURL
+      const _originalCreateObjectURL = URL.createObjectURL
+      const _originalRevokeObjectURL = URL.revokeObjectURL
       vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url')
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     })

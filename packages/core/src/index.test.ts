@@ -739,7 +739,7 @@ describe('factory functions', () => {
       expect(sprite.names).toContain('explosion')
     })
 
-    it('Howler manifest normalizes ms to seconds', async () => {
+    it('howler manifest normalizes ms to seconds', async () => {
       mockFetch.mockResolvedValue(makeMockResponse())
       const { createSprite } = await import('./index')
       const howlerManifest = {

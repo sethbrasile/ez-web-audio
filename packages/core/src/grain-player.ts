@@ -1,9 +1,9 @@
 import type { RatioType } from '@controllers/base-param-controller'
-import { convertValue } from '@utils/convert-value'
-import { WorkerTimer } from '@utils/worker-timer'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { GrainPlayerEventMap } from './events/event-types'
+import { convertValue } from '@utils/convert-value'
+import { WorkerTimer } from '@utils/worker-timer'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
 /**

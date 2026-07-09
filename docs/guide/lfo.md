@@ -28,15 +28,15 @@ An LFO can modulate any audio parameter on sounds, oscillators, effects, PolySyn
 
 ```typescript
 // Vibrato — modulate frequency
+// Filter sweep on an effect
+import { createFilterEffect } from 'ez-web-audio'
+
 const vibrato = createLFO({ frequency: 6, depth: 50 })
 vibrato.connect(synth, 'frequency')
 
 // Auto-pan
 const autoPan = createLFO({ frequency: 0.5, depth: 0.8, type: 'triangle' })
 autoPan.connect(synth, 'pan')
-
-// Filter sweep on an effect
-import { createFilterEffect } from 'ez-web-audio'
 const filter = createFilterEffect('lowpass', { frequency: 1000 })
 const sweep = createLFO({ frequency: 0.2, depth: 0.6, type: 'sine' })
 sweep.connect(filter, 'frequency')
@@ -90,7 +90,7 @@ lfo.connect(synth, 'gain', { depthUnit: 'absolute', depth: 0.2 })
 ```typescript
 lfo.stop()
 lfo.disconnect() // Disconnect from all targets
-lfo.dispose()    // Full cleanup
+lfo.dispose() // Full cleanup
 ```
 
 LFOs connected with `syncLifecycle` are automatically cleaned up when the target sound is disposed.
