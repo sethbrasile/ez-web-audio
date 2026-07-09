@@ -8,6 +8,15 @@
       "file": "2026-03-07-deep-review.md",
       "counts": { "critical": 0, "high": 7, "medium": 18, "low": 22 },
       "structuralPatterns": ["inconsistent-event-systems", "missing-effect-dispose", "fluent-api-conversion-gap"]
+    },
+    {
+      "date": "2026-03-19",
+      "type": "deep-review",
+      "mode": "mid-build",
+      "scope": "Milestone 7 Feature Demos (Phases 67-71): LFO, PolySynth, Effects Chain, GrainPlayer, Transport+Sequencer",
+      "file": "2026-03-19-deep-review-m7-demos.md",
+      "counts": { "critical": 2, "high": 19, "medium": 38, "low": 28 },
+      "structuralPatterns": ["demo-resource-cleanup-inconsistency", "demo-audio-init-duplication"]
     }
   ],
   "patterns": {
@@ -15,22 +24,37 @@
       "name": "Inconsistent event system implementations",
       "firstSeen": "2026-03-07",
       "reviews": ["2026-03-07-deep-review.md"],
-      "status": "fix-in-progress",
-      "fixPhase": "57.1"
+      "status": "resolved",
+      "fixPhase": "57.1",
+      "resolvedDate": "2026-03-19"
     },
     "missing-effect-dispose": {
       "name": "Missing dispose() overrides in effect subclasses",
       "firstSeen": "2026-03-07",
       "reviews": ["2026-03-07-deep-review.md"],
-      "status": "fix-in-progress",
-      "fixPhase": "54.2"
+      "status": "resolved",
+      "fixPhase": "54.2",
+      "resolvedDate": "2026-03-19"
     },
     "fluent-api-conversion-gap": {
       "name": "Fluent API reimplementation without RatioType conversion",
       "firstSeen": "2026-03-07",
       "reviews": ["2026-03-07-deep-review.md"],
-      "status": "fix-in-progress",
-      "fixPhase": "59.1"
+      "status": "resolved",
+      "fixPhase": "59.1",
+      "resolvedDate": "2026-03-19"
+    },
+    "demo-resource-cleanup-inconsistency": {
+      "name": "Demo resource cleanup inconsistency across components",
+      "firstSeen": "2026-03-19",
+      "reviews": ["2026-03-19-deep-review-m7-demos.md"],
+      "status": "open"
+    },
+    "demo-audio-init-duplication": {
+      "name": "Duplicated audio initialization pattern across demos",
+      "firstSeen": "2026-03-19",
+      "reviews": ["2026-03-19-deep-review-m7-demos.md"],
+      "status": "open"
     }
   }
 }

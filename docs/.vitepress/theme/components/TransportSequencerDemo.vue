@@ -389,7 +389,7 @@ function pause() {
 }
 
 function resume() {
-  transport?.resume()
+  transport?.start()
   paused.value = false
 }
 
