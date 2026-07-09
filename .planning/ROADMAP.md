@@ -225,3 +225,12 @@ Inserted 2026-03-19 from deep review `2026-03-19-deep-review-m7-demos.md` (55 fi
 - [ ] **Phase 78: Release 0.2.0 + announce** — GATED on full human UAT of all demos. Publish core 0.2.0 + both bindings, CHANGELOG, demo GIFs/og-images, announcement posts (angles: Howler manifest migration wedge, llms.txt AI-discoverability, interactive demos).
 
 **Requirements:** to be formalized via `/gsd-new-milestone` after M7 close (current REQUIREMENTS.md is M7-scoped and archives at milestone completion).
+
+**Plans (written 2026-07-09, executable via `.planning/M8-PLAYBOOK.md`):**
+- 72-01 pnpm workspace conversion · 72-02 @ez-web-audio/vue composables
+- 73-01 refactor all demos onto composables
+- 74-01 design brief for claude-design (RUNS FIRST) · 74-02 implement handoff packet (runtime-expanded)
+- 75-01 master bus, gain staging, preset tuning → listening gate
+- 76-01 groovebox engine + state + codec + presets · 76-02 groovebox UI, hero, share, E2E
+- 77-01 @ez-web-audio/react hooks + examples + guide
+- 78-01 release 0.2.0 + announce (publish behind human gate)
