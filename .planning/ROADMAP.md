@@ -13,7 +13,8 @@
 - ✅ **Milestone 4: Deep Review Hardening** — Phases 47-52 (complete)
 - ✅ **Milestone 5: Effects & Transport** — Phases 53-60 (complete)
 - ✅ **Milestone 6: DX & Discoverability** — Phases 61-66 (shipped 2026-03-08)
-- 🚧 **Milestone 7: Feature Demos** — Phases 67-71 (in progress)
+- 🚧 **Milestone 7: Feature Demos** — Phases 67-71 + 71.1-71.6 (code complete, awaiting UAT)
+- 📋 **Milestone 8: Demo Excellence, Bindings & 0.2.0** — Phases 72-78 (planned 2026-07-09, starts after M7 UAT)
 
 ## Phases
 
@@ -206,3 +207,21 @@ Inserted 2026-03-19 from deep review `2026-03-19-deep-review-m7-demos.md` (55 fi
 - [x] 71.6: Content/Docs Pages — effects-chain prose, LLM fallback tags, cross-references, SEO titles
 
 **Remaining before milestone close:** human UAT (`71-UAT.md`, 7 tests) + listen-through of all 6 demos.
+
+## Milestone 8: Demo Excellence, Bindings & 0.2.0 (Planned)
+
+**Milestone Goal:** Make the demos truly great, ship official Vue + React bindings, release 0.2.0, and announce publicly. Staying <1.0 until stability confidence is earned (user decision 2026-07-09).
+
+**Strategy:** Vue bindings and demo excellence are the same work — extract composables from the proven demo patterns into `@ez-web-audio/vue`, then refactor all demos onto them. This kills the two open structural patterns from the 2026-03-19 deep review (demo-resource-cleanup-inconsistency, demo-audio-init-duplication) and makes every demo a living test of the binding. The groovebox showcase (Phase 76) fulfills the "pseudo DAW showcase" deferred from M7 requirements.
+
+**Announce sequence:** Phases 72-77 → full human UAT gate → Phase 78 (publish + announce).
+
+- [ ] **Phase 72: Workspace + @ez-web-audio/vue** — Convert to pnpm workspace (`packages/core`, `packages/vue`). Extract composables (`useAudioLib`, `useCleanup`, `useSound`, `useBeatTrack`, ...) from demo patterns. Core stays zero-dep; binding peer-depends on core.
+- [ ] **Phase 73: Demo composables refactor** — All 20+ docs demos refactored onto `@ez-web-audio/vue` composables. Deletes per-demo init/dispose boilerplate; demos dogfood the binding.
+- [ ] **Phase 74: Demo design cohesion** — Shared demo UI kit (DemoCard, ParameterSlider, PlayButton, VolumeWarning — extraction now earned at 20+ demos, reversing M7's "not worth it for 5 pages" call). Dark/light parity, mobile layout, touch targets ≥44px, a11y sweep across ALL demos.
+- [ ] **Phase 75: Demo sound quality** — Gain staging per demo, shared master limiter (nothing clips), curated musical presets (great in first 5 seconds), replace cheap-sounding raw oscillators with better patches/samples where warranted.
+- [ ] **Phase 76: Groovebox showcase** — Flagship "everything together" demo: drum machine + bass synth + effects chain + transport/sequencer, state shareable via URL, embedded as homepage hero. The announcement centerpiece.
+- [ ] **Phase 77: @ez-web-audio/react** — React hooks package mirroring Vue composables (`useSound`, `usePolySynth`, ...), SSR-safe (no AudioContext until user interaction). Examples via StackBlitz embeds; rewrite React integration guide.
+- [ ] **Phase 78: Release 0.2.0 + announce** — GATED on full human UAT of all demos. Publish core 0.2.0 + both bindings, CHANGELOG, demo GIFs/og-images, announcement posts (angles: Howler manifest migration wedge, llms.txt AI-discoverability, interactive demos).
+
+**Requirements:** to be formalized via `/gsd-new-milestone` after M7 close (current REQUIREMENTS.md is M7-scoped and archives at milestone completion).

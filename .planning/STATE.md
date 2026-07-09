@@ -30,7 +30,13 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 Phase: 71.6 of 71.6 (all M7 phases code-complete)
 Status: Awaiting human UAT (`phases/71-transport-sequencer-demo/71-UAT.md`, 7 tests) + listen-through of all 6 demos
-Next: UAT → `/gsd-complete-milestone` → Milestone 8 planning (demo excellence + framework bindings + 0.2.0 release/announce)
+Next: quick M7 UAT (user, ~30 min) → `/gsd-complete-milestone` → Milestone 8 execution (phases 72-78 outlined in ROADMAP; formalize requirements via `/gsd-new-milestone`)
+
+## Milestone 8 Scope Decisions (user, 2026-07-09)
+
+- Flagship groovebox showcase: YES (Phase 76) — announcement centerpiece, homepage hero
+- Bindings: Vue AND React both ship with 0.2.0 (Vue first as infra, phases 72-73; React phase 77)
+- M7 UAT: quick pass now before M8 refactoring begins; full UAT gate again before Phase 78 announce
 
 ## Release Position
 
