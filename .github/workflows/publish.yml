@@ -36,7 +36,7 @@ jobs:
         run: pnpm lint
 
       - name: Run unit tests
-        run: pnpm test run
+        run: pnpm test
 
       - name: Build library and docs
         run: pnpm build
@@ -47,17 +47,18 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e
 
-      - name: Verify git tag matches package.json version
+      - name: Verify git tag matches all package versions
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Git tag v${TAG_VERSION} does not match package.json version ${PKG_VERSION}"
-            exit 1
-          fi
-          echo "Tag v${TAG_VERSION} matches package.json version ${PKG_VERSION}"
+          for PKG in packages/core packages/vue packages/react; do
+            PKG_VERSION=$(node -p "require('./${PKG}/package.json').version")
+            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+              echo "::error::Tag v${TAG_VERSION} != ${PKG} version ${PKG_VERSION}"; exit 1
+            fi
+          done
 
-      - name: Publish to npm
-        run: npm publish --provenance --access public
+      - name: Publish all packages
+        run: pnpm -r publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
