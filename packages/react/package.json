@@ -1,0 +1,15 @@
+{
+  "name": "@ez-web-audio/react",
+  "type": "module",
+  "version": "0.2.0",
+  "description": "React hooks for ez-web-audio",
+  "license": "MIT",
+  "author": { "name": "Seth Brasile", "email": "seth.brasile@gmail.com" },
+  "homepage": "https://sethbrasile.github.io/ez-web-audio",
+  "repository": { "type": "git", "url": "https://github.com/sethbrasile/ez-web-audio.git", "directory": "packages/react" },
+  "sideEffects": false,
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["LICENSE", "README.md", "dist"],
+  "engines": { "node": ">=18" },
+  "peerDependencies": { "ez-web-audio": "workspace:^", "react": ">=18" }
+}
