@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  @keyframes gb-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes gb-glow { 0%,100% { box-shadow: 0 0 8px 1px var(--gb-accent); } 50% { box-shadow: 0 0 16px 4px var(--gb-accent); } }
+  @keyframes gb-arp { from { background-position: 0 0; } to { background-position: 24px 0; } }
+  @keyframes gb-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</helmet>
+<div id="gb-root" style="--gb-bg:#141417;--gb-panel:#1c1c21;--gb-well:#0e0e11;--gb-line:#2a2a31;--gb-line-2:#3a3a44;--gb-text:#f2f2f4;--gb-text-2:#a2a2ac;--gb-text-3:#6b6b75;--gb-accent:#2fe3a4;--gb-accent-2:#57ecba;--gb-on-accent:#05231a;--gb-accent-soft:rgba(47,227,164,0.16);--gb-danger:#ff6b6b;--gb-kick:#ff7a6e;--gb-snare:#f2a64a;--gb-hat:#f2cf3f;--gb-clap:#f277c0;--gb-bass:#9c8dff;--gb-lead:#56c4f0;font-family:'Inter',system-ui,sans-serif;background:var(--gb-bg);color:var(--gb-text);min-height:100vh;padding:40px 24px 80px;transition:background .25s,color .25s;">
+
+  <div style="max-width:820px;margin:0 auto;">
+
+    <!-- packet header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:8px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gb-accent);margin-bottom:10px;">Handoff Packet · 02 · Flagship</div>
+        <h1 style="font-size:34px;line-height:1.05;font-weight:800;margin:0 0 8px;letter-spacing:-0.02em;">The Groovebox</h1>
+        <p style="font-size:15px;line-height:1.55;color:var(--gb-text-2);max-width:560px;margin:0;">The announcement centerpiece — a 2-bar, 6-lane groove machine. Fully interactive below (no audio wired). Its natural habitat is dark; toggle to prove the light-mode build. Fits the 688px column and scrolls the grid on narrow screens.</p>
+      </div>
+      <button onClick="{{ toggleTheme }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;min-height:44px;border-radius:999px;border:1px solid var(--gb-line-2);background:var(--gb-panel);color:var(--gb-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+        <span style="width:9px;height:9px;border-radius:50%;background:var(--gb-accent);display:inline-block;"></span>{{ themeLabel }}
+      </button>
+    </div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gb-text-3);margin:32px 0 10px;">Full version · /examples/groovebox</div>
+
+    <!-- ============ THE MACHINE ============ -->
+    <div style="border:1px solid var(--gb-line);border-radius:18px;background:var(--gb-panel);box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;">
+
+      <!-- brand strip / transport -->
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 18px;background:linear-gradient(180deg,var(--gb-well),var(--gb-panel));border-bottom:1px solid var(--gb-line);flex-wrap:wrap;">
+        <button onClick="{{ togglePlay }}" aria-label="Play/Stop" style="{{ playStyle }}">
+          <span style="{{ playIcon }}"></span>
+        </button>
+
+        <!-- segment display -->
+        <div style="background:#07100c;border-radius:10px;padding:9px 14px;border:1px solid rgba(0,0,0,.5);box-shadow:inset 0 1px 4px rgba(0,0,0,.6);">
+          <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--gb-accent);letter-spacing:.08em;text-shadow:0 0 10px var(--gb-accent-soft);">{{ posDisplay }}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;color:#2f6553;">BAR · BEAT · STEP</div>
+        </div>
+
+        <div style="flex:1;min-width:200px;display:flex;gap:20px;flex-wrap:wrap;">
+          <!-- BPM -->
+          <div style="flex:1;min-width:130px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-text-2);">Tempo</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--gb-accent);">{{ bpm }} BPM</span></div>
+            <div data-track role="slider" tabindex="0" aria-label="BPM" onKeyDown="{{ bpmKey }}" onPointerDown="{{ bpmDown }}" style="position:relative;height:20px;display:flex;align-items:center;cursor:pointer;touch-action:none;">
+              <div style="position:absolute;left:0;right:0;height:5px;border-radius:999px;background:var(--gb-well);"></div>
+              <div style="position:absolute;left:0;height:5px;border-radius:999px;background:var(--gb-accent);width:{{ bpmPct }}%;"></div>
+              <div style="position:absolute;left:{{ bpmPct }}%;width:18px;height:18px;border-radius:50%;background:var(--gb-bg);border:2px solid var(--gb-accent);transform:translateX(-9px);"></div>
+            </div>
+          </div>
+          <!-- swing -->
+          <div style="flex:1;min-width:130px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-text-2);">Swing</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--gb-accent);">{{ swing }}%</span></div>
+            <div data-track role="slider" tabindex="0" aria-label="Swing" onKeyDown="{{ swingKey }}" onPointerDown="{{ swingDown }}" style="position:relative;height:20px;display:flex;align-items:center;cursor:pointer;touch-action:none;">
+              <div style="position:absolute;left:0;right:0;height:5px;border-radius:999px;background:var(--gb-well);"></div>
+              <div style="position:absolute;left:0;height:5px;border-radius:999px;background:var(--gb-accent);width:{{ swingPct }}%;"></div>
+              <div style="position:absolute;left:{{ swingPct }}%;width:18px;height:18px;border-radius:50%;background:var(--gb-bg);border:2px solid var(--gb-accent);transform:translateX(-9px);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- presets + share -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--gb-line);flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-text-3);">Preset</span>
+          <div style="display:inline-flex;background:var(--gb-well);border-radius:9px;padding:3px;gap:3px;">
+            <sc-for list="{{ presets }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.select }}" style="{{ p.style }}">{{ p.name }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <button onClick="{{ share }}" style="{{ shareStyle }}">
+          <svg viewBox="0 0 24 24" width="15" height="15" style="display:block;"><circle cx="6" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="2"></circle><circle cx="18" cy="6" r="2.4" fill="none" stroke="currentColor" stroke-width="2"></circle><circle cx="18" cy="18" r="2.4" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M8 11 L16 7 M8 13 L16 17" stroke="currentColor" stroke-width="2"></path></svg>
+          {{ shareLabel }}
+        </button>
+      </div>
+
+      <!-- STEP GRID -->
+      <div style="padding:16px 18px;">
+        <div style="display:flex;gap:10px;">
+          <!-- lane labels -->
+          <div style="flex-shrink:0;width:128px;">
+            <div style="height:22px;"></div>
+            <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="6">
+              <div style="height:42px;display:flex;align-items:center;gap:6px;">
+                <span style="width:9px;height:9px;border-radius:3px;background:{{ lane.color }};flex-shrink:0;"></span>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--gb-text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ lane.name }}</span>
+                <button onClick="{{ lane.toggleMute }}" aria-label="Mute" style="{{ lane.muteStyle }}">M</button>
+                <button onClick="{{ lane.toggleSolo }}" aria-label="Solo" style="{{ lane.soloStyle }}">S</button>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- scrollable cell area -->
+          <div style="flex:1;overflow-x:auto;padding-bottom:4px;">
+            <div style="min-width:480px;position:relative;">
+              <!-- step numbers -->
+              <div style="display:grid;grid-template-columns:repeat(32,1fr);gap:3px;height:22px;align-items:end;padding-bottom:3px;">
+                <sc-for list="{{ stepHeader }}" as="h" hint-placeholder-count="32">
+                  <div style="text-align:center;font-family:'DM Mono',monospace;font-size:8px;color:{{ h.color }};border-left:{{ h.border }};">{{ h.label }}</div>
+                </sc-for>
+              </div>
+
+              <!-- drum + bass lanes -->
+              <sc-for list="{{ gridLanes }}" as="lane" hint-placeholder-count="5">
+                <div style="height:42px;display:flex;align-items:center;">
+                  <div style="display:grid;grid-template-columns:repeat(32,1fr);gap:3px;width:100%;">
+                    <sc-for list="{{ lane.cells }}" as="cell" hint-placeholder-count="32">
+                      <button onClick="{{ cell.onClick }}" aria-label="step" style="{{ cell.style }}">{{ cell.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+
+              <!-- lead lane ribbon -->
+              <div style="height:42px;display:flex;align-items:center;">
+                <div style="{{ leadRibbonStyle }}">
+                  <span style="font-family:'DM Mono',monospace;font-size:11px;color:{{ leadTextColor }};letter-spacing:.04em;">{{ leadSummary }}</span>
+                </div>
+              </div>
+
+              <!-- playhead -->
+              <div style="position:absolute;top:22px;bottom:0;width:2px;background:var(--gb-accent);box-shadow:0 0 10px var(--gb-accent);pointer-events:none;left:{{ playheadLeft }};opacity:{{ playheadOpacity }};transition:left .05s linear;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- bass note pen + waveform -->
+        <div style="display:flex;align-items:center;gap:16px;margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--gb-well);flex-wrap:wrap;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-bass);">Bass note</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button onClick="{{ penDown }}" aria-label="Lower note" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--gb-line-2);background:var(--gb-panel);color:var(--gb-text);font-size:16px;cursor:pointer;">−</button>
+            <span style="font-family:'DM Mono',monospace;font-size:16px;color:var(--gb-text);min-width:44px;text-align:center;">{{ penNoteLabel }}</span>
+            <button onClick="{{ penUp }}" aria-label="Raise note" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--gb-line-2);background:var(--gb-panel);color:var(--gb-text);font-size:16px;cursor:pointer;">+</button>
+          </div>
+          <span style="font-size:11px;color:var(--gb-text-3);">tap a bass step to place · tap again to clear</span>
+          <div style="flex:1;"></div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-bass);">Wave</span>
+          <div style="display:flex;gap:5px;">
+            <sc-for list="{{ bassWaves }}" as="w" hint-placeholder-count="3">
+              <button onClick="{{ w.select }}" aria-label="{{ w.name }}" style="{{ w.style }}">
+                <svg viewBox="0 0 32 18" width="30" height="16" style="display:block;"><path d="{{ w.path }}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- lead controls -->
+        <div style="display:flex;align-items:center;gap:14px;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--gb-well);flex-wrap:wrap;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-lead);">Lead arp</span>
+          <button onClick="{{ toggleLead }}" style="{{ leadOnStyle }}">{{ leadOnLabel }}</button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:var(--gb-text-3);">Pattern</span>
+            <div style="display:inline-flex;background:var(--gb-panel);border:1px solid var(--gb-line);border-radius:8px;padding:2px;gap:2px;">
+              <sc-for list="{{ arpPatterns }}" as="a" hint-placeholder-count="3">
+                <button onClick="{{ a.select }}" style="{{ a.style }}">{{ a.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:var(--gb-text-3);">Root</span>
+            <button onClick="{{ rootDown }}" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--gb-line-2);background:var(--gb-panel);color:var(--gb-text);cursor:pointer;">−</button>
+            <span style="font-family:'DM Mono',monospace;font-size:14px;min-width:34px;text-align:center;">{{ leadRoot }}</span>
+            <button onClick="{{ rootUp }}" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--gb-line-2);background:var(--gb-panel);color:var(--gb-text);cursor:pointer;">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MASTER FX -->
+      <div style="padding:16px 18px;border-top:1px solid var(--gb-line);background:var(--gb-well);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gb-text-3);margin-bottom:14px;">Master FX</div>
+        <div style="display:flex;gap:26px;flex-wrap:wrap;">
+          <div style="display:flex;gap:22px;padding-right:26px;border-right:1px solid var(--gb-line);flex-wrap:wrap;">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gb-lead);align-self:center;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.1em;">DELAY</div>
+            <sc-for list="{{ delayKnobs }}" as="k" hint-placeholder-count="3">
+              <div style="text-align:center;">
+                <div role="slider" tabindex="0" aria-label="{{ k.name }}" onKeyDown="{{ k.key }}" onPointerDown="{{ k.down }}" style="position:relative;width:56px;height:56px;margin:0 auto;cursor:ns-resize;touch-action:none;">
+                  <div style="position:absolute;inset:0;border-radius:50%;background:var(--gb-panel);border:1px solid var(--gb-line-2);"></div>
+                  <div style="position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--gb-well),var(--gb-panel));border:1px solid var(--gb-line);"></div>
+                  <div style="position:absolute;left:50%;top:50%;width:2.5px;height:22px;background:var(--gb-accent);border-radius:999px;transform-origin:bottom center;transform:translate(-50%,-100%) rotate({{ k.deg }}deg);"></div>
+                </div>
+                <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gb-text);margin-top:6px;">{{ k.val }}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--gb-text-3);">{{ k.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:22px;flex-wrap:wrap;">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gb-clap);align-self:center;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.1em;">REVERB</div>
+            <div style="text-align:center;">
+              <div role="slider" tabindex="0" aria-label="Reverb send" onKeyDown="{{ reverbKey }}" onPointerDown="{{ reverbDown }}" style="position:relative;width:56px;height:56px;margin:0 auto;cursor:ns-resize;touch-action:none;">
+                <div style="position:absolute;inset:0;border-radius:50%;background:var(--gb-panel);border:1px solid var(--gb-line-2);"></div>
+                <div style="position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--gb-well),var(--gb-panel));border:1px solid var(--gb-line);"></div>
+                <div style="position:absolute;left:50%;top:50%;width:2.5px;height:22px;background:var(--gb-accent);border-radius:999px;transform-origin:bottom center;transform:translate(-50%,-100%) rotate({{ reverbDeg }}deg);"></div>
+              </div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gb-text);margin-top:6px;">{{ reverbVal }}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--gb-text-3);">Send</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- spec callouts -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:20px;">
+      <div style="border:1px solid var(--gb-line);border-radius:12px;padding:14px 16px;background:var(--gb-panel);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-accent);margin-bottom:6px;">Playhead</div>
+        <div style="font-size:13px;line-height:1.5;color:var(--gb-text-2);">A single accent bar spans all six lanes, sweeping left→right; the current step's cells brighten and lift. Respects reduced-motion (bar jumps per step instead of easing).</div>
+      </div>
+      <div style="border:1px solid var(--gb-line);border-radius:12px;padding:14px 16px;background:var(--gb-panel);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-accent);margin-bottom:6px;">Bar &amp; beat legibility</div>
+        <div style="font-size:13px;line-height:1.5;color:var(--gb-text-2);">32 steps split into 2 bars; every downbeat gets a numbered heavier divider, every beat a lighter one, so the eye finds "the one" instantly.</div>
+      </div>
+      <div style="border:1px solid var(--gb-line);border-radius:12px;padding:14px 16px;background:var(--gb-panel);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gb-accent);margin-bottom:6px;">Share state</div>
+        <div style="font-size:13px;line-height:1.5;color:var(--gb-text-2);">Share serializes the full machine (pattern, notes, BPM, swing, FX, lead) into the URL; button flips to a transient "Copied ✓" for ~2s, then restores.</div>
+      </div>
+    </div>
+
+    <!-- ============ HERO VARIANT ============ -->
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gb-text-3);margin:56px 0 10px;">Hero variant · homepage embed (below the tagline/CTA)</div>
+    <p style="font-size:14px;line-height:1.55;color:var(--gb-text-2);max-width:560px;margin:0 0 16px;">Keeps play/stop, presets and the drum grid — reads as an invitation to touch, not a screenshot. Everything else is deferred to the full page via the "open full groovebox →" affordance.</p>
+
+    <div style="border:1px solid var(--gb-line);border-radius:16px;background:var(--gb-panel);box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--gb-line);flex-wrap:wrap;">
+        <button onClick="{{ toggleHero }}" aria-label="Play/Stop" style="{{ heroPlayStyle }}"><span style="{{ heroPlayIcon }}"></span></button>
+        <div>
+          <div style="font-weight:700;font-size:15px;line-height:1;">Groovebox</div>
+          <div style="font-size:12px;color:var(--gb-text-3);margin-top:3px;">Tap the grid · make a beat</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="display:inline-flex;background:var(--gb-well);border-radius:8px;padding:3px;gap:3px;">
+          <sc-for list="{{ heroPresets }}" as="p" hint-placeholder-count="3">
+            <button onClick="{{ p.select }}" style="{{ p.style }}">{{ p.name }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding:14px 16px;">
+        <div style="overflow-x:auto;">
+          <div style="min-width:420px;position:relative;">
+            <sc-for list="{{ heroLanes }}" as="lane" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:8px;height:36px;">
+                <span style="width:8px;height:8px;border-radius:3px;background:{{ lane.color }};flex-shrink:0;"></span>
+                <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gb-text-2);width:44px;flex-shrink:0;">{{ lane.name }}</span>
+                <div style="display:grid;grid-template-columns:repeat(16,1fr);gap:4px;flex:1;">
+                  <sc-for list="{{ lane.cells }}" as="cell" hint-placeholder-count="16">
+                    <button onClick="{{ cell.onClick }}" aria-label="step" style="{{ cell.style }}"></button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="position:absolute;top:0;bottom:0;width:2px;background:var(--gb-accent);box-shadow:0 0 8px var(--gb-accent);pointer-events:none;left:{{ heroPlayheadLeft }};opacity:{{ heroPlayheadOpacity }};transition:left .05s linear;"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+          <a href="#" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--gb-accent);text-decoration:none;padding:8px 4px;">open full groovebox
+            <svg viewBox="0 0 24 24" width="15" height="15"><path d="M5 12 H19 M13 6 L19 12 L13 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:56px;padding-top:20px;border-top:1px solid var(--gb-line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--gb-text-3);">
+      <span>EZ Web Audio · Demo UI Design Packet</span>
+      <span>← Foundations · Shared demos → · Advisory →</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;900px&quot;,&quot;height&quot;:&quot;860px&quot;}}">
+class Component extends DCLogic {
+  NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+  presetData = {
+    'House':    { bpm:124, swing:20, kick:[0,4,8,12,16,20,24,28], snare:[8,24], hat:[2,6,10,14,18,22,26,30], clap:[8,24], bass:{0:12,8:12,16:15,24:17}, lead:{on:true,arp:'up',root:2} },
+    'Boom Bap': { bpm:88,  swing:62, kick:[0,7,16,19,26], snare:[8,24], hat:[0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30], clap:[], bass:{0:7,6:7,16:10,22:8}, lead:{on:false,arp:'updown',root:9} },
+    'Breaks':   { bpm:158, swing:8,  kick:[0,10,16,26], snare:[4,12,20,28], hat:[2,6,8,14,18,22,24,30], clap:[7,23], bass:{0:5,12:5,20:8}, lead:{on:true,arp:'updown',root:5} },
+  };
+
+  makeState(name) {
+    const p = this.presetData[name];
+    const empty = () => Array(32).fill(0);
+    const fill = (idx) => { const a = empty(); idx.forEach(i => a[i] = 1); return a; };
+    const bass = empty(); Object.keys(p.bass).forEach(k => bass[+k] = p.bass[k] + 1);
+    return {
+      preset: name, bpm: p.bpm, swing: p.swing,
+      kick: fill(p.kick), snare: fill(p.snare), hat: fill(p.hat), clap: fill(p.clap),
+      bass, bassNote: bass, lead: { ...p.lead },
+      mutes: [false,false,false,false,false,false], solos: [false,false,false,false,false,false],
+    };
+  }
+
+  state = Object.assign(
+    { theme: 'dark', playing: false, step: 0, penNote: 12, bassWave: 'triangle',
+      delayTime: 38, delayFb: 45, delaySend: 30, reverbSend: 35, copied: false,
+      heroPlaying: false, heroStep: 0,
+      hero: { kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], clap:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0] },
+      heroPreset: 'House',
+    },
+    this.makeState('House')
+  );
+
+  themes = {
+    dark: {'--gb-bg':'#141417','--gb-panel':'#1c1c21','--gb-well':'#0e0e11','--gb-line':'#2a2a31','--gb-line-2':'#3a3a44','--gb-text':'#f2f2f4','--gb-text-2':'#a2a2ac','--gb-text-3':'#6b6b75','--gb-accent':'#2fe3a4','--gb-accent-2':'#57ecba','--gb-on-accent':'#05231a','--gb-accent-soft':'rgba(47,227,164,0.16)','--gb-danger':'#ff6b6b','--gb-kick':'#ff7a6e','--gb-snare':'#f2a64a','--gb-hat':'#f2cf3f','--gb-clap':'#f277c0','--gb-bass':'#9c8dff','--gb-lead':'#56c4f0'},
+    light: {'--gb-bg':'#ffffff','--gb-panel':'#f6f6f8','--gb-well':'#ececed','--gb-line':'#e2e2e6','--gb-line-2':'#cfcfd6','--gb-text':'#1c1c22','--gb-text-2':'#5a5a66','--gb-text-3':'#8c8c98','--gb-accent':'#0e9268','--gb-accent-2':'#0b7d59','--gb-on-accent':'#ffffff','--gb-accent-soft':'rgba(14,146,104,0.12)','--gb-danger':'#e5484d','--gb-kick':'#e5544b','--gb-snare':'#e08a2f','--gb-hat':'#b99310','--gb-clap':'#d84f9e','--gb-bass':'#6a5cf0','--gb-lead':'#2f9fd6'},
+  };
+  applyTheme() { const el = document.getElementById('gb-root'); if (!el) return; const t = this.themes[this.state.theme]; Object.keys(t).forEach(k => el.style.setProperty(k, t[k])); }
+  componentDidMount() { this.applyTheme(); }
+  componentWillUnmount() { if (this._t) clearInterval(this._t); if (this._ht) clearInterval(this._ht); }
+  toggleTheme() { this.setState(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' }), () => this.applyTheme()); }
+
+  noteLabel(i) { return this.NOTES[i % 12] + (1 + Math.floor(i / 12)); }
+
+  slide(key, min, max, step) {
+    return (e) => { e.preventDefault(); const rect = e.currentTarget.getBoundingClientRect();
+      const move = (ev) => { const cx = ev.clientX != null ? ev.clientX : (ev.touches && ev.touches[0] ? ev.touches[0].clientX : 0);
+        let f = Math.min(1, Math.max(0, (cx - rect.left) / rect.width)); let v = min + f * (max - min); if (step) v = Math.round(v / step) * step; this.setState({ [key]: v }); };
+      move(e); const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); }; document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); };
+  }
+  slideKey(key, min, max, step) { return (e) => { if (e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();this.setState(s=>({[key]:Math.min(max,s[key]+step)}));} if (e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();this.setState(s=>({[key]:Math.max(min,s[key]-step)}));} }; }
+  knob(key, min, max) { return (e) => { e.preventDefault(); const sy = e.clientY != null ? e.clientY : 0; const start = this.state[key];
+      const move = (ev) => { const cy = ev.clientY != null ? ev.clientY : 0; const v = Math.min(max, Math.max(min, start + (sy - cy) * 0.7)); this.setState({ [key]: Math.round(v) }); };
+      const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); }; document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); }; }
+
+  togglePlay() { const now = !this.state.playing; this.setState({ playing: now }); if (this._t) { clearInterval(this._t); this._t = null; }
+    if (now) this._t = setInterval(() => this.setState(s => ({ step: (s.step + 1) % 32 })), 1000 / (this.state.bpm / 60 * 4));
+    else this.setState({ step: 0 }); }
+  toggleHero() { const now = !this.state.heroPlaying; this.setState({ heroPlaying: now }); if (this._ht) { clearInterval(this._ht); this._ht = null; }
+    if (now) this._ht = setInterval(() => this.setState(s => ({ heroStep: (s.heroStep + 1) % 16 })), 130); else this.setState({ heroStep: 0 }); }
+
+  toggleDrum(lane, i) { this.setState(s => { const a = s[lane].slice(); a[i] = a[i] ? 0 : 1; return { [lane]: a }; }); }
+  toggleBass(i) { this.setState(s => { const a = s.bass.slice(); a[i] = a[i] ? 0 : (s.penNote + 1); return { bass: a }; }); }
+  toggleHeroDrum(lane, i) { this.setState(s => { const h = { ...s.hero }; h[lane] = h[lane].slice(); h[lane][i] = h[lane][i] ? 0 : 1; return { hero: h }; }); }
+  toggleMute(i) { this.setState(s => { const m = s.mutes.slice(); m[i] = !m[i]; return { mutes: m }; }); }
+  toggleSolo(i) { this.setState(s => { const so = s.solos.slice(); so[i] = !so[i]; return { solos: so }; }); }
+  applyPreset(name) { this.setState(this.makeState(name)); }
+  applyHeroPreset(name) { const p = this.presetData[name]; const f = (idx) => { const a = Array(16).fill(0); idx.forEach(i => { if (i < 32 && i % 2 === 0) a[i/2] = 1; }); return a; };
+    this.setState({ heroPreset: name, hero: { kick:f(p.kick), snare:f(p.snare), hat:f(p.hat), clap:f(p.clap) } }); }
+  share() { this.setState({ copied: true }); clearTimeout(this._ct); this._ct = setTimeout(() => this.setState({ copied: false }), 2000); }
+
+  playBtn(playing, size) { const d = size || 52; const base = `width:${d}px;height:${d}px;min-width:${d}px;border-radius:14px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .18s,transform .1s;`;
+    return base + (playing ? 'background:var(--gb-danger);' : 'background:var(--gb-accent);'); }
+  playIco(playing) { if (playing) return 'width:14px;height:14px;border-radius:3px;background:var(--gb-on-accent);display:inline-block;';
+    return 'width:0;height:0;border-style:solid;border-width:9px 0 9px 15px;border-color:transparent transparent transparent var(--gb-on-accent);display:inline-block;margin-left:3px;'; }
+
+  drumCellStyle(active, color, current, muted) {
+    const base = 'height:34px;border-radius:5px;cursor:pointer;transition:transform .08s,box-shadow .1s,background .1s;padding:0;font-family:DM Mono,monospace;font-size:9px;color:var(--gb-on-accent);display:flex;align-items:center;justify-content:center;';
+    if (active) { let s = base + `background:${color};border:1px solid ${color};`; if (muted) s += 'opacity:.35;'; if (current) s += `box-shadow:0 0 0 2px var(--gb-panel),0 0 12px 2px ${color};transform:scale(1.08);`; return s; }
+    let s = base + 'background:var(--gb-well);border:1px solid var(--gb-line);'; if (current) s += 'box-shadow:inset 0 0 0 2px var(--gb-accent-soft);'; return s;
+  }
+
+  renderVals() {
+    const s = this.state; const isDark = s.theme === 'dark';
+    const anySolo = s.solos.some(Boolean);
+    const audible = (i) => !s.mutes[i] && (!anySolo || s.solos[i]);
+
+    const laneMeta = [
+      { key:'kick', name:'Kick', color:'var(--gb-kick)' },
+      { key:'snare', name:'Snare', color:'var(--gb-snare)' },
+      { key:'hat', name:'Hi-hat', color:'var(--gb-hat)' },
+      { key:'clap', name:'Clap', color:'var(--gb-clap)' },
+      { key:'bass', name:'Bass', color:'var(--gb-bass)' },
+      { key:'lead', name:'Lead', color:'var(--gb-lead)' },
+    ];
+
+    const btnMS = (on, danger) => 'width:20px;height:20px;min-width:20px;border-radius:5px;font-family:DM Mono,monospace;font-size:9px;font-weight:600;cursor:pointer;padding:0;' + (on ? `background:${danger};color:#fff;border:1px solid ${danger};` : 'background:transparent;color:var(--gb-text-3);border:1px solid var(--gb-line-2);');
+
+    const lanes = laneMeta.map((l, i) => ({
+      name: l.name, color: l.color,
+      toggleMute: () => this.toggleMute(i), toggleSolo: () => this.toggleSolo(i),
+      muteStyle: btnMS(s.mutes[i], 'var(--gb-danger)'), soloStyle: btnMS(s.solos[i], 'var(--gb-accent)'),
+    }));
+
+    // step header (32)
+    const stepHeader = Array.from({ length: 32 }, (_, i) => {
+      const isBar = i % 16 === 0, isBeat = i % 4 === 0;
+      return {
+        label: isBeat ? String(Math.floor(i / 4) % 4 + 1) : '',
+        color: isBar ? 'var(--gb-accent)' : (isBeat ? 'var(--gb-text-2)' : 'var(--gb-text-3)'),
+        border: isBar ? '2px solid var(--gb-line-2)' : (isBeat ? '1px solid var(--gb-line)' : 'none'),
+      };
+    });
+
+    // grid lanes: 4 drums + bass (5 rows here; lead is ribbon)
+    const drumKeys = ['kick','snare','hat','clap'];
+    const gridLanes = drumKeys.map((k, li) => ({
+      cells: s[k].map((v, i) => ({
+        onClick: () => this.toggleDrum(k, i),
+        style: this.drumCellStyle(!!v, laneMeta[li].color, s.playing && s.step === i, !audible(li)),
+        label: '',
+      })),
+    }));
+    // bass row
+    gridLanes.push({
+      cells: s.bass.map((v, i) => {
+        const active = v > 0;
+        const current = s.playing && s.step === i;
+        let style = 'height:34px;border-radius:5px;cursor:pointer;transition:all .08s;padding:0;font-family:DM Mono,monospace;font-size:8px;display:flex;align-items:center;justify-content:center;';
+        if (active) { style += `background:var(--gb-bass);border:1px solid var(--gb-bass);color:#fff;`; if (!audible(4)) style += 'opacity:.35;'; if (current) style += 'box-shadow:0 0 0 2px var(--gb-panel),0 0 12px 2px var(--gb-bass);transform:scale(1.08);'; }
+        else { style += 'background:var(--gb-well);border:1px solid var(--gb-line);color:var(--gb-text-3);'; if (current) style += 'box-shadow:inset 0 0 0 2px var(--gb-accent-soft);'; }
+        return { onClick: () => this.toggleBass(i), style, label: active ? this.noteLabel(v - 1) : '' };
+      }),
+    });
+
+    // lead ribbon
+    const arpBg = s.lead.on
+      ? `background-image:repeating-linear-gradient(90deg,var(--gb-lead) 0 3px,transparent 3px 12px);` : '';
+    const leadRibbonStyle = 'width:100%;height:30px;border-radius:6px;display:flex;align-items:center;padding:0 12px;' +
+      (s.lead.on ? `background:var(--gb-accent-soft);border:1px solid var(--gb-lead);` : 'background:var(--gb-well);border:1px dashed var(--gb-line-2);');
+    const arpArrow = s.lead.arp === 'down' ? '↓' : (s.lead.arp === 'updown' ? '↕' : '↑');
+
+    // fx knobs
+    const kdeg = (v) => -135 + (v / 100) * 270;
+    const delayKnobs = [
+      { name: 'Time', val: (s.delayTime / 100 * 0.6).toFixed(2) + 's', deg: kdeg(s.delayTime), down: this.knob('delayTime',0,100), key: this.slideKey('delayTime',0,100,4) },
+      { name: 'Feedbk', val: s.delayFb + '%', deg: kdeg(s.delayFb), down: this.knob('delayFb',0,100), key: this.slideKey('delayFb',0,100,4) },
+      { name: 'Send', val: s.delaySend + '%', deg: kdeg(s.delaySend), down: this.knob('delaySend',0,100), key: this.slideKey('delaySend',0,100,4) },
+    ];
+
+    const wavePaths = { triangle:'M2 15 L8 3 L14 15 L20 3 L26 15 L30 9', sawtooth:'M2 15 L10 3 L10 15 L18 3 L18 15 L26 3 L26 15', square:'M2 15 V4 H10 V15 H18 V4 H26 V15 H30' };
+    const bassWaves = Object.keys(wavePaths).map(name => ({
+      name, path: wavePaths[name], select: () => this.setState({ bassWave: name }),
+      style: 'width:40px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;' + (s.bassWave === name ? 'background:var(--gb-accent-soft);border:1px solid var(--gb-bass);color:var(--gb-bass);' : 'background:var(--gb-panel);border:1px solid var(--gb-line);color:var(--gb-text-3);'),
+    }));
+
+    const arpPatterns = ['up','down','updown'].map(name => ({
+      name: name === 'updown' ? 'up/dn' : name, select: () => this.setState(st => ({ lead: { ...st.lead, arp: name } })),
+      style: 'height:26px;padding:0 10px;border-radius:6px;border:none;font-family:DM Mono,monospace;font-size:11px;cursor:pointer;' + (s.lead.arp === name ? 'background:var(--gb-lead);color:#fff;' : 'background:transparent;color:var(--gb-text-2);'),
+    }));
+
+    // presets
+    const presetBtn = (name, active) => 'height:30px;padding:0 14px;border-radius:7px;border:none;font-family:Inter,sans-serif;font-weight:600;font-size:12px;cursor:pointer;transition:all .15s;' + (active ? 'background:var(--gb-accent);color:var(--gb-on-accent);' : 'background:transparent;color:var(--gb-text-2);');
+    const presets = Object.keys(this.presetData).map(name => ({ name, select: () => this.applyPreset(name), style: presetBtn(name, s.preset === name) }));
+    const heroPresets = Object.keys(this.presetData).map(name => ({ name, select: () => this.applyHeroPreset(name), style: 'height:26px;padding:0 11px;border-radius:6px;border:none;font-family:Inter,sans-serif;font-weight:600;font-size:11px;cursor:pointer;' + (s.heroPreset === name ? 'background:var(--gb-accent);color:var(--gb-on-accent);' : 'background:transparent;color:var(--gb-text-2);') }));
+
+    // hero lanes
+    const heroMeta = [{k:'kick',n:'KICK',c:'var(--gb-kick)'},{k:'snare',n:'SNR',c:'var(--gb-snare)'},{k:'hat',n:'HAT',c:'var(--gb-hat)'},{k:'clap',n:'CLAP',c:'var(--gb-clap)'}];
+    const heroLanes = heroMeta.map((l) => ({
+      name: l.n, color: l.c,
+      cells: s.hero[l.k].map((v, i) => ({ onClick: () => this.toggleHeroDrum(l.k, i),
+        style: (() => { const cur = s.heroPlaying && s.heroStep === i; const base='height:28px;border-radius:5px;cursor:pointer;transition:all .08s;padding:0;';
+          if (v) return base + `background:${l.c};border:1px solid ${l.c};` + (cur ? `box-shadow:0 0 0 2px var(--gb-panel),0 0 10px 1px ${l.c};transform:scale(1.08);` : '');
+          return base + 'background:var(--gb-well);border:1px solid var(--gb-line);' + (cur ? 'box-shadow:inset 0 0 0 2px var(--gb-accent-soft);' : ''); })(),
+      })),
+    }));
+
+    const barBeatStep = () => { const bar = Math.floor(s.step / 16) + 1; const beat = Math.floor((s.step % 16) / 4) + 1; const st = (s.step % 4) + 1; return `${bar}·${beat}·${st}`; };
+
+    return {
+      themeLabel: isDark ? 'Dark' : 'Light', toggleTheme: () => this.toggleTheme(),
+      togglePlay: () => this.togglePlay(), playStyle: this.playBtn(s.playing, 52), playIcon: this.playIco(s.playing),
+      posDisplay: s.playing ? barBeatStep() : '1·1·1',
+      bpm: s.bpm, bpmPct: Math.round((s.bpm - 60) / 120 * 100), bpmDown: this.slide('bpm', 60, 180, 1), bpmKey: this.slideKey('bpm', 60, 180, 2),
+      swing: s.swing, swingPct: s.swing, swingDown: this.slide('swing', 0, 100, 1), swingKey: this.slideKey('swing', 0, 100, 5),
+      presets, share: () => this.share(), shareLabel: s.copied ? 'Copied ✓' : 'Share',
+      shareStyle: 'display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:8px;font-family:Inter,sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;' + (s.copied ? 'background:var(--gb-accent);color:var(--gb-on-accent);border:1px solid var(--gb-accent);' : 'background:var(--gb-panel);color:var(--gb-text);border:1px solid var(--gb-line-2);'),
+      lanes, stepHeader, gridLanes,
+      leadRibbonStyle, leadTextColor: s.lead.on ? 'var(--gb-lead)' : 'var(--gb-text-3)',
+      leadSummary: (s.lead.on ? 'ARP ' + arpArrow + ' ' : 'ARP off · ') + this.NOTES[s.lead.root] + (s.lead.on ? ' · ' + (s.lead.arp === 'updown' ? 'up/down' : s.lead.arp) : ' · tap to enable'),
+      playheadLeft: 'calc(' + ((s.step + 0.5) / 32 * 100) + '% )',
+      playheadOpacity: s.playing ? 1 : 0,
+      penNoteLabel: this.noteLabel(s.penNote), penUp: () => this.setState(st => ({ penNote: Math.min(36, st.penNote + 1) })), penDown: () => this.setState(st => ({ penNote: Math.max(0, st.penNote - 1) })),
+      bassWaves,
+      toggleLead: () => this.setState(st => ({ lead: { ...st.lead, on: !st.lead.on } })),
+      leadOnLabel: s.lead.on ? 'ON' : 'OFF',
+      leadOnStyle: 'height:28px;padding:0 14px;border-radius:7px;border:none;font-family:DM Mono,monospace;font-size:12px;font-weight:600;cursor:pointer;' + (s.lead.on ? 'background:var(--gb-lead);color:#fff;' : 'background:var(--gb-panel);color:var(--gb-text-3);border:1px solid var(--gb-line-2);'),
+      arpPatterns, leadRoot: this.NOTES[s.lead.root],
+      rootUp: () => this.setState(st => ({ lead: { ...st.lead, root: (st.lead.root + 1) % 12 } })),
+      rootDown: () => this.setState(st => ({ lead: { ...st.lead, root: (st.lead.root + 11) % 12 } })),
+      delayKnobs,
+      reverbDeg: kdeg(s.reverbSend), reverbVal: s.reverbSend + '%', reverbDown: this.knob('reverbSend',0,100), reverbKey: this.slideKey('reverbSend',0,100,4),
+      toggleHero: () => this.toggleHero(), heroPlayStyle: this.playBtn(s.heroPlaying, 44), heroPlayIcon: this.playIco(s.heroPlaying),
+      heroPresets, heroLanes, heroPlayheadLeft: 'calc(60px + (100% - 60px) * ' + ((s.heroStep + 0.5) / 16) + ')', heroPlayheadOpacity: s.heroPlaying ? 1 : 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

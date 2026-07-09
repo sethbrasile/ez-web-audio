@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>* { box-sizing: border-box; } body { margin: 0; }</style>
+</helmet>
+<div id="s-root" style="--s-bg:#ffffff;--s-panel:#f6f6f8;--s-well:#ececef;--s-line:#e2e2e6;--s-line-2:#d3d3d9;--s-text:#1c1c22;--s-text-2:#5a5a66;--s-text-3:#8c8c98;--s-accent:#0e9268;--s-accent-ink:#067552;--s-on-accent:#ffffff;--s-accent-soft:rgba(14,146,104,0.12);--s-kick:#e5544b;--s-snare:#e08a2f;--s-hat:#b99310;--s-clap:#d84f9e;--s-bass:#6a5cf0;--s-lead:#2f9fd6;font-family:'Inter',system-ui,sans-serif;background:var(--s-bg);color:var(--s-text);min-height:100vh;padding:40px 24px 80px;transition:background .25s,color .25s;">
+  <div style="max-width:820px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:8px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--s-accent-ink);margin-bottom:10px;">Handoff Packet · 05 · Per-component specs</div>
+        <h1 style="font-size:32px;line-height:1.05;font-weight:700;margin:0 0 8px;letter-spacing:-0.02em;">The rest of the demos</h1>
+        <p style="font-size:15px;line-height:1.55;color:var(--s-text-2);max-width:600px;margin:0;">Annotated specs for the remaining components. Each names the shared parts it reuses (green chips = accent parts, colored chips = sound palette), its component-specific pieces, and what changes on screen while playing. Schematics show intended arrangement, not final pixels.</p>
+      </div>
+      <button onClick="{{ toggleTheme }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;min-height:44px;border-radius:999px;border:1px solid var(--s-line-2);background:var(--s-panel);color:var(--s-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;"><span style="width:9px;height:9px;border-radius:50%;background:var(--s-accent);display:inline-block;"></span>{{ themeLabel }}</button>
+    </div>
+
+    <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="7">
+      <div style="margin-top:40px;">
+        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--s-text-3);border-bottom:1px solid var(--s-line);padding-bottom:8px;margin-bottom:16px;">{{ sec.name }}</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="3">
+            <div style="border:1px solid var(--s-line);border-radius:14px;background:var(--s-panel);padding:18px;display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:start;">
+              <div style="background:var(--s-well);border:1px solid var(--s-line);border-radius:10px;height:118px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:10px;">{{ c.visual }}</div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+                  <span style="font-size:16px;font-weight:700;">{{ c.title }}</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--s-text-3);">{{ c.path }}</span>
+                </div>
+                <p style="font-size:13px;line-height:1.5;color:var(--s-text-2);margin:0 0 10px;">{{ c.takeaway }}</p>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">
+                    <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3);width:52px;flex-shrink:0;padding-top:3px;">Uses</span>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">{{ c.usesChips }}</div>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">
+                    <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3);width:52px;flex-shrink:0;padding-top:3px;">New</span>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">{{ c.piecesChips }}</div>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:flex-start;">
+                    <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3);width:52px;flex-shrink:0;padding-top:1px;">Playing</span>
+                    <span style="font-size:12px;line-height:1.45;color:var(--s-text-2);">{{ c.playing }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+
+    <div style="margin-top:56px;padding-top:20px;border-top:1px solid var(--s-line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--s-text-3);">
+      <span>EZ Web Audio · Demo UI Design Packet</span>
+      <span>← Interactive demos · Advisory →</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;880px&quot;,&quot;height&quot;:&quot;820px&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light' };
+  themes = {
+    light: {'--s-bg':'#ffffff','--s-panel':'#f6f6f8','--s-well':'#ececef','--s-line':'#e2e2e6','--s-line-2':'#d3d3d9','--s-text':'#1c1c22','--s-text-2':'#5a5a66','--s-text-3':'#8c8c98','--s-accent':'#0e9268','--s-accent-ink':'#067552','--s-on-accent':'#ffffff','--s-accent-soft':'rgba(14,146,104,0.12)','--s-kick':'#e5544b','--s-snare':'#e08a2f','--s-hat':'#b99310','--s-clap':'#d84f9e','--s-bass':'#6a5cf0','--s-lead':'#2f9fd6'},
+    dark: {'--s-bg':'#161619','--s-panel':'#1e1e23','--s-well':'#131316','--s-line':'#2c2c33','--s-line-2':'#3a3a42','--s-text':'#f4f4f6','--s-text-2':'#a6a6b0','--s-text-3':'#70707a','--s-accent':'#2fe3a4','--s-accent-ink':'#35e0a6','--s-on-accent':'#05231a','--s-accent-soft':'rgba(47,227,164,0.16)','--s-kick':'#ff7a6e','--s-snare':'#f2a64a','--s-hat':'#f2cf3f','--s-clap':'#f277c0','--s-bass':'#9c8dff','--s-lead':'#56c4f0'},
+  };
+  applyTheme(){const el=document.getElementById('s-root');if(!el)return;const t=this.themes[this.state.theme];Object.keys(t).forEach(k=>el.style.setProperty(k,t[k]));}
+  componentDidMount(){this.applyTheme();}
+  toggleTheme(){this.setState(s=>({theme:s.theme==='light'?'dark':'light'}),()=>this.applyTheme());}
+
+  chip(label, color) { const h = React.createElement;
+    const c = color || 'var(--s-accent)';
+    const isAccent = !color;
+    return h('span', { key: label, style: { fontFamily:'DM Mono,monospace', fontSize:'10px', padding:'3px 8px', borderRadius:'6px', whiteSpace:'nowrap',
+      background: isAccent ? 'var(--s-accent-soft)' : 'transparent', color: isAccent ? 'var(--s-accent-ink)' : c,
+      border: '1px solid ' + c } }, label);
+  }
+  chips(arr) { return arr.map(x => Array.isArray(x) ? this.chip(x[0], x[1]) : this.chip(x)); }
+
+  // ---- mini schematics ----
+  m(type) {
+    const h = React.createElement;
+    const box = (st, ch) => h('div', { style: st }, ch);
+    const pal = { kick:'var(--s-kick)', snare:'var(--s-snare)', hat:'var(--s-hat)', clap:'var(--s-clap)', bass:'var(--s-bass)', lead:'var(--s-lead)', acc:'var(--s-accent)' };
+    if (type === 'seek') return box({ width:'100%', display:'flex', flexDirection:'column', gap:'10px' }, [
+      h('div',{key:1,style:{display:'flex',gap:'6px',alignItems:'center'}},[
+        box({key:'p',width:'26px',height:'26px',borderRadius:'7px',background:pal.acc}),
+        box({key:'q',width:'22px',height:'22px',borderRadius:'6px',border:'1px solid var(--s-line-2)'}),
+        h('div',{key:'t',style:{fontFamily:'DM Mono,monospace',fontSize:'11px',marginLeft:'auto',color:'var(--s-text-2)'}},'1:24 / 3:05')]),
+      box({key:2,position:'relative',height:'6px',borderRadius:'999px',background:'var(--s-well)'},box({position:'absolute',left:0,width:'42%',height:'6px',borderRadius:'999px',background:pal.acc})),
+    ]);
+    if (type === 'together') return box({display:'flex',gap:'8px'}, ['A','B','C'].map((l,i)=>box({key:i,width:'34px',height:'44px',borderRadius:'9px',background:pal.acc,opacity:1-i*0.22,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--s-on-accent)',fontFamily:'DM Mono,monospace',fontSize:'13px',fontWeight:600},l)));
+    if (type === 'pads') return box({display:'flex',gap:'8px'}, [['KICK',pal.kick],['SNR',pal.snare],['HAT',pal.hat]].map((p,i)=>box({key:i,width:'42px',height:'56px',borderRadius:'10px',background:p[1],display:'flex',alignItems:'flex-end',justifyContent:'center',paddingBottom:'6px',color:'#fff',fontFamily:'DM Mono,monospace',fontSize:'9px',fontWeight:600},p[0])));
+    if (type === 'keyboard') return box({position:'relative',width:'150px',height:'70px'}, [
+      ...Array.from({length:8},(_,i)=>box({key:'w'+i,position:'absolute',left:(i*18)+'px',width:'17px',height:'70px',background:'var(--s-bg)',border:'1px solid var(--s-line-2)',borderRadius:'0 0 3px 3px'})),
+      ...[0,1,3,4,5].map((i,j)=>box({key:'b'+j,position:'absolute',left:(i*18+12)+'px',width:'12px',height:'44px',background:'var(--s-text)',borderRadius:'0 0 3px 3px',zIndex:2})),
+    ]);
+    if (type === 'keyboardPreset') return box({display:'flex',flexDirection:'column',gap:'8px',alignItems:'center'}, [
+      box({key:1,display:'flex',gap:'4px'},['Piano','Pad','Lead','Pluck'].map((l,i)=>box({key:i,fontFamily:'DM Mono,monospace',fontSize:'9px',padding:'3px 6px',borderRadius:'5px',background:i===0?pal.acc:'transparent',color:i===0?'var(--s-on-accent)':'var(--s-text-3)',border:i===0?'none':'1px solid var(--s-line-2)'},l))),
+      box({key:2,position:'relative',width:'130px',height:'46px'},[...Array.from({length:7},(_,i)=>box({key:'w'+i,position:'absolute',left:(i*18)+'px',width:'17px',height:'46px',background:'var(--s-bg)',border:'1px solid var(--s-line-2)',borderRadius:'0 0 3px 3px'})),...[0,1,3,4,5].map((i,j)=>box({key:'b'+j,position:'absolute',left:(i*18+12)+'px',width:'11px',height:'30px',background:'var(--s-text)',borderRadius:'0 0 3px 3px',zIndex:2}))]),
+    ]);
+    if (type === 'poly') return box({display:'flex',flexDirection:'column',gap:'8px',alignItems:'center'},[
+      box({key:1,fontFamily:'DM Mono,monospace',fontSize:'13px',color:pal.acc},[h('span',{key:'a',style:{fontSize:'20px'}},'4'),h('span',{key:'b',style:{color:'var(--s-text-3)'}},' / 8 voices')]),
+      box({key:2,display:'flex',gap:'4px'},Array.from({length:8},(_,i)=>box({key:i,width:'12px',height:'22px',borderRadius:'3px',background:i<4?pal.bass:'var(--s-well)',border:'1px solid var(--s-line-2)'}))),
+    ]);
+    if (type === 'grain') return box({width:'100%',display:'flex',flexDirection:'column',gap:'8px'},[
+      box({key:1,position:'relative',height:'44px',borderRadius:'8px',background:'#0c0e0d',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',gap:'2px'},[...Array.from({length:26},(_,i)=>box({key:i,width:'3px',height:(20+Math.abs(Math.sin(i*0.7))*22)+'px',background:pal.acc,opacity:0.8})),box({key:'ph',position:'absolute',left:'42%',top:0,bottom:0,width:'2px',background:'#fff'})]),
+      box({key:2,display:'flex',gap:'4px',justifyContent:'center'},['Freeze','Choppy'].map((l,i)=>box({key:i,fontFamily:'DM Mono,monospace',fontSize:'9px',padding:'2px 7px',borderRadius:'5px',background:'transparent',border:'1px solid var(--s-line-2)',color:'var(--s-text-3)'},l))),
+    ]);
+    if (type === 'clock') return box({width:'100%',display:'flex',flexDirection:'column',gap:'10px'},[
+      box({key:1},[h('div',{key:'l',style:{fontFamily:'DM Mono,monospace',fontSize:'9px',color:'var(--s-text-3)',marginBottom:'3px'}},'setTimeout (drifts)'),box({display:'flex',gap:'5px'},[0,1,2,3,4].map(i=>box({key:i,width:'8px',height:'8px',borderRadius:'50%',background:'var(--s-kick)',marginLeft:(i*2)+'px'})))]),
+      box({key:2},[h('div',{key:'l',style:{fontFamily:'DM Mono,monospace',fontSize:'9px',color:'var(--s-text-3)',marginBottom:'3px'}},'audio clock (locked)'),box({display:'flex',gap:'9px'},[0,1,2,3,4].map(i=>box({key:i,width:'8px',height:'8px',borderRadius:'50%',background:pal.acc})))]),
+    ]);
+    if (type === 'grid') return box({display:'flex',flexDirection:'column',gap:'3px'}, [pal.kick,pal.snare,pal.bass,pal.lead].map((c,r)=>box({key:r,display:'flex',gap:'2px'},Array.from({length:12},(_,i)=>box({key:i,width:'8px',height:'8px',borderRadius:'2px',background:((i+r)%4===0)?c:'var(--s-well)',border:'1px solid var(--s-line)',opacity:0.9})))));
+    if (type === 'code') return box({width:'100%',display:'flex',gap:'8px'},[
+      box({key:1,flex:1,height:'70px',borderRadius:'8px',background:'#0c0e0d',padding:'8px'},[0,1,2,3].map(i=>box({key:i,height:'5px',borderRadius:'3px',background:i===0?pal.acc:'var(--s-line-2)',width:(90-i*15)+'%',marginBottom:'6px'}))),
+      box({key:2,width:'50px',height:'70px',borderRadius:'8px',border:'1.5px solid var(--s-accent)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--s-accent-ink)',fontFamily:'DM Mono,monospace',fontSize:'9px'},'demo'),
+    ]);
+    if (type === 'distortion') return box({width:'100%',display:'flex',flexDirection:'column',gap:'10px'},[
+      box({key:1,display:'flex',alignItems:'center',gap:'2px',height:'34px'},Array.from({length:24},(_,i)=>box({key:i,width:'3px',height:(6+Math.abs(Math.sin(i*0.9))*(i>4?26:10))+'px',background:pal.acc,borderRadius:'2px'}))),
+      box({key:2,display:'flex',gap:'8px'},['Amount','Wet/Dry'].map((l,i)=>box({key:i,flex:1},[h('div',{key:'t',style:{fontFamily:'DM Mono,monospace',fontSize:'8px',color:'var(--s-text-3)',marginBottom:'3px'}},l),box({position:'relative',height:'5px',borderRadius:'999px',background:'var(--s-well)'},box({position:'absolute',left:0,width:(i?45:70)+'%',height:'5px',borderRadius:'999px',background:pal.acc}))]))),
+    ]);
+    if (type === 'routing') return box({display:'flex',alignItems:'center',gap:'3px',flexWrap:'wrap',justifyContent:'center'}, ['SRC','FILT','GAIN','PAN','OUT'].map((l,i)=>[h('div',{key:'n'+i,style:{fontFamily:'DM Mono,monospace',fontSize:'8px',padding:'5px 6px',borderRadius:'6px',background:'var(--s-bg)',border:'1.5px solid '+(i===0?pal.acc:'var(--s-line-2)'),color:'var(--s-text)'}},l),i<4?h('span',{key:'a'+i,style:{color:'var(--s-text-3)',fontSize:'11px'}},'→'):null]).flat());
+    if (type === 'sprite') return box({width:'100%',display:'flex',flexDirection:'column',gap:'8px'},[
+      box({key:1,display:'flex',height:'26px',borderRadius:'6px',overflow:'hidden',border:'1px solid var(--s-line-2)'},[pal.kick,pal.snare,pal.hat,pal.clap,pal.bass,pal.lead].map((c,i)=>box({key:i,flex:i===2?2:1,background:c,opacity:i===2?1:0.4,borderRight:'1px solid var(--s-bg)'}))),
+      box({key:2,display:'flex',gap:'4px',flexWrap:'wrap'},['jump','coin','hit','pow','buzz','win'].map((l,i)=>box({key:i,fontFamily:'DM Mono,monospace',fontSize:'9px',padding:'2px 6px',borderRadius:'5px',border:'1px solid var(--s-line-2)',color:i===2?pal.hat:'var(--s-text-3)'},l))),
+    ]);
+    if (type === 'faders') return box({display:'flex',gap:'12px',alignItems:'flex-end',height:'90px'},[[pal.kick,0.7],[pal.snare,0.45],[pal.bass,0.6],['var(--s-accent)',0.85]].map((f,i)=>box({key:i,display:'flex',flexDirection:'column',alignItems:'center',gap:'4px'},[box({key:'tr',position:'relative',width:'8px',height:'64px',borderRadius:'999px',background:'var(--s-well)'},box({position:'absolute',bottom:0,width:'8px',height:(f[1]*64)+'px',borderRadius:'999px',background:f[0]})),h('div',{key:'l',style:{fontFamily:'DM Mono,monospace',fontSize:'8px',color:'var(--s-text-3)'}},i===3?'MSTR':'L'+(i+1))])));
+    if (type === 'crossfade') return box({width:'100%',display:'flex',flexDirection:'column',gap:'10px'},[
+      box({key:1,display:'flex',gap:'8px'},[box({key:'a',flex:1,height:'26px',borderRadius:'7px',background:pal.lead,opacity:0.85,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontFamily:'DM Mono,monospace',fontSize:'10px'},'Track A'),box({key:'b',flex:1,height:'26px',borderRadius:'7px',background:pal.clap,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontFamily:'DM Mono,monospace',fontSize:'10px'},'Track B')]),
+      box({key:2,position:'relative',height:'6px',borderRadius:'999px',background:'linear-gradient(90deg,var(--s-lead),var(--s-clap))'},box({position:'absolute',left:'32%',top:'-5px',width:'16px',height:'16px',borderRadius:'50%',background:'var(--s-bg)',border:'2px solid var(--s-accent)'})),
+    ]);
+    if (type === 'ambient') return box({position:'relative',width:'100%',height:'80px',borderRadius:'8px',background:'#0c0e0d',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center'},[
+      ...Array.from({length:3},(_,i)=>box({key:i,position:'absolute',width:(40+i*24)+'px',height:(40+i*24)+'px',borderRadius:'50%',border:'1.5px solid '+pal.acc,opacity:0.3-i*0.07})),
+      box({key:'c',width:'14px',height:'14px',borderRadius:'50%',background:pal.acc,boxShadow:'0 0 14px '+pal.acc}),
+    ]);
+    if (type === 'viz') return box({width:'100%',display:'flex',flexDirection:'column',gap:'6px'},[
+      box({key:1,height:'30px',display:'flex',alignItems:'center'},h('svg',{key:'s',viewBox:'0 0 120 30',width:'100%',height:'30'},h('path',{d:'M0 15 Q10 2 20 15 T40 15 T60 15 T80 15 T100 15 T120 15',fill:'none',stroke:pal.acc,strokeWidth:'2'}))),
+      box({key:2,display:'flex',alignItems:'flex-end',gap:'3px',height:'34px'},Array.from({length:20},(_,i)=>box({key:i,flex:1,height:(10+Math.abs(Math.sin(i*0.6))*24)+'px',background:pal.acc,opacity:0.8,borderRadius:'2px 2px 0 0'}))),
+    ]);
+    return box({fontFamily:'DM Mono,monospace',fontSize:'10px',color:'var(--s-text-3)'},'—');
+  }
+
+  renderVals() {
+    const isDark = this.state.theme === 'dark';
+    const P = { kick:'var(--s-kick)', snare:'var(--s-snare)', hat:'var(--s-hat)', clap:'var(--s-clap)', bass:'var(--s-bass)', lead:'var(--s-lead)' };
+    const mk = (title, path, takeaway, uses, pieces, playing, visual) => ({ title, path, takeaway, playing, visual: this.m(visual), usesChips: this.chips(uses), piecesChips: this.chips(pieces) });
+
+    const sections = [
+      { name: 'Basic Playback', cards: [
+        mk('Music track','/basic-playback','Tracks have position tracking & seeking built in.',['Demo frame','Transport','Volume slider'],[['Seek bar + MM:SS','var(--s-lead)']],'Play→pause toggles; seek fill and MM:SS readout advance in real time; scrubbing moves position.','seek'),
+        mk('Play together','/basic-playback','Composition is trivial — fire multiple sounds at once.',['Demo frame',['Trigger buttons','var(--s-accent)']],[['Multi-trigger row','var(--s-lead)']],'Each pad flashes its accent on trigger; multiple can light simultaneously.','together'),
+      ]},
+      { name: 'Sampling', cards: [
+        mk('Sampled Drum Kit','/sampled-drum-kit','Tap pads, hear samples instantly.',['Demo frame','Volume warning'],[['Pad ×3 (kick/snare/hat)','var(--s-kick)']],'Pad depresses + emits a color ring on hit; velocity-agnostic, instant.','pads'),
+        mk('Soundfont Piano','/soundfont-piano','Real instrument sounds from a soundfont file.',['Piano keyboard','Demo frame'],[['Loading shimmer (soundfont fetch)','var(--s-lead)']],'Keys light accent-soft on press (mouse/touch/A–K); sustains while held.','keyboard'),
+      ]},
+      { name: 'Synthesis', cards: [
+        mk('Synth Keyboard','/synth-keyboard','ADSR envelopes shape a note’s character.',['Piano keyboard','Preset selector','Param sliders (×7)','Volume warning'],[['ADSR mini-curve','var(--s-lead)']],'Held keys light; the ADSR curve redraws as envelope sliders move.','keyboardPreset'),
+        mk('Synth Drum Kit','/synth-drum-kit','Drums from pure synthesis — layered sounds.',['Demo frame',['Trigger buttons ×7','var(--s-accent)'],'Volume warning'],[['Layer grouping labels','var(--s-snare)']],'Each trigger flashes; layered triggers (full snare) pulse their group together.','pads'),
+        mk('PolySynth','/polysynth','Polyphony with visible voice allocation — watch voices get stolen.',['Piano keyboard','Preset selector','Param sliders','Waveform selector'],[['Voice-count meter','var(--s-bass)'],['Steal-strategy select','var(--s-bass)']],'Voice pills fill as notes sound; oldest/quietest pill dims when stolen at max.','poly'),
+        mk('GrainPlayer','/grainplayer','Granular synthesis — pitch and speed are independent.',['Demo frame','Preset selector','Param sliders (×5)'],[['Source waveform canvas','var(--s-accent)'],['Grain-position overlay','var(--s-lead)']],'Click/drag sets playback point; grain overlay scatters live; playhead tracks.','grain'),
+      ]},
+      { name: 'Modulation', cards: [
+        mk('LFO Modulation','/lfo-modulation','Built interactive in packet 04 — see there.',['Mode tabs','Animated canvas','Rate/Depth sliders','Waveform selector','Preset selector'],[['Depth readout (context-aware)','var(--s-lead)']],'LFO waveform scrolls; depth label switches %/cents/Hz per mode.','viz'),
+      ]},
+      { name: 'Timing & Sequencing', cards: [
+        mk('Timing Basics','/timing','Why audio scheduling needs the audio clock.',['Demo frame',['Trigger buttons','var(--s-accent)']],[['Dual timeline (drift vs locked)','var(--s-kick)']],'Two dot rows animate; setTimeout row visibly drifts, audio-clock row stays gridded.','clock'),
+        mk('Transport + Sequencer','/transport-sequencer','A BPM-synced timeline with musical time notation.',['Step grid (READ-ONLY)','Transport','BPM slider','Preset selector','Mute/solo'],[['Bar:beat display','var(--s-lead)'],['Read-only grid treatment','var(--s-text-3)']],'5 lanes × 32; cells are non-editable (dashed affordance off); column playhead + bar:beat advance.','grid'),
+      ]},
+      { name: 'Integration Patterns', cards: [
+        mk('Vue / Vanilla / React','/drum-machine-vue · -vanilla · react-integration','Same machine, different framework — code is the differentiator.',['Drum Machine (identical)','Signal-flow (React embed frame)'],[['Framed code + live component pairing','var(--s-lead)']],'Component behaves identically to the main Drum Machine; the embed frame gets a subtle "external sandbox" chrome.','code'),
+      ]},
+      { name: 'Effects & Routing', cards: [
+        mk('Effects (distortion)','/effects','Effects wrap and route automatically.',['Demo frame','Param sliders','Volume warning'],[['Live output waveform','var(--s-accent)']],'Waveform visibly hardens/clips as Amount rises; wet/dry blends the shape.','distortion'),
+        mk('Audio Routing','/audio-routing','The connection chain, made visible.',['Signal-flow diagram','Demo frame','Transport'],[['Node chain: src→filters→gain→pan→out','var(--s-accent)']],'Active node in the chain highlights as signal "passes"; shares the Effects-Chain flow language.','routing'),
+        mk('Effects Chain','/effects-chain','Built interactive in packet 04 — see there.',['Signal-flow diagram','Effect slots','Bypass toggle','Reorder','Source switch'],[['4 effect slots (delay/reverb/comp/EQ)','var(--s-bass)']],'Bypassed slots drop from the flow; reordering re-draws the chain live.','routing'),
+      ]},
+      { name: 'Composition', cards: [
+        mk('Audio Sprite','/audio-sprite','Many sounds, one file.',['Demo frame',['Trigger buttons ×6','var(--s-accent)']],[['Segment timeline','var(--s-hat)']],'Triggering a segment highlights its slice on the timeline; playhead sweeps that slice.','sprite'),
+        mk('Layered Sound','/layered-sound','Stacked sounds, one play call.',['Demo frame','Param sliders','Play button'],[['Per-layer + master faders','var(--s-accent)']],'One trigger fires all layers; each fader’s level meter reacts; master scales all.','faders'),
+        mk('Crossfade','/crossfade','Smooth source-to-source transitions.',['Demo frame','Duration slider','Trigger'],[['Dual-track crossfader','var(--s-lead)']],'Crossfade handle glides A→B over the set duration; track opacities invert.','crossfade'),
+      ]},
+      { name: 'Creative', cards: [
+        mk('Ambient Generator','/ambient-generator','The library composes, not just plays.',['Demo frame','Param sliders (×4)','Play/stop','Volume warning'],[['Generative bloom visual','var(--s-accent)']],'Concentric rings breathe with shimmer/texture; start/stop fades the field in/out.','ambient'),
+        mk('Visualization','/visualization','Analyzer data is one call away.',['Demo frame','Source select','Frequency slider'],[['Waveform canvas','var(--s-accent)'],['Spectrum canvas','var(--s-accent)']],'Both canvases animate live off analyzer data; colors pulled from CSS vars at draw time.','viz'),
+      ]},
+    ];
+
+    return { themeLabel: isDark ? 'Dark' : 'Light', toggleTheme: () => this.toggleTheme(), sections };
+  }
+}
+</script>
+</body>
+</html>

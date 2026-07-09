@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>* { box-sizing: border-box; } body { margin: 0; } a { text-decoration: none; color: inherit; } a:hover .card-open { color: var(--i-accent); }</style>
+</helmet>
+<div id="i-root" style="--i-bg:#141417;--i-panel:#1c1c21;--i-well:#0e0e11;--i-line:#2a2a31;--i-line-2:#3a3a44;--i-text:#f2f2f4;--i-text-2:#a2a2ac;--i-text-3:#6b6b75;--i-accent:#2fe3a4;--i-on-accent:#05231a;--i-accent-soft:rgba(47,227,164,0.14);--i-kick:#ff7a6e;--i-snare:#f2a64a;--i-hat:#f2cf3f;--i-clap:#f277c0;--i-bass:#9c8dff;--i-lead:#56c4f0;font-family:'Inter',system-ui,sans-serif;background:var(--i-bg);color:var(--i-text);min-height:100vh;padding:56px 24px 80px;transition:background .25s,color .25s;">
+  <div style="max-width:900px;margin:0 auto;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--i-accent);">EZ Web Audio · Demo UI Design Packet</div>
+      <button onClick="{{ toggleTheme }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;min-height:44px;border-radius:999px;border:1px solid var(--i-line-2);background:var(--i-panel);color:var(--i-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;"><span style="width:9px;height:9px;border-radius:50%;background:var(--i-accent);display:inline-block;"></span>{{ themeLabel }}</button>
+    </div>
+
+    <h1 style="font-size:clamp(38px,7vw,64px);line-height:1.02;font-weight:800;margin:28px 0 16px;letter-spacing:-0.03em;max-width:760px;">Instruments you want to <span style="color:var(--i-accent);">touch</span> — a demo design system.</h1>
+    <p style="font-size:17px;line-height:1.6;color:var(--i-text-2);max-width:620px;margin:0 0 8px;">Every one of the 22 demos plus the greenfield Groovebox, built from one shared parts kit and one design language mapped onto VitePress's own theme variables. Light + dark, WCAG AA, 320–688px, Vue-SFC-implementable, zero new dependencies. This is the handoff — engineers build straight from these pages.</p>
+
+    <!-- palette recap -->
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:28px 0 40px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="width:22px;height:22px;border-radius:6px;background:var(--i-accent);box-shadow:0 0 12px var(--i-accent-soft);"></span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--i-text-2);">Signal accent</span></div>
+      <div style="width:1px;height:22px;background:var(--i-line);"></div>
+      <div style="display:flex;gap:6px;">
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-kick);"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-snare);"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-hat);"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-clap);"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-bass);"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--i-lead);"></span>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--i-text-2);">Sound palette</span>
+    </div>
+
+    <!-- packet cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+      <sc-for list="{{ pages }}" as="p" hint-placeholder-count="6">
+        <a href="{{ p.href }}" style="display:block;">
+          <div style="border:1px solid var(--i-line);border-radius:16px;background:var(--i-panel);padding:20px;height:100%;transition:border-color .15s,transform .1s;" style-hover="border-color:var(--i-accent);transform:translateY(-2px)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--i-accent);">{{ p.num }}</span>
+              <span style="{{ p.tagStyle }}">{{ p.tag }}</span>
+            </div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:6px;">{{ p.title }}</div>
+            <div style="font-size:13px;line-height:1.5;color:var(--i-text-2);margin-bottom:16px;">{{ p.desc }}</div>
+            <div class="card-open" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--i-text-3);display:flex;align-items:center;gap:6px;">Open <svg viewBox="0 0 24 24" width="13" height="13"><path d="M5 12 H19 M13 6 L19 12 L13 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <!-- deliverables map -->
+    <div style="margin-top:44px;border:1px solid var(--i-line);border-radius:16px;background:var(--i-panel);padding:24px;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--i-text-3);margin-bottom:16px;">Brief · "Handoff packet — what to return"</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ deliverables }}" as="d" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--i-accent);color:var(--i-on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M5 12 L10 17 L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+            <div style="font-size:14px;line-height:1.5;color:var(--i-text-2);"><strong style="color:var(--i-text);">{{ d.title }}</strong> — {{ d.where }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- constraints -->
+    <div style="margin-top:20px;border:1px solid var(--i-line);border-radius:16px;background:var(--i-well);padding:24px;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--i-text-3);margin-bottom:16px;">7 Hard Constraints · all honored</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+        <sc-for list="{{ constraints }}" as="c" hint-placeholder-count="7">
+          <div style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--i-text-2);"><span style="color:var(--i-accent);flex-shrink:0;">✓</span>{{ c }}</div>
+        </sc-for>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--i-line);font-size:13px;line-height:1.55;color:var(--i-text-3);">One noted tension: the sequencer grids are visually rich but cap at 320px by horizontal-scrolling the cell area with fixed lane labels — never by shrinking touch targets below 44px. The constraint wins; the scroll is the compromise.</div>
+    </div>
+
+    <div style="margin-top:40px;font-size:13px;color:var(--i-text-3);">Read in order 00 → 06. Every page carries a light/dark toggle (top-right) — the same mechanism engineers use with VitePress's theme.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;960px&quot;,&quot;height&quot;:&quot;860px&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'dark' };
+  themes = {
+    dark: {'--i-bg':'#141417','--i-panel':'#1c1c21','--i-well':'#0e0e11','--i-line':'#2a2a31','--i-line-2':'#3a3a44','--i-text':'#f2f2f4','--i-text-2':'#a2a2ac','--i-text-3':'#6b6b75','--i-accent':'#2fe3a4','--i-on-accent':'#05231a','--i-accent-soft':'rgba(47,227,164,0.14)','--i-kick':'#ff7a6e','--i-snare':'#f2a64a','--i-hat':'#f2cf3f','--i-clap':'#f277c0','--i-bass':'#9c8dff','--i-lead':'#56c4f0'},
+    light: {'--i-bg':'#ffffff','--i-panel':'#f6f6f8','--i-well':'#ececef','--i-line':'#e2e2e6','--i-line-2':'#d3d3d9','--i-text':'#1c1c22','--i-text-2':'#5a5a66','--i-text-3':'#8c8c98','--i-accent':'#0e9268','--i-on-accent':'#ffffff','--i-accent-soft':'rgba(14,146,104,0.12)','--i-kick':'#e5544b','--i-snare':'#e08a2f','--i-hat':'#b99310','--i-clap':'#d84f9e','--i-bass':'#6a5cf0','--i-lead':'#2f9fd6'},
+  };
+  applyTheme(){const el=document.getElementById('i-root');if(!el)return;const t=this.themes[this.state.theme];Object.keys(t).forEach(k=>el.style.setProperty(k,t[k]));}
+  componentDidMount(){this.applyTheme();}
+  toggleTheme(){this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}),()=>this.applyTheme());}
+
+  renderVals() {
+    const isDark = this.state.theme === 'dark';
+    const tag = (label, color) => ({ tag: label, tagStyle: 'font-family:DM Mono,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:transparent;border:1px solid '+color+';color:'+color+';' });
+    const pages = [
+      Object.assign({ num:'01', href:'01%20Foundations.dc.html', title:'Foundations', desc:'Design language + signature accent, sound palette, token map to VitePress vars, and the full shared parts kit — interactive.' }, tag('System','var(--i-accent)')),
+      Object.assign({ num:'02', href:'02%20Groovebox.dc.html', title:'The Groovebox', desc:'Flagship. Full 6-lane machine + homepage hero variant. Highest fidelity, light + dark.' }, tag('Flagship','var(--i-lead)')),
+      Object.assign({ num:'03', href:'03%20Playback%20and%20Synthesis.dc.html', title:'Playback & Synthesis', desc:'One-shot, oscillator+filter (live response curve), XY pad — fully interactive.' }, tag('Interactive','var(--i-accent)')),
+      Object.assign({ num:'04', href:'04%20Rhythm%20and%20FX.dc.html', title:'Rhythm & FX', desc:'Drum machine, LFO (animated scope), effects chain + the signal-flow language.' }, tag('Interactive','var(--i-accent)')),
+      Object.assign({ num:'05', href:'05%20Demo%20Specs.dc.html', title:'Demo Specs', desc:'Annotated specs + schematics for the remaining ~19 demos: parts used, new pieces, playing behavior.' }, tag('Specs','var(--i-bass)')),
+      Object.assign({ num:'06', href:'06%20Advisory%20-%20IA.dc.html', title:'Advisory — IA', desc:'Severable suggestions: demo-page template, sidebar sequencing, naming, onboarding.' }, tag('Advisory','var(--i-snare)')),
+    ];
+    return {
+      themeLabel: isDark ? 'Dark' : 'Light', toggleTheme: () => this.toggleTheme(),
+      pages,
+      deliverables: [
+        { title: 'Design language spec', where: 'tokens → VitePress vars, spacing, type, states — page 01' },
+        { title: 'Shared element specs', where: 'sliders, buttons, knobs, grid, presets, warning, keyboard — page 01' },
+        { title: 'Per-component specs', where: '6 interactive (03–04) + annotated specs for the rest (05)' },
+        { title: 'Groovebox full + hero', where: 'highest-fidelity flagship — page 02' },
+        { title: 'Advisory IA section', where: 'separate & clearly labeled — page 06' },
+      ],
+      constraints: [
+        '688px column, degrades to 320px','Light + dark via CSS custom properties','Vue 3 SFC + scoped CSS, no new deps','WCAG AA: focus, keyboard, 44px targets','No load buttons — Play is first touch','One volume-safety pattern everywhere','Canvas reads colors from CSS vars',
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

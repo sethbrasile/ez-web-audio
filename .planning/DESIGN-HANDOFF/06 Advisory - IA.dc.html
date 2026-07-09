@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>* { box-sizing: border-box; } body { margin: 0; }</style>
+</helmet>
+<div id="a-root" style="--a-bg:#ffffff;--a-panel:#f6f6f8;--a-well:#ececef;--a-line:#e2e2e6;--a-line-2:#d3d3d9;--a-text:#1c1c22;--a-text-2:#5a5a66;--a-text-3:#8c8c98;--a-accent:#0e9268;--a-accent-ink:#067552;--a-on-accent:#ffffff;--a-accent-soft:rgba(14,146,104,0.12);--a-lead:#2f9fd6;--a-warn:#a9720a;--a-warn-soft:rgba(234,179,8,0.14);--a-warn-line:#eab308;font-family:'Inter',system-ui,sans-serif;background:var(--a-bg);color:var(--a-text);min-height:100vh;padding:40px 24px 80px;transition:background .25s,color .25s;">
+  <div style="max-width:740px;margin:0 auto;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+      <div style="display:inline-flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:var(--a-warn-soft);border:1px solid var(--a-warn-line);margin-bottom:16px;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-warn);">Advisory · severable · not a redesign request</span>
+      </div>
+      <button onClick="{{ toggleTheme }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;min-height:44px;border-radius:999px;border:1px solid var(--a-line-2);background:var(--a-panel);color:var(--a-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;"><span style="width:9px;height:9px;border-radius:50%;background:var(--a-accent);display:inline-block;"></span>{{ themeLabel }}</button>
+    </div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--a-accent-ink);margin-bottom:10px;">Handoff Packet · 06</div>
+    <h1 style="font-size:34px;line-height:1.05;font-weight:700;margin:0 0 12px;letter-spacing:-0.02em;">Information architecture — tips, not mandates</h1>
+    <p style="font-size:16px;line-height:1.6;color:var(--a-text-2);margin:0 0 8px;">The VitePress frame stays. These are adopt-selectively suggestions for how demo pages organize prose, code, and the interactive component — plus sidebar sequencing, naming, and onboarding. Nothing here blocks the component specs; skip any of it freely.</p>
+
+    <!-- 1. demo page template -->
+    <div style="margin-top:44px;">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-text-3);margin-bottom:8px;">A · Demo-page template</div>
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 10px;">Component first, then "how", then code</h2>
+      <p style="font-size:15px;line-height:1.6;color:var(--a-text-2);margin:0 0 20px;">Today most pages open with prose and bury the live demo. Invert it: the thing that sells the library is <em>touching it</em>. Lead with the component (Hard Constraint #5 — it's already live, no load button), state the one-line takeaway right under it, then explain, then show the code the reader now wants.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="border:1px solid var(--a-line);border-radius:14px;overflow:hidden;">
+          <div style="padding:8px 12px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-text-3);background:var(--a-well);">Current</div>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="height:9px;border-radius:3px;background:var(--a-line-2);width:60%;"></div>
+            <div style="height:6px;border-radius:3px;background:var(--a-line);"></div>
+            <div style="height:6px;border-radius:3px;background:var(--a-line);width:90%;"></div>
+            <div style="height:44px;border-radius:8px;background:#0c0e0d;margin:4px 0;"></div>
+            <div style="height:6px;border-radius:3px;background:var(--a-line);width:80%;"></div>
+            <div style="height:40px;border-radius:8px;border:1px solid var(--a-line-2);background:var(--a-well);"></div>
+          </div>
+        </div>
+        <div style="border:1.5px solid var(--a-accent);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px var(--a-accent-soft);">
+          <div style="padding:8px 12px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-on-accent);background:var(--a-accent);">Recommended</div>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="height:9px;border-radius:3px;background:var(--a-text);width:55%;"></div>
+            <div style="height:52px;border-radius:8px;background:var(--a-accent-soft);border:1px solid var(--a-accent);display:flex;align-items:center;padding:0 10px;gap:6px;"><span style="width:18px;height:18px;border-radius:5px;background:var(--a-accent);"></span><span style="height:5px;flex:1;border-radius:3px;background:var(--a-accent);opacity:.5;"></span></div>
+            <div style="height:7px;border-radius:3px;background:var(--a-lead);width:70%;"></div>
+            <div style="height:6px;border-radius:3px;background:var(--a-line);"></div>
+            <div style="height:6px;border-radius:3px;background:var(--a-line);width:88%;"></div>
+            <div style="height:34px;border-radius:8px;background:#0c0e0d;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+        <sc-for list="{{ anatomy }}" as="a" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;align-items:baseline;">
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--a-accent-ink);font-weight:500;width:120px;flex-shrink:0;">{{ a.step }}</span>
+            <span style="font-size:14px;line-height:1.5;color:var(--a-text-2);">{{ a.desc }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- 2. sidebar sequencing -->
+    <div style="margin-top:48px;">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-text-3);margin-bottom:8px;">B · Sidebar sequencing &amp; naming</div>
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 10px;">The arc is right — tighten the labels &amp; the on-ramp</h2>
+      <p style="font-size:15px;line-height:1.6;color:var(--a-text-2);margin:0 0 20px;">The playback→sampling→synthesis→modulation→timing→integration→effects→composition→creative arc is a genuinely good learning gradient; keep it. Three adjustments:</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ sidebar }}" as="s" hint-placeholder-count="3">
+          <div style="border:1px solid var(--a-line);border-radius:12px;background:var(--a-panel);padding:16px 18px;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:5px;">{{ s.title }}</div>
+            <div style="font-size:14px;line-height:1.55;color:var(--a-text-2);">{{ s.body }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:18px;border:1px solid var(--a-line);border-radius:12px;background:var(--a-well);padding:16px 18px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-text-3);margin-bottom:10px;">Suggested Examples order (Groovebox as the hook)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <sc-for list="{{ order }}" as="o" hint-placeholder-count="9">
+            <span style="{{ o.style }}">{{ o.name }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. onboarding -->
+    <div style="margin-top:48px;">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-text-3);margin-bottom:8px;">C · Onboarding / first run</div>
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 10px;">Make the first ten seconds a sound, not a paragraph</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ onboarding }}" as="o" hint-placeholder-count="4">
+          <div style="display:flex;gap:14px;align-items:flex-start;border:1px solid var(--a-line);border-radius:12px;background:var(--a-panel);padding:16px 18px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:var(--a-accent-soft);color:var(--a-accent-ink);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-weight:500;flex-shrink:0;">{{ o.n }}</span>
+            <div><div style="font-weight:600;font-size:15px;margin-bottom:3px;">{{ o.title }}</div><div style="font-size:14px;line-height:1.55;color:var(--a-text-2);">{{ o.body }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- 4. cross-cutting -->
+    <div style="margin-top:48px;">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-text-3);margin-bottom:8px;">D · Cross-cutting conventions</div>
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 16px;">Small repeated moves that compound</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+        <sc-for list="{{ crosscut }}" as="c" hint-placeholder-count="4">
+          <div style="border:1px solid var(--a-line);border-radius:12px;background:var(--a-panel);padding:16px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:6px;color:var(--a-accent-ink);">{{ c.title }}</div>
+            <div style="font-size:13px;line-height:1.5;color:var(--a-text-2);">{{ c.body }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="margin-top:56px;padding-top:20px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--a-text-3);">
+      <span>EZ Web Audio · Demo UI Design Packet</span>
+      <span>← Demo specs · Index</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;800px&quot;,&quot;height&quot;:&quot;820px&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light' };
+  themes = {
+    light: {'--a-bg':'#ffffff','--a-panel':'#f6f6f8','--a-well':'#ececef','--a-line':'#e2e2e6','--a-line-2':'#d3d3d9','--a-text':'#1c1c22','--a-text-2':'#5a5a66','--a-text-3':'#8c8c98','--a-accent':'#0e9268','--a-accent-ink':'#067552','--a-on-accent':'#ffffff','--a-accent-soft':'rgba(14,146,104,0.12)','--a-lead':'#2f9fd6','--a-warn':'#a9720a','--a-warn-soft':'rgba(234,179,8,0.14)','--a-warn-line':'#eab308'},
+    dark: {'--a-bg':'#161619','--a-panel':'#1e1e23','--a-well':'#131316','--a-line':'#2c2c33','--a-line-2':'#3a3a42','--a-text':'#f4f4f6','--a-text-2':'#a6a6b0','--a-text-3':'#70707a','--a-accent':'#2fe3a4','--a-accent-ink':'#35e0a6','--a-on-accent':'#05231a','--a-accent-soft':'rgba(47,227,164,0.16)','--a-lead':'#56c4f0','--a-warn':'#f2cf3f','--a-warn-soft':'rgba(242,207,63,0.12)','--a-warn-line':'#f2cf3f'},
+  };
+  applyTheme(){const el=document.getElementById('a-root');if(!el)return;const t=this.themes[this.state.theme];Object.keys(t).forEach(k=>el.style.setProperty(k,t[k]));}
+  componentDidMount(){this.applyTheme();}
+  toggleTheme(){this.setState(s=>({theme:s.theme==='light'?'dark':'light'}),()=>this.applyTheme());}
+
+  renderVals() {
+    const isDark = this.state.theme === 'dark';
+    const order = ['Groovebox ★','Drum Machine','Basic Playback','Sampling','Synthesis','Modulation','Timing','Effects & Routing','Composition','Creative','Integration'].map((name,i)=>({
+      name, style: 'font-family:DM Mono,monospace;font-size:11px;padding:5px 10px;border-radius:7px;' + (i===0 ? 'background:var(--a-accent);color:var(--a-on-accent);font-weight:600;' : 'background:var(--a-panel);border:1px solid var(--a-line);color:var(--a-text-2);'),
+    }));
+    return {
+      themeLabel: isDark ? 'Dark' : 'Light', toggleTheme: () => this.toggleTheme(),
+      anatomy: [
+        { step: '1 · Hook', desc: 'The live component, full-bleed to the content column. No heading above it competing for the first glance.' },
+        { step: '2 · Takeaway', desc: 'One sentence, in the shared accent, directly under the component — the same 30-second takeaway from each spec.' },
+        { step: '3 · How it works', desc: 'Short prose. What the reader just heard, and the one library concept it demonstrates.' },
+        { step: '4 · Code', desc: 'The minimal snippet that produces it — now the reader wants it, because they just played with the result.' },
+        { step: '5 · See also', desc: 'One or two "next" links following the concept arc, so the page is a step, not a dead end.' },
+      ],
+      sidebar: [
+        { title: 'Rename by outcome, not mechanism', body: '"Timing Basics" → "Why timing drifts"; "LFO Modulation" → "LFO — one knob, three effects". Lead with what the reader gets, matching the takeaway voice.' },
+        { title: 'Fold the three drum machines into one page', body: 'Vue / Vanilla / React integration are the same machine with different code. One "Drum Machine" page with a framework tab switcher removes three near-duplicate sidebar entries and makes the point sharper.' },
+        { title: 'Put the Groovebox at the top of Examples', body: 'It is the announcement centerpiece and the most fun. As the first Examples entry (and homepage hero) it becomes the hook that pulls readers into the arc.' },
+      ],
+      order,
+      onboarding: [
+        { n: '1', title: 'Overview page = a playable index', body: 'Replace the text-heavy Examples overview with a grid of live mini-triggers (like the hero), each linking to its demo. The reader makes sound before reading anything.' },
+        { n: '2', title: 'First interaction is Play, never Load', body: 'Constraint #5 already bans load buttons; make the very first control on every page a Play/trigger with a subtle idle pulse so it reads as "press me".' },
+        { n: '3', title: 'One consistent keyboard-hint chip', body: 'Demos with keyboard shortcuts (piano, XY pad) share the same monospace hint treatment from the parts kit, so power-users learn the pattern once.' },
+        { n: '4', title: 'Volume notice on first sound-generating demo only', body: 'Show the single volume pattern once per session at the first synth/oscillator demo rather than on every page — repetition trains people to ignore it.' },
+      ],
+      crosscut: [
+        { title: 'One takeaway callout', body: 'Every demo gets the same accent one-liner in the same slot. Consistency turns it into a scannable "what will I learn" signal.' },
+        { title: 'Signal-flow is a shared language', body: 'The Effects-Chain flow diagram is reused verbatim on Audio Routing and Effects — readers learn to read routing once.' },
+        { title: 'Playing-state is unmistakable', body: 'Danger-fill Stop + a live blinking dot across all demos, so "is it running?" never needs a second look.' },
+        { title: 'Respect reduced-motion everywhere', body: 'Playheads and meters degrade to discrete steps; a single media query in the shared layer covers all demos at once.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
