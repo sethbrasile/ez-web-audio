@@ -41,4 +41,13 @@ docs/.vitepress/dist/
 *.njsproj
 *.sln
 *.sw?
+.mcp.json
+
+# Test output
+playwright-report/
+test-results/
+
+# Agent/tool state (local only)
 .grepai/
+.bg-shell/
+.gsd/

@@ -60,11 +60,15 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 
 **Milestone 7: Feature Demos** — Interactive demo pages for all M5 features lacking examples.
 
+- ✓ LFO modulation demo (tremolo, vibrato, filter sweep) — Phase 67
+- ✓ PolySynth demo (voice allocation, steal strategies) — Phase 68
 - ✓ Effects chain demo (delay, reverb, compressor, EQ) — Phase 69
-- [ ] LFO modulation demo (tremolo, vibrato, filter sweep)
-- [ ] PolySynth demo (voice allocation, steal strategies)
-- [ ] Transport + Sequencer demo (BPM clock, musical time, mute/solo)
-- [ ] GrainPlayer demo (independent pitch/time control)
+- ✓ GrainPlayer demo (independent pitch/time control) — Phase 70
+- ✓ Transport + Sequencer demo (BPM clock, musical time, mute/solo) — Phase 71
+- ✓ Deep review fixes: 55 findings across all 6 demo components + docs — Phases 71.1–71.6 (commit b0dee2f)
+- [ ] Human UAT (7 transport tests + listen-through of all demos) — required before milestone close
+
+**Release stance (decided 2026-07-09):** stay <1.0 until very confident in stability. Next release 0.2.0. Announce publicly only after demos are polished, framework bindings planned, and UAT passes.
 
 ### Out of Scope
 
@@ -140,4 +144,4 @@ Make the Web Audio API easy to use. If the API is confusing or requires the user
 | Lazy init pattern for demos | No load buttons; first user interaction triggers AudioContext + asset loading | ✓ Good |
 
 ---
-*Last updated: 2026-03-18 after Phase 69 (Effects Chain Demo)*
+*Last updated: 2026-07-09 — planning reconciliation; M7 code-complete pending UAT*

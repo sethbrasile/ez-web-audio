@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: milestone
-status: completed
-stopped_at: Completed 71-transport-sequencer-demo 71-02-PLAN.md
-last_updated: "2026-03-20T05:44:12.642Z"
-last_activity: 2026-03-20 — Phase 71 Plan 02 TransportSequencer E2E Tests complete
+milestone: 7
+milestone_name: Feature Demos
+status: awaiting_uat
+stopped_at: Planning reconciliation complete — 71.x deep-review phases closed against commit b0dee2f
+last_updated: "2026-07-09T00:00:00.000Z"
+last_activity: 2026-07-09 — Reconciled planning docs; transport resume() regression fixed; UAT pending
 progress:
   total_phases: 11
-  completed_phases: 5
+  completed_phases: 11
   total_plans: 10
   completed_plans: 10
   percent: 100
@@ -16,24 +16,27 @@ progress:
 
 # Project State: EZ Audio
 
-**Last Updated:** 2026-03-18 (Phase 69 Effects Chain Demo complete)
-**Current Focus:** Phase 70 — GrainPlayer Demo
+**Last Updated:** 2026-07-09 (planning reconciliation after ~3.5 month pause)
+**Current Focus:** Human UAT for M7 demos, then complete Milestone 7
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-18)
+See: .planning/PROJECT.md (updated 2026-07-09)
 
 **Core value:** Make the Web Audio API easy to use
-**Current milestone:** 7 — Feature Demos (5 phases, 22 requirements)
+**Current milestone:** 7 — Feature Demos (5 phases + 6 deep-review fix phases, all code complete)
 
 ## Current Position
 
-Phase: 71 of 71 (Transport + Sequencer Demo)
-Plan: 02 of 02 (complete)
-Status: Complete
-Last activity: 2026-03-20 — Phase 71 Plan 02 TransportSequencer E2E Tests complete
+Phase: 71.6 of 71.6 (all M7 phases code-complete)
+Status: Awaiting human UAT (`phases/71-transport-sequencer-demo/71-UAT.md`, 7 tests) + listen-through of all 6 demos
+Next: UAT → `/gsd-complete-milestone` → Milestone 8 planning (demo excellence + framework bindings + 0.2.0 release/announce)
 
-Progress: [████████████████████] 124/124 plans (100%)
+## Release Position
+
+- npm published: `ez-web-audio@0.1.0` (only public release)
+- Local package.json: `0.2.0` (downgraded from erroneous 1.0.0 — staying <1.0 until confident; user decision 2026-07-09)
+- Publish CI fires on `v*` tags only
 
 ## Performance Metrics
 
@@ -47,46 +50,28 @@ Progress: [████████████████████] 124/124
 
 See .planning/PROJECT.md Key Decisions table for full history.
 
+- [2026-07-09] Stay <1.0 until very confident in stability. Next release 0.2.0. Announce after: demos perfected + framework bindings planned + UAT passed.
 - All M7 demos are pure documentation/UX — no library code changes needed
-- Research recommends build order: LFO -> PolySynth -> Effects -> GrainPlayer -> Transport+Sequencer
-- No new dependencies — all patterns proven in 22 existing Vue demo components
-- Skip ParameterSlider.vue extraction — copy pattern instead
-- [Phase 67]: One LFO instance with disconnect/reconnect on tab switch for seamless modulation transition
-- [Phase 67]: E2E tests must use relative paths (not absolute) since baseURL includes /ez-web-audio/ prefix
-- [Phase 68]: Dirty flag pattern for ADSR/waveform changes; immediate recreate for maxVoices/stealStrategy
-- [Phase 68]: Used aria-label selectors for resilient E2E test targeting of piano keys and dropdowns
 - [Phase 69]: Effect instances live at module level outside reactive state — ensureLoaded() creates them once, kept alive across source switches
-- [Phase 69]: toggleBypass only calls effect.bypass setter for click-free crossfade — never removeEffect/addEffect
-- [Phase 69]: moveEffect uses remove-all + addEffects batch for atomic single-rewire signal chain reorder
-- [Phase 70]: grain-sample.mp3 sourced from Db5.mp3 (CC0 piano note) — ideal clear pitch for granular demo
 - [Phase 70]: Speed slider drives RAF position advance (not playbackRate) for true pitch/speed independence
-- [Phase 70-grainplayer-demo]: Used .play-button class selector for consistency with existing LFO/PolySynth test patterns
-- [Phase 70-grainplayer-demo]: Canvas 'loaded' class waitForFunction gates canvas click test — ensures waveform drawn before interaction
-- [Phase 71-transport-sequencer-demo]: tick handler drives currentStep via ((bar-1)*16)+((beat-1)*4)+tick % 32; shouldPlay() guards melody callbacks; applyPreset() uses seq.clear() for safe live preset switching
-- [Phase 71-02]: Use .transport-buttons selector (not .transport-controls) — actual class name from component implementation
-- [Phase 71-02]: [Rule 1 - Bug] Replace invalid '1m+2n' time notation with '2:3:0' — Sequence API doesn't support compound notation
-- [Phase 71-transport-sequencer-demo]: ticksPerBeat:12 for Sequence scheduling compatibility; scale to 16th-note display with Math.floor(tick*4/12)
+- [Phase 71]: ticksPerBeat:12 for Sequence scheduling compatibility; scale to 16th-note display with Math.floor(tick*4/12)
+- [Deep review 2026-03-19]: All 55 findings applied in single commit b0dee2f; re-verification caught one regression (transport.resume() no-op — Transport has start/pause/stop only; fixed 2026-07-09)
 
 ### Pending Todos
 
-None active.
+- Contribute WASM target to MUSE for Web Audio compatibility (`todos/pending/2026-03-28-verify-muse-compatibility.md`) — speculative external PR, parked per user 2026-07-09
 
 ### Roadmap Evolution
 
-- Phase 71.1 inserted after Phase 71: LFO Demo — Musical Calibration + UX (URGENT)
-- Phase 71.2 inserted after Phase 71: TransportSequencer Demo — Musical + UX + Resource Leak (URGENT)
-- Phase 71.3 inserted after Phase 71: EffectsChain Demo — UX + Musical + Resource Leak (URGENT)
-- Phase 71.4 inserted after Phase 71: GrainPlayer Demo — Touch Fix + Polish (URGENT)
-- Phase 71.5 inserted after Phase 71: PianoKeyboard + PolySynth — A11y + Touch + Polish (URGENT)
-- Phase 71.6 inserted after Phase 71: Content/Docs Pages — Parity + LLM Tags (URGENT)
+- Phases 71.1–71.6 inserted from 2026-03-19 deep review; executed together in commit b0dee2f; closed 2026-07-09 during reconciliation
 
 ### Blockers/Concerns
 
-- GrainPlayer audio asset: decide between existing `short-music.mp3` (2.1MB) or adding shorter sample (Phase 70 planning)
-- Transport+Sequencer: Sequence timeline visualization is genuinely new UI pattern (Phase 71 planning)
+- Human UAT not yet run — deep-review mega-commit b0dee2f touched all 6 demo components at once; all demos need ears, not just transport
+- Structural patterns left open by design (demo components, not library code): demo-resource-cleanup-inconsistency, demo-audio-init-duplication — revisit only if more demos added
 
 ## Session Continuity
 
-Last session: 2026-03-20T05:44:12.639Z
-Stopped at: Completed 71-transport-sequencer-demo 71-02-PLAN.md
+Last session: 2026-07-09
+Stopped at: Planning reconciliation complete
 Resume file: None

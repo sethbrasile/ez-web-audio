@@ -173,10 +173,17 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 | 69. Effects Chain Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 70. GrainPlayer Demo | 2/2 | Complete    | 2026-03-18 | - |
 | 71. Transport + Sequencer Demo | 2/2 | Complete   | 2026-03-20 | - |
+| 71.1–71.6 Deep Review Fixes | — | Complete (via b0dee2f) | 2026-03-19 | - |
+
+**Milestone 7 status:** all code complete. Awaiting human UAT before `/gsd-complete-milestone`.
 
 ---
 
 **Archives:**
+- `milestones/3-phases/` — Milestone 3 phase directories (Phases 17-46)
+- `milestones/4-phases/` — Milestone 4 phase directories (Phases 47-52)
+- `milestones/5-phases/` — Milestone 5 phase directories (Phases 53-60.2)
+- `reviews/archive/` — pre-GSD review docs (review-agent1-7, code-review-v2, REVIEW-FINDINGS, etc.)
 - `milestones/mvp-phases/` — Milestone 1 phase directories (Phases 1-11)
 - `milestones/v1.1-phases/` — Milestone 2 phase directories (Phases 12-16)
 - `milestones/v1.1-ROADMAP.md` — Milestone 2 phase details
@@ -185,64 +192,17 @@ Phases execute in numeric order: 67 -> 68 -> 69 -> 70 -> 71
 - `milestones/6-REQUIREMENTS.md` — Milestone 6 requirements (M5 REQUIREMENTS.md, inherited)
 - `milestones/6-phases/` — Milestone 6 phase directories (Phases 61-66)
 
-*Last updated: 2026-03-18 after Phase 70 planning*
+*Last updated: 2026-07-09 — planning reconciliation (71.x phases closed against commit b0dee2f)*
 
-### Phase 71.6: Content/Docs Pages — Parity + LLM Tags (INSERTED)
+### Phases 71.1–71.6: Deep Review Fix Phases (COMPLETED — consolidated)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 2/2 plans complete
+Inserted 2026-03-19 from deep review `2026-03-19-deep-review-m7-demos.md` (55 findings, 6 blocking). All six groupings were executed together in commit `b0dee2f` (2026-03-19) rather than as separate planned phases. One regression from that commit (`transport.resume()` no-op) caught by re-verification and fixed 2026-07-09.
 
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.6 to break down)
+- [x] 71.1: LFO Demo — musical calibration (rate mapping, depth ranges, wah bandpass, preset tuning) + UX
+- [x] 71.2: TransportSequencer Demo — dispose leak (C1), triplet support (ticksPerBeat:12), preset-before-init guard, UX
+- [x] 71.3: EffectsChain Demo — dispose leak (C2), bypass verification, compressor attack/release, reorder UX
+- [x] 71.4: GrainPlayer Demo — mobile touchend fix (H1), theme-aware canvas, preset tuning
+- [x] 71.5: PianoKeyboard + PolySynth — search-input guard (H13), multi-touch, roving tabindex, keyboard activation
+- [x] 71.6: Content/Docs Pages — effects-chain prose, LLM fallback tags, cross-references, SEO titles
 
-### Phase 71.5: PianoKeyboard + PolySynth — A11y + Touch + Polish (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.5 to break down)
-
-### Phase 71.4: GrainPlayer Demo — Touch Fix + Polish (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.4 to break down)
-
-### Phase 71.3: EffectsChain Demo — UX + Musical + Resource Leak (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.3 to break down)
-
-### Phase 71.2: TransportSequencer Demo — Musical + UX + Resource Leak (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.2 to break down)
-
-### Phase 71.1: LFO Demo — Musical Calibration + UX (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 71
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 71.1 to break down)
+**Remaining before milestone close:** human UAT (`71-UAT.md`, 7 tests) + listen-through of all 6 demos.
