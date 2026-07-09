@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { CompressorEffect, DelayEffect, Effect, Oscillator, ReverbEffect } from 'ez-web-audio'
+import type { CompressorEffect, DelayEffect, Effect, EQEffect, Oscillator, ReverbEffect, Track } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type EffectId = 'delay' | 'reverb' | 'compressor'
+type EffectId = 'delay' | 'reverb' | 'compressor' | 'eq'
+type SourceType = 'oscillator' | 'file'
 
 interface EffectSlot {
   id: EffectId
@@ -24,6 +25,10 @@ interface EffectSlot {
   compKnee: number
   compAttack: number
   compRelease: number
+  // eq params
+  eqLow: number
+  eqMid: number
+  eqHigh: number
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -35,10 +40,14 @@ const error = ref('')
 const warningDismissed = ref(false)
 const statusMessage = ref('Click Play to start')
 
-// Chain order — list of effect IDs in signal-flow order
-const chainOrder = ref<EffectId[]>(['delay', 'reverb', 'compressor'])
+// Which source feeds the chain — oscillator (synth) or a looping audio file
+const sourceType = ref<SourceType>('oscillator')
 
-// Per-effect UI state (single reactive object per effect avoids 11 separate watchers)
+// Chain order — list of effect IDs in signal-flow order
+// Default: EQ → Compressor → Delay → Reverb (typical professional signal chain)
+const chainOrder = ref<EffectId[]>(['eq', 'compressor', 'delay', 'reverb'])
+
+// Per-effect UI state (single reactive object per effect avoids many separate watchers)
 const slots = ref<Record<EffectId, EffectSlot>>({
   delay: {
     id: 'delay',
@@ -56,6 +65,9 @@ const slots = ref<Record<EffectId, EffectSlot>>({
     compKnee: 0,
     compAttack: 0,
     compRelease: 0,
+    eqLow: 0,
+    eqMid: 0,
+    eqHigh: 0,
   },
   reverb: {
     id: 'reverb',
@@ -73,6 +85,9 @@ const slots = ref<Record<EffectId, EffectSlot>>({
     compKnee: 0,
     compAttack: 0,
     compRelease: 0,
+    eqLow: 0,
+    eqMid: 0,
+    eqHigh: 0,
   },
   compressor: {
     id: 'compressor',
@@ -90,13 +105,36 @@ const slots = ref<Record<EffectId, EffectSlot>>({
     reverbDecay: 0,
     reverbDamping: 0,
     reverbMix: 0,
+    eqLow: 0,
+    eqMid: 0,
+    eqHigh: 0,
+  },
+  eq: {
+    id: 'eq',
+    label: 'EQ',
+    bypassed: false,
+    eqLow: 0,
+    eqMid: 0,
+    eqHigh: 0,
+    // unused fields
+    delayTime: 0,
+    delayFeedback: 0,
+    delayMix: 0,
+    reverbDecay: 0,
+    reverbDamping: 0,
+    reverbMix: 0,
+    compThreshold: 0,
+    compRatio: 0,
+    compKnee: 0,
+    compAttack: 0,
+    compRelease: 0,
   },
 })
 
 // ── Audio objects ──────────────────────────────────────────────────────────────
 
 let lib: typeof import('ez-web-audio') | null = null
-let source: Oscillator | null = null
+let source: Oscillator | Track | null = null
 // Typed effect references, keyed by EffectId
 const effectRefs: Partial<Record<EffectId, Effect>> = {}
 
@@ -105,6 +143,13 @@ const effectRefs: Partial<Record<EffectId, Effect>> = {}
 // Ordered list of slot objects in current chain order
 const orderedSlots = computed<EffectSlot[]>(() =>
   chainOrder.value.map(id => slots.value[id]),
+)
+
+// Transport label describes the active source
+const transportLabel = computed(() =>
+  sourceType.value === 'oscillator'
+    ? 'Sawtooth oscillator at 220 Hz through the effect chain below'
+    : 'Looping audio file through the effect chain below',
 )
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -120,7 +165,8 @@ function getEffect(id: EffectId): Effect | undefined {
 function applySlotToEffect(id: EffectId): void {
   const slot = slots.value[id]
   const effect = getEffect(id)
-  if (!effect) return
+  if (!effect)
+    return
 
   effect.bypass = slot.bypassed
 
@@ -144,6 +190,12 @@ function applySlotToEffect(id: EffectId): void {
     comp.attack = slot.compAttack
     comp.release = slot.compRelease
   }
+  else if (id === 'eq') {
+    const eq = effect as EQEffect
+    eq.low = slot.eqLow
+    eq.mid = slot.eqMid
+    eq.high = slot.eqHigh
+  }
 }
 
 // ── Audio control ──────────────────────────────────────────────────────────────
@@ -165,7 +217,8 @@ async function togglePlayback(): Promise<void> {
 }
 
 async function startAudio(): Promise<void> {
-  if (loading.value) return
+  if (loading.value)
+    return
 
   try {
     loading.value = true
@@ -175,9 +228,16 @@ async function startAudio(): Promise<void> {
     const ezAudio = await ensureLib()
     initialized.value = true
 
-    // Oscillator gain kept modest (M23: avoid saturating compressor)
-    source = await ezAudio.createOscillator({ frequency: 220, type: 'sawtooth' })
-    source.update('gain').to(0.15).as('ratio')
+    if (sourceType.value === 'oscillator') {
+      // Oscillator gain kept modest (M23: avoid saturating compressor)
+      source = await ezAudio.createOscillator({ frequency: 220, type: 'sawtooth' })
+      source.update('gain').to(0.15).as('ratio')
+    }
+    else {
+      source = await ezAudio.createTrack('/ez-web-audio/audio/short-music.mp3')
+      source.update('gain').to(0.8).as('ratio')
+      source.loop = true
+    }
 
     // Create effects in chain order and register them
     for (const id of chainOrder.value) {
@@ -198,13 +258,20 @@ async function startAudio(): Promise<void> {
           mix: slot.reverbMix,
         })
       }
-      else {
+      else if (id === 'compressor') {
         effect = ezAudio.createCompressor({
           threshold: slot.compThreshold,
           ratio: slot.compRatio,
           knee: slot.compKnee,
           attack: slot.compAttack,
           release: slot.compRelease,
+        })
+      }
+      else {
+        effect = ezAudio.createEQ({
+          low: slot.eqLow,
+          mid: slot.eqMid,
+          high: slot.eqHigh,
         })
       }
 
@@ -254,12 +321,30 @@ function stopAudio(): void {
   setStatus('Stopped — click Play to restart')
 }
 
+// ── Source switching ───────────────────────────────────────────────────────────
+
+// Switch between oscillator and file source. If currently playing, restart
+// with the new source (stop + null old source, then create + play the new one).
+async function switchSource(type: SourceType): Promise<void> {
+  if (type === sourceType.value)
+    return
+
+  const wasPlaying = playing.value
+  sourceType.value = type
+
+  if (wasPlaying) {
+    stopAudio()
+    await startAudio()
+  }
+}
+
 // ── Reorder ────────────────────────────────────────────────────────────────────
 
 // H14: Reorder only works when audio is initialized (restart required to hear change)
 function moveEffect(index: number, direction: -1 | 1): void {
   const newIndex = index + direction
-  if (newIndex < 0 || newIndex >= chainOrder.value.length) return
+  if (newIndex < 0 || newIndex >= chainOrder.value.length)
+    return
 
   const order = [...chainOrder.value]
   const [item] = order.splice(index, 1)
@@ -282,19 +367,37 @@ function moveEffect(index: number, direction: -1 | 1): void {
 // Single deep watcher per effect ID applies all param changes at once
 watch(
   () => ({ ...slots.value.delay }),
-  () => { if (playing.value) applySlotToEffect('delay') },
+  () => {
+    if (playing.value)
+      applySlotToEffect('delay')
+  },
   { deep: true },
 )
 
 watch(
   () => ({ ...slots.value.reverb }),
-  () => { if (playing.value) applySlotToEffect('reverb') },
+  () => {
+    if (playing.value)
+      applySlotToEffect('reverb')
+  },
   { deep: true },
 )
 
 watch(
   () => ({ ...slots.value.compressor }),
-  () => { if (playing.value) applySlotToEffect('compressor') },
+  () => {
+    if (playing.value)
+      applySlotToEffect('compressor')
+  },
+  { deep: true },
+)
+
+watch(
+  () => ({ ...slots.value.eq }),
+  () => {
+    if (playing.value)
+      applySlotToEffect('eq')
+  },
   { deep: true },
 )
 
@@ -317,6 +420,25 @@ onUnmounted(() => {
 
     <!-- Transport row -->
     <div class="transport-row">
+      <div class="source-selector">
+        <span class="source-selector-label">Source:</span>
+        <button
+          class="ec-btn source-btn"
+          :class="{ active: sourceType === 'oscillator' }"
+          aria-label="Source: oscillator"
+          @click="switchSource('oscillator')"
+        >
+          Oscillator
+        </button>
+        <button
+          class="ec-btn source-btn"
+          :class="{ active: sourceType === 'file' }"
+          aria-label="Source: file"
+          @click="switchSource('file')"
+        >
+          Audio File
+        </button>
+      </div>
       <button
         class="ec-btn play-btn"
         :class="{ active: playing }"
@@ -325,7 +447,7 @@ onUnmounted(() => {
       >
         {{ loading ? 'Starting…' : playing ? 'Stop' : 'Play' }}
       </button>
-      <span class="transport-label">Sawtooth oscillator at 220 Hz through the effect chain below</span>
+      <span class="transport-label">{{ transportLabel }}</span>
     </div>
 
     <!--
@@ -337,7 +459,7 @@ onUnmounted(() => {
     <div class="signal-flow" aria-label="Signal flow diagram">
       <div class="flow-node source">
         <span class="flow-label">Source</span>
-        <span class="flow-box">Oscillator</span>
+        <span class="flow-box">{{ sourceType === 'oscillator' ? 'Oscillator' : 'Audio File' }}</span>
       </div>
 
       <template v-for="(slot, idx) in orderedSlots" :key="slot.id">
@@ -561,6 +683,49 @@ onUnmounted(() => {
               <span class="param-value">{{ (slot.compRelease * 1000).toFixed(0) }}ms</span>
             </label>
           </template>
+
+          <!-- EQ parameters (three-band: low, mid, high) -->
+          <template v-else-if="slot.id === 'eq'">
+            <label class="param-row">
+              <span class="param-label">Low</span>
+              <input
+                v-model.number="slot.eqLow"
+                type="range"
+                min="-15"
+                max="15"
+                step="0.5"
+                :disabled="!playing"
+                :aria-label="`EQ low: ${slot.eqLow > 0 ? '+' : ''}${slot.eqLow.toFixed(1)}dB`"
+              >
+              <span class="param-value">{{ slot.eqLow > 0 ? '+' : '' }}{{ slot.eqLow.toFixed(1) }}dB</span>
+            </label>
+            <label class="param-row">
+              <span class="param-label">Mid</span>
+              <input
+                v-model.number="slot.eqMid"
+                type="range"
+                min="-15"
+                max="15"
+                step="0.5"
+                :disabled="!playing"
+                :aria-label="`EQ mid: ${slot.eqMid > 0 ? '+' : ''}${slot.eqMid.toFixed(1)}dB`"
+              >
+              <span class="param-value">{{ slot.eqMid > 0 ? '+' : '' }}{{ slot.eqMid.toFixed(1) }}dB</span>
+            </label>
+            <label class="param-row">
+              <span class="param-label">High</span>
+              <input
+                v-model.number="slot.eqHigh"
+                type="range"
+                min="-15"
+                max="15"
+                step="0.5"
+                :disabled="!playing"
+                :aria-label="`EQ high: ${slot.eqHigh > 0 ? '+' : ''}${slot.eqHigh.toFixed(1)}dB`"
+              >
+              <span class="param-value">{{ slot.eqHigh > 0 ? '+' : '' }}{{ slot.eqHigh.toFixed(1) }}dB</span>
+            </label>
+          </template>
         </div>
       </div>
     </div>
@@ -631,6 +796,26 @@ onUnmounted(() => {
   font-size: 0.875rem;
   color: var(--vp-c-text-2);
   flex: 1;
+}
+
+/* ── Source selector ─────────────────────────────────────────────────────────── */
+.source-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.source-selector-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  margin-right: 0.15rem;
+}
+
+.source-btn.active {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand);
+  color: var(--vp-c-brand);
 }
 
 /* ── Signal flow diagram (M10: responsive) ───────────────────────────────────── */

@@ -1,108 +1,21 @@
-<template>
-  <div class="grain-player-demo">
-    <!-- Error banner -->
-    <div v-if="error" class="error-banner">{{ error }}</div>
-
-    <!-- Waveform canvas — interaction AND visualization surface -->
-    <div class="canvas-container">
-      <canvas
-        ref="waveformCanvas"
-        class="waveform-canvas"
-        :class="{ dragging: isDragging }"
-        :style="{ cursor: waveformLoaded ? (isDragging ? 'grabbing' : 'crosshair') : 'default', touchAction: 'none' }"
-        @mousedown="handleMouseDown"
-        @mousemove="handleMouseMove"
-        @touchstart.prevent="handleTouchStart"
-        @touchmove.prevent="handleTouchMove"
-      />
-      <div v-if="!waveformLoaded" class="canvas-placeholder">
-        <span>Click Play to load waveform</span>
-      </div>
-    </div>
-
-    <!-- Playback row -->
-    <div class="controls-row playback-row">
-      <button
-        class="play-button"
-        :aria-label="playing ? 'Stop' : 'Play'"
-        :disabled="loading"
-        @click="togglePlay"
-      >{{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}</button>
-
-      <label class="control-group">
-        <span>Speed</span>
-        <input type="range" min="0.1" max="3" step="0.05" v-model.number="speed" />
-        <span class="readout">{{ speed.toFixed(2) }}x</span>
-      </label>
-
-      <label class="control-group loop-toggle">
-        <input type="checkbox" v-model="loop" @change="onLoopChange" />
-        <span>Loop</span>
-      </label>
-    </div>
-
-    <!-- Pitch row -->
-    <div class="controls-row pitch-row">
-      <label class="control-group wide">
-        <span>Pitch</span>
-        <input type="range" min="-24" max="24" step="1" v-model.number="pitch" aria-label="Pitch in semitones" />
-        <span class="readout">{{ pitch > 0 ? '+' : '' }}{{ pitch }} semitones</span>
-      </label>
-    </div>
-
-    <!-- Grain row -->
-    <div class="controls-row grain-row">
-      <label class="control-group">
-        <span>Grain Size</span>
-        <input type="range" min="0.01" max="0.5" step="0.01" v-model.number="grainSize" aria-label="Grain size" />
-        <span class="readout">{{ (grainSize * 1000).toFixed(0) }}ms</span>
-      </label>
-
-      <label class="control-group">
-        <span>Overlap</span>
-        <input type="range" min="0" :max="grainSize - 0.001" step="0.001" v-model.number="overlap" aria-label="Grain overlap" />
-        <span class="readout">{{ (overlap * 1000).toFixed(0) }}ms</span>
-        <span v-if="overlapClamped" class="clamp-hint" aria-live="polite">clamped to grain max</span>
-      </label>
-
-      <label class="control-group">
-        <span>Jitter</span>
-        <input type="range" min="0" max="1" step="0.01" v-model.number="jitter" aria-label="Grain jitter" />
-        <span class="readout">{{ (jitter * 100).toFixed(0) }}%</span>
-      </label>
-    </div>
-
-    <!-- Preset buttons -->
-    <div class="presets-row">
-      <span class="presets-label">Presets:</span>
-      <button
-        v-for="preset in PRESET_NAMES"
-        :key="preset.id"
-        :class="{ active: activePreset === preset.id }"
-        @click="applyPreset(preset.id)"
-      >{{ preset.label }}</button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Module-level preset constant — allocated once, not per call
-const PRESETS: Record<string, { grainSize: number; overlap: number; jitter: number; speed: number; pitch: number }> = {
-  smooth:  { grainSize: 0.25,  overlap: 0.12,  jitter: 0.02, speed: 1,   pitch: 0 },
+const PRESETS: Record<string, { grainSize: number, overlap: number, jitter: number, speed: number, pitch: number }> = {
+  smooth: { grainSize: 0.25, overlap: 0.12, jitter: 0.02, speed: 1, pitch: 0 },
   // choppy: 40ms grains ensure tonal material completes a full cycle above ~25 Hz (M25)
-  choppy:  { grainSize: 0.04,  overlap: 0.005, jitter: 0.1,  speed: 1,   pitch: 0 },
-  scatter: { grainSize: 0.08,  overlap: 0.02,  jitter: 0.8,  speed: 0.5, pitch: 0 },
+  choppy: { grainSize: 0.04, overlap: 0.005, jitter: 0.1, speed: 1, pitch: 0 },
+  scatter: { grainSize: 0.08, overlap: 0.02, jitter: 0.8, speed: 0.5, pitch: 0 },
   // freeze: near-zero jitter and overlap close to grain size for stable freeze texture (M24)
-  freeze:  { grainSize: 0.15,  overlap: 0.14,  jitter: 0.02, speed: 0.1, pitch: 0 },
+  freeze: { grainSize: 0.15, overlap: 0.14, jitter: 0.02, speed: 0.1, pitch: 0 },
 }
 
 const PRESET_NAMES = [
-  { id: 'smooth',  label: 'Smooth Pad' },
-  { id: 'choppy',  label: 'Choppy' },
+  { id: 'smooth', label: 'Smooth Pad' },
+  { id: 'choppy', label: 'Choppy' },
   { id: 'scatter', label: 'Scatter' },
-  { id: 'freeze',  label: 'Freeze' },
+  { id: 'freeze', label: 'Freeze' },
 ]
 
 // Module-level audio state (outside reactive — created once)
@@ -126,17 +39,21 @@ const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Parameters (synced to grainPlayer via watch)
 const position = ref(0)
-const pitch = ref(0)           // semitones
-const speed = ref(1)           // 0.1–3x multiplier
-const grainSize = ref(0.1)     // seconds
-const overlap = ref(0.05)      // seconds
-const jitter = ref(0)          // 0–1
+const pitch = ref(0) // semitones
+const speed = ref(1) // 0.1–3x multiplier
+const grainSize = ref(0.1) // seconds
+const overlap = ref(0.05) // seconds
+const jitter = ref(0) // 0–1
 const loop = ref(true)
 
 // Parameter watches
-watch(pitch, (v) => { if (grainPlayer) grainPlayer.pitch = v })
+watch(pitch, (v) => {
+  if (grainPlayer)
+    grainPlayer.pitch = v
+})
 watch(grainSize, (v) => {
-  if (grainPlayer) grainPlayer.grainSize = v
+  if (grainPlayer)
+    grainPlayer.grainSize = v
   // Clamp overlap if needed — show feedback to user (M14)
   if (overlap.value >= v) {
     overlap.value = Math.max(0, v - 0.001)
@@ -144,12 +61,19 @@ watch(grainSize, (v) => {
     setTimeout(() => { overlapClamped.value = false }, 2000)
   }
 })
-watch(overlap, (v) => { if (grainPlayer) grainPlayer.overlap = v })
-watch(jitter, (v) => { if (grainPlayer) grainPlayer.jitter = v })
+watch(overlap, (v) => {
+  if (grainPlayer)
+    grainPlayer.overlap = v
+})
+watch(jitter, (v) => {
+  if (grainPlayer)
+    grainPlayer.jitter = v
+})
 
 // Lazy init
 async function ensureLoaded() {
-  if (lib) return
+  if (lib)
+    return
   lib = await import('ez-web-audio')
   const sound = await lib.createSound('/ez-web-audio/audio/grain-sample.mp3')
   cachedBuffer = (sound as any).audioBuffer as AudioBuffer
@@ -169,7 +93,8 @@ async function ensureLoaded() {
 }
 
 async function togglePlay() {
-  if (loading.value) return
+  if (loading.value)
+    return
   try {
     loading.value = true
     error.value = ''
@@ -178,7 +103,8 @@ async function togglePlay() {
       grainPlayer.stop()
       playing.value = false
       stopOverlayLoop()
-    } else {
+    }
+    else {
       grainPlayer.play()
       playing.value = true
       startOverlayLoop()
@@ -193,16 +119,19 @@ async function togglePlay() {
 }
 
 function onLoopChange() {
-  if (grainPlayer) grainPlayer.loop = loop.value
+  if (grainPlayer)
+    grainPlayer.loop = loop.value
 }
 
 // Canvas setup (DPR-aware, matches VisualizationDemo.vue pattern)
 function setupCanvas() {
   const canvas = waveformCanvas.value
-  if (!canvas) return
+  if (!canvas)
+    return
   const dpr = window.devicePixelRatio || 1
   const container = canvas.parentElement
-  if (!container) return
+  if (!container)
+    return
   const logicalWidth = container.clientWidth
   const logicalHeight = 160
   canvas.width = logicalWidth * dpr
@@ -210,7 +139,8 @@ function setupCanvas() {
   canvas.dataset.logicalWidth = String(logicalWidth)
   canvas.dataset.logicalHeight = String(logicalHeight)
   const ctx = canvas.getContext('2d')
-  if (ctx) ctx.scale(dpr, dpr)
+  if (ctx)
+    ctx.scale(dpr, dpr)
 }
 
 // Resolve CSS custom properties for canvas drawing (light/dark mode aware) (H10)
@@ -231,9 +161,11 @@ function resolveCanvasColors() {
 // Pass withOverlay=false (default) to cache the result as ImageData for fast overlay redraws.
 function drawWaveform(withOverlay = false) {
   const canvas = waveformCanvas.value
-  if (!canvas || !cachedBuffer) return
+  if (!canvas || !cachedBuffer)
+    return
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx)
+    return
   const width = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
   const height = Number(canvas.dataset.logicalHeight) || canvas.clientHeight
   const data = cachedBuffer.getChannelData(0)
@@ -251,8 +183,10 @@ function drawWaveform(withOverlay = false) {
     const base = x * step
     for (let s = 0; s < step && (base + s) < data.length; s++) {
       const v = data[base + s]
-      if (v < min) min = v
-      if (v > max) max = v
+      if (v < min)
+        min = v
+      if (v > max)
+        max = v
     }
     const yLow = ((min + 1) / 2) * height
     const yHigh = ((max + 1) / 2) * height
@@ -263,7 +197,8 @@ function drawWaveform(withOverlay = false) {
 
   if (withOverlay) {
     drawOverlayOnCtx(ctx, width, height, colors)
-  } else {
+  }
+  else {
     // Cache as ImageData for overlay redraws
     waveformImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   }
@@ -303,9 +238,11 @@ function drawOverlayOnCtx(
 // Overlay: restore cached waveform then draw position/jitter on top
 function drawOverlay() {
   const canvas = waveformCanvas.value
-  if (!canvas || !waveformImageData) return
+  if (!canvas || !waveformImageData)
+    return
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx)
+    return
   const width = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
   const height = Number(canvas.dataset.logicalHeight) || canvas.clientHeight
   const colors = resolveCanvasColors()
@@ -341,7 +278,8 @@ function stopOverlayLoop() {
 // Canvas drag interaction (position control)
 function getPositionFromEvent(clientX: number): number {
   const canvas = waveformCanvas.value
-  if (!canvas) return 0
+  if (!canvas)
+    return 0
   const rect = canvas.getBoundingClientRect()
   const x = clientX - rect.left
   const width = Number(canvas.dataset.logicalWidth) || canvas.clientWidth
@@ -352,14 +290,17 @@ function handleMouseDown(e: MouseEvent) {
   isDragging.value = true
   const newPos = getPositionFromEvent(e.clientX)
   position.value = newPos
-  if (grainPlayer) grainPlayer.position = newPos
+  if (grainPlayer)
+    grainPlayer.position = newPos
 }
 
 function handleMouseMove(e: MouseEvent) {
-  if (!isDragging.value) return
+  if (!isDragging.value)
+    return
   const newPos = getPositionFromEvent(e.clientX)
   position.value = newPos
-  if (grainPlayer) grainPlayer.position = newPos
+  if (grainPlayer)
+    grainPlayer.position = newPos
 }
 
 function handleMouseUp() {
@@ -370,14 +311,17 @@ function handleTouchStart(e: TouchEvent) {
   isDragging.value = true
   const newPos = getPositionFromEvent(e.touches[0].clientX)
   position.value = newPos
-  if (grainPlayer) grainPlayer.position = newPos
+  if (grainPlayer)
+    grainPlayer.position = newPos
 }
 
 function handleTouchMove(e: TouchEvent) {
-  if (!isDragging.value) return
+  if (!isDragging.value)
+    return
   const newPos = getPositionFromEvent(e.touches[0].clientX)
   position.value = newPos
-  if (grainPlayer) grainPlayer.position = newPos
+  if (grainPlayer)
+    grainPlayer.position = newPos
 }
 
 // H1: touchend/touchcancel handlers — prevent isDragging from staying stuck on mobile
@@ -388,13 +332,15 @@ function handleTouchEnd() {
 // Resize: re-setup canvas and redraw cached waveform
 function handleResize() {
   setupCanvas()
-  if (cachedBuffer) drawWaveform()
+  if (cachedBuffer)
+    drawWaveform()
 }
 
 // Apply a named preset and track which is active (M15)
 function applyPreset(name: string) {
   const p = PRESETS[name]
-  if (!p) return
+  if (!p)
+    return
   activePreset.value = name
   grainSize.value = p.grainSize
   overlap.value = p.overlap
@@ -424,6 +370,99 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 </script>
+
+<template>
+  <div class="grain-player-demo">
+    <!-- Error banner -->
+    <div v-if="error" class="error-banner">
+      {{ error }}
+    </div>
+
+    <!-- Waveform canvas — interaction AND visualization surface -->
+    <div class="canvas-container">
+      <canvas
+        ref="waveformCanvas"
+        class="waveform-canvas"
+        :class="{ dragging: isDragging, loaded: waveformLoaded }"
+        :style="{ cursor: waveformLoaded ? (isDragging ? 'grabbing' : 'crosshair') : 'default', touchAction: 'none' }"
+        @mousedown="handleMouseDown"
+        @mousemove="handleMouseMove"
+        @touchstart.prevent="handleTouchStart"
+        @touchmove.prevent="handleTouchMove"
+      />
+      <div v-if="!waveformLoaded" class="canvas-placeholder">
+        <span>Click Play to load waveform</span>
+      </div>
+    </div>
+
+    <!-- Playback row -->
+    <div class="controls-row playback-row">
+      <button
+        class="play-button"
+        :aria-label="playing ? 'Stop' : 'Play'"
+        :disabled="loading"
+        @click="togglePlay"
+      >
+        {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
+      </button>
+
+      <label class="control-group">
+        <span>Speed</span>
+        <input v-model.number="speed" type="range" min="0.1" max="3" step="0.05">
+        <span class="readout">{{ speed.toFixed(2) }}x</span>
+      </label>
+
+      <label class="control-group loop-toggle">
+        <input v-model="loop" type="checkbox" @change="onLoopChange">
+        <span>Loop</span>
+      </label>
+    </div>
+
+    <!-- Pitch row -->
+    <div class="controls-row pitch-row">
+      <label class="control-group wide">
+        <span>Pitch</span>
+        <input v-model.number="pitch" type="range" min="-24" max="24" step="1" aria-label="Pitch in semitones">
+        <span class="readout">{{ pitch > 0 ? '+' : '' }}{{ pitch }} semitones</span>
+      </label>
+    </div>
+
+    <!-- Grain row -->
+    <div class="controls-row grain-row">
+      <label class="control-group">
+        <span>Grain Size</span>
+        <input v-model.number="grainSize" type="range" min="0.01" max="0.5" step="0.01" aria-label="Grain size">
+        <span class="readout">{{ (grainSize * 1000).toFixed(0) }}ms</span>
+      </label>
+
+      <label class="control-group">
+        <span>Overlap</span>
+        <input v-model.number="overlap" type="range" min="0" :max="grainSize - 0.001" step="0.001" aria-label="Grain overlap">
+        <span class="readout">{{ (overlap * 1000).toFixed(0) }}ms</span>
+        <span v-if="overlapClamped" class="clamp-hint" aria-live="polite">clamped to grain max</span>
+      </label>
+
+      <label class="control-group">
+        <span>Jitter</span>
+        <input v-model.number="jitter" type="range" min="0" max="1" step="0.01" aria-label="Grain jitter">
+        <span class="readout">{{ (jitter * 100).toFixed(0) }}%</span>
+      </label>
+    </div>
+
+    <!-- Preset buttons -->
+    <div class="presets-row">
+      <span class="presets-label">Presets:</span>
+      <button
+        v-for="preset in PRESET_NAMES"
+        :key="preset.id"
+        :class="{ active: activePreset === preset.id }"
+        @click="applyPreset(preset.id)"
+      >
+        {{ preset.label }}
+      </button>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 /* M31: bordered card container matching EffectsChainDemo.vue pattern */
