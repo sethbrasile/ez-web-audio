@@ -7,10 +7,10 @@ import { expect, test } from '@playwright/test'
 
 test.describe('Documentation Site Navigation', () => {
   const pages = [
-    { path: '/', name: 'Homepage' },
-    { path: '/guide/getting-started', name: 'Getting Started' },
-    { path: '/guide/concepts', name: 'Core Concepts' },
-    { path: '/examples/', name: 'Examples Overview' },
+    { path: './', name: 'Homepage' },
+    { path: 'guide/getting-started', name: 'Getting Started' },
+    { path: 'guide/concepts', name: 'Core Concepts' },
+    { path: 'examples/', name: 'Examples Overview' },
   ]
 
   for (const pageInfo of pages) {
@@ -29,7 +29,7 @@ test.describe('Documentation Site Navigation', () => {
   }
 
   test('homepage has correct title', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('./')
     await page.waitForLoadState('domcontentloaded')
     await page.waitForSelector('h1', { timeout: 10000 })
 

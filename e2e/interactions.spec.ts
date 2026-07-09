@@ -19,17 +19,24 @@ test.describe('Basic Playback page interactions', () => {
     page.on('pageerror', err => errors.push(err.message))
 
     await page.goto('examples/basic-playback')
+    // Page hosts two demos (AudioDemo + TrackDemo), both use .play-btn —
+    // wait on the class, then scope assertions to AudioDemo's "Play Sound" button.
     await page.waitForSelector('.play-btn', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
+    const playSoundBtn = page.getByRole('button', { name: 'Play Sound' })
+
     // Verify button is visible
-    expect(await page.locator('.play-btn').isVisible()).toBe(true)
+    expect(await playSoundBtn.isVisible()).toBe(true)
 
     // Click play button
-    await page.locator('.play-btn').click()
+    await playSoundBtn.click()
 
-    // Verify button still exists after click (handler fired without crashing)
-    expect(await page.locator('.play-btn').isVisible()).toBe(true)
+    // Verify button still exists after click (handler fired without crashing).
+    // Uses a retrying assertion — the click briefly toggles the button to a
+    // disabled "Loading…" state while ensureInit()/play() resolve, so a
+    // single-shot isVisible() check can race Vue's reactive DOM patch.
+    await expect(playSoundBtn).toBeVisible()
 
     // Verify no uncaught errors
     expect(errors, 'basic-playback should have no page errors').toHaveLength(0)
@@ -427,11 +434,12 @@ test.describe('EffectsChain page interactions', () => {
     page.on('pageerror', err => errors.push(err.message))
 
     await page.goto('examples/effects-chain')
-    await page.waitForSelector('[aria-label="Play"]', { timeout: 10000 })
+    await page.waitForSelector('.effects-chain-demo .play-btn', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
-    expect(await page.locator('[aria-label="Play"]').isVisible()).toBe(true)
-    await page.locator('[aria-label="Play"]').click()
+    const playBtn = page.locator('.effects-chain-demo .play-btn')
+    expect(await playBtn.isVisible()).toBe(true)
+    await playBtn.click()
     expect(errors, 'effects-chain play should have no page errors').toHaveLength(0)
   })
 
@@ -450,12 +458,12 @@ test.describe('EffectsChain page interactions', () => {
     const bypassBtns = page.locator('.bypass-btn')
     expect(await bypassBtns.count()).toBe(4)
 
-    // Initial state: all effects active (aria-pressed="true")
-    expect(await bypassBtns.nth(0).getAttribute('aria-pressed')).toBe('true')
-
-    // Click bypass on first effect — aria-pressed should toggle to false
-    await bypassBtns.nth(0).click()
+    // Initial state: all effects active, i.e. NOT bypassed (aria-pressed="false")
     expect(await bypassBtns.nth(0).getAttribute('aria-pressed')).toBe('false')
+
+    // Click bypass on first effect — aria-pressed should toggle to true (bypassed)
+    await bypassBtns.nth(0).click()
+    expect(await bypassBtns.nth(0).getAttribute('aria-pressed')).toBe('true')
     // The effect card should gain 'bypassed' class
     expect(await page.locator('.effect-card.bypassed').count()).toBe(1)
 
@@ -470,9 +478,9 @@ test.describe('EffectsChain page interactions', () => {
     await page.waitForSelector('.effect-card', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
-    // At minimum 11 sliders: 3 delay + 3 reverb + 2 compressor + 3 eq
+    // At minimum 14 sliders: 3 delay + 3 reverb + 5 compressor (incl. attack/release) + 3 eq
     const sliders = page.locator('.effect-card input[type="range"]')
-    expect(await sliders.count()).toBeGreaterThanOrEqual(11)
+    expect(await sliders.count()).toBeGreaterThanOrEqual(14)
 
     expect(errors, 'effects-chain sliders should have no page errors').toHaveLength(0)
   })
@@ -485,20 +493,20 @@ test.describe('EffectsChain page interactions', () => {
     await page.waitForSelector('.effect-card', { timeout: 10000 })
     await page.waitForLoadState('networkidle')
 
-    // Each card should have move up and move down buttons (by aria-label)
-    // First card: move-up disabled, move-down enabled
+    // Each card should have move-earlier and move-later buttons (by aria-label)
+    // First card: move-earlier disabled, move-later enabled
     const firstCard = page.locator('.effect-card').nth(0)
-    const moveUpFirst = firstCard.locator('[aria-label*="up"]')
-    const moveDownFirst = firstCard.locator('[aria-label*="down"]')
-    expect(await moveUpFirst.isDisabled()).toBe(true)
-    expect(await moveDownFirst.isDisabled()).toBe(false)
+    const moveEarlierFirst = firstCard.locator('[aria-label*="earlier"]')
+    const moveLaterFirst = firstCard.locator('[aria-label*="later"]')
+    expect(await moveEarlierFirst.isDisabled()).toBe(true)
+    expect(await moveLaterFirst.isDisabled()).toBe(false)
 
-    // Last card: move-down disabled, move-up enabled
+    // Last card: move-later disabled, move-earlier enabled
     const lastCard = page.locator('.effect-card').nth(3)
-    const moveUpLast = lastCard.locator('[aria-label*="up"]')
-    const moveDownLast = lastCard.locator('[aria-label*="down"]')
-    expect(await moveUpLast.isDisabled()).toBe(false)
-    expect(await moveDownLast.isDisabled()).toBe(true)
+    const moveEarlierLast = lastCard.locator('[aria-label*="earlier"]')
+    const moveLaterLast = lastCard.locator('[aria-label*="later"]')
+    expect(await moveEarlierLast.isDisabled()).toBe(false)
+    expect(await moveLaterLast.isDisabled()).toBe(true)
 
     expect(errors, 'effects-chain move buttons should have no page errors').toHaveLength(0)
   })
@@ -534,16 +542,18 @@ test.describe('EffectsChain page interactions', () => {
     expect(await page.locator('.flow-node.source').isVisible()).toBe(true)
     expect(await page.locator('.flow-node.output').isVisible()).toBe(true)
 
-    // All 4 effects are active by default so 4 effect nodes should appear
-    expect(await page.locator('.flow-node.effect').count()).toBe(4)
+    // All 4 effects render as nodes in the diagram regardless of bypass state
+    expect(await page.locator('.flow-node.effect-node').count()).toBe(4)
 
-    // Bypass an effect and verify diagram updates (one fewer node)
+    // Bypass an effect — the diagram dims the node (adds 'bypassed' class) but
+    // does NOT remove it; total node count stays the same.
     await page.locator('.bypass-btn').nth(0).click()
     await page.waitForFunction(
-      () => document.querySelectorAll('.flow-node.effect').length === 3,
+      () => document.querySelectorAll('.flow-node.effect-node.bypassed').length === 1,
       { timeout: 3000 },
     )
-    expect(await page.locator('.flow-node.effect').count()).toBe(3)
+    expect(await page.locator('.flow-node.effect-node.bypassed').count()).toBe(1)
+    expect(await page.locator('.flow-node.effect-node').count()).toBe(4)
 
     expect(errors, 'effects-chain signal flow should have no page errors').toHaveLength(0)
   })
@@ -690,8 +700,8 @@ test.describe('TransportSequencer page interactions', () => {
     // Uses 30s timeout: piano.js soundfont (1.4MB) must load before transport starts
     await playBtn.click()
     await page.waitForFunction(
-      () => document.querySelector('.transport-buttons .pause-btn') !== null ||
-            document.querySelector('.transport-buttons .play-btn')?.textContent?.includes('Pause'),
+      () => document.querySelector('.transport-buttons .pause-btn') !== null
+        || document.querySelector('.transport-buttons .play-btn')?.textContent?.includes('Pause'),
       { timeout: 30000 },
     )
 
