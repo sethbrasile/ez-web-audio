@@ -1,9 +1,7 @@
 {
-  "name": "ez-web-audio-workspace",
-  "private": true,
+  "name": "ez-web-audio",
   "type": "module",
   "version": "0.2.0",
-  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
   "description": "A zero-dependency TypeScript library that makes the Web Audio API easy. Play sounds, synthesizers, drum machines, and audio effects with minimal code.",
   "author": {
     "name": "Seth Brasile",
@@ -14,7 +12,8 @@
   "homepage": "https://sethbrasile.github.io/ez-web-audio",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sethbrasile/ez-web-audio.git"
+    "url": "https://github.com/sethbrasile/ez-web-audio.git",
+    "directory": "packages/core"
   },
   "bugs": {
     "url": "https://github.com/sethbrasile/ez-web-audio/issues"
@@ -42,44 +41,36 @@
     "typescript"
   ],
   "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "dev": "pnpm build:lib && vitepress dev docs",
-    "build": "npm run build:lib && npm run docs:build",
-    "build:lib": "tsc --noEmit && vite build",
-    "docs:dev": "typedoc && vitepress dev docs",
-    "docs:build": "typedoc && vitepress build docs && node scripts/patch-llms-size.mjs",
-    "docs:preview": "vitepress preview docs",
-    "preview": "vitepress preview docs",
+    "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "test": "vitest",
-    "test:e2e": "playwright test",
-    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test --run && pnpm build:lib"
+    "prepublishOnly": "pnpm typecheck && pnpm test --run && pnpm build"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.4.3",
-    "@nx-js/observer-util": "^4.2.2",
-    "@playwright/test": "^1.58.2",
-    "@types/prismjs": "^1.26.4",
-    "eslint": "10.0.0",
     "happy-dom": "^20.6.1",
-    "prismjs": "^1.29.0",
     "standardized-audio-context": "^25.3.77",
     "standardized-audio-context-mock": "^9.7.9",
-    "typedoc": "^0.28.16",
-    "typedoc-plugin-markdown": "^4.9.0",
-    "typedoc-vitepress-theme": "^1.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-prismjs": "^0.0.11",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitepress": "^1.6.4",
-    "vitepress-plugin-llms": "^1.11.0",
     "vitest": "^4.0.18"
   }
 }
