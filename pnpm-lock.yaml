@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ez-web-audio/vue':
+        specifier: workspace:*
+        version: link:packages/vue
       ez-web-audio:
         specifier: workspace:*
         version: link:packages/core

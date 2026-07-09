@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 ## Current Position
 
-Phase: M8 72-01 complete (workspace conversion; 22 demos' E2E green again)
+Phase: M8 Phase 72 COMPLETE (72-01 workspace + 72-02 @ez-web-audio/vue composables)
 Status: Executing M8 per `.planning/M8-PLAYBOOK.md`. Design packet at `.planning/DESIGN-HANDOFF/` (gate 1 done). M7 UAT waived to run in parallel (Seth, 2026-07-09).
-Next: 72-02 (Vue bindings) → 73-01 (composables refactor) → 74-02 (design implementation). Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is 12+ commits ahead of origin — pushing redeploys docs site (stale since March).
+Next: 73-01 (refactor all demos onto @ez-web-audio/vue) → 74-02 (design implementation). 77-01 (React) unblocked, parallel-ok. Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is 16+ commits ahead of origin — pushing redeploys docs site (stale since March).
 
 ## Milestone 8 Scope Decisions (user, 2026-07-09)
 
