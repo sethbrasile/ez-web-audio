@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCleanup, useSound, useSprite } from '@ez-web-audio/vue'
 import { onUnmounted, ref } from 'vue'
 
 const loading = ref(false)
@@ -7,8 +8,9 @@ const error = ref('')
 const playing = ref<string | null>(null)
 const playingFull = ref(false)
 
-let sprite: any = null
-let fullSound: any = null
+const cleanup = useCleanup()
+const { instance: sprite, load: loadSprite } = useSprite()
+const { instance: fullSound, load: loadFull } = useSound()
 let playTimer: ReturnType<typeof setTimeout> | null = null
 let fullTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -51,10 +53,8 @@ async function ensureLoaded() {
     loading.value = true
     error.value = ''
 
-    const lib = await import('ez-web-audio')
-
-    sprite = await lib.createSprite('/ez-web-audio/audio/sfx-sprite.mp3', manifest)
-    fullSound = await lib.createSound('/ez-web-audio/audio/sfx-sprite.mp3')
+    cleanup.register(await loadSprite('/ez-web-audio/audio/sfx-sprite.mp3', manifest))
+    cleanup.register(await loadFull('/ez-web-audio/audio/sfx-sprite.mp3'))
 
     loaded.value = true
     return true
@@ -78,7 +78,7 @@ async function playSegment(name: string) {
       playTimer = null
     }
 
-    sprite.play(name)
+    sprite.value?.play(name)
     playing.value = name
 
     const seg = segments.find(s => s.name === name)
@@ -125,8 +125,8 @@ function stopPlayhead() {
 async function toggleFullPlayback() {
   if (playingFull.value) {
     // Stop playback
-    if (fullSound) {
-      try { fullSound.stop() }
+    if (fullSound.value) {
+      try { fullSound.value.stop() }
       catch {}
     }
     if (fullTimer) {
@@ -147,7 +147,7 @@ async function toggleFullPlayback() {
       fullTimer = null
     }
 
-    fullSound.play()
+    fullSound.value?.play()
     playingFull.value = true
     startPlayhead()
 
@@ -176,16 +176,6 @@ onUnmounted(() => {
   if (fullTimer)
     clearTimeout(fullTimer)
   stopPlayhead()
-  if (sprite) {
-    try { sprite.stopAll() }
-    catch {}
-    try { sprite.dispose() }
-    catch {}
-  }
-  if (fullSound) {
-    try { fullSound.stop() }
-    catch {}
-  }
 })
 </script>
 
