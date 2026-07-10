@@ -80,6 +80,17 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 
 **Library gap also surfaced (logged, not fixed):** demos wanting a click-free gain change had to hand-roll `getGainNode().gain.linearRampToValueAtTime(...)` (Ambient's `fadeGainTo`). `changeGainTo` is instant-only — a ramped variant (e.g. `changeGainTo(v, { over: seconds })`) is a pre-1.0 candidate. Note: the hand-rolled fade also bypasses `_targetGain` bookkeeping — harmless in Ambient (instances recreated per start) but a footgun the API gap encourages.
 
+## 2026-07-10 · 75 gate-2 · Ambient redesign (ez-audio-7uq) — design + gaps observed
+
+**Research** (MusicRadar ambient sound-design guides): pleasing synthesized ambient = detuned oscillator stacks (unison pairs ~5-10¢ apart for sub-Hz beating), slow-attack/max-sustain amp behavior, consonant voicings (fifths/octaves, avoid thirds so any root works), sub-0.2Hz LFOs on filter cutoff/level for non-repeating movement, and space (long reverb) as a structural element, not garnish.
+
+**Built (API-only):** Pad = PolySynth(triangle) voiced root / root+6¢ / fifth / octave−5¢ / twelfth → lowpass 900Hz (0.05Hz LFO breathing) → reverb(decay 5, wet 0.45). Texture = white noise → lowpass w/ 0.08Hz cutoff LFO. Shimmer = PolySynth(sine) fifth-pair +7¢ → reverb(decay 6, wet 0.6) with 0.13Hz tremolo LFO on master gain. Layer masters 0.55/0.05/0.1, swell 1.2s, fade-out-then-teardown stop. Loudness peak 0.71; full start/toggle/slider/stop/restart cycle error-free.
+
+**Gaps observed (logged, not changed):**
+- PolySynth `play()` has no per-voice `detune` — worked around with frequency ratios (`f × 2^(cents/1200)`), fine but a `detune` PlayOption reads better.
+- LFO `connect(target, 'frequency')` captures `audioSourceNode.frequency` at connect time — stale after any replay (oscillator nodes are single-use). Didn't hit it (only gain/effect params used), but it's a footgun for LFO-on-pitch across replays.
+- Envelope-attack-to-1.0 friction (already logged) again forced master-gain swells instead of ADSR.
+
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).

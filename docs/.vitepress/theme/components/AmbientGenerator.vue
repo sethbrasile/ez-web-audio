@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { FilterEffect } from 'ez-web-audio'
-import { useCleanup, useOscillator, useWhiteNoise } from '@ez-web-audio/vue'
-import { createFilterEffect } from 'ez-web-audio'
+import type { FilterEffect, LFO, VoiceHandle } from 'ez-web-audio'
+import { useCleanup, usePolySynth, useWhiteNoise } from '@ez-web-audio/vue'
+import { createFilterEffect, createLFO, createReverb } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
@@ -17,31 +17,57 @@ const textureEnabled = ref(true)
 const shimmerEnabled = ref(true)
 
 // Layer parameters
-const droneFrequency = ref(80)
+const droneFrequency = ref(65) // pad root (~C2)
 const textureFilterCutoff = ref(800)
-const shimmerFrequency = ref(600)
+const shimmerFrequency = ref(523) // ~C5
 
-// Per-layer gain staging. Kept low so the three simultaneous layers sum
-// without clipping the demo master bus (phase 75 loudness target: peak ≤ 0.985;
-// the bus limiter is a safety net, not part of the sound).
-const DRONE_GAIN = 0.25
-const TEXTURE_GAIN = 0.08
-const SHIMMER_GAIN = 0.05
+// ── Sound design (gate-2 redesign, from ambient-synthesis research) ─────────
+// Pad: a detuned oscillator stack voiced as root / root+6¢ / fifth / octave /
+//      twelfth through a gentle lowpass + long reverb. The ±6¢ pairs beat
+//      slowly (sub-Hz), and a very slow LFO breathes the filter cutoff —
+//      "slow and subtle movement" is the core of ambient sound design.
+// Texture: lowpassed white noise whose cutoff breathes on its own slow LFO.
+// Shimmer: two quiet detuned sines a fifth apart, heavy reverb, slow tremolo.
+//
+// Voicing intervals (× root): open fifth + octave + twelfth — no third, so
+// the stack stays consonant everywhere on the root slider.
+const PAD_VOICES: { ratio: number, gain: number }[] = [
+  { ratio: 1, gain: 0.3 },
+  { ratio: 2 ** (6 / 1200), gain: 0.3 }, // root +6 cents — slow beating
+  { ratio: 1.5, gain: 0.22 }, // fifth
+  { ratio: 2 * 2 ** (-5 / 1200), gain: 0.16 }, // octave −5 cents
+  { ratio: 3, gain: 0.1 }, // twelfth (air)
+]
+const SHIMMER_VOICES: { ratio: number, gain: number }[] = [
+  { ratio: 1, gain: 0.5 },
+  { ratio: 1.5 * 2 ** (7 / 1200), gain: 0.35 }, // fifth +7 cents
+]
+
+// Per-layer master gain staging — three layers must sum below the demo
+// master-bus clip point (phase 75 loudness target: peak ≤ 0.985).
+const PAD_GAIN = 0.55
+const TEXTURE_GAIN = 0.05
+const SHIMMER_GAIN = 0.1
 
 // Uniform swell time for all three layers (so they fade in together, not
 // staggered) and a short fade for click-free toggles / volume moves.
-const SWELL_SEC = 0.6
+const SWELL_SEC = 1.2
 const TOGGLE_FADE_SEC = 0.12
 
 // Sound instances
 const cleanup = useCleanup()
-const { instance: droneOscillator, load: loadDrone, reset: resetDrone } = useOscillator()
-const { instance: shimmerOscillator, load: loadShimmer, reset: resetShimmer } = useOscillator()
+const { instance: padSynth, load: loadPadSynth, reset: resetPadSynth } = usePolySynth()
+const { instance: shimmerSynth, load: loadShimmerSynth, reset: resetShimmerSynth } = usePolySynth()
 const { instance: textureNoise, load: loadTexture, reset: resetTexture } = useWhiteNoise()
 let textureFilter: FilterEffect | null = null
+let padFilter: FilterEffect | null = null
+let padVoiceHandles: VoiceHandle[] = []
+let shimmerVoiceHandles: VoiceHandle[] = []
+let lfos: LFO[] = []
+let stopFadeTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Smoothly ramp a layer's gain (no instant jump = no click). Used for toggles
-// and the master-volume slider while the layer keeps playing.
+// Smoothly ramp a layer's gain (no instant jump = no click). Used for the
+// initial swell, toggles, and the master-volume slider.
 function fadeGainTo(inst: { getGainNode: () => GainNode } | null, target: number, seconds = TOGGLE_FADE_SEC): void {
   if (!inst)
     return
@@ -73,40 +99,56 @@ async function startAll() {
   loading.value = true
 
   try {
-    // All three layers swell in from 0 over the SAME short time (SWELL_SEC) so
-    // they start together — a uniform gain ramp, NOT the ADSR envelope (whose
-    // attack ramps to full scale 1.0 regardless of changeGainTo and would clip
-    // when the layers sum, phase 75). Targets include masterVolume so the
-    // initial level matches the slider.
+    if (stopFadeTimeout) {
+      clearTimeout(stopFadeTimeout)
+      stopFadeTimeout = null
+    }
     const mv = masterVolume.value
 
-    // Drone - low-frequency sine wave.
-    const drone = cleanup.register(await loadDrone({
-      frequency: droneFrequency.value,
-      type: 'sine',
-    }))
-    drone.onPlayRamp('gain', 'linear').from(0).to(droneEnabled.value ? DRONE_GAIN * mv : 0).in(SWELL_SEC)
+    // ── Pad — detuned chord stack -> lowpass -> long reverb ────────────────
+    // Voice ADSR is avoided on purpose: the envelope attack ramps to absolute
+    // 1.0 regardless of voice gain (phase-75 library friction), so the swell
+    // is a master-gain ramp instead.
+    const pad = cleanup.register(await loadPadSynth({ maxVoices: 8, type: 'triangle' }))
+    padFilter = createFilterEffect('lowpass', { frequency: 900, q: 0.6 })
+    pad.addEffect(padFilter)
+    pad.addEffect(createReverb({ decay: 5, preDelay: 0.03, wet: 0.45 }))
+    pad.changeGainTo(0)
+    padVoiceHandles = PAD_VOICES.map(v =>
+      pad.play({ frequency: droneFrequency.value * v.ratio, gain: v.gain }),
+    )
 
-    // Texture - white noise through a lowpass filter.
+    // ── Texture — white noise through a breathing lowpass ──────────────────
     const texture = cleanup.register(await loadTexture())
     textureFilter = createFilterEffect('lowpass', {
       frequency: textureFilterCutoff.value,
       q: 1.0,
     })
     texture.addEffect(textureFilter)
-    texture.onPlayRamp('gain', 'linear').from(0).to(textureEnabled.value ? TEXTURE_GAIN * mv : 0).in(SWELL_SEC)
+    texture.changeGainTo(0)
+    void texture.play()
 
-    // Shimmer - high-frequency triangle wave.
-    const shimmer = cleanup.register(await loadShimmer({
-      frequency: shimmerFrequency.value,
-      type: 'triangle',
-    }))
-    shimmer.onPlayRamp('gain', 'linear').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN * mv : 0).in(SWELL_SEC)
+    // ── Shimmer — quiet detuned high sines, heavy reverb, slow tremolo ─────
+    const shimmer = cleanup.register(await loadShimmerSynth({ maxVoices: 4, type: 'sine' }))
+    shimmer.addEffect(createReverb({ decay: 6, preDelay: 0.02, wet: 0.6 }))
+    shimmer.changeGainTo(0)
+    shimmerVoiceHandles = SHIMMER_VOICES.map(v =>
+      shimmer.play({ frequency: shimmerFrequency.value * v.ratio, gain: v.gain }),
+    )
 
-    // Start all layers (they swell in together)
-    drone.play()
-    texture.play()
-    shimmer.play()
+    // ── Slow modulation — different sub-0.2Hz rates so movement never loops ─
+    const padFilterLFO = createLFO({ frequency: 0.05, depth: 0.35, type: 'sine' })
+    padFilterLFO.connect(padFilter, 'frequency').start()
+    const textureLFO = createLFO({ frequency: 0.08, depth: 0.4, type: 'sine' })
+    textureLFO.connect(textureFilter, 'frequency').start()
+    const shimmerTremolo = createLFO({ frequency: 0.13, depth: 0.35, type: 'sine' })
+    shimmerTremolo.connect(shimmer, 'gain').start()
+    lfos = [padFilterLFO, textureLFO, shimmerTremolo]
+
+    // All three layers swell in together over the same time
+    fadeGainTo(pad, droneEnabled.value ? PAD_GAIN * mv : 0, SWELL_SEC)
+    fadeGainTo(texture, textureEnabled.value ? TEXTURE_GAIN * mv : 0, SWELL_SEC)
+    fadeGainTo(shimmer, shimmerEnabled.value ? SHIMMER_GAIN * mv : 0, SWELL_SEC)
 
     isPlaying.value = true
   }
@@ -117,19 +159,36 @@ async function startAll() {
 
 function stopAll() {
   try {
-    if (droneOscillator.value) {
-      droneOscillator.value.stop()
-      resetDrone()
-    }
-    if (textureNoise.value) {
-      textureNoise.value.stop()
-      resetTexture()
-    }
-    if (shimmerOscillator.value) {
-      shimmerOscillator.value.stop()
-      resetShimmer()
-    }
+    // Fade everything out briefly, then tear down — an instant stopAll()
+    // would cut the reverb tails with a click
+    fadeGainTo(padSynth.value, 0, TOGGLE_FADE_SEC)
+    fadeGainTo(textureNoise.value, 0, TOGGLE_FADE_SEC)
+    fadeGainTo(shimmerSynth.value, 0, TOGGLE_FADE_SEC)
+
+    const pad = padSynth.value
+    const texture = textureNoise.value
+    const shimmer = shimmerSynth.value
+
+    stopFadeTimeout = setTimeout(() => {
+      stopFadeTimeout = null
+      for (const lfo of lfos) {
+        lfo.dispose()
+      }
+      lfos = []
+      pad?.stopAll()
+      pad?.dispose()
+      void texture?.stop()
+      shimmer?.stopAll()
+      shimmer?.dispose()
+    }, TOGGLE_FADE_SEC * 1000 + 80)
+
+    padVoiceHandles = []
+    shimmerVoiceHandles = []
     textureFilter = null
+    padFilter = null
+    resetPadSynth()
+    resetTexture()
+    resetShimmerSynth()
   }
   catch (e) {
     console.error('Error stopping sounds:', e)
@@ -142,18 +201,18 @@ function updateMasterVolume() {
   if (!isPlaying.value)
     return
 
-  if (droneOscillator.value && droneEnabled.value)
-    fadeGainTo(droneOscillator.value, DRONE_GAIN * masterVolume.value)
+  if (padSynth.value && droneEnabled.value)
+    fadeGainTo(padSynth.value, PAD_GAIN * masterVolume.value)
   if (textureNoise.value && textureEnabled.value)
     fadeGainTo(textureNoise.value, TEXTURE_GAIN * masterVolume.value)
-  if (shimmerOscillator.value && shimmerEnabled.value)
-    fadeGainTo(shimmerOscillator.value, SHIMMER_GAIN * masterVolume.value)
+  if (shimmerSynth.value && shimmerEnabled.value)
+    fadeGainTo(shimmerSynth.value, SHIMMER_GAIN * masterVolume.value)
 }
 
 function toggleDrone() {
   if (!isPlaying.value)
     return
-  fadeGainTo(droneOscillator.value, droneEnabled.value ? DRONE_GAIN * masterVolume.value : 0)
+  fadeGainTo(padSynth.value, droneEnabled.value ? PAD_GAIN * masterVolume.value : 0)
 }
 
 function toggleTexture() {
@@ -165,14 +224,16 @@ function toggleTexture() {
 function toggleShimmer() {
   if (!isPlaying.value)
     return
-  fadeGainTo(shimmerOscillator.value, shimmerEnabled.value ? SHIMMER_GAIN * masterVolume.value : 0)
+  fadeGainTo(shimmerSynth.value, shimmerEnabled.value ? SHIMMER_GAIN * masterVolume.value : 0)
 }
 
 function updateDroneFrequency() {
-  if (!isPlaying.value || !droneOscillator.value)
+  if (!isPlaying.value)
     return
-
-  droneOscillator.value.update('frequency').to(droneFrequency.value).as('ratio')
+  // Re-tune every pad voice live, preserving the voicing ratios
+  padVoiceHandles.forEach((handle, i) => {
+    handle.update('frequency').to(droneFrequency.value * PAD_VOICES[i].ratio).as('ratio')
+  })
 }
 
 function updateTextureFilter() {
@@ -183,14 +244,19 @@ function updateTextureFilter() {
 }
 
 function updateShimmerFrequency() {
-  if (!isPlaying.value || !shimmerOscillator.value)
+  if (!isPlaying.value)
     return
-
-  shimmerOscillator.value.update('frequency').to(shimmerFrequency.value).as('ratio')
+  shimmerVoiceHandles.forEach((handle, i) => {
+    handle.update('frequency').to(shimmerFrequency.value * SHIMMER_VOICES[i].ratio).as('ratio')
+  })
 }
 
 onUnmounted(() => {
   stopAll()
+  if (stopFadeTimeout) {
+    clearTimeout(stopFadeTimeout)
+    stopFadeTimeout = null
+  }
 })
 </script>
 
@@ -226,19 +292,19 @@ onUnmounted(() => {
           <div class="layer-header">
             <label class="layer-toggle">
               <input v-model="droneEnabled" type="checkbox" @change="toggleDrone">
-              <span class="layer-name">Drone</span>
+              <span class="layer-name">Pad</span>
             </label>
-            <span class="layer-desc">Low-frequency sine wave</span>
+            <span class="layer-desc">Detuned chord stack — root, fifth, octave</span>
           </div>
           <label class="layer-control">
-            Frequency: {{ droneFrequency }} Hz
+            Root: {{ droneFrequency }} Hz
             <input
               v-model.number="droneFrequency"
               type="range"
-              min="60"
-              max="120"
+              min="55"
+              max="110"
               step="1"
-              aria-label="Drone frequency"
+              aria-label="Pad root frequency"
               :disabled="!droneEnabled"
               @input="updateDroneFrequency"
             >
@@ -251,7 +317,7 @@ onUnmounted(() => {
               <input v-model="textureEnabled" type="checkbox" @change="toggleTexture">
               <span class="layer-name">Texture</span>
             </label>
-            <span class="layer-desc">Filtered white noise</span>
+            <span class="layer-desc">White noise through a slowly breathing filter</span>
           </div>
           <label class="layer-control">
             Filter Cutoff: {{ textureFilterCutoff }} Hz
@@ -274,7 +340,7 @@ onUnmounted(() => {
               <input v-model="shimmerEnabled" type="checkbox" @change="toggleShimmer">
               <span class="layer-name">Shimmer</span>
             </label>
-            <span class="layer-desc">High-frequency overtones</span>
+            <span class="layer-desc">Airy detuned highs in long reverb</span>
           </div>
           <label class="layer-control">
             Frequency: {{ shimmerFrequency }} Hz
@@ -283,7 +349,7 @@ onUnmounted(() => {
               type="range"
               min="400"
               max="800"
-              step="10"
+              step="1"
               aria-label="Shimmer frequency"
               :disabled="!shimmerEnabled"
               @input="updateShimmerFrequency"
