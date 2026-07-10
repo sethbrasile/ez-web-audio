@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Oscillator } from 'ez-web-audio'
+import { useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
@@ -19,8 +19,9 @@ const heldKeys = new Set<string>()
 const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 
 let ctx: CanvasRenderingContext2D | null = null
-let oscillator: Oscillator | null = null
-let lib: any = null
+
+const cleanup = useCleanup()
+const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
 
 // Note mapping for frequency to note name
 const notes = [
@@ -124,12 +125,6 @@ function drawGrid(x?: number, y?: number) {
   }
 }
 
-async function initIfNeeded() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-}
-
 function updateFromPosition(x: number, y: number) {
   if (!canvas.value)
     return
@@ -150,10 +145,10 @@ function updateFromPosition(x: number, y: number) {
   currentNote.value = frequencyToNote(frequency)
 
   // Update oscillator if playing
-  if (oscillator && isPlaying.value) {
+  if (oscillator.value && isPlaying.value) {
     try {
-      oscillator.update('frequency').to(frequency).as('ratio')
-      oscillator.update('gain').to(currentGain.value).as('ratio')
+      oscillator.value.update('frequency').to(frequency).as('ratio')
+      oscillator.value.update('gain').to(currentGain.value).as('ratio')
     }
     catch (e) {
       console.error('Error updating oscillator:', e)
@@ -167,15 +162,14 @@ function updateFromPosition(x: number, y: number) {
 async function startPlaying(x: number, y: number) {
   try {
     error.value = ''
-    await initIfNeeded()
 
     // Create new oscillator
-    oscillator = await lib.createOscillator({
+    const osc = cleanup.register(await loadOsc({
       frequency: currentFreq.value,
       type: waveType.value,
-    })
-    oscillator.changeGainTo(currentGain.value)
-    oscillator.play()
+    }))
+    osc.changeGainTo(currentGain.value)
+    osc.play()
     isPlaying.value = true
 
     updateFromPosition(x, y)
@@ -187,14 +181,14 @@ async function startPlaying(x: number, y: number) {
 }
 
 function stopPlaying() {
-  if (oscillator) {
+  if (oscillator.value) {
     try {
-      oscillator.stop()
+      oscillator.value.stop()
     }
     catch (e) {
       console.error('Error stopping oscillator:', e)
     }
-    oscillator = null
+    resetOsc()
   }
   isPlaying.value = false
   drawGrid() // Redraw without crosshair
@@ -335,7 +329,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('mouseup', handleMouseUp)
-  stopPlaying()
 })
 </script>
 
