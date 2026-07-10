@@ -163,6 +163,38 @@ export async function getAudioContext(): Promise<AudioContext> {
 }
 
 /**
+ * Get the shared AudioContext synchronously, creating it if it does not exist.
+ *
+ * Unlike {@link getAudioContext}, this does NOT run `initAudio()` (no iOS
+ * unmute workaround, no suspended→running unlock). Prefer the async
+ * {@link getAudioContext} for normal use. Reach for the sync variant only when
+ * you must obtain the context *before* the first sound is created and cannot
+ * await — for example installing a master bus via {@link setMasterDestination}
+ * synchronously inside a user-gesture handler so that instances created later
+ * in the same tick already route through it.
+ *
+ * If called before a user gesture the context will be `suspended`; a subsequent
+ * `getAudioContext()`/factory call (which does run `initAudio()`) resumes it.
+ *
+ * @returns The shared AudioContext instance
+ *
+ * @example
+ * ```typescript
+ * import { getAudioContextSync, setMasterDestination } from 'ez-web-audio'
+ *
+ * document.addEventListener('pointerdown', () => {
+ *   const ctx = getAudioContextSync()
+ *   const limiter = ctx.createDynamicsCompressor()
+ *   limiter.connect(ctx.destination)
+ *   setMasterDestination(limiter) // set before any sound is created this gesture
+ * }, { capture: true, once: true })
+ * ```
+ */
+export function getAudioContextSync(): AudioContext {
+  return getOrCreateAudioContext()
+}
+
+/**
  * Route all subsequently-created audio through a master destination node.
  *
  * By default every sound, oscillator, sampler, beat track, layered sound,

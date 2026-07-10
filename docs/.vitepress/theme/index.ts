@@ -1,5 +1,7 @@
 import type { Theme } from 'vitepress'
+import { getAudioContextSync } from 'ez-web-audio'
 import DefaultTheme from 'vitepress/theme'
+import { getDemoMasterBus } from './audio/demo-master-bus'
 
 import AudioDemo from './components/AudioDemo.vue'
 import AudioSpriteDemo from './components/AudioSpriteDemo.vue'
@@ -40,5 +42,31 @@ export default {
     app.component('SoundfontPiano', SoundfontPiano)
     app.component('FilterDemo', FilterDemo)
     app.component('LayeredSoundDemo', LayeredSoundDemo)
+
+    // Client-only: on the first user gesture, stand up the demo master bus and
+    // route all demo audio through its safety limiter + peak meter. The bus
+    // installs itself as the global master destination, so no demo needs
+    // per-instance routing. Exposes window.__EZ_DEMO_PEAK__ for the loudness E2E.
+    if (typeof window !== 'undefined') {
+      const peakHost = window as unknown as { __EZ_DEMO_PEAK__?: () => number }
+      peakHost.__EZ_DEMO_PEAK__ = () => 0
+      const gestures = ['pointerdown', 'keydown', 'touchstart'] as const
+      let done = false
+
+      // Capture-phase + SYNCHRONOUS: the bus must install itself as the master
+      // destination before the demo's own (target-phase) handler creates its
+      // first instance in the same gesture. getAudioContextSync avoids the async
+      // race that would let that first instance bypass the bus.
+      function onGesture(): void {
+        if (done)
+          return
+        done = true
+        gestures.forEach(g => window.removeEventListener(g, onGesture, true))
+        const bus = getDemoMasterBus(getAudioContextSync())
+        peakHost.__EZ_DEMO_PEAK__ = () => bus.peak()
+      }
+
+      gestures.forEach(g => window.addEventListener(g, onGesture, { capture: true }))
+    }
   },
 } satisfies Theme

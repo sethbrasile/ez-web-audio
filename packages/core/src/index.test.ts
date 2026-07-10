@@ -257,6 +257,18 @@ describe('audioContext Initialization', () => {
       expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
     })
 
+    it('getAudioContextSync returns the shared context synchronously (no initAudio)', async () => {
+      const { getAudioContextSync, getAudioContext } = await import('./index')
+
+      const sync = getAudioContextSync()
+      expect(sync).toBe(mockAudioContext)
+      expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
+
+      // Same singleton as the async accessor
+      expect(await getAudioContext()).toBe(sync)
+      expect(AudioContextConstructor).toHaveBeenCalledTimes(1)
+    })
+
     it('returns a Promise that resolves to AudioContext', async () => {
       const { getAudioContext } = await import('./index')
 
