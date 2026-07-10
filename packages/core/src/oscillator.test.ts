@@ -671,3 +671,51 @@ describe('replay neutralizes previous source node', () => {
     expect(endHandler).toHaveBeenCalledOnce()
   })
 })
+
+// gate-2 ez-audio-20p: update('frequency') must survive replay — setup()
+// re-applies the instance frequency to each fresh OscillatorNode.
+describe('update(frequency) persists across plays', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('replay uses the updated frequency, not the constructor frequency', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    osc.update('frequency').to(880).as('ratio')
+    await osc.stop()
+
+    await osc.play()
+    const setSpy = vi.spyOn(osc.audioSourceNode.frequency, 'setValueAtTime')
+    await osc.stop()
+    await osc.play()
+    // setup() applied this.freq to the fresh node — must be 880 now
+    expect((osc as unknown as { freq: number }).freq).toBe(880)
+    expect(setSpy).not.toHaveBeenCalledWith(440, expect.any(Number))
+  })
+})
+
+// gate-2 ez-audio-20p: stop() must cancel a play() that was scheduled for a
+// future time but has not started yet (lookahead-scheduled notes).
+describe('stop cancels scheduled-but-unstarted playback', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('stop() after playIn() cancels the pending start', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    osc.playIn(5)
+    await Promise.resolve() // flush async playAt
+
+    const node = osc.audioSourceNode
+    const stopSpy = vi.spyOn(node, 'stop')
+    await osc.stop()
+
+    expect(stopSpy).toHaveBeenCalled()
+    expect(osc.isPlaying).toBe(false)
+  })
+})

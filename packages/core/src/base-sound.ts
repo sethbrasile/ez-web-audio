@@ -1058,6 +1058,19 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
         debugEvent(this, 'stop', this.audioContext.currentTime)
         node.stop()
       }
+      else if (this.startedPlayingAt > currentTime) {
+        // play() was scheduled for a future time and hasn't started yet —
+        // cancel the pending start so the note never sounds. Without this,
+        // stopping a lookahead-scheduled sound (e.g. Transport/Sequence)
+        // silently no-oped and the note still fired after "stop".
+        this.startedPlayingAt = 0
+        try {
+          node.stop()
+        }
+        catch {
+          // Node was never started — nothing to cancel
+        }
+      }
     }
     else {
       // Schedule precise audio stop via Web Audio API (sample-accurate)

@@ -2,6 +2,7 @@ import type { ControlType, RampType, RatioType, SoundControlType } from '@contro
 import type { TimeObject } from '@utils/create-time-object'
 import type { BaseSoundOptions } from './base-sound'
 import type { EnvelopeOptions } from './envelope'
+import { convertValue } from '@utils/convert-value'
 import createTimeObject from '@utils/create-time-object'
 import frequencyMap from '@utils/frequency-map'
 import { get } from '@utils/prop-access'
@@ -231,7 +232,20 @@ export class Oscillator extends BaseSound {
     // 'frequency' is oscillator-specific; everything else (gain, pan, detune) delegates to
     // BaseSound.update() which handles _targetGain interception for 'gain'.
     if (type === 'frequency') {
-      return this.controller.update(type)
+      return {
+        to: (value: number) => ({
+          as: (method: RatioType): void => {
+            this.controller.update(type).to(value).as(method)
+            // Persist on the instance: setup() re-applies this.freq to the fresh
+            // OscillatorNode on every play(), so without this the update would
+            // silently revert to the constructor frequency on the next play.
+            const resolved = convertValue(value, method)
+            if (resolved > 0) {
+              this.freq = resolved
+            }
+          },
+        }),
+      }
     }
     return super.update(type as SoundControlType)
   }

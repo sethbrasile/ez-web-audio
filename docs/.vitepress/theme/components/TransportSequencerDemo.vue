@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useAudioContext, useBeatTrack, useCleanup, useFont, useOscillator, useSequence, useTransport } from '@ez-web-audio/vue'
-import { createFilterEffect } from 'ez-web-audio'
-import { computed, ref, watch } from 'vue'
+import type { Oscillator } from 'ez-web-audio'
+import { useAudioContext, useBeatTrack, useCleanup, useFont, useSequence, useTransport } from '@ez-web-audio/vue'
+import { createOscillator } from 'ez-web-audio'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 // Audio state — composable-managed, single instance per component lifetime.
 // Created once in ensureLoaded(); disposed automatically by useCleanup() on unmount.
@@ -11,11 +12,17 @@ const { instance: transport, load: loadTransport } = useTransport()
 const { instance: kickTrack, load: loadKick } = useBeatTrack()
 const { instance: snareTrack, load: loadSnare } = useBeatTrack()
 const { instance: hihatTrack, load: loadHihat } = useBeatTrack()
-const { instance: bassOsc, load: loadBassOsc } = useOscillator()
 const { instance: pianoFont, load: loadPianoFont } = useFont()
 const { instance: bassSeq, load: loadBassSeq } = useSequence()
 const { instance: pianoSeq, load: loadPianoSeq } = useSequence()
 let audioContext: AudioContext | null = null
+
+// Per-note bass oscillators (ephemeral-churn escape hatch — see composables.ts).
+// Each scheduled bass note owns its Oscillator so overlapping/adjacent notes
+// never fight over one instance; recreated on preset change, disposed manually.
+let bassNoteOscs: Oscillator[] = []
+// Piano note identifiers the active preset uses — so stop() can silence them.
+let usedPianoNotes: string[] = []
 
 // Reactive UI state
 const playing = ref(false)
@@ -33,88 +40,102 @@ const trackState = ref({
   piano: { muted: false, soloed: false },
 })
 
-// Preset data — 32-step patterns (16th-note grid, 2 bars)
-interface NoteEvent {
-  time: string | number
-  freq?: number
-  note?: string
-  duration?: number
-}
-
+// Preset data — 32-step patterns (16th-note grid, 2 bars).
+// Times are numeric beats (0-indexed, 0..7.75) so they map exactly onto the
+// grid and stay BPM-independent. Each preset is written in one key so drums,
+// bass, and piano actually work together (gate-2 musical redesign):
+//   Straight Rock  — E minor: root-motion bass, Em/G piano stabs on offbeats
+//   Funk Groove    — A minor: syncopated octave bass, Am7 stabs
+//   Triplet Feel   — E minor shuffle: swung walk-up bass, swung Em stabs
 interface Preset {
   kick: number[]
   snare: number[]
   hihat: number[]
-  bassNotes: { time: string | number, freq: number, duration: number }[]
-  pianoNotes: { time: string | number, note: string }[]
+  /** Bass notes: beat position, frequency (Hz), gate time (seconds). */
+  bassNotes: { time: number, freq: number, duration: number }[]
+  /** Piano stabs: beat position, chord tones, display label for the grid. */
+  pianoNotes: { time: number, notes: string[], label: string }[]
 }
 
 const PRESETS: Record<string, Preset> = {
   'Straight Rock': {
-    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    // Kick on 1 & 3 with an and-of-2 pickup in bar 2; snare backbeat; 8th hats
+    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
     snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    // Em: root E2 anchoring beats, G2/A2 passing tones, D2 walkdown into the loop
     bassNotes: [
-      { time: 0, freq: 82.4, duration: 0.4 }, // E2
-      { time: '2n', freq: 110, duration: 0.4 }, // A2
-      { time: '1m', freq: 98, duration: 0.4 }, // G2
-      { time: '2:3:0', freq: 73.4, duration: 0.4 }, // D2 (bar 2 beat 3)
+      { time: 0, freq: 82.41, duration: 0.45 }, // E2
+      { time: 1.5, freq: 82.41, duration: 0.2 }, // E2 (and-of-2 push)
+      { time: 2, freq: 98, duration: 0.45 }, // G2
+      { time: 3, freq: 110, duration: 0.45 }, // A2
+      { time: 4, freq: 82.41, duration: 0.45 }, // E2
+      { time: 5.5, freq: 82.41, duration: 0.2 }, // E2
+      { time: 6, freq: 98, duration: 0.45 }, // G2
+      { time: 7, freq: 73.42, duration: 0.4 }, // D2 (walk back to E)
     ],
+    // Em stabs on the and-of-2 / and-of-4; G major turn at the loop end
     pianoNotes: [
-      { time: '1:1:0', note: 'C4' },
-      { time: '1:2:0', note: 'E4' },
-      { time: '1:3:0', note: 'G4' },
-      { time: '1:4:0', note: 'E4' },
-      { time: '2:1:0', note: 'C4' },
-      { time: '2:2:0', note: 'E4' }, // Fixed: was D4 which clashed with E minor bass
-      { time: '2:3:0', note: 'G4' },
+      { time: 1.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 3.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 5.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 7.5, notes: ['G4', 'B4', 'D5'], label: 'G' },
     ],
   },
   'Funk Groove': {
+    // Syncopated kick, backbeat snare with a ghost, 16th hats with gaps
     kick: [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
     snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     hihat: [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+    // Am octave funk: A1 root with 16th pushes, A2 octave pop, pentatonic
+    // walk-up (C-D-E) in bar 2 resolving back to A1
     bassNotes: [
       { time: 0, freq: 55, duration: 0.2 }, // A1
-      { time: 0.25, freq: 55, duration: 0.15 }, // A1 (16th note later)
-      { time: '1:3:0', freq: 73.4, duration: 0.3 }, // D2
-      { time: 5, freq: 49, duration: 0.2 }, // G1 (bar 2 beat 2)
-      { time: '2:3:0', freq: 55, duration: 0.3 }, // A1
+      { time: 0.75, freq: 55, duration: 0.15 }, // A1 (16th push)
+      { time: 1.25, freq: 110, duration: 0.15 }, // A2 (octave pop)
+      { time: 2.5, freq: 49, duration: 0.2 }, // G1
+      { time: 3, freq: 55, duration: 0.3 }, // A1
+      { time: 4, freq: 55, duration: 0.2 }, // A1
+      { time: 4.75, freq: 65.41, duration: 0.15 }, // C2
+      { time: 5, freq: 73.42, duration: 0.2 }, // D2
+      { time: 5.75, freq: 82.41, duration: 0.15 }, // E2
+      { time: 6.5, freq: 49, duration: 0.2 }, // G1
+      { time: 7, freq: 55, duration: 0.4 }, // A1
     ],
+    // Am7 stabs on offbeats — classic funk comping placement
     pianoNotes: [
-      { time: '1:1:0', note: 'A3' },
-      { time: '1:2:0', note: 'C4' },
-      { time: '1:3:0', note: 'E4' },
-      { time: '1:4:0', note: 'G4' },
-      { time: '2:1:0', note: 'A3' },
-      { time: '2:3:0', note: 'C4' },
+      { time: 1.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
+      { time: 3.75, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
+      { time: 5.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
+      { time: 7.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
     ],
   },
   'Triplet Feel': {
-    // Hi-hat in triplet feel: hits on triplet subdivisions of each beat.
-    // 32 steps = 16th-note grid. Triplet feel approximation: hit at steps
-    // 1, 3, 5 of each 6-step group (2 beats) — gives shuffle/triplet character.
-    // Pattern per bar (16 steps): beats 1&2 triplets at 1,3,5 / 7,9,11; beats 3&4 at 13,15 / - / -
-    // Simplified shuffle: hit every 1st and 3rd 16th of each beat pair = steps 1,3,7,9,13,15 per bar
+    // Shuffle approximated on the 16th grid: swung positions at x.75
     kick: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     snare: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    // Shuffle hi-hat: hits at positions 1, 4, 7, 10, 13, 16 (every 3rd 16th-note step)
-    // giving a triplet-feel shuffle across the 16th-note grid
     hihat: [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+    // Em shuffle walk: swung pickups (x.75) between chord tones
     bassNotes: [
-      { time: 0, freq: 41.2, duration: 0.3 }, // E1
-      { time: 1 / 3, freq: 49, duration: 0.3 }, // G1
-      { time: 2 / 3, freq: 55, duration: 0.3 }, // A1
-      { time: 4, freq: 41.2, duration: 0.3 }, // E1
-      { time: 4 + 1 / 3, freq: 49, duration: 0.3 }, // G1
+      { time: 0, freq: 82.41, duration: 0.35 }, // E2
+      { time: 0.75, freq: 98, duration: 0.2 }, // G2 (swung pickup)
+      { time: 1, freq: 110, duration: 0.35 }, // A2
+      { time: 2, freq: 123.47, duration: 0.35 }, // B2
+      { time: 2.75, freq: 110, duration: 0.2 }, // A2
+      { time: 3, freq: 98, duration: 0.35 }, // G2
+      { time: 4, freq: 82.41, duration: 0.35 }, // E2
+      { time: 4.75, freq: 98, duration: 0.2 }, // G2
+      { time: 5, freq: 110, duration: 0.35 }, // A2
+      { time: 6, freq: 123.47, duration: 0.35 }, // B2
+      { time: 6.75, freq: 110, duration: 0.2 }, // A2
+      { time: 7, freq: 98, duration: 0.35 }, // G2 (resolves to E on loop)
     ],
+    // Em stabs on swung offbeats
     pianoNotes: [
-      { time: 0, note: 'C4' },
-      { time: 4 / 3, note: 'E4' },
-      { time: 8 / 3, note: 'G4' },
-      { time: 4, note: 'C4' },
-      { time: 4 + 4 / 3, note: 'E4' },
-      { time: 4 + 8 / 3, note: 'G4' },
+      { time: 1.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 3.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 5.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
+      { time: 7.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
     ],
   },
 }
@@ -130,11 +151,9 @@ const stepCells = computed(() => {
     result[drumName] = preset[drumName].map(v => ({ active: v === 1, noteName: null }))
   }
 
-  // Melody tracks — map time positions to 16th-note steps
-  // BPM-independent: at 120bpm, 1 beat = 0.5s, 1 bar = 2s, 2 bars = 4s
-  // 16th note step = beat / 4, but we work in beat units (0-7 for 2 bars at 4/4)
+  // Melody tracks — map beat positions to 16th-note steps
+  // (beat values are 0-indexed; 2 bars = 8 beats = 32 steps)
   function beatToStep(beatValue: number): number {
-    // beatValue is in beats (0-indexed). 2 bars = 8 beats = 32 steps
     return Math.round(beatValue * 4) % 32
   }
 
@@ -143,56 +162,23 @@ const stepCells = computed(() => {
     active: false,
     noteName: null,
   }))
-  // We can only map numeric beat values here (string musical time notation not parseable client-side easily)
   for (const note of preset.bassNotes) {
-    if (typeof note.time === 'number') {
-      const step = beatToStep(note.time)
-      if (step >= 0 && step < 32) {
-        bassCells[step] = { active: true, noteName: freqToNoteName(note.freq) }
-      }
-    }
-    // For string times, map known patterns
-    else if (note.time === '2n') {
-      bassCells[8] = { active: true, noteName: freqToNoteName(note.freq) } // beat 2 = step 8
-    }
-    else if (note.time === '1m') {
-      bassCells[16] = { active: true, noteName: freqToNoteName(note.freq) } // bar 2 = step 16
-    }
-    else if (typeof note.time === 'string' && note.time.includes(':')) {
-      // Parse "bar:beat:tick" format
-      const parts = note.time.split(':')
-      const bar = Number.parseInt(parts[0]) - 1
-      const beat = Number.parseInt(parts[1]) - 1
-      const tick = parts[2] ? Number.parseInt(parts[2]) : 0
-      const step = bar * 16 + beat * 4 + tick
-      if (step >= 0 && step < 32) {
-        bassCells[step] = { active: true, noteName: freqToNoteName(note.freq) }
-      }
+    const step = beatToStep(note.time)
+    if (step >= 0 && step < 32) {
+      bassCells[step] = { active: true, noteName: freqToNoteName(note.freq) }
     }
   }
   result.bass = bassCells
 
-  // Piano cells
+  // Piano cells — one cell per chord stab, labelled with the chord name
   const pianoCells: { active: boolean, noteName: string | null }[] = Array.from({ length: 32 }, () => ({
     active: false,
     noteName: null,
   }))
-  for (const note of preset.pianoNotes) {
-    if (typeof note.time === 'number') {
-      const step = beatToStep(note.time)
-      if (step >= 0 && step < 32) {
-        pianoCells[step] = { active: true, noteName: note.note }
-      }
-    }
-    else if (typeof note.time === 'string' && note.time.includes(':')) {
-      const parts = note.time.split(':')
-      const bar = Number.parseInt(parts[0]) - 1
-      const beat = Number.parseInt(parts[1]) - 1
-      const tick = parts[2] ? Number.parseInt(parts[2]) : 0
-      const step = bar * 16 + beat * 4 + tick
-      if (step >= 0 && step < 32) {
-        pianoCells[step] = { active: true, noteName: note.note }
-      }
+  for (const chord of preset.pianoNotes) {
+    const step = beatToStep(chord.time)
+    if (step >= 0 && step < 32) {
+      pianoCells[step] = { active: true, noteName: chord.label }
     }
   }
   result.piano = pianoCells
@@ -208,10 +194,12 @@ function freqToNoteName(freq?: number): string {
     41.2: 'E1',
     49: 'G1',
     55: 'A1',
-    73.4: 'D2',
-    82.4: 'E2',
+    65.41: 'C2',
+    73.42: 'D2',
+    82.41: 'E2',
     98: 'G2',
     110: 'A2',
+    123.47: 'B2',
   }
   // Find closest match
   let closestNote = ''
@@ -264,14 +252,41 @@ function toggleSolo(track: keyof typeof trackState.value) {
   syncDrumMuteSolo()
 }
 
+// Silence all bass oscillators. stop() also cancels a lookahead-scheduled
+// play that hasn't started yet (core guarantees this), so no note slips
+// through after the transport stops.
+function stopBassNotes() {
+  for (const osc of bassNoteOscs) {
+    void osc.stop()
+  }
+}
+
+// Silence the piano notes the active preset uses (Font caches one
+// SampledNote instance per identifier, so stopping by name works).
+function stopPianoNotes() {
+  if (!pianoFont.value)
+    return
+  for (const id of usedPianoNotes) {
+    void pianoFont.value.getNote(id)?.stop()
+  }
+}
+
+function disposeBassNotes() {
+  stopBassNotes()
+  for (const osc of bassNoteOscs) {
+    osc.dispose()
+  }
+  bassNoteOscs = []
+}
+
 // Apply preset — update patterns and re-schedule melody
 // Audio-side calls are guarded: if audio not yet initialized, only visual state updates.
 // The preset is re-applied after ensureLoaded() completes.
-function applyPreset(name: string) {
+async function applyPreset(name: string) {
   activePreset.value = name
 
   // Guard: only apply audio-side if library is initialized
-  if (!transport.value)
+  if (!transport.value || !audioContext)
     return
 
   const preset = PRESETS[name]
@@ -285,25 +300,48 @@ function applyPreset(name: string) {
   bassSeq.value?.clear()
   pianoSeq.value?.clear()
 
-  for (const noteEvt of preset.bassNotes) {
+  // One Oscillator per bass note: adjacent/overlapping notes never fight over
+  // a shared instance (the old single-oscillator approach orphaned nodes and
+  // left bass notes hanging). Triangle for a round bass tone; gain 0.5 is the
+  // level lever (phase-75 note: a lowpass on a triangle this low is inaudible).
+  disposeBassNotes()
+  const ctx = audioContext
+  bassNoteOscs = await Promise.all(preset.bassNotes.map(noteEvt =>
+    createOscillator(ctx, { frequency: noteEvt.freq, type: 'triangle', gain: 0.5 }),
+  ))
+
+  preset.bassNotes.forEach((noteEvt, i) => {
     bassSeq.value?.at(noteEvt.time, (t: number) => {
       if (!shouldPlay('bass'))
         return
-      if (!bassOsc.value || !audioContext)
+      const osc = bassNoteOscs[i]
+      if (!osc || !audioContext)
         return
       const offset = Math.max(0, t - audioContext.currentTime)
-      bassOsc.value.frequency = noteEvt.freq
-      bassOsc.value.playFor(noteEvt.duration)
+      osc.playIn(offset)
+      // Gate the note off with a short sample-accurate gain fade at its exact
+      // end time — background-tab safe (no JS timers on the audio path) and
+      // click-free. The node keeps running silently; the next play() replaces
+      // it (setup neutralizes the old node) and stop() kills it outright.
+      const stopT = t + noteEvt.duration
+      const level = osc.volume
+      const gain = osc.getGainNode().gain
+      gain.setValueAtTime(level, stopT - 0.02)
+      gain.linearRampToValueAtTime(0, stopT)
     })
-  }
+  })
 
-  for (const noteEvt of preset.pianoNotes) {
-    pianoSeq.value?.at(noteEvt.time, (t: number) => {
+  usedPianoNotes = [...new Set(preset.pianoNotes.flatMap(c => c.notes))]
+  for (const chord of preset.pianoNotes) {
+    pianoSeq.value?.at(chord.time, (t: number) => {
       if (!shouldPlay('piano'))
         return
       if (!pianoFont.value || !audioContext)
         return
-      pianoFont.value.getNote(noteEvt.note)?.playIn(Math.max(0, t - audioContext.currentTime))
+      const offset = Math.max(0, t - audioContext.currentTime)
+      for (const noteName of chord.notes) {
+        pianoFont.value.getNote(noteName)?.playIn(offset)
+      }
     })
   }
 }
@@ -346,12 +384,7 @@ async function ensureLoaded() {
   st.syncTo(tp, { noteType: 1 / 16 })
   ht.syncTo(tp, { noteType: 1 / 16 })
 
-  // Create bass oscillator (triangle wave — less harsh than sawtooth), lowpass-
-  // filtered at 600 Hz and held at a low level so it sits under the piano
-  // (phase 75 reference table: filtered lowpass ≈400–800 Hz triangle).
-  const bass = cleanup.register(await loadBassOsc({ frequency: 41.2, type: 'triangle' }))
-  bass.addEffect(createFilterEffect('lowpass', { frequency: 600, q: 1 }))
-  bass.changeGainTo(0.5)
+  // Bass oscillators are created per-note in applyPreset() — see bassNoteOscs.
 
   // Create piano soundfont
   cleanup.register(await loadPianoFont('/ez-web-audio/audio/piano.js'))
@@ -362,7 +395,7 @@ async function ensureLoaded() {
 
   // Apply whatever preset was active when ensureLoaded was triggered
   // (may differ from 'Straight Rock' if user clicked a preset before Play)
-  applyPreset(activePreset.value)
+  await applyPreset(activePreset.value)
 
   // Register tick handler to drive step grid playhead
   // ticksPerBeat:12 — scale tick to 16th-note step within beat (0-3)
@@ -398,6 +431,10 @@ async function play() {
 
 function pause() {
   transport.value?.pause()
+  // Cut sounding melody notes — a paused sequencer should go quiet, not
+  // trail 4-second piano tails into the silence
+  stopBassNotes()
+  stopPianoNotes()
   paused.value = true
   currentStep.value = -1
 }
@@ -409,6 +446,10 @@ function resume() {
 
 function stop() {
   transport.value?.stop()
+  // Transport.stop() halts the scheduler, but notes already sounding (or
+  // lookahead-scheduled) must be silenced explicitly
+  stopBassNotes()
+  stopPianoNotes()
   playing.value = false
   paused.value = false
   currentStep.value = -1
@@ -418,10 +459,15 @@ function stop() {
 // Handle preset button click — visual update is immediate;
 // audio is applied only if initialized (guarded inside applyPreset).
 function selectPreset(name: string) {
-  applyPreset(name)
+  void applyPreset(name)
 }
 
-// Cleanup on unmount is handled by useCleanup() (registered instances above)
+// Cleanup on unmount is handled by useCleanup() for composable-managed
+// instances; per-note bass oscillators are disposed manually (ephemeral-churn
+// escape hatch — useCleanup has no unregister)
+onUnmounted(() => {
+  disposeBassNotes()
+})
 
 // Track definitions for template iteration
 const tracks = [
