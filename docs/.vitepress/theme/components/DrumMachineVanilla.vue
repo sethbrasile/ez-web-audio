@@ -1,4 +1,10 @@
 <script setup lang="ts">
+// INTENTIONALLY NOT refactored onto @ez-web-audio/vue composables (phase 73).
+// This demo exists to showcase the vanilla-TypeScript event API: it uses the
+// dynamic `import('ez-web-audio')` init pattern, drives its playhead via
+// `beatTrack.on('beat', ...)` event listeners + direct DOM manipulation, and
+// deliberately omits `wrapWith`/reactive. Routing it through the Vue composables
+// would defeat its purpose. See .planning/phases/73-.../73-INVENTORY.md.
 import type { BeatTrack } from 'ez-web-audio'
 import { onUnmounted, ref, watch } from 'vue'
 
