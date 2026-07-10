@@ -72,6 +72,14 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 
 **Library gap surfaced (pre-1.0 candidate, NOT fixed now):** the envelope peaking at absolute 1.0 makes ADSR unusable for any voice that must sit below full scale (layered pads, polyphony, anything summed). Options for later: scale the envelope peak by the instance's target gain (`_targetGain`), or add an envelope `peak`/`amount` option. Per library-fidelity rule — logging, not changing core mid-phase. Related: [[library-fidelity-rule]].
 
+## 2026-07-10 · 75 gate 2 · Core bug fixed mid-gate: exponential onPlayRamp from(0) = silence-then-pop
+
+**Found (Seth's round-2 Ambient feedback, "drone pops"):** `onPlayRamp` defaults to exponential, and an exponential ramp from a previous value of exactly 0 is spec-defined to hold at 0 then step instantly to the target at ramp end. The documented canonical fade-in `onPlayRamp('gain').from(0).to(1).in(0.5)` therefore never faded — it popped. Also the real cause of round 1's "staggered layers".
+
+**Done (core change, small bug fix — not new API):** clamp a 0 start value to `SAFE_NEAR_ZERO` (1e-5) when the ramp is exponential, in `BaseParamController.onPlayRamp`; symmetric with the existing 0-target guard in `applyRampToParam`. +2 unit tests. Demo switched to explicit `'linear'` swells (perceptually even rise; matches toggle fades).
+
+**Library gap also surfaced (logged, not fixed):** demos wanting a click-free gain change had to hand-roll `getGainNode().gain.linearRampToValueAtTime(...)` (Ambient's `fadeGainTo`). `changeGainTo` is instant-only — a ramped variant (e.g. `changeGainTo(v, { over: seconds })`) is a pre-1.0 candidate. Note: the hand-rolled fade also bypasses `_targetGain` bookkeeping — harmless in Ambient (instances recreated per start) but a footgun the API gap encourages.
+
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).

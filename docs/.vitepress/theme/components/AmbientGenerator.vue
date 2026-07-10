@@ -85,7 +85,7 @@ async function startAll() {
       frequency: droneFrequency.value,
       type: 'sine',
     }))
-    drone.onPlayRamp('gain').from(0).to(droneEnabled.value ? DRONE_GAIN * mv : 0).in(SWELL_SEC)
+    drone.onPlayRamp('gain', 'linear').from(0).to(droneEnabled.value ? DRONE_GAIN * mv : 0).in(SWELL_SEC)
 
     // Texture - white noise through a lowpass filter.
     const texture = cleanup.register(await loadTexture())
@@ -94,14 +94,14 @@ async function startAll() {
       q: 1.0,
     })
     texture.addEffect(textureFilter)
-    texture.onPlayRamp('gain').from(0).to(textureEnabled.value ? TEXTURE_GAIN * mv : 0).in(SWELL_SEC)
+    texture.onPlayRamp('gain', 'linear').from(0).to(textureEnabled.value ? TEXTURE_GAIN * mv : 0).in(SWELL_SEC)
 
     // Shimmer - high-frequency triangle wave.
     const shimmer = cleanup.register(await loadShimmer({
       frequency: shimmerFrequency.value,
       type: 'triangle',
     }))
-    shimmer.onPlayRamp('gain').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN * mv : 0).in(SWELL_SEC)
+    shimmer.onPlayRamp('gain', 'linear').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN * mv : 0).in(SWELL_SEC)
 
     // Start all layers (they swell in together)
     drone.play()

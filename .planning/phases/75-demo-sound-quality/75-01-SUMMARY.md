@@ -62,3 +62,31 @@ Seth listened to Ambient: (1) layers started **staggered** — texture instant, 
 Cause: my ADSR→ramp swap left texture on instant `changeGainTo` while drone/shimmer used 1.5 s / 2.0 s `onPlayRamp` (staggered onset); toggles used instant `changeGainTo(0↔gain)` = hard step = click.
 
 Fix (`fix(75): ambient gate-2`): all three layers swell in together over a uniform `SWELL_SEC` (0.6 s); toggles + master-volume now ramp via `getGainNode().gain.linearRampToValueAtTime` over `TOGGLE_FADE_SEC` (0.12 s); initial swell respects masterVolume. Verified: 0 pageerrors toggling all layers; loudness 17/17 still green (Ambient 0.12). **Re-listen pending.** Other demos not yet reported on.
+
+### Gate 2 — round 2 (Ambient drone pop, 2026-07-10)
+
+Seth re-listened: swell + toggles fixed, but the **Drone layer pops** (texture/shimmer don't).
+
+Root cause is a **core library bug**, not the demo: `onPlayRamp` defaults to an
+`exponential` ramp (`base-param-controller.ts`), and the demo's
+`onPlayRamp('gain').from(0)` scheduled `setValueAtTime(0)` +
+`exponentialRampToValueAtTime(target)`. Per the Web Audio spec, an exponential
+ramp whose previous event value is exactly **0 never ramps — it holds at 0 for
+the whole interval, then steps instantly to the target at ramp end**. So every
+layer was silent for 0.6 s then jumped in; only the drone's jump was audible
+(0.125 amplitude 80 Hz sine vs 0.04 noise / 0.025 @600 Hz). This is also the
+true cause of round 1's "stagger": the old 1.5 s / 2.0 s ramps were
+silence-then-jump at 1.5 s / 2.0 s, not slow swells — round 1 fixed the symptom.
+The canonical fade-in example in the README/docs (`onPlayRamp('gain').from(0)`)
+was broken for every consumer.
+
+Fix (two levels):
+- **Core** (`base-param-controller.ts`): `onPlayRamp(...).from(0)` with an
+  exponential ramp now clamps the start to `SAFE_NEAR_ZERO` (1e-5) — symmetric
+  with the existing target-value guard. +2 unit tests (1928 core green).
+- **Demo**: Ambient swells switched to explicit `'linear'` ramps — matches the
+  toggle fades, and avoids the perceptual late-bloom of an exponential rise
+  from near-zero (which would read as stagger again).
+
+Verified: typecheck green, 1928 core unit tests, loudness E2E 17/17 (Ambient
+peak unchanged). **Re-listen pending.**

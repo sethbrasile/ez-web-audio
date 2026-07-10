@@ -218,12 +218,30 @@ describe('baseParamController', () => {
       const startingValues = controller.getStartingValues()
       const valuesAtTime = controller.getValuesAtTime()
       const exponentialValues = controller.getExponentialValues()
-      // startValue is in valuesAtTime at time 0, not startingValues
+      // startValue is in valuesAtTime at time 0, not startingValues.
+      // A 0 start is clamped to near-zero: an exponential ramp from exactly 0
+      // holds at 0 then jumps to the target at ramp end (audible pop).
       expect(startingValues).toHaveLength(0)
-      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0, time: 0 })
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0.00001, time: 0 })
       // End value is in exponentialValues (default ramp type)
       expect(exponentialValues).toHaveLength(1)
       expect(exponentialValues[0]).toEqual({ type: 'gain', value: 1, time: 0.5 })
+    })
+
+    it('onPlayRamp exponential from(0) clamps start to near-zero so the ramp is smooth (no silence-then-jump)', () => {
+      controller.onPlayRamp('gain', 'exponential').from(0).to(0.5).in(1)
+      const valuesAtTime = controller.getValuesAtTime()
+      // Exactly 0 must never be scheduled as the previous event of an
+      // exponential ramp — the spec makes the param hold at 0 for the whole
+      // interval and step to the target at the end.
+      expect(valuesAtTime).not.toContainEqual({ type: 'gain', value: 0, time: 0 })
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0.00001, time: 0 })
+    })
+
+    it('onPlayRamp linear from(0) keeps the exact 0 start (linear ramps handle 0 fine)', () => {
+      controller.onPlayRamp('gain', 'linear').from(0).to(0.5).in(1)
+      const valuesAtTime = controller.getValuesAtTime()
+      expect(valuesAtTime).toContainEqual({ type: 'gain', value: 0, time: 0 })
     })
 
     it('onPlayRamp with linear ramp type stores start in valuesAtTime', () => {

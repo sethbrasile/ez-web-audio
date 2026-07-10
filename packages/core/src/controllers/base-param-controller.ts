@@ -40,6 +40,15 @@ export interface ParamValue {
 export interface ValueAtTime extends ParamValue {
   time: number
 }
+
+/**
+ * exponentialRampToValueAtTime cannot ramp to or from exactly 0 (Web Audio API
+ * constraint): a 0 target throws a RangeError, and a 0 previous-event value
+ * makes the param hold at 0 for the whole interval then jump to the target at
+ * the end (an audible pop). This near-zero value approximates silence safely.
+ * @internal
+ */
+const SAFE_NEAR_ZERO = 0.00001
 /**
  * Contract for audio parameter controllers.
  *
@@ -245,12 +254,20 @@ export class BaseParamController {
           to: (endValue: number) => {
             return {
               in: (endTime: number) => {
+                const resolvedRampType = rampType ?? 'exponential'
+                // An exponential ramp whose previous event value is exactly 0
+                // never ramps — the spec holds the param at 0 for the whole
+                // interval, then jumps to the target at the end (audible pop).
+                // Clamp a 0 start to near-zero so the ramp is actually smooth.
+                const safeStartValue = resolvedRampType === 'exponential' && startValue === 0
+                  ? SAFE_NEAR_ZERO
+                  : startValue
                 // Push startValue directly to valuesAtTime (time 0) so it is
                 // not filtered out by the dedup logic in onPlaySet().
                 // This ensures setValueAtTime(startValue, startTime) is called
                 // before the ramp when setValuesAtTimes() runs.
-                this.valuesAtTime.push({ type, value: startValue, time: 0 })
-                this.addRampValue({ type, value: endValue, time: endTime }, rampType ?? 'exponential')
+                this.valuesAtTime.push({ type, value: safeStartValue, time: 0 })
+                this.addRampValue({ type, value: endValue, time: endTime }, resolvedRampType)
               },
             }
           },
@@ -366,7 +383,6 @@ export class BaseParamController {
       case 'exponential': {
         // exponentialRampToValueAtTime throws RangeError if value is 0 (Web Audio API constraint).
         // Use a near-zero value to approximate silence without throwing.
-        const SAFE_NEAR_ZERO = 0.00001
         const safeValue = value === 0 ? SAFE_NEAR_ZERO : value
         param.exponentialRampToValueAtTime(safeValue, time)
         break
