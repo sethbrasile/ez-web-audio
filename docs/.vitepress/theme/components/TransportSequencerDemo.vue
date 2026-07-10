@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAudioContext, useBeatTrack, useCleanup, useFont, useOscillator, useSequence, useTransport } from '@ez-web-audio/vue'
+import { createFilterEffect } from 'ez-web-audio'
 import { computed, ref, watch } from 'vue'
 
 // Audio state — composable-managed, single instance per component lifetime.
@@ -345,9 +346,11 @@ async function ensureLoaded() {
   st.syncTo(tp, { noteType: 1 / 16 })
   ht.syncTo(tp, { noteType: 1 / 16 })
 
-  // Create bass oscillator (triangle wave — less harsh than sawtooth).
-  // Filtered-ish low level so it sits under the piano (phase 75 reference table).
+  // Create bass oscillator (triangle wave — less harsh than sawtooth), lowpass-
+  // filtered at 600 Hz and held at a low level so it sits under the piano
+  // (phase 75 reference table: filtered lowpass ≈400–800 Hz triangle).
   const bass = cleanup.register(await loadBassOsc({ frequency: 41.2, type: 'triangle' }))
+  bass.addEffect(createFilterEffect('lowpass', { frequency: 600, q: 1 }))
   bass.changeGainTo(0.5)
 
   // Create piano soundfont
