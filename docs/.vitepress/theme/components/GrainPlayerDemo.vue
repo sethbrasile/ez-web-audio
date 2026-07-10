@@ -3,8 +3,18 @@ import { useCleanup, useGrainPlayer, useSound } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Module-level preset constant — allocated once, not per call
-const PRESETS: Record<string, { grainSize: number, overlap: number, jitter: number, speed: number, pitch: number }> = {
-  smooth: { grainSize: 0.25, overlap: 0.12, jitter: 0.02, speed: 1, pitch: 0 },
+const PRESETS: Record<string, { grainSize: number, overlap: number, jitter: number, speed: number, pitch: number, position?: number }> = {
+  // smooth ("Pad"): long grains (300ms) + deep overlap (240ms, ~5 grains stacked at
+  // once) build a sustained wash instead of a single voice. jitter sprays grain
+  // start points +/-12% of the buffer so the texture keeps evolving instead of
+  // sounding static. speed 0.1 (near-frozen, matches freeze) keeps position from
+  // sweeping through the sample's natural attack/decay — that sweep at speed 1 was
+  // the bug: it replayed the piano note's decay instead of sustaining it (gate-2 ez-audio-7fk).
+  // position anchors the spray in the sample's sustain region — starting at 0 would
+  // hover on the piano hammer attack and still read as "piano", not "pad".
+  // No per-grain pitch/detune spread here — GrainPlayer's public API only exposes a
+  // single global pitch/playbackRate shared by every grain, not per-grain randomization.
+  smooth: { grainSize: 0.3, overlap: 0.24, jitter: 0.12, speed: 0.1, pitch: 0, position: 0.35 },
   // choppy: 40ms grains ensure tonal material completes a full cycle above ~25 Hz (M25)
   choppy: { grainSize: 0.04, overlap: 0.005, jitter: 0.1, speed: 1, pitch: 0 },
   scatter: { grainSize: 0.08, overlap: 0.02, jitter: 0.8, speed: 0.5, pitch: 0 },
@@ -350,6 +360,13 @@ function applyPreset(name: string) {
   jitter.value = p.jitter
   speed.value = p.speed
   pitch.value = p.pitch
+  // Presets may anchor the read position (e.g. Pad hovers in the sustain
+  // region); presets without one keep the user's current position.
+  if (p.position !== undefined) {
+    position.value = p.position
+    if (grainPlayer.value)
+      grainPlayer.value.position = p.position
+  }
 }
 
 onMounted(() => {
