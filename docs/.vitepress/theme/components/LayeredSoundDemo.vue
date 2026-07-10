@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import type { Sound } from 'ez-web-audio'
+import { useCleanup, useLayeredSound } from '@ez-web-audio/vue'
+import { createSound } from 'ez-web-audio'
+import { ref } from 'vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -17,9 +20,9 @@ const layerUrls = [
   '/ez-web-audio/audio/drum-samples/hihat1.wav',
 ]
 
-let layered: any = null
-let sounds: any[] = []
-let lib: any = null
+const cleanup = useCleanup()
+const { instance: layered, load: loadLayered } = useLayeredSound()
+let sounds: Sound[] = []
 
 async function ensureLoaded() {
   if (loaded.value)
@@ -31,17 +34,13 @@ async function ensureLoaded() {
     loading.value = true
     error.value = ''
 
-    if (!lib) {
-      lib = await import('ez-web-audio')
-    }
-
     // Load each sound individually
-    sounds = await Promise.all(
-      layerUrls.map(url => lib.createSound(url)),
-    )
+    sounds = (await Promise.all(
+      layerUrls.map(url => createSound(url)),
+    )).map(s => cleanup.register(s))
 
     // Create layered sound from all three
-    layered = await lib.createLayeredSound(sounds)
+    cleanup.register(await loadLayered(sounds))
 
     loaded.value = true
     return true
@@ -61,8 +60,8 @@ async function playAll() {
 
   try {
     error.value = ''
-    layered.setGain(masterGain.value)
-    await layered.play()
+    layered.value!.setGain(masterGain.value)
+    await layered.value!.play()
     isPlaying.value = true
     layerPlaying.value = [true, true, true]
 
@@ -78,11 +77,11 @@ async function playAll() {
 }
 
 async function stopAll() {
-  if (!layered)
+  if (!layered.value)
     return
 
   try {
-    await layered.stop()
+    await layered.value.stop()
   }
   catch {}
   isPlaying.value = false
@@ -111,8 +110,8 @@ async function playLayer(index: number) {
 
 function updateMasterGain(val: number) {
   masterGain.value = val
-  if (layered) {
-    layered.setGain(val)
+  if (layered.value) {
+    layered.value.setGain(val)
   }
 }
 
@@ -122,13 +121,6 @@ function updateLayerGain(index: number, val: number) {
     sounds[index].changeGainTo(val)
   }
 }
-
-onUnmounted(() => {
-  if (layered) {
-    try { layered.stop() }
-    catch {}
-  }
-})
 </script>
 
 <template>
