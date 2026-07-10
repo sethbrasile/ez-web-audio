@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFont } from '@ez-web-audio/vue'
 import { onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
 const initialized = ref(false)
@@ -81,8 +82,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="soundfont-piano">
+  <DemoFrame class="soundfont-piano" :error="error" takeaway="Real instrument sounds from a soundfont file.">
     <div class="piano-container">
+      <div v-if="loading" class="loading-shimmer">
+        <div class="ewa-shimmer-bar" aria-hidden="true" />
+        <p class="loading-text">
+          Loading soundfont (1.4 MB)…
+        </p>
+      </div>
+
       <PianoKeyboard
         :active-keys="activeNotes"
         :disabled="loading"
@@ -90,49 +98,14 @@ onUnmounted(() => {
         @note-off="stopNote"
       />
 
-      <div class="info-text">
+      <p class="info-text">
         Compare with <a href="/ez-web-audio/examples/synth-keyboard">Synth Keyboard</a> which uses oscillators instead of samples
-      </div>
+      </p>
     </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">
-        Loading piano soundfont...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.soundfont-piano {
-  padding: 1.5rem;
-  border-radius: 8px;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.loading {
-  padding: 0.5rem;
-  text-align: center;
-  color: var(--vp-c-text-2);
-  font-style: italic;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  padding: 0.5rem;
-  background: var(--vp-c-danger-soft);
-  border-radius: 4px;
-}
-
 .piano-container {
   display: flex;
   flex-direction: column;
@@ -140,15 +113,45 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
+.loading-shimmer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ewa-shimmer-bar {
+  width: 100%;
+  max-width: 480px;
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--ewa-well) 25%, var(--ewa-panel) 50%, var(--ewa-well) 75%);
+  background-size: 200% 100%;
+  animation: ewa-shimmer 1.2s linear infinite;
+}
+
+@keyframes ewa-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.loading-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ewa-text-2);
+}
+
 .info-text {
   text-align: center;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
 
 .info-text a {
-  color: var(--vp-c-brand);
+  color: var(--ewa-accent);
   text-decoration: none;
 }
 

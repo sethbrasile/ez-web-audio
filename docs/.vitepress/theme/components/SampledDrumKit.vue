@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useCleanup, useSampler } from '@ez-web-audio/vue'
 import { ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const loading = ref(false)
 const initialized = ref(false)
@@ -18,9 +20,9 @@ const { instance: snareSampler, load: loadSnare } = useSampler()
 const { instance: hihatSampler, load: loadHihat } = useSampler()
 
 const pads = [
-  { name: 'kick', label: 'KICK', color: 'blue' },
-  { name: 'snare', label: 'SNARE', color: 'orange' },
-  { name: 'hihat', label: 'HI-HAT', color: 'yellow' },
+  { name: 'kick', label: 'Kick', color: 'var(--ewa-kick)' },
+  { name: 'snare', label: 'Snare', color: 'var(--ewa-snare)' },
+  { name: 'hihat', label: 'Hi-hat', color: 'var(--ewa-hat)' },
 ]
 
 async function initSamplers() {
@@ -97,150 +99,56 @@ async function playPad(padName: string) {
 </script>
 
 <template>
-  <div class="sampled-drum-kit">
-    <div class="drum-pads">
-      <div
+  <DemoFrame class="sampled-drum-kit" :error="error" takeaway="Tap pads, hear samples instantly.">
+    <div class="pads">
+      <TriggerPad
         v-for="pad in pads"
         :key="pad.name"
-        class="drum-pad" :class="[pad.color, { pressed: lastPlayed === pad.name, disabled: loading }]"
-        :role="loading ? undefined : 'button'"
-        :tabindex="loading ? -1 : 0"
-        :aria-label="`Play ${pad.label.toLowerCase()} drum`"
-        :aria-disabled="loading"
-        @mousedown="loading ? null : playPad(pad.name)"
-        @touchstart.prevent="loading ? null : playPad(pad.name)"
-        @keydown.enter="loading ? null : playPad(pad.name)"
-        @keydown.space.prevent="loading ? null : playPad(pad.name)"
-      >
-        <div class="pad-label">
-          {{ pad.label }}
-        </div>
-        <div class="sample-counter">
-          Sample {{ playCount[pad.name] }}/3
-        </div>
-      </div>
+        :label="pad.label"
+        :sublabel="`Sample ${playCount[pad.name]}/3`"
+        :color="pad.color"
+        :disabled="loading"
+        :active="lastPlayed === pad.name"
+        @trigger="playPad(pad.name)"
+      />
     </div>
 
-    <div class="info-text">
+    <p class="info-text">
       Each pad cycles through 3 sample variations (round-robin)
-    </div>
+    </p>
 
-    <div class="status-bar">
-      <div v-if="loading" class="loading">
-        Loading drum samples...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+    <template #status>
+      <p v-if="loading" class="status-text">
+        Loading drum samples…
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.sampled-drum-kit {
-  padding: 1.5rem;
-  border-radius: 8px;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.loading {
-  padding: 0.5rem;
-  text-align: center;
-  color: var(--vp-c-text-2);
-  font-style: italic;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  padding: 0.5rem;
-  background: var(--vp-c-danger-soft);
-  border-radius: 4px;
-}
-
-.drum-pads {
+.pads {
   display: flex;
-  gap: 1.5rem;
+  gap: 12px;
+  flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 1rem;
 }
 
-.drum-pad {
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.1s;
-  border: 2px solid transparent;
-  position: relative;
-}
-
-.drum-pad.blue {
-  background: #3b82f6;
-  color: white;
-}
-
-.drum-pad.blue:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
-}
-
-.drum-pad.orange {
-  background: #f97316;
-  color: white;
-}
-
-.drum-pad.orange:hover {
-  background: #ea580c;
-  transform: translateY(-2px);
-}
-
-.drum-pad.yellow {
-  background: #eab308;
-  color: white;
-}
-
-.drum-pad.yellow:hover {
-  background: #ca8a04;
-  transform: translateY(-2px);
-}
-
-.drum-pad.pressed {
-  transform: scale(0.95) !important;
-}
-
-.drum-pad.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pad-label {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.5px;
-}
-
-.sample-counter {
-  font-size: 0.85rem;
-  opacity: 0.9;
-  font-weight: 500;
+.pads :deep(.ewa-trigger-pad) {
+  min-width: 72px;
+  min-height: 64px;
+  padding: 0 8px;
 }
 
 .info-text {
   text-align: center;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-size: 0.9rem;
-  margin-top: 1rem;
+  margin: 16px 0 0;
+}
+
+.status-text {
+  font-size: 0.85rem;
+  color: var(--ewa-text-2);
+  margin: 0;
 }
 </style>
