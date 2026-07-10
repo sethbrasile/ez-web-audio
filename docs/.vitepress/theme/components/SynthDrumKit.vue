@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { LayeredSound, Oscillator, Sound } from 'ez-web-audio'
+import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const initialized = ref(false)
@@ -6,14 +8,13 @@ const loading = ref(false)
 const error = ref('')
 const lastPlayed = ref('')
 
-let lib: any = null
-let activeOscillators: any[] = []
+let activeOscillators: Array<Oscillator | Sound | LayeredSound> = []
 
 async function initIfNeeded() {
-  if (!lib) {
+  if (!initialized.value) {
     loading.value = true
     try {
-      lib = await import('ez-web-audio')
+      // initAudio happens implicitly on first createX() call
       initialized.value = true
     }
     finally {
@@ -35,7 +36,7 @@ async function playKick() {
     await initIfNeeded()
     flashPad('kick')
 
-    const osc = await lib.createOscillator({
+    const osc = await createOscillator({
       frequency: 150,
       type: 'triangle',
     })
@@ -65,7 +66,7 @@ async function playKick() {
 }
 
 async function createSnareMeat() {
-  const osc = await lib.createOscillator({
+  const osc = await createOscillator({
     frequency: 100,
     type: 'sine',
   })
@@ -76,10 +77,10 @@ async function createSnareMeat() {
 }
 
 async function createSnareCrack() {
-  const noise = await lib.createWhiteNoise()
+  const noise = await createWhiteNoise()
 
   // Apply highpass filter for the "crack"
-  const highpass = lib.createFilterEffect('highpass', {
+  const highpass = createFilterEffect('highpass', {
     frequency: 1000,
     q: 1,
   })
@@ -90,7 +91,7 @@ async function createSnareCrack() {
 }
 
 async function playSnareMeat() {
-  if (!lib)
+  if (!initialized.value)
     await initIfNeeded()
   const osc = await createSnareMeat()
   activeOscillators.push(osc)
@@ -103,7 +104,7 @@ async function playSnareMeat() {
 }
 
 async function playSnareCrack() {
-  if (!lib)
+  if (!initialized.value)
     await initIfNeeded()
   const noise = await createSnareCrack()
   activeOscillators.push(noise)
@@ -124,7 +125,7 @@ async function playSnare() {
     // Use LayeredSound to synchronize both layers to the same AudioContext timestamp
     const meat = await createSnareMeat()
     const crack = await createSnareCrack()
-    const snare = await lib.createLayeredSound([meat, crack])
+    const snare = await createLayeredSound([meat, crack])
     activeOscillators.push(snare)
     snare.playFor(0.1)
 
@@ -153,17 +154,17 @@ async function playHiHat() {
 
     const oscillators = await Promise.all(
       ratios.map(async (ratio) => {
-        const osc = await lib.createOscillator({
+        const osc = await createOscillator({
           frequency: fundamentalFreq * ratio,
           type: 'square',
         })
 
         // Highpass + bandpass filters for metallic character
-        const highpass = lib.createFilterEffect('highpass', {
+        const highpass = createFilterEffect('highpass', {
           frequency: 7000,
           q: 1,
         })
-        const bandpass = lib.createFilterEffect('bandpass', {
+        const bandpass = createFilterEffect('bandpass', {
           frequency: 10000,
           q: 1,
         })
@@ -179,7 +180,7 @@ async function playHiHat() {
     )
 
     // Use LayeredSound for synchronized playback
-    const hihat = await lib.createLayeredSound(oscillators)
+    const hihat = await createLayeredSound(oscillators)
     activeOscillators.push(hihat)
     hihat.playFor(0.1)
 
@@ -200,7 +201,7 @@ async function playBassDrop() {
     error.value = ''
     await initIfNeeded()
 
-    const osc = await lib.createOscillator({
+    const osc = await createOscillator({
       frequency: 100,
       type: 'sine',
     })
