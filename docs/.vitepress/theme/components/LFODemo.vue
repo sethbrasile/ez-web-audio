@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { FilterEffect, LFO, Oscillator } from 'ez-web-audio'
-import type * as EzWebAudio from 'ez-web-audio'
+import type { FilterEffect } from 'ez-web-audio'
+import { useCleanup, useLFO, useOscillator } from '@ez-web-audio/vue'
+import { createFilterEffect } from 'ez-web-audio'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 type TabType = 'tremolo' | 'vibrato' | 'filter'
@@ -11,7 +12,6 @@ const TAB_COLORS: Record<TabType, string> = {
   filter: '#ffd93d',
 }
 
-const initialized = ref(false)
 const playing = ref(false)
 const loading = ref(false)
 const error = ref('')
@@ -20,9 +20,9 @@ const rateSlider = ref(40) // 0-100
 const depthSlider = ref(50) // 0-100
 const waveformType = ref<'sine' | 'square' | 'sawtooth' | 'triangle'>('sine')
 
-let lib: typeof EzWebAudio | null = null
-let oscillator: Oscillator | null = null
-let lfo: LFO | null = null
+const cleanup = useCleanup()
+const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
+const { instance: lfo, load: loadLfo, reset: resetLfo } = useLFO()
 let filter: FilterEffect | null = null
 let filterAttached = false
 let animationFrameId: number | null = null
@@ -80,33 +80,26 @@ const depthDisplayLabel = computed(() => {
   }
 })
 
-async function ensureLoaded() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-    initialized.value = true
-  }
-}
-
 function connectLFOToTab() {
-  if (!lfo || !oscillator)
+  if (!lfo.value || !oscillator.value)
     return
 
-  lfo.disconnect()
+  lfo.value.disconnect()
 
   switch (activeTab.value) {
     case 'tremolo':
-      lfo.connect(oscillator, 'gain', { depth: computeDepthForTab(), depthUnit: 'ratio' })
+      lfo.value.connect(oscillator.value, 'gain', { depth: computeDepthForTab(), depthUnit: 'ratio' })
       break
     case 'vibrato':
-      lfo.connect(oscillator, 'frequency', { depth: computeDepthForTab(), depthUnit: 'cents' })
+      lfo.value.connect(oscillator.value, 'frequency', { depth: computeDepthForTab(), depthUnit: 'cents' })
       break
     case 'filter':
       if (filter && !filterAttached) {
-        oscillator.addEffect(filter)
+        oscillator.value.addEffect(filter)
         filterAttached = true
       }
       if (filter) {
-        lfo.connect(filter, 'frequency', { depth: computeDepthForTab(), depthUnit: 'absolute' })
+        lfo.value.connect(filter, 'frequency', { depth: computeDepthForTab(), depthUnit: 'absolute' })
       }
       break
   }
@@ -129,29 +122,27 @@ async function playSound() {
     loading.value = true
     error.value = ''
 
-    await ensureLoaded()
-
     // Create oscillator at A4 (440 Hz) — standard musical reference
-    oscillator = await lib!.createOscillator({ frequency: 440, type: 'sawtooth' })
-    oscillator!.update('gain').to(0.7).as('ratio')
+    const osc = cleanup.register(await loadOsc({ frequency: 440, type: 'sawtooth' }))
+    osc.update('gain').to(0.7).as('ratio')
 
     // Create filter for filter sweep tab — bandpass gives wah-pedal character
-    filter = lib!.createFilterEffect('bandpass', { frequency: 2000, q: 6 })
+    filter = createFilterEffect('bandpass', { frequency: 2000, q: 6 })
     filterAttached = false
 
     // Create LFO
-    lfo = lib!.createLFO({
+    const l = cleanup.register(await loadLfo({
       frequency: rate.value,
       depth: computeDepthForTab(),
       type: waveformType.value,
-    })
+    }))
 
     // Connect based on active tab
     connectLFOToTab()
 
     // Start LFO and play oscillator
-    lfo!.start()
-    oscillator!.play()
+    l.start()
+    osc.play()
     playing.value = true
 
     // Start visualization
@@ -173,16 +164,14 @@ function stopSound() {
     animationFrameId = null
   }
 
-  if (lfo) {
-    lfo.stop()
-    lfo.dispose()
-    lfo = null
+  if (lfo.value) {
+    lfo.value.stop()
+    lfo.value.dispose()
   }
+  resetLfo()
 
-  if (oscillator) {
-    oscillator.stop()
-    oscillator = null
-  }
+  oscillator.value?.stop()
+  resetOsc()
 
   filter = null
   filterAttached = false
@@ -207,28 +196,28 @@ const presets = [
 
 // Watch parameters and update LFO in real-time
 watch(activeTab, () => {
-  if (playing.value && lfo) {
-    lfo.depth = computeDepthForTab()
+  if (playing.value && lfo.value) {
+    lfo.value.depth = computeDepthForTab()
     connectLFOToTab()
   }
 })
 
 watch(rate, (newRate) => {
-  if (lfo && playing.value) {
-    lfo.frequency = newRate
+  if (lfo.value && playing.value) {
+    lfo.value.frequency = newRate
   }
 })
 
 watch(depth, () => {
-  if (lfo && playing.value) {
+  if (lfo.value && playing.value) {
     // Reconnect to recalculate depth for current tab
     connectLFOToTab()
   }
 })
 
 watch(waveformType, (newType) => {
-  if (lfo && playing.value) {
-    lfo.type = newType
+  if (lfo.value && playing.value) {
+    lfo.value.type = newType
   }
 })
 
@@ -388,14 +377,6 @@ onUnmounted(() => {
   if (animationFrameId !== null) {
     cancelAnimationFrame(animationFrameId)
     animationFrameId = null
-  }
-  if (lfo) {
-    lfo.dispose()
-    lfo = null
-  }
-  if (oscillator) {
-    oscillator.stop()
-    oscillator = null
   }
   window.removeEventListener('resize', handleResize)
 })
