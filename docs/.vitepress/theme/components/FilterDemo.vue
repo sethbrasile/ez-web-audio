@@ -3,6 +3,12 @@ import type { FilterEffect, Oscillator, Sound } from 'ez-web-audio'
 import { useCleanup } from '@ez-web-audio/vue'
 import { createFilterEffect, createOscillator, createWhiteNoise } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import Knob from './kit/Knob.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import PresetSelector from './kit/PresetSelector.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
 
 const initialized = ref(false)
 const playing = ref(false)
@@ -29,6 +35,18 @@ const frequency = computed(() => {
 // Show gain control only for shelf and peaking filters
 const showGainControl = computed(() => {
   return ['lowshelf', 'highshelf', 'peaking'].includes(filterType.value)
+})
+
+const sourceOptions = [
+  { label: 'Oscillator', value: 'oscillator' },
+  { label: 'White Noise', value: 'noise' },
+]
+
+// PresetSelector's v-model is typed as a generic string; this narrows it
+// back to the union type without changing any playback logic.
+const sourceModel = computed<string>({
+  get: () => sourceType.value,
+  set: (v) => { sourceType.value = v as typeof sourceType.value },
 })
 
 async function togglePlayback() {
@@ -143,301 +161,189 @@ watch(bypassed, (newBypassed) => {
 onUnmounted(() => {
   stopSound()
 })
+
+function formatCutoff(v: number) {
+  return `${Math.round(20 * 1000 ** (v / 100))} Hz`
+}
+
+function formatQ(v: number) {
+  return v.toFixed(1)
+}
+
+function formatFilterGain(v: number) {
+  return `${v > 0 ? '+' : ''}${v.toFixed(1)} dB`
+}
 </script>
 
 <template>
-  <div class="filter-demo">
-    <div class="warning">
-      <strong>Note:</strong> Audio sources can be loud. Start with caution.
-    </div>
+  <DemoFrame class="filter-demo" :error="error" takeaway="Synthesizers are oscillators plus filters.">
+    <VolumeWarning />
 
     <div class="controls">
-      <div class="control-group">
-        <div class="row">
-          <label>Source Type:</label>
-          <div class="button-group">
-            <button
-              :class="{ active: sourceType === 'oscillator' }"
-              :disabled="playing"
-              @click="sourceType = 'oscillator'"
-            >
-              Oscillator
-            </button>
-            <button
-              :class="{ active: sourceType === 'noise' }"
-              :disabled="playing"
-              @click="sourceType = 'noise'"
-            >
-              White Noise
-            </button>
-          </div>
-          <button
-            class="play-button"
-            :disabled="loading"
-            @click="togglePlayback"
-          >
-            {{ playing ? 'Stop' : 'Play' }}
-          </button>
-        </div>
+      <div class="row row-top">
+        <PresetSelector
+          v-model="sourceModel"
+          label="Source Type"
+          :options="sourceOptions"
+          :disabled="playing"
+        />
+
+        <PlayButton class="play-button" :playing="playing" :loading="loading" @click="togglePlayback" />
       </div>
 
-      <div class="control-group">
-        <div class="row">
-          <label for="filter-type">Filter Type:</label>
-          <select id="filter-type" v-model="filterType" :disabled="!playing">
-            <option value="lowpass">
-              Lowpass
-            </option>
-            <option value="highpass">
-              Highpass
-            </option>
-            <option value="bandpass">
-              Bandpass
-            </option>
-            <option value="notch">
-              Notch
-            </option>
-            <option value="lowshelf">
-              Low Shelf
-            </option>
-            <option value="highshelf">
-              High Shelf
-            </option>
-            <option value="peaking">
-              Peaking
-            </option>
-            <option value="allpass">
-              Allpass
-            </option>
-          </select>
-        </div>
-
-        <div class="row">
-          <label for="frequency">Frequency:</label>
-          <input
-            id="frequency"
-            v-model.number="frequencySlider"
-            type="range"
-            min="0"
-            max="100"
-            :disabled="!playing"
-            :aria-label="`Filter frequency: ${Math.round(frequency)} Hz`"
-          >
-          <span class="value">{{ Math.round(frequency) }} Hz</span>
-        </div>
-
-        <div class="row">
-          <label for="q">Resonance (Q):</label>
-          <input
-            id="q"
-            v-model.number="q"
-            type="range"
-            min="0.1"
-            max="20"
-            step="0.1"
-            :disabled="!playing"
-            :aria-label="`Resonance Q: ${q.toFixed(1)}`"
-          >
-          <span class="value">{{ q.toFixed(1) }}</span>
-        </div>
-
-        <div v-if="showGainControl" class="row">
-          <label for="filter-gain">Gain:</label>
-          <input
-            id="filter-gain"
-            v-model.number="filterGain"
-            type="range"
-            min="-24"
-            max="24"
-            step="0.5"
-            :disabled="!playing"
-            :aria-label="`Filter gain: ${filterGain > 0 ? '+' : ''}${filterGain.toFixed(1)} dB`"
-          >
-          <span class="value">{{ filterGain > 0 ? '+' : '' }}{{ filterGain.toFixed(1) }} dB</span>
-        </div>
-
-        <div class="row">
-          <label>
-            <input v-model="bypassed" type="checkbox" :disabled="!playing">
-            Bypass filter
-          </label>
-        </div>
+      <div class="row">
+        <label for="filter-type" class="filter-type-label">Filter Type</label>
+        <select id="filter-type" v-model="filterType" class="filter-type-select" :disabled="!playing">
+          <option value="lowpass">
+            Lowpass
+          </option>
+          <option value="highpass">
+            Highpass
+          </option>
+          <option value="bandpass">
+            Bandpass
+          </option>
+          <option value="notch">
+            Notch
+          </option>
+          <option value="lowshelf">
+            Low Shelf
+          </option>
+          <option value="highshelf">
+            High Shelf
+          </option>
+          <option value="peaking">
+            Peaking
+          </option>
+          <option value="allpass">
+            Allpass
+          </option>
+        </select>
       </div>
+
+      <div class="sliders">
+        <ParameterSlider
+          id="frequency"
+          v-model="frequencySlider"
+          label="Cutoff Frequency"
+          :min="0"
+          :max="100"
+          :format="formatCutoff"
+          :disabled="!playing"
+        />
+
+        <Knob
+          v-model="q"
+          label="Resonance (Q)"
+          :min="0.1"
+          :max="20"
+          :step="0.1"
+          :format="formatQ"
+          :disabled="!playing"
+          :size="72"
+        />
+
+        <ParameterSlider
+          v-if="showGainControl"
+          id="filter-gain"
+          v-model="filterGain"
+          label="Gain"
+          :min="-24"
+          :max="24"
+          :step="0.5"
+          :format="formatFilterGain"
+          :disabled="!playing"
+        />
+      </div>
+
+      <label class="bypass-row" :class="{ 'bypass-row--disabled': !playing }">
+        <input v-model="bypassed" type="checkbox" :disabled="!playing">
+        Bypass filter
+      </label>
     </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.filter-demo {
-  padding: 1.5rem;
-  background: var(--vp-c-bg-soft);
-  border-radius: 8px;
-  margin: 1.5rem 0;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.5rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger-1);
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  gap: 20px;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-label {
-  min-width: 140px;
+.row-top {
+  justify-content: space-between;
+}
+
+.filter-type-label {
+  font-size: 0.85rem;
   font-weight: 500;
+  color: var(--ewa-text-2);
+}
+
+.filter-type-select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text);
   font-size: 0.9em;
+  min-width: 160px;
 }
 
-select {
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-size: 0.9em;
-  min-width: 140px;
-}
-
-input[type="range"] {
-  flex: 1;
-  min-width: 200px;
-  max-width: 400px;
-}
-
-input[type="checkbox"] {
-  min-width: auto;
-  margin-right: 0.5rem;
-}
-
-.value {
-  min-width: 80px;
-  font-family: monospace;
-  font-size: 0.9em;
-  color: var(--vp-c-text-2);
-}
-
-.button-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: all 0.2s;
-}
-
-button:hover:not(:disabled) {
-  background: var(--vp-c-bg-soft);
-  border-color: var(--vp-c-brand);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+.filter-type-select:focus-visible {
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
 }
 
-select:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-button:disabled {
-  opacity: 0.5;
+.filter-type-select:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-button.active {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
-  font-weight: 600;
+.sliders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
 }
 
-.play-button {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-weight: 600;
-  min-width: 80px;
+.sliders > * {
+  flex: 1;
+  min-width: 200px;
 }
 
-.play-button:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
+.bypass-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  color: var(--ewa-text-2);
+  cursor: pointer;
+}
+
+.bypass-row--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bypass-row input[type='checkbox'] {
+  accent-color: var(--ewa-accent);
+  width: 16px;
+  height: 16px;
 }
 
 @media (max-width: 640px) {
-  .row {
+  .row-top {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
-
-  label {
-    min-width: auto;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .button-group {
-    width: 100%;
-  }
-
-  .button-group button {
-    flex: 1;
-  }
-}
-
-.warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border-left: 3px solid var(--vp-c-warning);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-}
-
-.warning strong {
-  color: var(--vp-c-warning);
 }
 </style>

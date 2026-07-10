@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { computed, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 
 const loading = ref(false)
 const playing = ref(false)
@@ -11,6 +16,13 @@ const gain = ref(0.3)
 
 const cleanup = useCleanup()
 const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
+
+// WaveformSelector's v-model is typed as a generic string; this narrows it
+// back to the union type without changing any playback logic.
+const waveformModel = computed<string>({
+  get: () => waveType.value,
+  set: (v) => { waveType.value = v as typeof waveType.value },
+})
 
 const noteName = computed(() => {
   // Simple frequency to note approximation
@@ -78,55 +90,47 @@ watch(waveType, async () => {
     await play()
   }
 })
+
+function formatHz(v: number) {
+  return `${Math.round(v)} Hz`
+}
+
+function formatGain(v: number) {
+  return `${Math.round(v * 100)}%`
+}
 </script>
 
 <template>
-  <div class="oscillator-demo">
-    <div class="warning">
-      <strong>Note:</strong> Oscillators can be loud. Start with low volume.
-    </div>
+  <DemoFrame class="oscillator-demo" :error="error" takeaway="An oscillator is a synthesizer's raw voice.">
+    <VolumeWarning />
 
     <div class="controls">
-      <button :class="{ active: playing }" :disabled="loading" class="play-btn" @click="toggle">
-        {{ loading ? 'Loading...' : (playing ? 'Stop' : 'Play') }}
-      </button>
+      <PlayButton :playing="playing" :loading="loading" @click="toggle" />
 
       <div class="params">
-        <label for="waveform-select">
-          Waveform:
-          <select id="waveform-select" v-model="waveType" :disabled="loading">
-            <option value="sine">Sine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-            <option value="triangle">Triangle</option>
-          </select>
-        </label>
+        <WaveformSelector v-model="waveformModel" :disabled="loading" />
 
-        <label for="frequency-slider">
-          Frequency: {{ frequency }}Hz
-          <input
-            id="frequency-slider"
-            v-model.number="frequency"
-            type="range"
-            min="100"
-            max="1000"
-            step="10"
-            :aria-label="`Frequency: ${frequency} Hz`"
-          >
-        </label>
+        <ParameterSlider
+          id="frequency-slider"
+          v-model="frequency"
+          label="Frequency"
+          :min="100"
+          :max="1000"
+          :step="10"
+          :format="formatHz"
+          :disabled="loading"
+        />
 
-        <label for="volume-slider">
-          Volume: {{ Math.round(gain * 100) }}%
-          <input
-            id="volume-slider"
-            v-model.number="gain"
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
-          >
-        </label>
+        <ParameterSlider
+          id="volume-slider"
+          v-model="gain"
+          label="Volume"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          :format="formatGain"
+          :disabled="loading"
+        />
       </div>
     </div>
 
@@ -135,113 +139,33 @@ watch(waveType, async () => {
     </div>
 
     <slot />
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.oscillator-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 24px;
   align-items: flex-start;
-}
-
-.play-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  background: var(--vp-c-brand);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  min-width: 80px;
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-dark);
-}
-
-.play-btn.active {
-  background: var(--vp-c-danger);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-select:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
 }
 
 .params {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 20px;
+  flex: 1;
 }
 
-.params label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
-}
-
-.params select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-}
-
-.params input[type="range"] {
-  width: 150px;
+.params > * {
+  flex: 1;
+  min-width: 180px;
 }
 
 .note-display {
-  margin-top: 1rem;
+  margin-top: 16px;
   font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--vp-c-brand);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
-}
-
-.warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border-left: 3px solid var(--vp-c-warning);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-}
-
-.warning strong {
-  color: var(--vp-c-warning);
+  font-weight: 700;
+  color: var(--ewa-accent-ink);
 }
 </style>
