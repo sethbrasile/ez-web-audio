@@ -217,7 +217,7 @@ Inserted 2026-03-19 from deep review `2026-03-19-deep-review-m7-demos.md` (55 fi
 **Announce sequence:** Phases 72-77 → full human UAT gate → Phase 78 (publish + announce).
 
 - [x] **Phase 72: Workspace + @ez-web-audio/vue** — Convert to pnpm workspace (`packages/core`, `packages/vue`). Extract composables (`useAudioLib`, `useCleanup`, `useSound`, `useBeatTrack`, ...) from demo patterns. Core stays zero-dep; binding peer-depends on core. ✓ 2026-07-09
-- [ ] **Phase 73: Demo composables refactor** — All 20+ docs demos refactored onto `@ez-web-audio/vue` composables. Deletes per-demo init/dispose boilerplate; demos dogfood the binding.
+- [x] **Phase 73: Demo composables refactor** — 24 docs demos refactored onto `@ez-web-audio/vue` composables (+ static-import escape hatch for churn/type-swap demos). Deletes per-demo init/dispose boilerplate; demos dogfood the binding. Hardened the binding (reset, getContext, 6 composables) + `Sound.audioBuffer`. DrumMachineVanilla excluded by design. ✓ 2026-07-10
 - [ ] **Phase 74: Demo design cohesion** — Shared demo UI kit (DemoCard, ParameterSlider, PlayButton, VolumeWarning — extraction now earned at 20+ demos, reversing M7's "not worth it for 5 pages" call). Dark/light parity, mobile layout, touch targets ≥44px, a11y sweep across ALL demos.
 - [ ] **Phase 75: Demo sound quality** — Gain staging per demo, shared master limiter (nothing clips), curated musical presets (great in first 5 seconds), replace cheap-sounding raw oscillators with better patches/samples where warranted.
 - [ ] **Phase 76: Groovebox showcase** — Flagship "everything together" demo: drum machine + bass synth + effects chain + transport/sequencer, state shareable via URL, embedded as homepage hero. The announcement centerpiece.

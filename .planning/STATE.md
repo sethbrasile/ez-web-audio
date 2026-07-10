@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: 7
 milestone_name: Feature Demos
 status: awaiting_uat
-stopped_at: M8 phase 72-01 complete (pnpm workspace conversion + pre-existing E2E/lint/CI fixes)
-last_updated: "2026-07-09T22:00:00.000Z"
-last_activity: 2026-07-09 — Design packet returned (gate 1 ✓); M8 execution started per playbook order; 72-01 shipped; M7 UAT waived to parallel by Seth
+stopped_at: M8 phase 73 complete (all 24 docs demos refactored onto @ez-web-audio/vue; binding + Sound.audioBuffer hardened)
+last_updated: "2026-07-10T00:00:00.000Z"
+last_activity: 2026-07-10 — Phase 73 shipped (Task A library hardening + 24 demo refactors, ~30 commits, exit gate green 55/55 E2E). Next per playbook: 75-01 (sound quality) → human gate 2 (listening). 74-02 + 77-01 now unblocked/parallel.
 progress:
   total_phases: 11
   completed_phases: 11
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 ## Current Position
 
-Phase: M8 Phase 72 COMPLETE (72-01 workspace + 72-02 @ez-web-audio/vue composables)
+Phase: M8 Phase 73 COMPLETE (all 24 audio demos on @ez-web-audio/vue; binding + Sound.audioBuffer hardened). Phases 72+73 done.
 Status: Executing M8 per `.planning/M8-PLAYBOOK.md`. Design packet at `.planning/DESIGN-HANDOFF/` (gate 1 done). M7 UAT waived to run in parallel (Seth, 2026-07-09).
-Next: 73-01 (refactor all demos onto @ez-web-audio/vue) → 74-02 (design implementation). 77-01 (React) unblocked, parallel-ok. Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is 16+ commits ahead of origin — pushing redeploys docs site (stale since March).
+Next: 75-01 (demo sound quality) → **human gate 2 (listening checkpoint)** — STOP for Seth's ears. Also unblocked now: 74-02 (design cohesion impl, needs the returned packet) + 77-01 (React bindings, parallel-ok). Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is ~45 commits ahead of origin — pushing redeploys docs site (stale since March).
 
 ## Milestone 8 Scope Decisions (user, 2026-07-09)
 
