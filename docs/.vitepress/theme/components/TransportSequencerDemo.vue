@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import type { BeatTrack, Font, Oscillator, Sequence, Transport } from 'ez-web-audio'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { useAudioContext, useBeatTrack, useCleanup, useFont, useOscillator, useSequence, useTransport } from '@ez-web-audio/vue'
+import { computed, ref, watch } from 'vue'
 
-// Module-level audio state (outside reactive state — created once in ensureLoaded)
-let lib: any = null
-let transport: Transport | null = null
-let kickTrack: BeatTrack | null = null
-let snareTrack: BeatTrack | null = null
-let hihatTrack: BeatTrack | null = null
-let bassSeq: Sequence | null = null
-let pianoSeq: Sequence | null = null
-let bassOsc: Oscillator | null = null
-let pianoFont: Font | null = null
+// Audio state — composable-managed, single instance per component lifetime.
+// Created once in ensureLoaded(); disposed automatically by useCleanup() on unmount.
+const cleanup = useCleanup()
+const { getContext } = useAudioContext()
+const { instance: transport, load: loadTransport } = useTransport()
+const { instance: kickTrack, load: loadKick } = useBeatTrack()
+const { instance: snareTrack, load: loadSnare } = useBeatTrack()
+const { instance: hihatTrack, load: loadHihat } = useBeatTrack()
+const { instance: bassOsc, load: loadBassOsc } = useOscillator()
+const { instance: pianoFont, load: loadPianoFont } = useFont()
+const { instance: bassSeq, load: loadBassSeq } = useSequence()
+const { instance: pianoSeq, load: loadPianoSeq } = useSequence()
 let audioContext: AudioContext | null = null
 
 // Reactive UI state
@@ -239,16 +241,16 @@ function shouldPlay(name: 'bass' | 'piano'): boolean {
 
 // Apply mute/solo to drum BeatTracks based on current state
 function syncDrumMuteSolo() {
-  if (!kickTrack || !snareTrack || !hihatTrack)
+  if (!kickTrack.value || !snareTrack.value || !hihatTrack.value)
     return
 
   const ts = trackState.value
   const hasSolo = anySoloed()
 
   // For drums, use BeatTrack.muted and BeatTrack.solo
-  kickTrack.muted = hasSolo ? !ts.kick.soloed : ts.kick.muted
-  snareTrack.muted = hasSolo ? !ts.snare.soloed : ts.snare.muted
-  hihatTrack.muted = hasSolo ? !ts.hihat.soloed : ts.hihat.muted
+  kickTrack.value.muted = hasSolo ? !ts.kick.soloed : ts.kick.muted
+  snareTrack.value.muted = hasSolo ? !ts.snare.soloed : ts.snare.muted
+  hihatTrack.value.muted = hasSolo ? !ts.hihat.soloed : ts.hihat.muted
 }
 
 function toggleMute(track: keyof typeof trackState.value) {
@@ -268,53 +270,50 @@ function applyPreset(name: string) {
   activePreset.value = name
 
   // Guard: only apply audio-side if library is initialized
-  if (!lib)
+  if (!transport.value)
     return
 
   const preset = PRESETS[name]
 
   // Update drum patterns
-  kickTrack?.setPattern(preset.kick)
-  snareTrack?.setPattern(preset.snare)
-  hihatTrack?.setPattern(preset.hihat)
+  kickTrack.value?.setPattern(preset.kick)
+  snareTrack.value?.setPattern(preset.snare)
+  hihatTrack.value?.setPattern(preset.hihat)
 
   // Re-schedule melody sequences
-  bassSeq?.clear()
-  pianoSeq?.clear()
+  bassSeq.value?.clear()
+  pianoSeq.value?.clear()
 
   for (const noteEvt of preset.bassNotes) {
-    bassSeq?.at(noteEvt.time, (t: number) => {
+    bassSeq.value?.at(noteEvt.time, (t: number) => {
       if (!shouldPlay('bass'))
         return
-      if (!bassOsc || !audioContext)
+      if (!bassOsc.value || !audioContext)
         return
       const offset = Math.max(0, t - audioContext.currentTime)
-      bassOsc.frequency = noteEvt.freq
-      bassOsc.playFor(noteEvt.duration)
+      bassOsc.value.frequency = noteEvt.freq
+      bassOsc.value.playFor(noteEvt.duration)
     })
   }
 
   for (const noteEvt of preset.pianoNotes) {
-    pianoSeq?.at(noteEvt.time, (t: number) => {
+    pianoSeq.value?.at(noteEvt.time, (t: number) => {
       if (!shouldPlay('piano'))
         return
-      if (!pianoFont || !audioContext)
+      if (!pianoFont.value || !audioContext)
         return
-      pianoFont.getNote(noteEvt.note)?.playIn(Math.max(0, t - audioContext.currentTime))
+      pianoFont.value.getNote(noteEvt.note)?.playIn(Math.max(0, t - audioContext.currentTime))
     })
   }
 }
 
 // Lazy-load all audio resources on first play
 async function ensureLoaded() {
-  if (lib)
+  if (transport.value)
     return
 
-  lib = await import('ez-web-audio')
-  const { createTransport, createSequence, createBeatTrack, createFont, createOscillator, getAudioContext } = lib
-
-  transport = await createTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 12 })
-  audioContext = await getAudioContext() as AudioContext
+  const tp = cleanup.register(await loadTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 12 }))
+  audioContext = await getContext()
 
   // Create drum BeatTracks
   const kickUrls = [
@@ -333,24 +332,24 @@ async function ensureLoaded() {
     '/ez-web-audio/audio/drum-samples/hihat3.wav',
   ]
 
-  kickTrack = await createBeatTrack(kickUrls, { numBeats: 32 })
-  snareTrack = await createBeatTrack(snareUrls, { numBeats: 32 })
-  hihatTrack = await createBeatTrack(hihatUrls, { numBeats: 32 })
+  const kt = cleanup.register(await loadKick(kickUrls, { numBeats: 32 }))
+  const st = cleanup.register(await loadSnare(snareUrls, { numBeats: 32 }))
+  const ht = cleanup.register(await loadHihat(hihatUrls, { numBeats: 32 }))
 
   // Sync to transport
-  kickTrack.syncTo(transport, { noteType: 1 / 16 })
-  snareTrack.syncTo(transport, { noteType: 1 / 16 })
-  hihatTrack.syncTo(transport, { noteType: 1 / 16 })
+  kt.syncTo(tp, { noteType: 1 / 16 })
+  st.syncTo(tp, { noteType: 1 / 16 })
+  ht.syncTo(tp, { noteType: 1 / 16 })
 
   // Create bass oscillator (triangle wave — less harsh than sawtooth)
-  bassOsc = await createOscillator({ frequency: 41.2, type: 'triangle' })
+  cleanup.register(await loadBassOsc({ frequency: 41.2, type: 'triangle' }))
 
   // Create piano soundfont
-  pianoFont = await createFont('/ez-web-audio/audio/piano.js')
+  cleanup.register(await loadPianoFont('/ez-web-audio/audio/piano.js'))
 
-  // Create melody sequences (SYNC — no await)
-  bassSeq = createSequence(transport, { length: '2m', loop: true })
-  pianoSeq = createSequence(transport, { length: '2m', loop: true })
+  // Create melody sequences
+  cleanup.register(await loadBassSeq(tp, { length: '2m', loop: true }))
+  cleanup.register(await loadPianoSeq(tp, { length: '2m', loop: true }))
 
   // Apply whatever preset was active when ensureLoaded was triggered
   // (may differ from 'Straight Rock' if user clicked a preset before Play)
@@ -358,7 +357,7 @@ async function ensureLoaded() {
 
   // Register tick handler to drive step grid playhead
   // ticksPerBeat:12 — scale tick to 16th-note step within beat (0-3)
-  transport.on('tick', (e: CustomEvent<{ bar: number, beat: number, tick: number, seconds: number }>) => {
+  tp.on('tick', (e: CustomEvent<{ bar: number, beat: number, tick: number, seconds: number }>) => {
     const { bar, beat, tick } = e.detail
     // Convert tick (0-11 with ticksPerBeat:12) to 16th-note position (0-3)
     const sixteenthTick = Math.floor(tick * 4 / 12)
@@ -370,8 +369,8 @@ async function ensureLoaded() {
 
 // BPM watch — update transport bpm immediately during playback
 watch(bpm, (v) => {
-  if (transport)
-    transport.bpm = Math.max(40, Math.min(300, v))
+  if (transport.value)
+    transport.value.bpm = Math.max(40, Math.min(300, v))
 })
 
 // Transport controls
@@ -379,7 +378,7 @@ async function play() {
   try {
     error.value = ''
     await ensureLoaded()
-    transport?.start()
+    transport.value?.start()
     playing.value = true
     paused.value = false
   }
@@ -389,18 +388,18 @@ async function play() {
 }
 
 function pause() {
-  transport?.pause()
+  transport.value?.pause()
   paused.value = true
   currentStep.value = -1
 }
 
 function resume() {
-  transport?.start()
+  transport.value?.start()
   paused.value = false
 }
 
 function stop() {
-  transport?.stop()
+  transport.value?.stop()
   playing.value = false
   paused.value = false
   currentStep.value = -1
@@ -413,26 +412,7 @@ function selectPreset(name: string) {
   applyPreset(name)
 }
 
-// Cleanup on unmount
-onUnmounted(() => {
-  transport?.dispose()
-  kickTrack?.dispose()
-  snareTrack?.dispose()
-  hihatTrack?.dispose()
-  bassSeq?.dispose()
-  pianoSeq?.dispose()
-  kickTrack = null
-  snareTrack = null
-  hihatTrack = null
-  bassSeq = null
-  pianoSeq = null
-  bassOsc?.stop()
-  bassOsc = null
-  pianoFont = null
-  transport = null
-  lib = null
-  audioContext = null
-})
+// Cleanup on unmount is handled by useCleanup() (registered instances above)
 
 // Track definitions for template iteration
 const tracks = [
