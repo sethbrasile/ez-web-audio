@@ -84,14 +84,13 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
    * @param audioBuffer - The decoded audio data to play
    * @param opts - Optional configuration (name, setTimeout override)
    */
-  constructor(audioContext: AudioContext, private audioBuffer: AudioBuffer, opts?: BaseSoundOptions) {
+  constructor(audioContext: AudioContext, public readonly audioBuffer: AudioBuffer, opts?: BaseSoundOptions) {
     super(audioContext, opts)
 
     const audioSourceNode = audioContext.createBufferSource()
     audioSourceNode.buffer = audioBuffer
 
     this.audioSourceNode = audioSourceNode
-    this.audioBuffer = audioBuffer
     this.controller = new SoundController(this.audioSourceNode, this.gainNode, this.pannerNode)
   }
 

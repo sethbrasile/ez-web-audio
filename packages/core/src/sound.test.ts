@@ -50,6 +50,12 @@ describe('sound', () => {
       expect(sound.gainNode).toBeDefined()
     })
 
+    it('exposes the AudioBuffer passed to the constructor via .audioBuffer', () => {
+      const audioBuffer = audioContext.createBuffer(1, 44100, 44100)
+      const sound = new Sound(audioContext, audioBuffer)
+      expect(sound.audioBuffer).toBe(audioBuffer)
+    })
+
     it('isPlaying is false initially', () => {
       const sound = createSound(audioContext)
       expect(sound.isPlaying).toBe(false)
