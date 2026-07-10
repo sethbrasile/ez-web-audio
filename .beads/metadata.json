@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "ez_audio",
+  "project_id": "c1b3965e-9735-4f83-92a9-12db994906de"
+}
