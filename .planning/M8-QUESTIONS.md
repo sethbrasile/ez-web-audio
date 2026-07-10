@@ -89,7 +89,7 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 **Gaps observed (logged, not changed):**
 - PolySynth `play()` has no per-voice `detune` — worked around with frequency ratios (`f × 2^(cents/1200)`), fine but a `detune` PlayOption reads better.
 - LFO `connect(target, 'frequency')` captures `audioSourceNode.frequency` at connect time — stale after any replay (oscillator nodes are single-use). Didn't hit it (only gain/effect params used), but it's a footgun for LFO-on-pitch across replays.
-- Envelope-attack-to-1.0 friction (already logged) again forced master-gain swells instead of ADSR.
+- Envelope-attack-to-1.0 friction (already logged) again forced master-gain swells instead of ADSR. Hit a THIRD time in the EffectsChain pattern source (empirically confirmed: lowering the oscillator `gain` option 0.22 → 0.10 with an envelope present changed the measured peak not at all — 1.168 → 1.169; worked around with `onPlaySet('gain')` pluck shaping). Three independent hits in one gate — strongest pre-1.0 candidate on the list.
 
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 

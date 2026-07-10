@@ -6,7 +6,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type EffectId = 'delay' | 'reverb' | 'compressor' | 'eq'
-type SourceType = 'oscillator' | 'file'
+type SourceType = 'pattern' | 'oscillator' | 'file'
 
 interface EffectSlot {
   id: EffectId
@@ -41,8 +41,63 @@ const error = ref('')
 const warningDismissed = ref(false)
 const statusMessage = ref('Click Play to start')
 
-// Which source feeds the chain — oscillator (synth) or a looping audio file
-const sourceType = ref<SourceType>('oscillator')
+// Which source feeds the chain — a plucked synth pattern (default), a held
+// oscillator drone, or a looping audio file.
+//
+// gate-2 (ez-audio-5w9): the drone used to be the default source, but a
+// continuous tone gives delay nothing to echo, the compressor nothing to
+// squash, and EQ/reverb nothing percussive to shape — the whole point of
+// this demo. A retriggered pattern has real transients, so it's the
+// default now; the drone remains selectable for comparison.
+const sourceType = ref<SourceType>('pattern')
+
+// Pattern source: a short A-minor-7 arpeggio (A3, C4, E4, G4) retriggered
+// on an eighth-note grid at 120 BPM (250ms/note). Each hit is a single
+// Oscillator instance retriggered via update('frequency') + play() — the
+// documented step-sequencing idiom (setup() re-applies the persisted
+// frequency to a fresh OscillatorNode on every play(), so no raw node
+// manipulation is needed).
+//
+// Pluck shape uses onPlaySet('gain') (attack ramp up, decay ramp back to 0)
+// rather than the `envelope` constructor option: Envelope.applyTo() always
+// ramps to an absolute peak of 1.0 regardless of the oscillator's configured
+// gain (library gap — see final report), which blew through the demo's
+// safety limiter once the delay/reverb tails started stacking. onPlaySet
+// writes the raw gain value we choose, so PATTERN_PEAK_GAIN is the true
+// ceiling.
+const PATTERN_NOTES = [220.00, 261.63, 329.63, 392.00]
+const PATTERN_STEP_MS = 250
+const PATTERN_PEAK_GAIN = 0.09
+// Per-step accents (strong / weak / medium / weak): the level variation is
+// what gives the compressor real dynamics to squash — a uniform-velocity
+// pattern would leave it with nothing to do.
+const PATTERN_ACCENTS = [1, 0.55, 0.8, 0.55]
+const PATTERN_ATTACK = 0.003
+const PATTERN_DECAY = 0.15
+let patternStep = 0
+let patternIntervalId: ReturnType<typeof setInterval> | null = null
+// Guards against setInterval jitter under CPU load (e.g. many demos'
+// AudioContexts running in the same page during the E2E suite): if two
+// ticks land close together, retriggering twice stacks two attacks' worth
+// of delay/reverb energy and can push the shared safety limiter past its
+// ceiling. Refuse a retrigger inside the previous note's attack+decay.
+let lastPatternTriggerAt = 0
+
+// Retrigger the pattern oscillator on a new pitch with a clean pluck
+// envelope. Schedules are consumed on each play() (per onPlaySet's
+// contract), so this must be called before every note, not just the first.
+function triggerPatternNote(osc: Oscillator, frequency: number, accent = 1): void {
+  const now = performance.now()
+  if (now - lastPatternTriggerAt < (PATTERN_ATTACK + PATTERN_DECAY) * 1000)
+    return
+  lastPatternTriggerAt = now
+
+  osc.update('frequency').to(frequency).as('ratio')
+  osc.onPlaySet('gain').to(0).at(0)
+  osc.onPlaySet('gain').to(PATTERN_PEAK_GAIN * accent).endingAt(PATTERN_ATTACK, 'linear')
+  osc.onPlaySet('gain').to(0).endingAt(PATTERN_ATTACK + PATTERN_DECAY, 'linear')
+  osc.play()
+}
 
 // Chain order — list of effect IDs in signal-flow order
 // Default: EQ → Compressor → Delay → Reverb (typical professional signal chain)
@@ -151,11 +206,22 @@ const orderedSlots = computed<EffectSlot[]>(() =>
 )
 
 // Transport label describes the active source
-const transportLabel = computed(() =>
-  sourceType.value === 'oscillator'
-    ? 'Sawtooth oscillator at 220 Hz through the effect chain below'
-    : 'Looping audio file through the effect chain below',
-)
+const transportLabel = computed(() => {
+  if (sourceType.value === 'pattern')
+    return 'Plucked synth arpeggio at 120 BPM through the effect chain below'
+  if (sourceType.value === 'oscillator')
+    return 'Sawtooth oscillator at 220 Hz through the effect chain below'
+  return 'Looping audio file through the effect chain below'
+})
+
+// Short label for the source node in the signal-flow diagram
+const sourceLabel = computed(() => {
+  if (sourceType.value === 'pattern')
+    return 'Pattern'
+  if (sourceType.value === 'oscillator')
+    return 'Oscillator'
+  return 'Audio File'
+})
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -225,7 +291,19 @@ async function startAudio(): Promise<void> {
 
     initialized.value = true
 
-    if (sourceType.value === 'oscillator') {
+    if (sourceType.value === 'pattern') {
+      // Plucked lead: sawtooth for bright harmonic content (good EQ material),
+      // tamed with a lowpass so it isn't harsh. The onPlaySet gain schedule
+      // (see triggerPatternNote) shapes a sharp pluck — clean transient for
+      // the delay to echo and the compressor to squash — that decays fully
+      // to silence well before the next 250ms step.
+      source = await createOscillator({
+        frequency: PATTERN_NOTES[0],
+        type: 'sawtooth',
+        lowpass: { frequency: 3000, q: 1 },
+      })
+    }
+    else if (sourceType.value === 'oscillator') {
       // Oscillator gain kept modest (M23: avoid saturating compressor)
       source = await createOscillator({ frequency: 220, type: 'sawtooth' })
       source.update('gain').to(0.15).as('ratio')
@@ -277,7 +355,25 @@ async function startAudio(): Promise<void> {
       source.addEffect(effect)
     }
 
-    source.play()
+    if (sourceType.value === 'pattern') {
+      // Fire the first note immediately, then retrigger on an eighth-note
+      // interval. Each hit re-schedules its own gain envelope (onPlaySet
+      // schedules are consumed after each play() — see triggerPatternNote).
+      patternStep = 0
+      triggerPatternNote(source as Oscillator, PATTERN_NOTES[0], PATTERN_ACCENTS[0])
+      patternStep = 1
+      patternIntervalId = setInterval(() => {
+        if (!source || sourceType.value !== 'pattern')
+          return
+        const step = patternStep % PATTERN_NOTES.length
+        triggerPatternNote(source as Oscillator, PATTERN_NOTES[step], PATTERN_ACCENTS[step % PATTERN_ACCENTS.length])
+        patternStep++
+      }, PATTERN_STEP_MS)
+    }
+    else {
+      source.play()
+    }
+
     playing.value = true
     setStatus('Playing — adjust parameters to hear changes')
   }
@@ -292,6 +388,11 @@ async function startAudio(): Promise<void> {
 }
 
 function stopAudio(): void {
+  if (patternIntervalId !== null) {
+    clearInterval(patternIntervalId)
+    patternIntervalId = null
+  }
+
   if (source) {
     try {
       source.stop()
@@ -318,8 +419,8 @@ function stopAudio(): void {
 
 // ── Source switching ───────────────────────────────────────────────────────────
 
-// Switch between oscillator and file source. If currently playing, restart
-// with the new source (stop + null old source, then create + play the new one).
+// Switch between pattern, oscillator, and file source. If currently playing,
+// restart with the new source (stop + null old source, then create + play the new one).
 async function switchSource(type: SourceType): Promise<void> {
   if (type === sourceType.value)
     return
@@ -419,6 +520,14 @@ onUnmounted(() => {
         <span class="source-selector-label">Source:</span>
         <button
           class="ec-btn source-btn"
+          :class="{ active: sourceType === 'pattern' }"
+          aria-label="Source: pattern"
+          @click="switchSource('pattern')"
+        >
+          Pattern
+        </button>
+        <button
+          class="ec-btn source-btn"
           :class="{ active: sourceType === 'oscillator' }"
           aria-label="Source: oscillator"
           @click="switchSource('oscillator')"
@@ -454,7 +563,7 @@ onUnmounted(() => {
     <div class="signal-flow" aria-label="Signal flow diagram">
       <div class="flow-node source">
         <span class="flow-label">Source</span>
-        <span class="flow-box">{{ sourceType === 'oscillator' ? 'Oscillator' : 'Audio File' }}</span>
+        <span class="flow-box">{{ sourceLabel }}</span>
       </div>
 
       <template v-for="(slot, idx) in orderedSlots" :key="slot.id">

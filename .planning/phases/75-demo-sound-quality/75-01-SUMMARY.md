@@ -119,3 +119,53 @@ GrainPlayer mostly good. **Findings tracked as beads** (`bd list`, prefix
 Gate 2 stays OPEN until these are fixed and Seth re-listens. Phase 76 still
 blocked. Several are likely **core library** bugs (PolySynth envelopes,
 Transport stop scheduling, note-start clicks) — library-fidelity rule applies.
+
+### Gate 2 — round-3 fix work (2026-07-10)
+
+All 12 beads closed. Core test count 1928 → 1944 (+16). Loudness E2E 17/17
+throughout (TransportSequencer 0.78, Ambient 0.71). Gate 2 re-listen pending.
+
+**Core library fixes (library-fidelity):**
+
+| Fix | Commit |
+|---|---|
+| Single-use source nodes leaked across plays: `onended` read `this.audioSourceNode` dynamically, so a superseded node's ended event disconnected the CURRENT node, flipped `_isPlaying`, emitted bogus `end`. Now node-bound + currency-guarded (BaseSound, Track). `Oscillator.setup()` neutralizes the previous node (was left sounding through the shared gain node, riding the new note's envelope, then hard-stopping = pop). | 9b06d98 |
+| PolySynth voice states now event-driven: released voices ring out their ADSR tails (`stop`→released, `end`→available; oscillators now emit `end` when a release tail/fade actually finishes). Retrigger no longer corrupts `activeVoices`; `voicestolen` only for actively-held victims. Root cause of ez-audio-5b2. | 9b06d98 |
+| `stop()` cancels a lookahead-scheduled `play()` that hasn't started (notes no longer fire after transport Stop). | d6bd224 |
+| `Oscillator.update('frequency')` persists across plays (setup() used to revert to constructor frequency). | d6bd224 |
+| `Sound.setup()` retrigger: still-playing old buffer source hands off through a 50ms release gain instead of hard-cutting at amplitude (the SoundfontPiano note-start click). Also cancels stale scheduled gain automation. | dd8fa43 |
+| `SampledNote`: 150ms fade landing just before buffer end — soundfont samples truncate hard (skipped for short/looping buffers). | dd8fa43 |
+
+**Demo fixes:**
+
+- **TransportSequencer** (d6bd224, 574d8e1): per-note bass oscillators (the
+  shared osc orphaned nodes = hanging bass / funk screech / cross-pattern
+  "state leak"); notes play at scheduled time with sample-accurate gain
+  gates; Stop/Pause silence melody; **musical redesign** — Em rock, Am funk
+  (octave bass + Am7 stabs), Em shuffle; piano plays real chords with chord
+  labels in the grid; grid now fluid-width (no viewport overflow, verified
+  1440/700px).
+- **Ambient** (9f945a9): rebuilt from ambient-synthesis research — PolySynth
+  triangle pad voiced root/root+6¢/fifth/octave−5¢/twelfth → breathing
+  lowpass (0.05Hz LFO) → decay-5 reverb; noise bed w/ 0.08Hz cutoff LFO;
+  detuned sine shimmer in decay-6 reverb w/ 0.13Hz tremolo. Full
+  start/toggle/slider/stop/restart cycle verified error-free.
+- **SynthDrumKit** (3236496): bass drop 10s → 4s. Checked ember-audio's
+  original (`drum-kit.js`): it is ALSO 10s — nothing shorter to port.
+- **XYPad** (dd8fa43): pointer updates glide over 30ms (were instant sets at
+  ~60Hz = zipper clicks).
+- **EffectsChain** (subagent, reviewed + accent dynamics added): default
+  source is now a plucked Am7 arpeggio (sawtooth, 3ms/150ms pluck via
+  `onPlaySet('gain')`, 120bpm 8ths, strong/weak/medium/weak accents so the
+  compressor has dynamics) — drone + file remain selectable as a 3-source
+  switcher. Peak 0.155. The envelope-attack-to-1.0 friction was hit and
+  empirically confirmed a third time here (see M8-QUESTIONS).
+- **GrainPlayer** (subagent, reviewed + position anchor added): Pad preset
+  retuned to an actual pad — grainSize 0.3, overlap 0.24 (~5 grains deep),
+  jitter 0.12, speed 0.1 (near-frozen), position anchored at 0.35 in the
+  sample's sustain region (speed-1 traversal of the piano decay WAS the
+  reported bug). Freeze/Choppy/Scatter untouched.
+
+**API gaps logged to M8-QUESTIONS.md** (not changed, pre-1.0 candidates):
+PolySynth per-voice `detune`; LFO `frequency`-param staleness across replays;
+`changeGainTo(v, { over })` (2nd hand-rolled instance: XYPad).
