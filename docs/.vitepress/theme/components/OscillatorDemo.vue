@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { useCleanup, useOscillator } from '@ez-web-audio/vue'
+import { computed, ref, watch } from 'vue'
 
 const loading = ref(false)
 const playing = ref(false)
@@ -8,7 +9,8 @@ const waveType = ref<'sine' | 'square' | 'sawtooth' | 'triangle'>('sine')
 const frequency = ref(440)
 const gain = ref(0.3)
 
-let oscillator: any = null
+const cleanup = useCleanup()
+const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
 
 const noteName = computed(() => {
   // Simple frequency to note approximation
@@ -34,14 +36,12 @@ async function play() {
     error.value = ''
     loading.value = true
 
-    const { createOscillator } = await import('ez-web-audio')
-
-    oscillator = await createOscillator({
+    const osc = cleanup.register(await loadOsc({
       frequency: frequency.value,
       type: waveType.value,
-    })
-    oscillator.changeGainTo(gain.value)
-    oscillator.play()
+    }))
+    osc.changeGainTo(gain.value)
+    osc.play()
     playing.value = true
   }
   catch (e) {
@@ -53,10 +53,10 @@ async function play() {
 }
 
 function stop() {
-  if (oscillator) {
-    try { oscillator.stop() }
+  if (oscillator.value) {
+    try { oscillator.value.stop() }
     catch {}
-    oscillator = null
+    resetOsc()
   }
   playing.value = false
 }
@@ -64,12 +64,12 @@ function stop() {
 // Update oscillator parameters while playing
 // Frequency and gain update in real-time without audio gaps
 watch(frequency, (v) => {
-  if (playing.value && oscillator)
-    oscillator.update('frequency').to(v).as('ratio')
+  if (playing.value && oscillator.value)
+    oscillator.value.update('frequency').to(v).as('ratio')
 })
 watch(gain, (v) => {
-  if (playing.value && oscillator)
-    oscillator.changeGainTo(v)
+  if (playing.value && oscillator.value)
+    oscillator.value.changeGainTo(v)
 })
 // waveType requires stop/recreate — Web Audio API OscillatorNode.type cannot change after start
 watch(waveType, async () => {
@@ -77,10 +77,6 @@ watch(waveType, async () => {
     stop()
     await play()
   }
-})
-
-onUnmounted(() => {
-  stop()
 })
 </script>
 
