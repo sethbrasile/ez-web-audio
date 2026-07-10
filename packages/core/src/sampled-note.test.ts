@@ -1,5 +1,5 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SampledNote } from './sampled-note'
 import { Sound } from './sound'
 
@@ -223,5 +223,37 @@ describe('sampledNote', () => {
       const musicalName = note.accidental ? `${note.letter}${note.accidental}` : note.letter
       expect(musicalName).toBe('Bb')
     })
+  })
+})
+
+// gate-2 ez-audio-8de: soundfont samples often end abruptly — SampledNote
+// schedules a short gain fade landing just before the buffer runs out so the
+// natural end never truncates audibly.
+describe('end-of-sample fade (gate-2 ez-audio-8de)', () => {
+  it('schedules a fade to silence just before the buffer end', async () => {
+    const audioContext = new Mock() as unknown as AudioContext
+    const buffer = audioContext.createBuffer(1, 44100 * 4, 44100) // 4s
+    const note = new SampledNote(audioContext, buffer)
+    const gain = note.getGainNode().gain
+    const setSpy = vi.spyOn(gain, 'setValueAtTime')
+    const rampSpy = vi.spyOn(gain, 'linearRampToValueAtTime')
+
+    await note.play()
+    const start = (note as unknown as { startedPlayingAt: number }).startedPlayingAt || audioContext.currentTime
+
+    // Fade anchor at (end - 0.15) and ramp landing at/before the buffer end
+    expect(setSpy).toHaveBeenCalledWith(expect.any(Number), expect.closeTo(start + 4 - 0.15, 2))
+    const rampCall = rampSpy.mock.calls.find(([v]) => v === 0)
+    expect(rampCall).toBeDefined()
+    expect(rampCall![1]).toBeLessThanOrEqual(start + 4)
+  })
+
+  it('does not schedule a fade for very short buffers', async () => {
+    const audioContext = new Mock() as unknown as AudioContext
+    const buffer = audioContext.createBuffer(1, 4410, 44100) // 0.1s
+    const note = new SampledNote(audioContext, buffer)
+    const rampSpy = vi.spyOn(note.getGainNode().gain, 'linearRampToValueAtTime')
+    await note.play()
+    expect(rampSpy).not.toHaveBeenCalledWith(0, expect.any(Number))
   })
 })

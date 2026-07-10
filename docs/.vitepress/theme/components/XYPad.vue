@@ -144,11 +144,26 @@ function updateFromPosition(x: number, y: number) {
   currentGain.value = Math.max(0, Math.min(1, gain))
   currentNote.value = frequencyToNote(frequency)
 
-  // Update oscillator if playing
+  // Update oscillator if playing. Pointer moves arrive ~60Hz; instant
+  // update('gain') sets step the param and click (gate-2 ez-audio-aub), so
+  // both params glide over a few ms instead (same hand-rolled ramp pattern
+  // as the Ambient demo — changeGainTo-has-no-ramp gap logged in
+  // M8-QUESTIONS).
   if (oscillator.value && isPlaying.value) {
     try {
-      oscillator.value.update('frequency').to(frequency).as('ratio')
-      oscillator.value.update('gain').to(currentGain.value).as('ratio')
+      const osc = oscillator.value
+      const now = osc.audioContext.currentTime
+      const RAMP_SEC = 0.03
+
+      const freqParam = osc.audioSourceNode.frequency
+      freqParam.cancelScheduledValues(now)
+      freqParam.setValueAtTime(freqParam.value, now)
+      freqParam.linearRampToValueAtTime(frequency, now + RAMP_SEC)
+
+      const gainParam = osc.getGainNode().gain
+      gainParam.cancelScheduledValues(now)
+      gainParam.setValueAtTime(gainParam.value, now)
+      gainParam.linearRampToValueAtTime(currentGain.value, now + RAMP_SEC)
     }
     catch (e) {
       console.error('Error updating oscillator:', e)

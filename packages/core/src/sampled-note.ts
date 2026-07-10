@@ -28,4 +28,31 @@ import { Sound } from './sound'
  * ```
  */
 export class SampledNote extends MusicallyAware(Sound) {
+  /**
+   * Fade duration (seconds) applied just before the sample's natural end.
+   * @internal
+   */
+  private static readonly END_FADE_SEC = 0.15
+
+  /**
+   * Schedule a short gain fade that lands just before the buffer runs out.
+   *
+   * Soundfont samples are often trimmed hard at the end; without this, a
+   * note that plays to its natural end truncates audibly. Skipped for very
+   * short buffers (percussive one-shots) where a 150ms fade would eat the
+   * sound.
+   * @protected
+   */
+  protected override _onPlaybackStarted(): void {
+    super._onPlaybackStarted()
+
+    const duration = this.durationRaw
+    if (!Number.isFinite(duration) || duration <= SampledNote.END_FADE_SEC * 2 || this._isLooping)
+      return
+
+    const gain = this.getGainNode().gain
+    const end = this.startedPlayingAt + duration - this.startOffset
+    gain.setValueAtTime(this._targetGain, end - SampledNote.END_FADE_SEC)
+    gain.linearRampToValueAtTime(0, end - 0.005)
+  }
 }

@@ -1068,3 +1068,48 @@ describe('sound', () => {
     })
   })
 })
+
+// gate-2 ez-audio-8de: retriggering a Sound that is still audibly playing must
+// not hard-cut the previous buffer source (instant disconnect at nonzero
+// amplitude = click at note start). The old node gets a short release fade.
+describe('retrigger release (gate-2 ez-audio-8de)', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('replaying while playing routes the old source through a release gain', async () => {
+    const sound = createSound(audioContext, 4)
+    await sound.play()
+    const oldNode = sound.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+    const stopSpy = vi.spyOn(oldNode, 'stop')
+
+    await sound.play() // retrigger while still playing
+
+    expect(sound.audioSourceNode).not.toBe(oldNode)
+    // Old node was re-routed (release path), not just dropped
+    expect(connectSpy).toHaveBeenCalled()
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  it('replaying after stop does not create a release path', async () => {
+    const sound = createSound(audioContext, 4)
+    await sound.play()
+    await sound.stop()
+    const oldNode = sound.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+
+    await sound.play()
+    expect(connectSpy).not.toHaveBeenCalled()
+  })
+
+  it('setup cancels stale scheduled gain automation from a previous cycle', async () => {
+    const sound = createSound(audioContext, 4)
+    await sound.play()
+    const cancelSpy = vi.spyOn(sound.getGainNode().gain, 'cancelScheduledValues')
+    await sound.play()
+    expect(cancelSpy).toHaveBeenCalled()
+  })
+})

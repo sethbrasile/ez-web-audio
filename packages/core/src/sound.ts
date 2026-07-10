@@ -101,14 +101,27 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
    * @protected
    */
   protected setup(): void {
-    // Disconnect old source if exists (prevents memory leak from accumulated nodes)
+    // Detach the old source if it exists (prevents memory leak from
+    // accumulated nodes). If it is still audibly playing (retrigger), don't
+    // hard-cut it at nonzero amplitude — that clicks. Route it through a
+    // short release gain to silence instead.
     if (this.audioSourceNode) {
+      const oldNode = this.audioSourceNode
       try {
-        this.audioSourceNode.disconnect()
-        this.audioSourceNode.onended = null
+        oldNode.disconnect()
+        oldNode.onended = null
+        if (this._isPlaying) {
+          const now = this.audioContext.currentTime
+          const releaseGain = this.audioContext.createGain()
+          releaseGain.gain.setValueAtTime(1, now)
+          releaseGain.gain.linearRampToValueAtTime(0, now + 0.05)
+          oldNode.connect(releaseGain)
+          releaseGain.connect(this.effectChainInput)
+          oldNode.stop(now + 0.06)
+        }
       }
       catch {
-        // Already disconnected, ignore
+        // Already disconnected/stopped, ignore
       }
     }
 
@@ -118,8 +131,11 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
     audioSourceNode.loop = this._loop
     this.audioSourceNode = audioSourceNode
 
-    // Restore the user's intended gain level in case a fadeOut() or other ramp
-    // left gainNode.gain at 0 from the previous playback cycle.
+    // Cancel stale scheduled gain automation from the previous cycle (e.g. an
+    // end-of-sample fade that hasn't landed yet), then restore the user's
+    // intended gain level in case a fadeOut() or other ramp left
+    // gainNode.gain at 0 from the previous playback cycle.
+    this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime)
     this.gainNode.gain.setValueAtTime(this._targetGain, this.audioContext.currentTime)
 
     // Update controller with new source node so scheduled detune/param automation targets the active node
