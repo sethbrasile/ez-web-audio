@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import KeyboardHintChip from './kit/KeyboardHintChip.vue'
+import PlayButton from './kit/PlayButton.vue'
+import SegmentDisplay from './kit/SegmentDisplay.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const isPlaying = ref(false)
@@ -19,6 +25,12 @@ const heldKeys = new Set<string>()
 const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 
 let ctx: CanvasRenderingContext2D | null = null
+
+// Last crosshair position drawn, so a theme-change redraw (see MutationObserver
+// below) can reproduce the same frame instead of losing the crosshair/puck.
+let lastDrawX: number | undefined
+let lastDrawY: number | undefined
+let themeObserver: MutationObserver | null = null
 
 const cleanup = useCleanup()
 const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
@@ -48,19 +60,32 @@ function frequencyToNote(freq: number): string {
   return `${notes[noteIndex < 0 ? noteIndex + 12 : noteIndex].name}${octave}`
 }
 
+// Draws the grid + (optional) crosshair/puck using EWA design tokens, read at
+// draw time so light/dark theme switches are picked up automatically (see
+// themeObserver below for the case where nothing else would trigger a redraw).
 function drawGrid(x?: number, y?: number) {
   if (!ctx || !canvas.value)
     return
 
+  lastDrawX = x
+  lastDrawY = y
+
   const width = Number(canvas.value.dataset.logicalWidth) || canvas.value.clientWidth
   const height = Number(canvas.value.dataset.logicalHeight) || canvas.value.clientHeight
 
+  const style = getComputedStyle(document.documentElement)
+  const well = style.getPropertyValue('--ewa-well').trim() || '#1a1a2e'
+  const gridLine = style.getPropertyValue('--ewa-line-2').trim() || 'rgba(255,255,255,0.1)'
+  const accent = style.getPropertyValue('--ewa-accent').trim() || '#4a9eff'
+  const bg = style.getPropertyValue('--ewa-bg').trim() || '#000'
+
   // Clear canvas
-  ctx.fillStyle = '#1a1a2e'
+  ctx.fillStyle = well
   ctx.fillRect(0, 0, width, height)
 
   // Draw subtle grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+  ctx.strokeStyle = gridLine
+  ctx.globalAlpha = 0.5
   ctx.lineWidth = 1
 
   // Vertical grid lines at octave boundaries (100, 200, 400, 800, 1600 Hz)
@@ -69,10 +94,10 @@ function drawGrid(x?: number, y?: number) {
     if (freq <= 2000) {
       const ratio = Math.log(freq / 100) / Math.log(20)
       const xPos = ratio * width
-      ctx.beginPath()
-      ctx.moveTo(xPos, 0)
-      ctx.lineTo(xPos, height)
-      ctx.stroke()
+      ctx!.beginPath()
+      ctx!.moveTo(xPos, 0)
+      ctx!.lineTo(xPos, height)
+      ctx!.stroke()
     }
   })
 
@@ -85,43 +110,36 @@ function drawGrid(x?: number, y?: number) {
     ctx.stroke()
   }
 
-  // Draw axis labels
-  ctx.fillStyle = 'rgba(255,255,255,0.6)'
-  ctx.font = '12px sans-serif'
+  ctx.globalAlpha = 1
 
-  // X-axis label
-  ctx.textAlign = 'center'
-  ctx.fillText('Frequency -->', width / 2, height - 5)
-
-  // Y-axis label (rotated)
-  ctx.save()
-  ctx.translate(10, height / 2)
-  ctx.rotate(-Math.PI / 2)
-  ctx.textAlign = 'center'
-  ctx.fillText('Gain', 0, 0)
-  ctx.restore()
-
-  // Draw crosshair if position provided
+  // Draw crosshair + accent puck if position provided
   if (x !== undefined && y !== undefined) {
-    ctx.strokeStyle = '#4a9eff'
+    ctx.strokeStyle = accent
+    ctx.globalAlpha = 0.4
     ctx.lineWidth = 2
 
-    // Horizontal line
+    // Horizontal + vertical crosshair lines through the puck position
     ctx.beginPath()
     ctx.moveTo(0, y)
     ctx.lineTo(width, y)
-    ctx.stroke()
-
-    // Vertical line
-    ctx.beginPath()
     ctx.moveTo(x, 0)
     ctx.lineTo(x, height)
     ctx.stroke()
+    ctx.globalAlpha = 1
 
-    // Circle at intersection
+    // Accent puck at the intersection
+    ctx.save()
+    ctx.shadowColor = accent
+    ctx.shadowBlur = 14
+    ctx.fillStyle = accent
     ctx.beginPath()
-    ctx.arc(x, y, 8, 0, Math.PI * 2)
+    ctx.arc(x, y, 9, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.shadowBlur = 0
+    ctx.lineWidth = 3
+    ctx.strokeStyle = bg
     ctx.stroke()
+    ctx.restore()
   }
 }
 
@@ -207,6 +225,22 @@ function stopPlaying() {
   }
   isPlaying.value = false
   drawGrid() // Redraw without crosshair
+}
+
+// PlayButton affordance — reuses the same start/stop path as the keyboard
+// interaction (last known kbX/kbY position). Pointer-drag and arrow-key
+// interaction below are unchanged.
+function togglePlay() {
+  if (isPlaying.value) {
+    stopPlaying()
+  }
+  else {
+    startPlaying(kbX.value, kbY.value)
+  }
+}
+
+function onWaveformSelect(wave: string) {
+  waveType.value = wave as typeof waveType.value
 }
 
 function handleMouseDown(e: MouseEvent) {
@@ -340,188 +374,122 @@ onMounted(() => {
   }
   // Catch mouseup anywhere on the page so dragging outside canvas still stops playback
   document.addEventListener('mouseup', handleMouseUp)
+
+  // Canvas colors are read from --ewa-* tokens at draw time, but drawGrid()
+  // only runs on pointer/keyboard events — nothing repaints when the user
+  // flips light/dark theme while idle. Watch <html class> and replay the
+  // last frame so the pad doesn't get stuck showing the previous theme.
+  themeObserver = new MutationObserver(() => drawGrid(lastDrawX, lastDrawY))
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
 onUnmounted(() => {
   document.removeEventListener('mouseup', handleMouseUp)
+  themeObserver?.disconnect()
+  themeObserver = null
 })
 </script>
 
 <template>
-  <div class="xy-pad-demo">
-    <div class="volume-warning">
-      <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
-    </div>
+  <DemoFrame
+    class="xy-pad-demo"
+    :error="error"
+    takeaway="Expressive continuous control, theremin-style. X = frequency, Y = gain."
+  >
+    <VolumeWarning>
+      <strong>Volume warning.</strong> Oscillators can be loud — start with low system volume.
+    </VolumeWarning>
 
-    <div class="canvas-container">
-      <canvas
-        ref="canvas"
-        aria-label="XY Pad - Use arrow keys or click and drag to control frequency (horizontal) and gain (vertical). Hold Shift for larger steps. Space or Escape to stop."
-        role="application"
-        tabindex="0"
-        @mousedown="handleMouseDown"
-        @mousemove="handleMouseMove"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
-        @keydown="handleKeyDown"
-        @keyup="handleKeyUp"
-        @blur="stopPlaying"
-      />
-      <div class="keyboard-hint">
-        Press and drag to play. X-axis controls frequency (100-2000 Hz), Y-axis controls volume.
+    <div class="xy-pad-layout">
+      <div class="pad-col">
+        <canvas
+          ref="canvas"
+          class="xy-canvas"
+          aria-label="XY Pad - Use arrow keys or click and drag to control frequency (horizontal) and gain (vertical). Hold Shift for larger steps. Space or Escape to stop."
+          role="application"
+          tabindex="0"
+          @mousedown="handleMouseDown"
+          @mousemove="handleMouseMove"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
+          @keydown="handleKeyDown"
+          @keyup="handleKeyUp"
+          @blur="stopPlaying"
+        />
+        <KeyboardHintChip>
+          <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> move the point
+        </KeyboardHintChip>
       </div>
-    </div>
 
-    <div class="controls">
-      <label>
-        Waveform:
-        <select v-model="waveType" :disabled="isPlaying">
-          <option value="sine">Sine</option>
-          <option value="square">Square</option>
-          <option value="sawtooth">Sawtooth</option>
-          <option value="triangle">Triangle</option>
-        </select>
-      </label>
-    </div>
+      <div class="side-col">
+        <PlayButton :playing="isPlaying" label="Play" playing-label="Stop" @click="togglePlay" />
 
-    <div class="display">
-      <div class="value-display">
-        <span class="label">Frequency:</span>
-        <span class="value">{{ currentFreq.toFixed(0) }} Hz</span>
-      </div>
-      <div class="value-display">
-        <span class="label">Gain:</span>
-        <span class="value">{{ (currentGain * 100).toFixed(0) }}%</span>
-      </div>
-      <div class="value-display">
-        <span class="label">Note:</span>
-        <span class="value note">{{ currentNote }}</span>
-      </div>
-    </div>
+        <div class="readouts">
+          <SegmentDisplay :value="`${currentFreq.toFixed(0)} Hz`" caption="frequency" />
+          <SegmentDisplay :value="`${(currentGain * 100).toFixed(0)} %`" caption="gain" />
+          <SegmentDisplay :value="currentNote" caption="note" />
+        </div>
 
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
+        <WaveformSelector
+          :model-value="waveType"
+          small
+          :disabled="isPlaying"
+          @update:model-value="onWaveformSelect"
+        />
       </div>
     </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.xy-pad-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.volume-warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border: 1px solid var(--vp-c-warning);
-  border-radius: 4px;
-  color: var(--vp-c-warning-text);
-  font-size: 0.85rem;
-}
-
-.keyboard-hint {
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-  text-align: center;
-}
-
-.canvas-container {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
-  aspect-ratio: 1;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
-  cursor: crosshair;
-  border: 2px solid var(--vp-c-divider);
-  border-radius: 4px;
-  touch-action: none;
-}
-
-canvas:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.controls {
-  margin-top: 1rem;
+.xy-pad-layout {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.controls label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.controls select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-}
-
-.display {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
+  gap: 24px;
   flex-wrap: wrap;
+  margin-top: 16px;
 }
 
-.value-display {
+.pad-col {
+  flex: 1 1 260px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 10px;
 }
 
-.value-display .label {
-  font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.xy-canvas {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  display: block;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
+  border-radius: 10px;
+  cursor: crosshair;
+  touch-action: none;
 }
 
-.value-display .value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--vp-c-brand);
+.xy-canvas:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
-.value-display .value.note {
-  font-size: 1.5rem;
-  min-width: 3rem;
-  text-align: center;
+.side-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 150px;
 }
 
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
+.readouts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  border: 1px solid var(--vp-c-danger);
-  border-radius: 4px;
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+.readouts :deep(.ewa-segment) {
+  width: 100%;
 }
 </style>
