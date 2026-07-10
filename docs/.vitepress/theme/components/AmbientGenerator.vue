@@ -28,12 +28,29 @@ const DRONE_GAIN = 0.25
 const TEXTURE_GAIN = 0.08
 const SHIMMER_GAIN = 0.05
 
+// Uniform swell time for all three layers (so they fade in together, not
+// staggered) and a short fade for click-free toggles / volume moves.
+const SWELL_SEC = 0.6
+const TOGGLE_FADE_SEC = 0.12
+
 // Sound instances
 const cleanup = useCleanup()
 const { instance: droneOscillator, load: loadDrone, reset: resetDrone } = useOscillator()
 const { instance: shimmerOscillator, load: loadShimmer, reset: resetShimmer } = useOscillator()
 const { instance: textureNoise, load: loadTexture, reset: resetTexture } = useWhiteNoise()
 let textureFilter: FilterEffect | null = null
+
+// Smoothly ramp a layer's gain (no instant jump = no click). Used for toggles
+// and the master-volume slider while the layer keeps playing.
+function fadeGainTo(inst: { getGainNode: () => GainNode } | null, target: number, seconds = TOGGLE_FADE_SEC): void {
+  if (!inst)
+    return
+  const gain = inst.getGainNode().gain
+  const now = inst.getGainNode().context.currentTime
+  gain.cancelScheduledValues(now)
+  gain.setValueAtTime(gain.value, now)
+  gain.linearRampToValueAtTime(target, now + seconds)
+}
 
 async function togglePlayback() {
   try {
@@ -56,34 +73,37 @@ async function startAll() {
   loading.value = true
 
   try {
-    // Create drone layer - low-frequency sine wave. A manual gain ramp gives the
-    // slow ambient swell WITHOUT the ADSR envelope, whose attack ramps to full
-    // scale (1.0) regardless of changeGainTo and would clip when layers sum
-    // (phase 75). Ramping straight to the low target gain keeps headroom.
+    // All three layers swell in from 0 over the SAME short time (SWELL_SEC) so
+    // they start together — a uniform gain ramp, NOT the ADSR envelope (whose
+    // attack ramps to full scale 1.0 regardless of changeGainTo and would clip
+    // when the layers sum, phase 75). Targets include masterVolume so the
+    // initial level matches the slider.
+    const mv = masterVolume.value
+
+    // Drone - low-frequency sine wave.
     const drone = cleanup.register(await loadDrone({
       frequency: droneFrequency.value,
       type: 'sine',
     }))
-    drone.onPlayRamp('gain').from(0).to(droneEnabled.value ? DRONE_GAIN : 0).in(1.5)
+    drone.onPlayRamp('gain').from(0).to(droneEnabled.value ? DRONE_GAIN * mv : 0).in(SWELL_SEC)
 
-    // Create texture layer - white noise through lowpass filter
+    // Texture - white noise through a lowpass filter.
     const texture = cleanup.register(await loadTexture())
     textureFilter = createFilterEffect('lowpass', {
       frequency: textureFilterCutoff.value,
       q: 1.0,
     })
     texture.addEffect(textureFilter)
-    texture.changeGainTo(textureEnabled.value ? TEXTURE_GAIN : 0)
+    texture.onPlayRamp('gain').from(0).to(textureEnabled.value ? TEXTURE_GAIN * mv : 0).in(SWELL_SEC)
 
-    // Create shimmer layer - high-frequency triangle wave. Manual swell ramp
-    // (not an ADSR envelope) for the same headroom reason as the drone.
+    // Shimmer - high-frequency triangle wave.
     const shimmer = cleanup.register(await loadShimmer({
       frequency: shimmerFrequency.value,
       type: 'triangle',
     }))
-    shimmer.onPlayRamp('gain').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN : 0).in(2.0)
+    shimmer.onPlayRamp('gain').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN * mv : 0).in(SWELL_SEC)
 
-    // Start all layers
+    // Start all layers (they swell in together)
     drone.play()
     texture.play()
     shimmer.play()
@@ -122,42 +142,30 @@ function updateMasterVolume() {
   if (!isPlaying.value)
     return
 
-  if (droneOscillator.value && droneEnabled.value) {
-    droneOscillator.value.changeGainTo(DRONE_GAIN * masterVolume.value)
-  }
-  if (textureNoise.value && textureEnabled.value) {
-    textureNoise.value.changeGainTo(TEXTURE_GAIN * masterVolume.value)
-  }
-  if (shimmerOscillator.value && shimmerEnabled.value) {
-    shimmerOscillator.value.changeGainTo(SHIMMER_GAIN * masterVolume.value)
-  }
+  if (droneOscillator.value && droneEnabled.value)
+    fadeGainTo(droneOscillator.value, DRONE_GAIN * masterVolume.value)
+  if (textureNoise.value && textureEnabled.value)
+    fadeGainTo(textureNoise.value, TEXTURE_GAIN * masterVolume.value)
+  if (shimmerOscillator.value && shimmerEnabled.value)
+    fadeGainTo(shimmerOscillator.value, SHIMMER_GAIN * masterVolume.value)
 }
 
 function toggleDrone() {
   if (!isPlaying.value)
     return
-
-  if (droneOscillator.value) {
-    droneOscillator.value.changeGainTo(droneEnabled.value ? DRONE_GAIN * masterVolume.value : 0)
-  }
+  fadeGainTo(droneOscillator.value, droneEnabled.value ? DRONE_GAIN * masterVolume.value : 0)
 }
 
 function toggleTexture() {
   if (!isPlaying.value)
     return
-
-  if (textureNoise.value) {
-    textureNoise.value.changeGainTo(textureEnabled.value ? TEXTURE_GAIN * masterVolume.value : 0)
-  }
+  fadeGainTo(textureNoise.value, textureEnabled.value ? TEXTURE_GAIN * masterVolume.value : 0)
 }
 
 function toggleShimmer() {
   if (!isPlaying.value)
     return
-
-  if (shimmerOscillator.value) {
-    shimmerOscillator.value.changeGainTo(shimmerEnabled.value ? SHIMMER_GAIN * masterVolume.value : 0)
-  }
+  fadeGainTo(shimmerOscillator.value, shimmerEnabled.value ? SHIMMER_GAIN * masterVolume.value : 0)
 }
 
 function updateDroneFrequency() {
