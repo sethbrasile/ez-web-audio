@@ -54,3 +54,11 @@ Run `pnpm dev`, ~15 min, all demos. Objective clipping is handled (peaks above).
 - General: consistent loudness across demos; presets hit their musical targets (LFO vibrato/tremolo/wah, GrainPlayer freeze/choppy, EffectsChain first-impression).
 
 Seth's findings become fix tasks appended here before Phase 76 unblocks.
+
+### Gate 2 — round 1 (Ambient, 2026-07-10)
+
+Seth listened to Ambient: (1) layers started **staggered** — texture instant, drone/shimmer lagged; (2) **checkbox toggles clicked** (Start/Stop did not).
+
+Cause: my ADSR→ramp swap left texture on instant `changeGainTo` while drone/shimmer used 1.5 s / 2.0 s `onPlayRamp` (staggered onset); toggles used instant `changeGainTo(0↔gain)` = hard step = click.
+
+Fix (`fix(75): ambient gate-2`): all three layers swell in together over a uniform `SWELL_SEC` (0.6 s); toggles + master-volume now ramp via `getGainNode().gain.linearRampToValueAtTime` over `TOGGLE_FADE_SEC` (0.12 s); initial swell respects masterVolume. Verified: 0 pageerrors toggling all layers; loudness 17/17 still green (Ambient 0.12). **Re-listen pending.** Other demos not yet reported on.
