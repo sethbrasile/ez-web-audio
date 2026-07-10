@@ -56,6 +56,14 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 
 **Library gap surfaced (pre-1.0 candidate, not blocking):** `useCleanup` could gain an `unregister(inst)` (or `register` could return a disposer handle) so churn-heavy consumers can hand voice lifecycle to the binding without leaking. Logging per library-fidelity rule; no code change made to `packages/vue` now.
 
+## 2026-07-10 · 75 · Demo master bus needs a core global-destination hook (NEEDS SETH — new public API)
+
+**Spike (`75-SPIKE.md`) decision:** routing every demo through a shared limiter/peak-meter bus is cleanest via a **global master-destination hook in core** (`setMasterDestination(node)` / `getMasterDestination()`), read by each instance constructor instead of hardcoding `audioContext.destination`. Per-instance `setDestination()` was rejected — it doesn't exist on Sampler/BeatTrack/Font/Sprite (they delegate to child Sounds) and would re-add the per-demo routing plumbing phase 73 just removed.
+
+**Why this one is flagged (not just taken):** unlike the 73 escape-hatch calls, this **adds public API to the published `ez-web-audio` npm package** — a semver/compatibility commitment. My standing rule is to surface outward-facing/hard-to-reverse commitments before making them. 75-01 Task 1(b) pre-authorizes it with recommendation *accept*; I concur (a master-output hook is genuinely useful: sub-mixing, master metering, offline-render targets) — but I paused here for your nod rather than baking new public surface into the library unilaterally mid-run.
+
+**Recommendation:** accept the hook (small, additive, backward-compatible; `initAudio` resets it). On approval I implement it (core + unit tests), then Tasks 2–4: demo master bus util + objective loudness E2E (peak ≤ 0.985 no-clip, ≥ 0.05 audible) + gain/preset tuning to the reference table — ending at **human gate 2 (listening checkpoint)**.
+
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).
