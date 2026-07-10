@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCleanup, useGrainPlayer, useSound } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Module-level preset constant — allocated once, not per call
@@ -18,9 +19,12 @@ const PRESET_NAMES = [
   { id: 'freeze', label: 'Freeze' },
 ]
 
+// Composable-managed audio state
+const cleanup = useCleanup()
+const { instance: sound, load: loadSound } = useSound()
+const { instance: grainPlayer, load: loadGrain } = useGrainPlayer()
+
 // Module-level audio state (outside reactive — created once)
-let lib: any = null
-let grainPlayer: any = null
 let cachedBuffer: AudioBuffer | null = null
 let waveformImageData: ImageData | null = null
 let animFrameId: number | null = null
@@ -48,12 +52,12 @@ const loop = ref(true)
 
 // Parameter watches
 watch(pitch, (v) => {
-  if (grainPlayer)
-    grainPlayer.pitch = v
+  if (grainPlayer.value)
+    grainPlayer.value.pitch = v
 })
 watch(grainSize, (v) => {
-  if (grainPlayer)
-    grainPlayer.grainSize = v
+  if (grainPlayer.value)
+    grainPlayer.value.grainSize = v
   // Clamp overlap if needed — show feedback to user (M14)
   if (overlap.value >= v) {
     overlap.value = Math.max(0, v - 0.001)
@@ -62,31 +66,30 @@ watch(grainSize, (v) => {
   }
 })
 watch(overlap, (v) => {
-  if (grainPlayer)
-    grainPlayer.overlap = v
+  if (grainPlayer.value)
+    grainPlayer.value.overlap = v
 })
 watch(jitter, (v) => {
-  if (grainPlayer)
-    grainPlayer.jitter = v
+  if (grainPlayer.value)
+    grainPlayer.value.jitter = v
 })
 
 // Lazy init
 async function ensureLoaded() {
-  if (lib)
+  if (grainPlayer.value)
     return
-  lib = await import('ez-web-audio')
-  const sound = await lib.createSound('/ez-web-audio/audio/grain-sample.mp3')
-  cachedBuffer = (sound as any).audioBuffer as AudioBuffer
+  const s = cleanup.register(await loadSound('/ez-web-audio/audio/grain-sample.mp3'))
+  cachedBuffer = s.audioBuffer
   bufferDurationSeconds = cachedBuffer.duration
-  grainPlayer = await lib.createGrainPlayer(cachedBuffer, {
+  const gp = cleanup.register(await loadGrain(cachedBuffer, {
     grainSize: grainSize.value,
     overlap: overlap.value,
     jitter: jitter.value,
     loop: loop.value,
-  })
-  grainPlayer.pitch = pitch.value
+  }))
+  gp.pitch = pitch.value
   // Apply initial position
-  grainPlayer.position = position.value
+  gp.position = position.value
   setupCanvas()
   drawWaveform()
   waveformLoaded.value = true
@@ -100,18 +103,18 @@ async function togglePlay() {
     error.value = ''
     await ensureLoaded()
     if (playing.value) {
-      grainPlayer.stop()
+      grainPlayer.value?.stop()
       playing.value = false
       stopOverlayLoop()
     }
     else {
-      grainPlayer.play()
+      grainPlayer.value?.play()
       playing.value = true
       startOverlayLoop()
     }
   }
-  catch (e: any) {
-    error.value = e?.message || 'Audio error'
+  catch (e) {
+    error.value = e instanceof Error ? e.message : 'Audio error'
   }
   finally {
     loading.value = false
@@ -119,8 +122,8 @@ async function togglePlay() {
 }
 
 function onLoopChange() {
-  if (grainPlayer)
-    grainPlayer.loop = loop.value
+  if (grainPlayer.value)
+    grainPlayer.value.loop = loop.value
 }
 
 // Canvas setup (DPR-aware, matches VisualizationDemo.vue pattern)
@@ -255,11 +258,11 @@ function drawOverlay() {
 function startOverlayLoop() {
   lastFrameTime = 0
   const rafLoop = (timestamp: number) => {
-    if (playing.value && lastFrameTime > 0 && !isDragging.value && grainPlayer) {
+    if (playing.value && lastFrameTime > 0 && !isDragging.value && grainPlayer.value) {
       const dt = (timestamp - lastFrameTime) / 1000
       const advance = (dt * speed.value) / bufferDurationSeconds
       position.value = (position.value + advance) % 1
-      grainPlayer.position = position.value
+      grainPlayer.value.position = position.value
     }
     lastFrameTime = timestamp
     drawOverlay()
@@ -290,8 +293,8 @@ function handleMouseDown(e: MouseEvent) {
   isDragging.value = true
   const newPos = getPositionFromEvent(e.clientX)
   position.value = newPos
-  if (grainPlayer)
-    grainPlayer.position = newPos
+  if (grainPlayer.value)
+    grainPlayer.value.position = newPos
 }
 
 function handleMouseMove(e: MouseEvent) {
@@ -299,8 +302,8 @@ function handleMouseMove(e: MouseEvent) {
     return
   const newPos = getPositionFromEvent(e.clientX)
   position.value = newPos
-  if (grainPlayer)
-    grainPlayer.position = newPos
+  if (grainPlayer.value)
+    grainPlayer.value.position = newPos
 }
 
 function handleMouseUp() {
@@ -311,8 +314,8 @@ function handleTouchStart(e: TouchEvent) {
   isDragging.value = true
   const newPos = getPositionFromEvent(e.touches[0].clientX)
   position.value = newPos
-  if (grainPlayer)
-    grainPlayer.position = newPos
+  if (grainPlayer.value)
+    grainPlayer.value.position = newPos
 }
 
 function handleTouchMove(e: TouchEvent) {
@@ -320,8 +323,8 @@ function handleTouchMove(e: TouchEvent) {
     return
   const newPos = getPositionFromEvent(e.touches[0].clientX)
   position.value = newPos
-  if (grainPlayer)
-    grainPlayer.position = newPos
+  if (grainPlayer.value)
+    grainPlayer.value.position = newPos
 }
 
 // H1: touchend/touchcancel handlers — prevent isDragging from staying stuck on mobile
@@ -360,10 +363,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopOverlayLoop()
-  if (grainPlayer) {
-    grainPlayer.stop()
-    grainPlayer.dispose()
-  }
   document.removeEventListener('mouseup', handleMouseUp)
   document.removeEventListener('touchend', handleTouchEnd)
   document.removeEventListener('touchcancel', handleTouchEnd)
