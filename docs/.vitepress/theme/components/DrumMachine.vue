@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onUnmounted, reactive, ref, watch } from 'vue'
+import type { BeatTrack } from 'ez-web-audio'
+import { useBeatTrack, useCleanup } from '@ez-web-audio/vue'
+import { reactive, ref, watch } from 'vue'
 
 const playing = ref(false)
 const loading = ref(false)
@@ -32,8 +34,14 @@ const trackDefs = [
 const tracks = ref(trackDefs.map(d => ({
   name: d.name,
   beats: makeBeats(d.name),
-  beatTrack: null as any,
+  beatTrack: null as BeatTrack | null,
 })))
+
+const cleanup = useCleanup()
+
+// Composables must be called a fixed number of times during setup — one per
+// track, index-aligned with trackDefs (KICK, SNARE, HIHAT).
+const beatTrackComposables = [useBeatTrack(), useBeatTrack(), useBeatTrack()]
 
 let initialized = false
 
@@ -41,17 +49,14 @@ async function init() {
   if (initialized)
     return
   try {
-    const { createBeatTrack } = await import('ez-web-audio')
-
-    const opts = { numBeats: NUM_BEATS, wrapWith: (beat: any) => reactive(beat) }
-
-    for (const track of tracks.value) {
-      const def = trackDefs.find(d => d.name === track.name)!
+    for (let i = 0; i < tracks.value.length; i++) {
+      const track = tracks.value[i]
+      const def = trackDefs[i]
       const urls = def.samples.map(s => `/ez-web-audio/audio/drum-samples/${s}.wav`)
-      const bt = await createBeatTrack(urls, opts)
+      const bt = cleanup.register(await beatTrackComposables[i].load(urls, { numBeats: NUM_BEATS }))
 
       // Transfer pattern from stubs to real beats
-      track.beats.forEach((stub, i) => { bt.beats[i].active = stub.active })
+      track.beats.forEach((stub, j) => { bt.beats[j].active = stub.active })
 
       // Swap in real beats — template updates seamlessly
       track.beats = bt.beats
@@ -88,13 +93,6 @@ watch(bpm, (val) => {
   if (playing.value) {
     tracks.value.forEach(t => t.beatTrack?.setTempo(val))
   }
-})
-
-onUnmounted(() => {
-  tracks.value.forEach((t) => {
-    try { t.beatTrack?.stop() }
-    catch {}
-  })
 })
 </script>
 
