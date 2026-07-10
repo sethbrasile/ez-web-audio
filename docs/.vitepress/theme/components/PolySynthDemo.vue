@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { PolySynth, StealStrategy, VoiceHandle } from 'ez-web-audio'
+import type { StealStrategy, VoiceHandle } from 'ez-web-audio'
+import { useCleanup, usePolySynth } from '@ez-web-audio/vue'
+import { frequencyMap } from 'ez-web-audio'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
@@ -45,8 +47,9 @@ const strategyOptions = [
   { value: 'quietest' as StealStrategy, label: 'Quietest' },
 ]
 
-let lib: typeof import('ez-web-audio') | null = null
-let synth: PolySynth | null = null
+const cleanup = useCleanup()
+const { instance: synth, load: loadSynth, reset: resetSynth } = usePolySynth()
+
 const voiceHandles = new Map<string, VoiceHandle>()
 let rafId: number | null = null
 let stealTimeout: ReturnType<typeof setTimeout> | null = null
@@ -55,18 +58,9 @@ let recreateTimeout: ReturnType<typeof setTimeout> | null = null
 // RAF only polls when synth is playing (L9)
 let isPolling = false
 
-async function ensureLoaded() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-}
-
 async function recreateSynth(showMessage = false) {
-  if (!lib)
-    return
-
   // Notify user that held notes will be cut (M5)
-  if (showMessage && synth && voiceHandles.size > 0) {
+  if (showMessage && synth.value && voiceHandles.size > 0) {
     recreateMessage.value = 'Held notes released — synth reconfigured'
     if (recreateTimeout)
       clearTimeout(recreateTimeout)
@@ -74,23 +68,23 @@ async function recreateSynth(showMessage = false) {
   }
 
   // Dispose old synth
-  if (synth) {
-    synth.stopAll()
-    synth.dispose()
-    synth = null
+  if (synth.value) {
+    synth.value.stopAll()
+    synth.value.dispose()
   }
+  resetSynth()
   voiceHandles.clear()
   activeNotes.value = new Set()
 
   // Create new synth with current settings
-  synth = await lib.createPolySynth({
+  const s = cleanup.register(await loadSynth({
     maxVoices: maxVoices.value,
     stealStrategy: stealStrategy.value,
     type: waveType.value,
     envelope: { ...envelope.value },
-  })
-  synth.changeGainTo(0.3)
-  synth.on('voicestolen', handleVoiceStolen)
+  }))
+  s.changeGainTo(0.3)
+  s.on('voicestolen', handleVoiceStolen)
   synthDirty.value = false
 
   // Start polling voice count now that we have a synth (L9)
@@ -116,19 +110,18 @@ function applyPreset(presetName: string) {
 async function handleNoteOn(note: string) {
   try {
     error.value = ''
-    await ensureLoaded()
 
-    if (!synth || synthDirty.value) {
+    if (!synth.value || synthDirty.value) {
       await recreateSynth()
     }
-    if (!synth || !lib)
+    if (!synth.value)
       return
 
-    const frequency = lib.frequencyMap[note as keyof typeof lib.frequencyMap]
+    const frequency = frequencyMap[note as keyof typeof frequencyMap]
     if (!frequency)
       return
 
-    const handle = synth.play({ frequency })
+    const handle = synth.value.play({ frequency })
     voiceHandles.set(note, handle)
     activeNotes.value.add(note)
   }
@@ -157,7 +150,7 @@ watch([waveType, envelope], () => {
 
 // Recreate immediately on structural changes (maxVoices/stealStrategy) — with message (M5)
 watch([maxVoices, stealStrategy], () => {
-  if (synth)
+  if (synth.value)
     recreateSynth(true)
 })
 
@@ -181,8 +174,8 @@ function stopPolling() {
 function pollVoiceCount() {
   if (!isPolling)
     return
-  if (synth) {
-    voiceCount.value = synth.activeVoices
+  if (synth.value) {
+    voiceCount.value = synth.value.activeVoices
     // Keep polling as long as synth exists
     rafId = requestAnimationFrame(pollVoiceCount)
   }
@@ -203,11 +196,6 @@ onUnmounted(() => {
   if (recreateTimeout) {
     clearTimeout(recreateTimeout)
     recreateTimeout = null
-  }
-  if (synth) {
-    synth.stopAll()
-    synth.dispose()
-    synth = null
   }
   voiceHandles.clear()
   activeNotes.value.clear()
