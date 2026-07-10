@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { FilterEffect, Oscillator, Sound } from 'ez-web-audio'
+import type { FilterEffect } from 'ez-web-audio'
+import { useCleanup, useOscillator, useWhiteNoise } from '@ez-web-audio/vue'
+import { createFilterEffect } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
@@ -20,10 +22,11 @@ const textureFilterCutoff = ref(800)
 const shimmerFrequency = ref(600)
 
 // Sound instances
-let droneOscillator: Oscillator | null = null
-let textureNoise: Sound | null = null
+const cleanup = useCleanup()
+const { instance: droneOscillator, load: loadDrone, reset: resetDrone } = useOscillator()
+const { instance: shimmerOscillator, load: loadShimmer, reset: resetShimmer } = useOscillator()
+const { instance: textureNoise, load: loadTexture, reset: resetTexture } = useWhiteNoise()
 let textureFilter: FilterEffect | null = null
-let shimmerOscillator: Oscillator | null = null
 
 async function togglePlayback() {
   try {
@@ -46,10 +49,8 @@ async function startAll() {
   loading.value = true
 
   try {
-    const { createOscillator, createWhiteNoise, createFilterEffect } = await import('ez-web-audio')
-
     // Create drone layer - low-frequency sine wave with slow envelope
-    droneOscillator = await createOscillator({
+    const drone = cleanup.register(await loadDrone({
       frequency: droneFrequency.value,
       type: 'sine',
       envelope: {
@@ -58,20 +59,20 @@ async function startAll() {
         sustain: 0.8,
         release: 2.0,
       },
-    })
-    droneOscillator.changeGainTo(droneEnabled.value ? 0.4 : 0)
+    }))
+    drone.changeGainTo(droneEnabled.value ? 0.4 : 0)
 
     // Create texture layer - white noise through lowpass filter
-    textureNoise = await createWhiteNoise()
+    const texture = cleanup.register(await loadTexture())
     textureFilter = createFilterEffect('lowpass', {
       frequency: textureFilterCutoff.value,
       q: 1.0,
     })
-    textureNoise.addEffect(textureFilter)
-    textureNoise.changeGainTo(textureEnabled.value ? 0.15 : 0)
+    texture.addEffect(textureFilter)
+    texture.changeGainTo(textureEnabled.value ? 0.15 : 0)
 
     // Create shimmer layer - high-frequency triangle wave
-    shimmerOscillator = await createOscillator({
+    const shimmer = cleanup.register(await loadShimmer({
       frequency: shimmerFrequency.value,
       type: 'triangle',
       envelope: {
@@ -80,13 +81,13 @@ async function startAll() {
         sustain: 0.9,
         release: 2.5,
       },
-    })
-    shimmerOscillator.changeGainTo(shimmerEnabled.value ? 0.08 : 0)
+    }))
+    shimmer.changeGainTo(shimmerEnabled.value ? 0.08 : 0)
 
     // Start all layers
-    droneOscillator.play()
-    textureNoise.play()
-    shimmerOscillator.play()
+    drone.play()
+    texture.play()
+    shimmer.play()
 
     isPlaying.value = true
   }
@@ -97,18 +98,19 @@ async function startAll() {
 
 function stopAll() {
   try {
-    if (droneOscillator) {
-      droneOscillator.stop()
-      droneOscillator = null
+    if (droneOscillator.value) {
+      droneOscillator.value.stop()
+      resetDrone()
     }
-    if (textureNoise) {
-      textureNoise.stop()
-      textureNoise = null
+    if (textureNoise.value) {
+      textureNoise.value.stop()
+      resetTexture()
     }
-    if (shimmerOscillator) {
-      shimmerOscillator.stop()
-      shimmerOscillator = null
+    if (shimmerOscillator.value) {
+      shimmerOscillator.value.stop()
+      resetShimmer()
     }
+    textureFilter = null
   }
   catch (e) {
     console.error('Error stopping sounds:', e)
@@ -121,14 +123,14 @@ function updateMasterVolume() {
   if (!isPlaying.value)
     return
 
-  if (droneOscillator && droneEnabled.value) {
-    droneOscillator.changeGainTo(0.4 * masterVolume.value)
+  if (droneOscillator.value && droneEnabled.value) {
+    droneOscillator.value.changeGainTo(0.4 * masterVolume.value)
   }
-  if (textureNoise && textureEnabled.value) {
-    textureNoise.changeGainTo(0.15 * masterVolume.value)
+  if (textureNoise.value && textureEnabled.value) {
+    textureNoise.value.changeGainTo(0.15 * masterVolume.value)
   }
-  if (shimmerOscillator && shimmerEnabled.value) {
-    shimmerOscillator.changeGainTo(0.08 * masterVolume.value)
+  if (shimmerOscillator.value && shimmerEnabled.value) {
+    shimmerOscillator.value.changeGainTo(0.08 * masterVolume.value)
   }
 }
 
@@ -136,8 +138,8 @@ function toggleDrone() {
   if (!isPlaying.value)
     return
 
-  if (droneOscillator) {
-    droneOscillator.changeGainTo(droneEnabled.value ? 0.4 * masterVolume.value : 0)
+  if (droneOscillator.value) {
+    droneOscillator.value.changeGainTo(droneEnabled.value ? 0.4 * masterVolume.value : 0)
   }
 }
 
@@ -145,8 +147,8 @@ function toggleTexture() {
   if (!isPlaying.value)
     return
 
-  if (textureNoise) {
-    textureNoise.changeGainTo(textureEnabled.value ? 0.15 * masterVolume.value : 0)
+  if (textureNoise.value) {
+    textureNoise.value.changeGainTo(textureEnabled.value ? 0.15 * masterVolume.value : 0)
   }
 }
 
@@ -154,16 +156,16 @@ function toggleShimmer() {
   if (!isPlaying.value)
     return
 
-  if (shimmerOscillator) {
-    shimmerOscillator.changeGainTo(shimmerEnabled.value ? 0.08 * masterVolume.value : 0)
+  if (shimmerOscillator.value) {
+    shimmerOscillator.value.changeGainTo(shimmerEnabled.value ? 0.08 * masterVolume.value : 0)
   }
 }
 
 function updateDroneFrequency() {
-  if (!isPlaying.value || !droneOscillator)
+  if (!isPlaying.value || !droneOscillator.value)
     return
 
-  droneOscillator.update('frequency').to(droneFrequency.value).as('ratio')
+  droneOscillator.value.update('frequency').to(droneFrequency.value).as('ratio')
 }
 
 function updateTextureFilter() {
@@ -174,10 +176,10 @@ function updateTextureFilter() {
 }
 
 function updateShimmerFrequency() {
-  if (!isPlaying.value || !shimmerOscillator)
+  if (!isPlaying.value || !shimmerOscillator.value)
     return
 
-  shimmerOscillator.update('frequency').to(shimmerFrequency.value).as('ratio')
+  shimmerOscillator.value.update('frequency').to(shimmerFrequency.value).as('ratio')
 }
 
 onUnmounted(() => {
