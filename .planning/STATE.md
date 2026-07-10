@@ -30,7 +30,9 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 Phase: M8 Phases 72, 73, 75 code-complete. Phase 75 STOPPED at HUMAN GATE 2 (listening). Phases 72+73 fully done.
 Status: Executing M8 per `.planning/M8-PLAYBOOK.md`. Design packet at `.planning/DESIGN-HANDOFF/` (gate 1 done). M7 UAT waived to run in parallel (Seth, 2026-07-09).
-Next: **HUMAN GATE 2 — RE-LISTEN (round-3 fixes complete 2026-07-10).** All 12 beads closed (`bd list` empty). Core: stale-source-node lifecycle fixes (PolySynth voice independence, Sound retrigger release, SampledNote end fade, stop-cancels-scheduled, frequency persistence) — 1928→1944 tests. Demos: TransportSequencer rebuilt (mechanics + musical redesign + fluid grid), Ambient rebuilt from research, EffectsChain plucked pattern source, GrainPlayer pad retune, SynthDrumKit 4s drop, XYPad/SoundfontPiano click fixes. Full record: 75-01-SUMMARY.md "round-3 fix work" section. Gates green: 1944+31 unit, 72/72 E2E, lint, typecheck. Seth re-listens → gate 2 closes → Phase 76 unblocks.
+Next: **74-02 (design implementation)** — start at `.planning/phases/74-demo-design-cohesion/74-02-RESUME.md` (Task 0: expand `.planning/DESIGN-HANDOFF/` packet into 74-02-TASKS.md, then execute). **Gate-2 re-listen DEFERRED by Seth 2026-07-10** — gate 2 stays OPEN, Phase 76 stays blocked, re-listen happens when Seth returns to it.
+
+Round-3 fix record: all 12 beads closed (`bd list` empty). Core: stale-source-node lifecycle fixes (PolySynth voice independence, Sound retrigger release, SampledNote end fade, stop-cancels-scheduled, frequency persistence) — 1928→1944 tests. Demos: TransportSequencer rebuilt (mechanics + musical redesign + fluid grid), Ambient rebuilt from research, EffectsChain plucked pattern source, GrainPlayer pad retune, SynthDrumKit 4s drop, XYPad/SoundfontPiano click fixes. Full record: 75-01-SUMMARY.md "round-3 fix work" section. Gates green: 1944+31 unit, 72/72 E2E, lint, typecheck.
 
 Previous round-3 context: **HUMAN GATE 2 — round-3 fix work.** Rounds 1–2 (Ambient stagger/click/drone-pop) FIXED — drone pop was a core bug (exponential onPlayRamp from(0) = silence-then-jump; fixed f33ef32). Round 3 (2026-07-10): Seth swept ALL demos — LFO good, GrainPlayer mostly good, 12 findings tracked as **beads** (`bd list` / `bd ready`, prefix ez-audio-): P0 PolySynth voice-ADSR-not-independent + stop-pop (ez-audio-5b2), P0 TransportSequencer stop bugs (ez-audio-20p) under a TransportSequencer musical-redesign epic (ez-audio-01q), Ambient sound redesign via research (ez-audio-7uq), SynthDrumKit bass drop (ez-audio-1c9, port ember-audio settings), EffectsChain transient source (ez-audio-5w9), SoundfontPiano clicks (ez-audio-8de), XYPad clicks (ez-audio-aub), GrainPlayer pad preset (ez-audio-7fk), TransportSequencer screech/state-leak/layout (ez-audio-s8v/ttc/jui). Full table in `75-01-SUMMARY.md` round-3 section. Fix these, re-verify (loudness E2E + unit), then Seth re-listens → gate 2 closes → Phase 76 unblocks. Parallel-runnable: 74-02 (design cohesion) + 77-01 (React bindings). Judgment log: `.planning/M8-QUESTIONS.md`. Commits ahead of origin — Seth pushes manually.
 
@@ -87,6 +89,6 @@ See .planning/PROJECT.md Key Decisions table for full history.
 
 ## Session Continuity
 
-Last session: 2026-07-09
-Stopped at: Planning reconciliation complete
-Resume file: None
+Last session: 2026-07-10 (gate-2 round-3 fix work, all 12 beads closed)
+Stopped at: Round-3 complete; Seth deferred re-listen, queued 74-02 next
+Resume file: .planning/phases/74-demo-design-cohesion/74-02-RESUME.md
