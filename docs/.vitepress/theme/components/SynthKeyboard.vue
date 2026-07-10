@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Oscillator } from 'ez-web-audio'
+import { createOscillator, frequencyMap } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
@@ -44,9 +45,6 @@ function applyPreset(presetName: string) {
 async function handleNoteOn(note: string) {
   try {
     error.value = ''
-
-    // Import frequencyMap and createOscillator
-    const { createOscillator, frequencyMap } = await import('ez-web-audio')
 
     // Get frequency for the note
     const frequency = frequencyMap[note as keyof typeof frequencyMap]
