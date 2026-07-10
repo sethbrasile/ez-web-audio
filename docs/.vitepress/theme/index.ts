@@ -20,6 +20,7 @@ import TimingDemo from './components/TimingDemo.vue'
 import TrackDemo from './components/TrackDemo.vue'
 import XYPad from './components/XYPad.vue'
 import CustomLayout from './CustomLayout.vue'
+import './custom.css'
 
 export default {
   extends: DefaultTheme,

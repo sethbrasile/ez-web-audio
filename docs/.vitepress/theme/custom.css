@@ -1,0 +1,122 @@
+/**
+ * EWA design tokens
+ *
+ * Source: `.planning/DESIGN-HANDOFF/` packet 01 (Foundations).
+ * These `--ewa-*` custom properties are the single source of truth for the
+ * docs demo components (Vue kit) and any canvas-drawn visuals. Canvas code
+ * must read these via `getComputedStyle(el).getPropertyValue('--ewa-*')` at
+ * draw time rather than hardcoding colors, so demos stay in sync with
+ * light/dark theme and any future palette tweaks made here.
+ *
+ * Where VitePress already owns a role (bg/panel/text/divider/etc.) we alias
+ * to the VP variable instead of duplicating a value, so a single `:root`
+ * declaration tracks both themes automatically (VitePress flips the `--vp-*`
+ * value itself when `.dark` is applied to `<html>`).
+ */
+
+:root {
+  /* --- Aliases to VitePress theme vars (VP flips these under .dark; no
+     separate .dark declaration needed here) --- */
+  --ewa-bg: var(--vp-c-bg);
+  --ewa-panel: var(--vp-c-bg-soft);
+  --ewa-well: var(--vp-c-bg-mute);
+  --ewa-line: var(--vp-c-divider);
+  --ewa-text: var(--vp-c-text-1);
+  --ewa-text-2: var(--vp-c-text-2);
+  --ewa-text-3: var(--vp-c-text-3);
+  --ewa-danger: var(--vp-c-danger-1);
+  --ewa-warn-line: var(--vp-c-warning-1);
+
+  /* --- Raw EWA tokens (light values) --- */
+  --ewa-line-2: #d3d3d9;
+  --ewa-accent: #0e9268;
+  --ewa-accent-strong: #0b7d59;
+  --ewa-accent-ink: #067552;
+  --ewa-on-accent: #ffffff;
+  --ewa-accent-soft: rgba(14, 146, 104, 0.12);
+  --ewa-danger-soft: rgba(229, 72, 77, 0.12);
+  --ewa-warn: #a9720a;
+  --ewa-warn-soft: rgba(234, 179, 8, 0.14);
+  --ewa-kick: #e5544b;
+  --ewa-snare: #e08a2f;
+  --ewa-hat: #b99310;
+  --ewa-clap: #d84f9e;
+  --ewa-bass: #6a5cf0;
+  --ewa-lead: #2f9fd6;
+  --ewa-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 3px 10px rgba(0, 0, 0, 0.05);
+
+  /* --- VitePress brand override: "Signal green" accent, matching the demo
+     accent so docs links/buttons feel like the same product. brand-1 is link
+     TEXT on white, so it uses the darker accent-ink (#0e9268 is only 3.95:1
+     — fails AA for normal text). --- */
+  --vp-c-brand-1: #067552;
+  --vp-c-brand-2: #0b7d59;
+  --vp-c-brand-3: #067552;
+  --vp-c-brand-soft: rgba(14, 146, 104, 0.14);
+}
+
+.dark {
+  /* --- Raw EWA tokens (dark overrides) --- */
+  --ewa-line-2: #3a3a42;
+  --ewa-accent: #2fe3a4;
+  --ewa-accent-strong: #57ecba;
+  --ewa-accent-ink: #35e0a6;
+  --ewa-on-accent: #05231a;
+  --ewa-accent-soft: rgba(47, 227, 164, 0.16);
+  --ewa-danger-soft: rgba(255, 107, 107, 0.16);
+  --ewa-warn: #f2cf3f;
+  --ewa-warn-soft: rgba(242, 207, 63, 0.12);
+  --ewa-kick: #ff7a6e;
+  --ewa-snare: #f2a64a;
+  --ewa-hat: #f2cf3f;
+  --ewa-clap: #f277c0;
+  --ewa-bass: #9c8dff;
+  --ewa-lead: #56c4f0;
+  --ewa-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+  /* --- VitePress brand override (dark) --- */
+  --vp-c-brand-1: #2fe3a4;
+  --vp-c-brand-2: #57ecba;
+  --vp-c-brand-3: #35e0a6;
+  --vp-c-brand-soft: rgba(47, 227, 164, 0.16);
+
+  /* brand-3 (button bg) is a light green in dark mode, so button text needs
+     to be dark-on-green rather than VitePress's default white, to hold AA
+     contrast. */
+  --vp-button-brand-text: #05231a;
+  --vp-button-brand-hover-text: #05231a;
+  --vp-button-brand-active-text: #05231a;
+}
+
+/* --- Shared keyframes for demo components --- */
+@keyframes ewa-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes ewa-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Scoped to demo elements only — do NOT use a bare `*` selector, which would
+   affect the whole docs site rather than just the EWA demo components. */
+@media (prefers-reduced-motion: reduce) {
+  [class*='ewa-'],
+  .ewa-anim,
+  .ewa-anim * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
