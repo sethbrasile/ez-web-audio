@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { useCleanup, useSound } from '@ez-web-audio/vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   url?: string
@@ -10,18 +11,8 @@ const error = ref('')
 const gain = ref(1)
 const pan = ref(0)
 
-let sound: any = null
-let lib: any = null
-
-async function ensureInit() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-  if (!sound) {
-    const audioUrl = props.url || '/ez-web-audio/audio/click.mp3'
-    sound = await lib.createSound(audioUrl)
-  }
-}
+const cleanup = useCleanup()
+const { instance: sound, load: loadSound } = useSound()
 
 async function play() {
   if (loading.value)
@@ -31,10 +22,10 @@ async function play() {
     error.value = ''
     loading.value = true
 
-    await ensureInit()
-    sound.changeGainTo(gain.value)
-    sound.changePanTo(pan.value)
-    sound.play()
+    const s = cleanup.register(await loadSound(props.url || '/ez-web-audio/audio/click.mp3'))
+    s.changeGainTo(gain.value)
+    s.changePanTo(pan.value)
+    s.play()
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
@@ -45,20 +36,13 @@ async function play() {
 }
 
 watch(gain, (val) => {
-  if (sound)
-    sound.changeGainTo(val)
+  if (sound.value)
+    sound.value.changeGainTo(val)
 })
 
 watch(pan, (val) => {
-  if (sound)
-    sound.changePanTo(val)
-})
-
-onUnmounted(() => {
-  if (sound) {
-    try { sound.stop() }
-    catch {}
-  }
+  if (sound.value)
+    sound.value.changePanTo(val)
 })
 </script>
 
