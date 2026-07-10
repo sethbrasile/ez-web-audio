@@ -474,7 +474,7 @@ const tracks = [
   { key: 'kick' as const, label: 'Kick', isDrum: true },
   { key: 'snare' as const, label: 'Snare', isDrum: true },
   { key: 'hihat' as const, label: 'Hi-hat', isDrum: true },
-  { key: 'bass' as const, label: 'Synth Bass', isDrum: false },
+  { key: 'bass' as const, label: 'Bass', isDrum: false },
   { key: 'piano' as const, label: 'Piano', isDrum: false },
 ]
 
@@ -816,14 +816,17 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   font-style: italic;
 }
 
-/* Step grid wrapper — handles horizontal scroll */
+/* Step grid wrapper — fluid by default; horizontal scroll only kicks in
+   below the grid's minimum usable width (gate-2 jui: grid used fixed-width
+   cells and always overflowed the content column) */
 .step-grid-wrap {
   overflow-x: auto;
 }
 
-/* Step grid — row layout, no overflow (handled by wrapper) */
+/* Step grid — fills the available width; cells flex to fit */
 .step-grid {
-  min-width: max-content;
+  width: 100%;
+  min-width: 560px;
 }
 
 /* Grid header row */
@@ -854,18 +857,22 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .header-label-spacer {
-  min-width: 130px;
+  min-width: 84px;
   flex-shrink: 0;
 }
 
 .header-steps {
   display: flex;
   gap: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .bar-group {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .bar-label {
@@ -884,7 +891,8 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .step-header-cell {
-  width: 24px;
+  flex: 1 1 0;
+  min-width: 13px;
   height: 16px;
   font-size: 0.68rem;
   color: var(--vp-c-text-3);
@@ -955,13 +963,16 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 
 /* Track label — sticky left after controls */
 .track-label {
-  min-width: 130px;
-  font-size: 0.78rem;
+  min-width: 84px;
+  font-size: 0.74rem;
   color: var(--vp-c-text-2);
   font-weight: 500;
   text-align: right;
   padding-right: 8px;
   flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Step cells */
@@ -969,10 +980,13 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   display: flex;
   gap: 0;
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .step-cell {
-  width: 24px;
+  flex: 1 1 0;
+  min-width: 13px;
   height: 28px;
   border: 1px solid var(--vp-c-divider);
   border-right: none;
@@ -1016,9 +1030,11 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .note-name {
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 /* Buttons focus */
@@ -1036,11 +1052,11 @@ button:focus-visible {
   }
 
   .track-label {
-    min-width: 100px;
+    min-width: 72px;
   }
 
   .header-label-spacer {
-    min-width: 100px;
+    min-width: 72px;
   }
 
   .sticky-label {
@@ -1054,12 +1070,12 @@ button:focus-visible {
 
 @media (max-width: 480px) {
   .track-label {
-    min-width: 80px;
-    font-size: 0.7rem;
+    min-width: 64px;
+    font-size: 0.68rem;
   }
 
   .header-label-spacer {
-    min-width: 80px;
+    min-width: 64px;
   }
 }
 </style>
