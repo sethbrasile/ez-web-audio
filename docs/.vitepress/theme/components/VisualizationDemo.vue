@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Analyzer, Oscillator } from 'ez-web-audio'
+import { useAnalyzer, useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
@@ -18,8 +18,9 @@ const frequencyCanvas = ref<HTMLCanvasElement | null>(null)
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Audio instances
-let oscillator: Oscillator | null = null
-let analyzer: Analyzer | null = null
+const cleanup = useCleanup()
+const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
+const { instance: analyzer, load: loadAnalyzer, reset: resetAnalyzer } = useAnalyzer()
 let animationFrameId: number | null = null
 
 onMounted(() => {
@@ -84,26 +85,21 @@ async function startVisualization() {
   loading.value = true
 
   try {
-    const { createOscillator, createAnalyzer, getAudioContext } = await import('ez-web-audio')
-
     // Create oscillator
-    oscillator = await createOscillator({
+    const osc = cleanup.register(await loadOsc({
       frequency: frequency.value,
       type: waveType.value,
-    })
-    oscillator.changeGainTo(0.3)
-
-    // Get AudioContext for analyzer creation
-    const ctx = await getAudioContext()
+    }))
+    osc.changeGainTo(0.3)
 
     // Create analyzer
-    analyzer = await createAnalyzer(ctx, { fftSize: fftSize.value })
+    const an = cleanup.register(await loadAnalyzer({ fftSize: fftSize.value }))
 
     // Connect oscillator to analyzer
-    oscillator.setAnalyzer(analyzer)
+    osc.setAnalyzer(an)
 
     // Start oscillator
-    oscillator.play()
+    osc.play()
 
     // Start visualization loop
     isPlaying.value = true
@@ -115,9 +111,9 @@ async function startVisualization() {
 }
 
 function stopVisualization() {
-  if (oscillator) {
-    oscillator.stop()
-    oscillator = null
+  if (oscillator.value) {
+    oscillator.value.stop()
+    resetOsc()
   }
 
   if (animationFrameId !== null) {
@@ -125,7 +121,7 @@ function stopVisualization() {
     animationFrameId = null
   }
 
-  analyzer = null
+  resetAnalyzer()
   isPlaying.value = false
 
   // Clear canvases
@@ -134,7 +130,7 @@ function stopVisualization() {
 }
 
 function animate() {
-  if (!isPlaying.value || !analyzer)
+  if (!isPlaying.value || !analyzer.value)
     return
 
   drawFrequencySpectrum()
@@ -144,7 +140,7 @@ function animate() {
 }
 
 function drawFrequencySpectrum() {
-  if (!analyzer || !frequencyCanvas.value)
+  if (!analyzer.value || !frequencyCanvas.value)
     return
 
   const canvas = frequencyCanvas.value
@@ -152,7 +148,7 @@ function drawFrequencySpectrum() {
   if (!ctx)
     return
 
-  const frequencyData = analyzer.getFrequencyData()
+  const frequencyData = analyzer.value.getFrequencyData()
   const width = Number(canvas.dataset.logicalWidth) || canvas.width
   const height = Number(canvas.dataset.logicalHeight) || canvas.height
   const barWidth = width / frequencyData.length
@@ -175,7 +171,7 @@ function drawFrequencySpectrum() {
 }
 
 function drawWaveform() {
-  if (!analyzer || !waveformCanvas.value)
+  if (!analyzer.value || !waveformCanvas.value)
     return
 
   const canvas = waveformCanvas.value
@@ -183,7 +179,7 @@ function drawWaveform() {
   if (!ctx)
     return
 
-  const waveformData = analyzer.getTimeDomainData()
+  const waveformData = analyzer.value.getTimeDomainData()
   const width = Number(canvas.dataset.logicalWidth) || canvas.width
   const height = Number(canvas.dataset.logicalHeight) || canvas.height
 
@@ -230,7 +226,7 @@ function clearCanvas(canvas: HTMLCanvasElement | null) {
 }
 
 function updateWaveform() {
-  if (!isPlaying.value || !oscillator)
+  if (!isPlaying.value || !oscillator.value)
     return
 
   // Stop and recreate oscillator with new waveform
@@ -243,10 +239,10 @@ function updateWaveform() {
 }
 
 function updateFrequency() {
-  if (!isPlaying.value || !oscillator)
+  if (!isPlaying.value || !oscillator.value)
     return
 
-  oscillator.update('frequency').to(frequency.value).as('ratio')
+  oscillator.value.update('frequency').to(frequency.value).as('ratio')
 }
 
 function updateFFTSize() {
