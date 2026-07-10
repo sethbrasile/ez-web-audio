@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useCleanup, useTrack } from '@ez-web-audio/vue'
+import { crossfade } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const loading = ref(false)
@@ -10,9 +12,9 @@ const fadeDuration = ref(2)
 const positionA = ref('0:00')
 const positionB = ref('0:00')
 
-let trackA: any = null
-let trackB: any = null
-let lib: any = null
+const cleanup = useCleanup()
+const { instance: trackA, load: loadTrackA } = useTrack()
+const { instance: trackB, load: loadTrackB } = useTrack()
 let animFrame: number | null = null
 
 async function ensureLoaded() {
@@ -25,25 +27,21 @@ async function ensureLoaded() {
     loading.value = true
     error.value = ''
 
-    if (!lib) {
-      lib = await import('ez-web-audio')
-    }
-
     const [a, b] = await Promise.all([
-      lib.createTrack('/ez-web-audio/audio/short-music.mp3'),
-      lib.createTrack('/ez-web-audio/audio/short-music.mp3'),
+      loadTrackA('/ez-web-audio/audio/short-music.mp3'),
+      loadTrackB('/ez-web-audio/audio/short-music.mp3'),
     ])
 
-    trackA = a
-    trackB = b
+    cleanup.register(a)
+    cleanup.register(b)
 
-    trackA.on('stop', () => {
+    a.on('stop', () => {
       if (activeTrack.value === 'A' && !isCrossfading.value) {
         activeTrack.value = null
       }
     })
 
-    trackB.on('stop', () => {
+    b.on('stop', () => {
       if (activeTrack.value === 'B' && !isCrossfading.value) {
         activeTrack.value = null
       }
@@ -62,11 +60,11 @@ async function ensureLoaded() {
 }
 
 function updatePositions() {
-  if (trackA?.isPlaying) {
-    positionA.value = trackA.position?.string ?? '0:00'
+  if (trackA.value?.isPlaying) {
+    positionA.value = trackA.value.position?.string ?? '0:00'
   }
-  if (trackB?.isPlaying) {
-    positionB.value = trackB.position?.string ?? '0:00'
+  if (trackB.value?.isPlaying) {
+    positionB.value = trackB.value.position?.string ?? '0:00'
   }
   animFrame = requestAnimationFrame(updatePositions)
 }
@@ -79,10 +77,10 @@ async function playTrackA() {
     error.value = ''
     if (activeTrack.value === 'B') {
       // Stop B first
-      try { await trackB.stop() }
+      try { await trackB.value?.stop() }
       catch {}
     }
-    await trackA.play()
+    await trackA.value?.play()
     activeTrack.value = 'A'
     updatePositions()
   }
@@ -99,10 +97,10 @@ async function playTrackB() {
     error.value = ''
     if (activeTrack.value === 'A') {
       // Stop A first
-      try { await trackA.stop() }
+      try { await trackA.value?.stop() }
       catch {}
     }
-    await trackB.play()
+    await trackB.value?.play()
     activeTrack.value = 'B'
     updatePositions()
   }
@@ -112,12 +110,12 @@ async function playTrackB() {
 }
 
 async function doCrossfade() {
-  if (!trackA || !trackB || isCrossfading.value)
+  if (!trackA.value || !trackB.value || isCrossfading.value)
     return
 
   // Determine direction: if A is playing, fade A→B; else fade B→A
-  const from = activeTrack.value === 'A' ? trackA : trackB
-  const to = activeTrack.value === 'A' ? trackB : trackA
+  const from = activeTrack.value === 'A' ? trackA.value : trackB.value
+  const to = activeTrack.value === 'A' ? trackB.value : trackA.value
   const toLabel = activeTrack.value === 'A' ? 'B' : 'A'
 
   if (!from.isPlaying) {
@@ -129,7 +127,7 @@ async function doCrossfade() {
     error.value = ''
     isCrossfading.value = true
 
-    await lib.crossfade(from, to, fadeDuration.value, { afterFade: 'continue' })
+    await crossfade(from, to, fadeDuration.value, { afterFade: 'continue' })
 
     activeTrack.value = toLabel
     isCrossfading.value = false
@@ -145,12 +143,12 @@ async function stopAll() {
     cancelAnimationFrame(animFrame)
     animFrame = null
   }
-  if (trackA) {
-    try { await trackA.stop() }
+  if (trackA.value) {
+    try { await trackA.value.stop() }
     catch {}
   }
-  if (trackB) {
-    try { await trackB.stop() }
+  if (trackB.value) {
+    try { await trackB.value.stop() }
     catch {}
   }
   activeTrack.value = null
