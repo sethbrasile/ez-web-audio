@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CompressorEffect, DelayEffect, Effect, EQEffect, Oscillator, ReverbEffect, Track } from 'ez-web-audio'
+import { createCompressor, createDelay, createEQ, createOscillator, createReverb, createTrack } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -133,10 +134,14 @@ const slots = ref<Record<EffectId, EffectSlot>>({
 
 // ── Audio objects ──────────────────────────────────────────────────────────────
 
-let lib: typeof import('ez-web-audio') | null = null
 let source: Oscillator | Track | null = null
 // Typed effect references, keyed by EffectId
 const effectRefs: Partial<Record<EffectId, Effect>> = {}
+// Narrow type for effect disposal — Effect doesn't declare dispose(), but every
+// concrete effect class (delay/reverb/compressor/eq) implements it via BaseEffect.
+interface Disposable {
+  dispose?: () => void
+}
 
 // ── Computed ───────────────────────────────────────────────────────────────────
 
@@ -200,13 +205,6 @@ function applySlotToEffect(id: EffectId): void {
 
 // ── Audio control ──────────────────────────────────────────────────────────────
 
-async function ensureLib(): Promise<typeof import('ez-web-audio')> {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-  return lib
-}
-
 async function togglePlayback(): Promise<void> {
   if (playing.value) {
     stopAudio()
@@ -225,16 +223,15 @@ async function startAudio(): Promise<void> {
     error.value = ''
     setStatus('Initializing...')
 
-    const ezAudio = await ensureLib()
     initialized.value = true
 
     if (sourceType.value === 'oscillator') {
       // Oscillator gain kept modest (M23: avoid saturating compressor)
-      source = await ezAudio.createOscillator({ frequency: 220, type: 'sawtooth' })
+      source = await createOscillator({ frequency: 220, type: 'sawtooth' })
       source.update('gain').to(0.15).as('ratio')
     }
     else {
-      source = await ezAudio.createTrack('/ez-web-audio/audio/short-music.mp3')
+      source = await createTrack('/ez-web-audio/audio/short-music.mp3')
       source.update('gain').to(0.8).as('ratio')
       source.loop = true
     }
@@ -245,21 +242,21 @@ async function startAudio(): Promise<void> {
       let effect: Effect
 
       if (id === 'delay') {
-        effect = ezAudio.createDelay({
+        effect = createDelay({
           time: slot.delayTime,
           feedback: slot.delayFeedback,
           mix: slot.delayMix,
         })
       }
       else if (id === 'reverb') {
-        effect = ezAudio.createReverb({
+        effect = createReverb({
           decay: slot.reverbDecay,
           damping: slot.reverbDamping,
           mix: slot.reverbMix,
         })
       }
       else if (id === 'compressor') {
-        effect = ezAudio.createCompressor({
+        effect = createCompressor({
           threshold: slot.compThreshold,
           ratio: slot.compRatio,
           knee: slot.compKnee,
@@ -268,7 +265,7 @@ async function startAudio(): Promise<void> {
         })
       }
       else {
-        effect = ezAudio.createEQ({
+        effect = createEQ({
           low: slot.eqLow,
           mid: slot.eqMid,
           high: slot.eqHigh,
@@ -308,12 +305,10 @@ function stopAudio(): void {
   // Dispose effect nodes
   for (const id of Object.keys(effectRefs) as EffectId[]) {
     const effect = effectRefs[id]
-    if (effect && 'dispose' in effect && typeof (effect as any).dispose === 'function') {
-      try {
-        ;(effect as any).dispose()
-      }
-      catch { /* already disposed */ }
+    try {
+      (effect as Disposable | undefined)?.dispose?.()
     }
+    catch { /* already disposed */ }
     delete effectRefs[id]
   }
 
