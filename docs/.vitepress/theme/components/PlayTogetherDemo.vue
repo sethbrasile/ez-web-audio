@@ -3,6 +3,9 @@ import type { Sound } from 'ez-web-audio'
 import { useCleanup } from '@ez-web-audio/vue'
 import { createSound, playTogether as playTogetherUtil } from 'ez-web-audio'
 import { ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import PlayButton from './kit/PlayButton.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -12,6 +15,7 @@ const status = ref('Ready')
 const soundPlaying = ref([false, false, false])
 
 const soundLabels = ['Kick', 'Snare', 'Hi-Hat']
+const soundColors = ['var(--ewa-kick)', 'var(--ewa-snare)', 'var(--ewa-hat)']
 const soundUrls = [
   '/ez-web-audio/audio/drum-samples/kick1.wav',
   '/ez-web-audio/audio/drum-samples/snare1.wav',
@@ -119,178 +123,84 @@ async function playSound(index: number) {
 </script>
 
 <template>
-  <div class="play-together-demo">
+  <DemoFrame class="play-together-demo" :error="error" takeaway="Composition is trivial — fire multiple sounds at once.">
     <div class="controls">
       <div class="main-controls">
-        <button class="together-btn" @click="playTogether">
-          Play Together
-        </button>
-        <button class="sequential-btn" @click="playSequentially">
+        <PlayButton label="Play Together" @click="playTogether" />
+        <button type="button" class="sequential-btn" @click="playSequentially">
           Play Sequentially
         </button>
       </div>
 
-      <div class="sounds">
-        <div
+      <div class="pads">
+        <TriggerPad
           v-for="(label, i) in soundLabels"
           :key="label"
-          class="sound-row"
-          :class="{ playing: soundPlaying[i] }"
-        >
-          <button class="sound-btn" @click="playSound(i)">
-            {{ label }}
-          </button>
-          <div class="sound-indicator">
-            {{ soundPlaying[i] ? 'Playing' : 'Ready' }}
-          </div>
-        </div>
+          :label="label"
+          :color="soundColors[i]"
+          :active="soundPlaying[i]"
+          @trigger="playSound(i)"
+        />
       </div>
     </div>
 
-    <div class="status-bar">
-      <div class="status-text">
+    <slot />
+
+    <template #status>
+      <p class="status-text">
         {{ status }}
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.play-together-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.init-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin: 0;
-}
-
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 20px;
 }
 
 .main-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.sounds {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.sound-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  transition: border-color 0.2s;
-}
-
-.sound-row.playing {
-  border-color: var(--vp-c-brand);
-  background: var(--vp-c-brand-soft);
-}
-
-.sound-indicator {
-  font-size: 0.8rem;
-  color: var(--vp-c-text-3);
-  min-width: 60px;
-}
-
-.sound-row.playing .sound-indicator {
-  color: var(--vp-c-brand);
+.sequential-btn {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
   font-weight: 600;
-}
-
-.init-btn,
-.together-btn,
-.sequential-btn,
-.sound-btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-weight: 500;
+  font-size: 14px;
+  font-family: var(--vp-font-family-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.18s, color 0.18s;
 }
 
-.init-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
+.sequential-btn:hover:not(:disabled) {
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
-.init-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
+.sequential-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 3px;
 }
 
-.init-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.together-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-weight: 600;
-}
-
-.together-btn:hover {
-  background: var(--vp-c-brand-dark);
-}
-
-.sequential-btn:hover,
-.sound-btn:hover {
-  background: var(--vp-c-bg-mute);
-  border-color: var(--vp-c-brand);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
+.pads {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .status-text {
   font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+  color: var(--ewa-text-2);
+  margin: 0;
 }
 </style>

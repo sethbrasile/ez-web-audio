@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useCleanup, useTrack } from '@ez-web-audio/vue'
 import { onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import SegmentDisplay from './kit/SegmentDisplay.vue'
 
 const props = defineProps<{
   url?: string
@@ -127,168 +131,111 @@ onUnmounted(() => {
   if (animationFrame)
     cancelAnimationFrame(animationFrame)
 })
+
+function formatGain(v: number) {
+  return `${Math.round(v * 100)}%`
+}
 </script>
 
 <template>
-  <div class="track-demo">
+  <DemoFrame class="track-demo" :error="error" takeaway="Tracks have position tracking and seeking built in.">
     <div class="controls">
       <div class="transport">
-        <button :disabled="loading" class="play-btn" @click="playPause">
-          {{ loading ? 'Loading...' : (isPlaying ? 'Pause' : 'Play') }}
-        </button>
-        <button :disabled="!loaded" class="stop-btn" @click="stop">
+        <PlayButton
+          :playing="isPlaying"
+          :loading="loading"
+          label="Play"
+          playing-label="Pause"
+          @click="playPause"
+        />
+        <button type="button" class="stop-btn" :disabled="!loaded" @click="stop">
           Stop
         </button>
       </div>
 
-      <div class="time-display">
-        <span class="current">{{ positionString }}</span>
-        <span class="separator">/</span>
-        <span class="total">{{ durationString }}</span>
-      </div>
+      <SegmentDisplay :value="`${positionString} / ${durationString}`" caption="position" />
 
-      <div class="seek-bar">
-        <input
+      <div class="sliders">
+        <ParameterSlider
           id="track-seek"
-          v-model.number="seekPosition"
-          type="range"
+          v-model="seekPosition"
+          label="Seek"
+          :min="0"
           :max="duration"
-          step="0.1"
+          :step="0.1"
           :disabled="!loaded"
-          :aria-label="`Seek position: ${positionString}`"
-          @input="seek"
-        >
-      </div>
+          :format="() => positionString"
+          @update:model-value="seek"
+        />
 
-      <div class="volume">
-        <label for="track-volume">
-          Vol: {{ Math.round(gain * 100) }}%
-          <input
-            id="track-volume"
-            v-model.number="gain"
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Volume: ${Math.round(gain * 100)}%`"
-          >
-        </label>
+        <ParameterSlider
+          id="track-volume"
+          v-model="gain"
+          label="Volume"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          :format="formatGain"
+        />
       </div>
     </div>
 
     <slot />
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.track-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 20px;
   align-items: center;
 }
 
 .transport {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
+  align-items: center;
 }
 
-.play-btn, .stop-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+.sliders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  flex: 1;
 }
 
-.play-btn {
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-.play-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
+.sliders > * {
+  flex: 1;
+  min-width: 200px;
 }
 
 .stop-btn {
-  background: var(--vp-c-bg-mute);
-  color: var(--vp-c-text-1);
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--vp-font-family-base);
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
 }
 
 .stop-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg-soft);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
-button:disabled {
-  opacity: 0.5;
+.stop-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.time-display {
-  font-family: monospace;
-  font-size: 1rem;
-}
-
-.separator {
-  margin: 0 0.25rem;
-  color: var(--vp-c-text-3);
-}
-
-.seek-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 150px;
-}
-
-.seek-bar input {
-  flex: 1;
-}
-
-.volume label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.volume input {
-  width: 80px;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+.stop-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 3px;
 }
 </style>
