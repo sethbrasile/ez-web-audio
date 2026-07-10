@@ -206,18 +206,22 @@ async function playBassDrop() {
       type: 'sine',
     })
 
-    // Linear frequency sweep (steady pitch drop) and exponential gain decay
-    osc.onPlayRamp('frequency', 'linear').from(100).to(0.01).in(10)
-    osc.onPlayRamp('gain').from(1).to(0.01).in(10)
+    // Linear frequency sweep (steady pitch drop) and exponential gain decay.
+    // The original ember-audio demo ran this drop for 10s — verified against
+    // tests/dummy/app/controllers/synthesis/drum-kit.js — which drones far too
+    // long for a demo hit; 4s reads as a full drop without overstaying.
+    const DROP_SEC = 4
+    osc.onPlayRamp('frequency', 'linear').from(100).to(0.01).in(DROP_SEC)
+    osc.onPlayRamp('gain').from(1).to(0.01).in(DROP_SEC)
     activeOscillators.push(osc)
-    osc.playFor(10)
+    osc.playFor(DROP_SEC)
 
     // Clean up reference after sound completes
     setTimeout(() => {
       const idx = activeOscillators.indexOf(osc)
       if (idx > -1)
         activeOscillators.splice(idx, 1)
-    }, 10100)
+    }, DROP_SEC * 1000 + 100)
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play bass drop'
