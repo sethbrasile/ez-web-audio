@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import type { Sound } from 'ez-web-audio'
+import { useCleanup } from '@ez-web-audio/vue'
+import { createSound, playTogether as playTogetherUtil } from 'ez-web-audio'
+import { ref } from 'vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -15,8 +18,8 @@ const soundUrls = [
   '/ez-web-audio/audio/drum-samples/hihat1.wav',
 ]
 
-let sounds: any[] = []
-let lib: any = null
+const cleanup = useCleanup()
+let sounds: Sound[] = []
 
 async function ensureLoaded() {
   if (loaded.value)
@@ -29,13 +32,9 @@ async function ensureLoaded() {
     error.value = ''
     status.value = 'Loading sounds...'
 
-    if (!lib) {
-      lib = await import('ez-web-audio')
-    }
-
-    sounds = await Promise.all(
-      soundUrls.map(url => lib.createSound(url)),
-    )
+    sounds = (await Promise.all(
+      soundUrls.map(url => createSound(url)),
+    )).map(s => cleanup.register(s))
 
     loaded.value = true
     status.value = 'Ready'
@@ -60,7 +59,7 @@ async function playTogether() {
     status.value = 'Playing...'
     soundPlaying.value = [true, true, true]
 
-    await lib.playTogether(sounds)
+    await playTogetherUtil(sounds)
 
     setTimeout(() => {
       soundPlaying.value = [false, false, false]
@@ -117,13 +116,6 @@ async function playSound(index: number) {
     soundPlaying.value[index] = false
   }
 }
-
-onUnmounted(() => {
-  sounds.forEach((s) => {
-    try { s.stop?.() }
-    catch {}
-  })
-})
 </script>
 
 <template>
