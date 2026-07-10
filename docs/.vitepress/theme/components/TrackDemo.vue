@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCleanup, useTrack } from '@ez-web-audio/vue'
 import { onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -15,7 +16,9 @@ const duration = ref(0)
 const positionString = ref('0:00')
 const durationString = ref('0:00')
 
-let track: any = null
+const cleanup = useCleanup()
+const { instance: track, load: loadTrack_ } = useTrack()
+
 let animationFrame: number | null = null
 let isSeeking = false
 
@@ -27,15 +30,13 @@ async function loadTrack() {
     error.value = ''
     loading.value = true
 
-    const { createTrack } = await import('ez-web-audio')
-
     const audioUrl = props.url || '/ez-web-audio/audio/short-music.mp3'
-    track = await createTrack(audioUrl)
+    const t = cleanup.register(await loadTrack_(audioUrl))
 
-    duration.value = track.duration.raw
-    durationString.value = track.duration.string
+    duration.value = t.duration.raw
+    durationString.value = t.duration.string
 
-    track.on('stop', () => {
+    t.on('stop', () => {
       // Ignore stop events triggered by seek (seek does stop→play internally)
       if (isSeeking)
         return
@@ -48,7 +49,7 @@ async function loadTrack() {
       }
     })
 
-    track.on('play', () => {
+    t.on('play', () => {
       isPlaying.value = true
       updatePosition()
     })
@@ -64,9 +65,9 @@ async function loadTrack() {
 }
 
 function updatePosition() {
-  if (track && isPlaying.value) {
-    seekPosition.value = track.position.raw
-    positionString.value = track.position.string
+  if (track.value && isPlaying.value) {
+    seekPosition.value = track.value.position.raw
+    positionString.value = track.value.position.string
     animationFrame = requestAnimationFrame(updatePosition)
   }
 }
@@ -79,7 +80,7 @@ async function playPause() {
   }
 
   if (isPlaying.value) {
-    track.pause()
+    track.value?.pause()
     isPlaying.value = false
     if (animationFrame) {
       cancelAnimationFrame(animationFrame)
@@ -87,16 +88,16 @@ async function playPause() {
     }
   }
   else {
-    track.changeGainTo(gain.value)
-    await track.play()
+    track.value?.changeGainTo(gain.value)
+    await track.value?.play()
     isPlaying.value = true
     updatePosition()
   }
 }
 
 function stop() {
-  if (track) {
-    try { track.stop() }
+  if (track.value) {
+    try { track.value.stop() }
     catch {}
   }
   isPlaying.value = false
@@ -109,26 +110,22 @@ function stop() {
 }
 
 async function seek() {
-  if (track) {
+  if (track.value) {
     isSeeking = true
-    await track.seek(seekPosition.value).as('seconds')
+    await track.value.seek(seekPosition.value).as('seconds')
     isSeeking = false
-    positionString.value = track.position.string
+    positionString.value = track.value.position.string
   }
 }
 
 watch(gain, (val) => {
-  if (track)
-    track.changeGainTo(val)
+  if (track.value)
+    track.value.changeGainTo(val)
 })
 
 onUnmounted(() => {
   if (animationFrame)
     cancelAnimationFrame(animationFrame)
-  if (track) {
-    try { track.stop() }
-    catch {}
-  }
 })
 </script>
 
