@@ -4,8 +4,8 @@ milestone: 7
 milestone_name: Feature Demos
 status: awaiting_uat
 stopped_at: M8 phase 75 code-complete — demo master bus + loudness harness + gain staging; STOPPED at HUMAN GATE 2 (listening)
-last_updated: "2026-07-10T12:00:00.000Z"
-last_activity: 2026-07-10 — Phase 75 shipped (core setMasterDestination + getAudioContextSync hooks approved by Seth, demo master bus, 17-demo loudness E2E, fixed 4 clippers). Exit gate green (1926 core + 31 vue tests, 72/72 E2E). STOP at gate 2 — needs Seth's ears (esp. Ambient ADSR→ramp change). 74-02 + 77-01 unblocked/parallel.
+last_updated: "2026-07-10T14:00:00.000Z"
+last_activity: 2026-07-10 — Phase 75 shipped + gate-2 round 1. Core setMasterDestination + getAudioContextSync hooks (Seth-approved), demo master bus, 17-demo loudness E2E, fixed 4 clippers. Exit gate green (1926 core + 31 vue, 72/72 E2E). Gate-2 round 1: Seth heard Ambient stagger + checkbox click; FIXED (uniform 0.6s swell + ramped toggles). AT GATE 2 — Ambient re-listen pending + other demos not yet reviewed by Seth. 52 commits ahead of origin (unpushed).
 progress:
   total_phases: 11
   completed_phases: 11
@@ -30,7 +30,14 @@ See: .planning/PROJECT.md (updated 2026-07-09)
 
 Phase: M8 Phases 72, 73, 75 code-complete. Phase 75 STOPPED at HUMAN GATE 2 (listening). Phases 72+73 fully done.
 Status: Executing M8 per `.planning/M8-PLAYBOOK.md`. Design packet at `.planning/DESIGN-HANDOFF/` (gate 1 done). M7 UAT waived to run in parallel (Seth, 2026-07-09).
-Next: **HUMAN GATE 2** — Seth listens to all demos (`pnpm dev`), esp. Ambient (ADSR→onPlayRamp swell), drum levels, TransportSequencer bass lowpass; findings append to `75-01-SUMMARY.md`, then Phase 76 (groovebox) unblocks. Parallel-runnable while waiting: 74-02 (design cohesion, packet returned) + 77-01 (React bindings). Judgment log: `.planning/M8-QUESTIONS.md`. Note: main is ~50 commits ahead of origin — pushing redeploys docs site (stale since March).
+Next: **HUMAN GATE 2 (in progress)** — Seth listening to demos via `pnpm dev`. Round 1: Ambient stagger + toggle-click FIXED (commit 1f68ee0) — awaiting Seth's re-listen (may want swell tighter than 0.6s or gone). Still un-reviewed by ear: drum levels (0.6–0.7 gain), TransportSequencer bass lowpass @600Hz, LFO/GrainPlayer/EffectsChain presets. Findings append to `75-01-SUMMARY.md` "Gate 2" section. When Seth signs off → Phase 76 (groovebox) unblocks. Parallel-runnable while waiting: 74-02 (design cohesion, packet at .planning/DESIGN-HANDOFF/) + 77-01 (React bindings, plan at phases/77-react-bindings/77-01-PLAN.md). Judgment/decision log: `.planning/M8-QUESTIONS.md`. Note: 52 commits ahead of origin — pushing redeploys docs site (stale since March); Seth pushes manually.
+
+## How to resume M8 (read these, in order)
+1. `.planning/AUTOPILOT.md` — continue-trigger protocol
+2. `.planning/M8-PLAYBOOK.md` — execution order + gates + dispatch protocol
+3. `.planning/M8-QUESTIONS.md` — all judgment calls/decisions (setMasterDestination approved, envelope-peak friction, useCleanup-unregister gap, etc.)
+4. This STATE.md + `.planning/phases/75-demo-sound-quality/75-01-SUMMARY.md` (gate-2 findings)
+5. Cross-check git log — commits are source of truth over any stale frontmatter
 
 ## Milestone 8 Scope Decisions (user, 2026-07-09)
 
