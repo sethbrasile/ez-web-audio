@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import KeyboardHintChip from './kit/KeyboardHintChip.vue'
 
 interface Props {
   activeKeys?: Set<string>
@@ -277,19 +278,6 @@ onUnmounted(() => {
 
 <template>
   <div class="piano-keyboard">
-    <!-- Keyboard shortcut visual mapping (L25) -->
-    <div
-      id="keyboard-shortcut-hint"
-      class="keyboard-hint"
-      role="note"
-      aria-label="Keyboard shortcuts: Use keys A through K to play notes. W, E, T, Y, U for flats."
-    >
-      <span class="hint-main">Use keys to play</span>
-      <span class="hint-map" aria-hidden="true">
-        <span v-for="key in keys" :key="key.note" class="hint-key" :class="key.type">{{ key.shortcut }}</span>
-      </span>
-    </div>
-
     <!-- Keys (M7: roving tabindex — only focused key is tab-reachable; arrows navigate) -->
     <div
       ref="keysContainerRef"
@@ -318,8 +306,20 @@ onUnmounted(() => {
         @keyup="handleKeyElementKeyup($event, key.note)"
         @focus="focusedKeyIndex = index"
       >
-        <span class="key-label">{{ key.label }}</span>
+        <span class="key-label">{{ key.shortcut }}</span>
       </div>
+    </div>
+
+    <!-- Keyboard shortcut hint chip (below keys, mirrors the shortcut letters printed on the keys) -->
+    <div
+      id="keyboard-shortcut-hint"
+      class="keyboard-hint"
+      role="note"
+      aria-label="Keyboard shortcuts: Use keys A through K to play notes. W, E, T, Y, U for flats."
+    >
+      <KeyboardHintChip>
+        <kbd>A</kbd>–<kbd>K</kbd> trigger notes · black keys <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd>
+      </KeyboardHintChip>
     </div>
   </div>
 </template>
@@ -330,54 +330,10 @@ onUnmounted(() => {
 }
 
 .keyboard-hint {
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin-bottom: 0.5rem;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 0.75rem;
 }
-
-.hint-main {
-  font-size: 0.8rem;
-}
-
-/* Visual shortcut map aligned under the keys (L25) */
-.hint-map {
-  display: flex;
-  gap: 0;
-  position: relative;
-  width: 320px; /* 8 white keys × 40px */
-  height: 1.4rem;
-  margin: 0 auto;
-}
-
-.hint-key {
-  position: absolute;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--vp-c-text-2);
-  text-align: center;
-  pointer-events: none;
-}
-
-/* Position shortcut labels to align with keys.
-   White keys: 40px wide. Black keys: 28px wide, inset 14px from next white key.
-   The hint-map uses the same spacing logic. */
-.hint-key:nth-child(1)  { left: calc(0 * 40px + 12px); } /* C4 — A */
-.hint-key:nth-child(2)  { left: calc(1 * 40px - 14px + 4px); color: var(--vp-c-text-3); } /* Db4 — W */
-.hint-key:nth-child(3)  { left: calc(1 * 40px + 12px); } /* D4 — S */
-.hint-key:nth-child(4)  { left: calc(2 * 40px - 14px + 4px); color: var(--vp-c-text-3); } /* Eb4 — E */
-.hint-key:nth-child(5)  { left: calc(2 * 40px + 12px); } /* E4 — D */
-.hint-key:nth-child(6)  { left: calc(3 * 40px + 12px); } /* F4 — F */
-.hint-key:nth-child(7)  { left: calc(4 * 40px - 14px + 4px); color: var(--vp-c-text-3); } /* Gb4 — T */
-.hint-key:nth-child(8)  { left: calc(4 * 40px + 12px); } /* G4 — G */
-.hint-key:nth-child(9)  { left: calc(5 * 40px - 14px + 4px); color: var(--vp-c-text-3); } /* Ab4 — Y */
-.hint-key:nth-child(10) { left: calc(5 * 40px + 12px); } /* A4 — H */
-.hint-key:nth-child(11) { left: calc(6 * 40px - 14px + 4px); color: var(--vp-c-text-3); } /* Bb4 — U */
-.hint-key:nth-child(12) { left: calc(6 * 40px + 12px); } /* B4 — J */
-.hint-key:nth-child(13) { left: calc(7 * 40px + 12px); } /* C5 — K */
 
 .keys-container {
   position: relative;
@@ -395,11 +351,11 @@ onUnmounted(() => {
   justify-content: center;
   padding-bottom: 8px;
   box-sizing: border-box;
-  border: 1px solid var(--vp-c-divider);
+  border: 1px solid var(--ewa-line-2);
 }
 
 .key:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+  outline: 2px solid var(--ewa-accent);
   outline-offset: -2px;
   z-index: 3;
 }
@@ -407,49 +363,54 @@ onUnmounted(() => {
 .key.white {
   width: 40px;
   height: 150px;
-  background: var(--vp-c-bg);
+  background: var(--ewa-bg);
   z-index: 1;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 5px 5px;
   min-width: 40px;
   touch-action: none;
 }
 
 .key.white:hover {
-  background: var(--vp-c-bg-soft);
+  background: var(--ewa-panel);
 }
 
 .key.white.active {
-  background: var(--vp-c-brand-light);
+  background: var(--ewa-accent-soft);
   transform: translateY(2px);
 }
 
 .key.black {
   width: 28px;
   height: 95px;
-  background: var(--vp-c-text-1);
+  background: var(--ewa-text);
   z-index: 2;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 4px 4px;
   min-width: 28px;
   touch-action: none;
 }
 
 .key.black .key-label {
-  color: var(--vp-c-bg);
-  font-size: 0.65rem;
+  color: var(--ewa-bg);
+  font-size: 9px;
 }
 
 .key.black:hover {
-  background: var(--vp-c-text-2);
+  filter: brightness(0.92);
 }
 
 .key.black.active {
-  background: var(--vp-c-brand);
+  background: var(--ewa-accent);
   transform: translateY(2px);
 }
 
+.key.black.active .key-label {
+  color: var(--ewa-on-accent);
+}
+
 .key-label {
-  font-size: 0.75rem;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
   font-weight: 500;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-3);
 }
 </style>
