@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Font } from 'ez-web-audio'
+import { useFont } from '@ez-web-audio/vue'
 import { onUnmounted, ref } from 'vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
@@ -8,8 +8,7 @@ const loading = ref(false)
 const error = ref('')
 const activeNotes = ref(new Set<string>())
 
-let font: Font | null = null
-let lib: any = null
+const { instance: font, load: loadFont } = useFont()
 
 async function initFont() {
   if (initialized.value)
@@ -19,11 +18,8 @@ async function initFont() {
   try {
     error.value = ''
 
-    // Dynamic import for SSR compatibility
-    lib = await import('ez-web-audio')
-
     // Load the piano soundfont
-    font = await lib.createFont('/ez-web-audio/audio/piano.js')
+    await loadFont('/ez-web-audio/audio/piano.js')
 
     initialized.value = true
   }
@@ -47,7 +43,7 @@ async function playNote(note: string) {
     // Font.play() expects note identifier string (e.g., 'C4', 'Db4')
     // PianoKeyboard emits note names using flat notation (Db, Eb, Gb, Ab, Bb)
     // which matches the library's frequencyMap structure
-    font.play(note)
+    font.value?.play(note)
 
     activeNotes.value.add(note)
   }
@@ -65,9 +61,9 @@ function stopNote(note: string) {
 onUnmounted(() => {
   // Cleanup
   try {
-    if (font) {
+    if (font.value) {
       // Stop any currently playing notes before disposing
-      for (const note of font.notes) {
+      for (const note of font.value.notes) {
         if (note.isPlaying) {
           try {
             note.stop()
@@ -75,7 +71,6 @@ onUnmounted(() => {
           catch {}
         }
       }
-      font = null
     }
     activeNotes.value.clear()
   }
