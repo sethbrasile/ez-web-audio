@@ -33,6 +33,29 @@ Recon over all 27 demo components (`73-INVENTORY.md`) surfaced four things the 7
 
 **Net:** 24 in-scope components (25 audio, minus DrumMachineVanilla by design; LlmsFooter + PianoKeyboard non-audio). Phase 73 is more than mechanical plumbing swaps — it will harden `packages/vue`. That's the intended direction (demos as the binding's test), but it means 73 ≈ real library work, not a quick pass.
 
+## 2026-07-10 · 73 · API-hardening decision (foundation before demo refactors)
+
+Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan, done as **73-01 Task A (foundation)** before the mechanical demo tasks, per the inventory's "solve recreate-mid-life early" recommendation. Each item ships with a unit test.
+
+**Decisions (recommendation taken, executing):**
+
+1. **`reset()` added to `createFactoryComposable`** — clears `instance.value` + `pending` so the next `load()` builds fresh. This is the sanctioned answer to the recreate-single-instance demos (OscillatorDemo waveform change, FilterDemo/EffectsChainDemo source swap, PolySynthDemo `recreateSynth`, XYPad per-interaction). Keeps the composable idiom; no `reload` overload needed.
+2. **`useAudioContext()` gains `getContext(): Promise<AudioContext>`** (wraps core `getAudioContext()`) — the raw-context gap hitting Distortion/Timing/Visualization/TransportSequencer. `{ ready, init }` unchanged; additive.
+3. **Six new composables** for primary instances a demo holds+disposes: `useFont`, `useSequence` (sync core fn → async wrapper; load takes `(transport, options)`), `useWhiteNoise`, `useLayeredSound`, `useSprite`, `useAnalyzer` (ctx-first overload). Exported from index, each unit-tested.
+4. **Effects + utilities get NO composable — by design.** `createFilterEffect`, `createDelay/Reverb/Compressor/EQ`, `wrapEffect` attach to a source and die with it → demos import them directly and `cleanup.register()` any disposable. `crossfade`, `playTogether`, `audioContextAwareTimeout`, `frequencyMap` are plain fns/data → direct import. Composables are reserved for lifecycle-managed *instances*, keeping the binding surface honest.
+5. **Many-concurrent-instance churn** (SynthKeyboard, SynthDrumKit, TimingDemo ephemeral hits) → sanctioned escape hatch: raw `createX()` + `cleanup.register()` per instance. This is the intended pattern for ephemeral objects, not bespoke plumbing the rule forbids — documented in a composables.ts comment.
+6. **XYPad added as a task** (inventory #1). **4 zero-E2E demos** (PlayTogether, LayeredSound, Crossfade, AudioSprite): refactor with manual/headless verification noted per-task; NOT expanding E2E scope here (that's a separate call for Seth) — flagged, proceeding without new specs.
+
+**Net:** Task A hardens the library; Tasks 1–24 then become near-mechanical contract-applications. Resequenced so PolySynthDemo (recreate-mid-life reference) runs right after the trivial single-instance demos, ahead of the other recreate cases.
+
+## 2026-07-10 · 73 · useCleanup has no `unregister` → high-churn demos keep manual teardown
+
+**Found:** SynthKeyboard (a `Map<note, Oscillator>`, one voice per held key) and SynthDrumKit (an `activeOscillators[]` of per-hit voices that self-remove after decay) create/destroy many short-lived instances continuously. `useCleanup().register()` only accumulates into a Set with no `unregister`, so registering every voice would grow that Set unboundedly for the component's life (each key-press / drum-hit adds a permanently-retained reference, only freed at unmount).
+
+**Recommendation/Done:** Left both demos with their existing **bounded manual teardown** (Map / array holding only currently-sounding voices, stopped in `onUnmounted`) and only converted the `await import('ez-web-audio')` init plumbing to STATIC `createOscillator`/`createWhiteNoise`/`createFilterEffect`/`createLayeredSound` + `frequencyMap` imports (kills the dynamic-import + `any`, satisfies the sweep). These two do NOT use `useCleanup` — their own lifecycle management is more correct for continuous churn. This is the documented "raw createX for ephemeral churn" escape hatch, minus the `.register()` call which doesn't fit here.
+
+**Library gap surfaced (pre-1.0 candidate, not blocking):** `useCleanup` could gain an `unregister(inst)` (or `register` could return a disposer handle) so churn-heavy consumers can hand voice lifecycle to the binding without leaking. Logging per library-fidelity rule; no code change made to `packages/vue` now.
+
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).
