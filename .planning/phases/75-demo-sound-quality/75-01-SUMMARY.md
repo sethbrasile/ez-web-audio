@@ -94,3 +94,28 @@ Fix (two levels):
 
 Verified: typecheck green, 1928 core unit tests, loudness E2E 17/17 (Ambient
 peak unchanged). **Re-listen pending.**
+
+### Gate 2 — round 3 (full demo sweep, 2026-07-10)
+
+Seth listened across all demos. **Confirmed good:** drone pop FIXED, LFO good,
+GrainPlayer mostly good. **Findings tracked as beads** (`bd list`, prefix
+`ez-audio-`) — 12 issues, NOT fixed yet by Seth's instruction:
+
+| Bead | Finding |
+|---|---|
+| ez-audio-5b2 (P0) | PolySynth voice ADSR not independent — releases collapse together; pop on stop with multiple voices (likely core `poly-synth.ts`) |
+| ez-audio-01q (P1, epic) | TransportSequencer musical design review — audio makes no sense; children below |
+| ez-audio-20p (P0) | ↳ start/stop buggy: notes after stop, hanging bass notes |
+| ez-audio-s8v (P1) | ↳ funk/groove start screeches |
+| ez-audio-ttc (P1) | ↳ content depends on prior start/stop of other pattern (state leak) |
+| ez-audio-jui (P2) | ↳ grid overflows viewport |
+| ez-audio-7uq (P1) | Ambient sound not pleasing — research good synthesized ambient, redesign |
+| ez-audio-1c9 (P1) | SynthDrumKit bass drop too long — port ember-audio original settings |
+| ez-audio-5w9 (P1) | EffectsChain needs transient/dynamic source material |
+| ez-audio-8de (P1) | SoundfontPiano note-start click + smooth decay before ~4s end |
+| ez-audio-aub (P1) | XYPad small clicks/pops changing gain with note held |
+| ez-audio-7fk (P2) | GrainPlayer pad preset sounds like decaying piano, not a pad |
+
+Gate 2 stays OPEN until these are fixed and Seth re-listens. Phase 76 still
+blocked. Several are likely **core library** bugs (PolySynth envelopes,
+Transport stop scheduling, note-start clicks) — library-fidelity rule applies.
