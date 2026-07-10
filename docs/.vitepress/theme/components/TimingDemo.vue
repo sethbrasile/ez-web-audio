@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAudioContext, useCleanup } from '@ez-web-audio/vue'
+import { audioContextAwareTimeout, createOscillator, createSound } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 
 const error = ref('')
@@ -8,23 +10,17 @@ const timelineNotes = ref([false, false, false])
 const sequencePlaying = ref(false)
 const chordPlaying = ref(false)
 
-let lib: any = null
+const cleanup = useCleanup()
+const { getContext } = useAudioContext()
 let rafId: number | null = null
 let timeouts: number[] = []
 // clearTimeout from the audioContextAwareTimeout instance (set after first audio init)
 let acClearTimeout: ((id: number) => void) | null = null
 
-async function initIfNeeded() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-}
-
 async function playNow() {
   try {
     error.value = ''
-    await initIfNeeded()
-    const sound = await lib.createSound('/ez-web-audio/audio/click.mp3')
+    const sound = cleanup.register(await createSound('/ez-web-audio/audio/click.mp3'))
     sound.play()
   }
   catch (e) {
@@ -35,9 +31,8 @@ async function playNow() {
 async function playDelayed() {
   try {
     error.value = ''
-    await initIfNeeded()
-    const sound = await lib.createSound('/ez-web-audio/audio/click.mp3')
-    const ctx = await lib.getAudioContext()
+    const sound = cleanup.register(await createSound('/ez-web-audio/audio/click.mp3'))
+    const ctx = await getContext()
     const startTime = ctx.currentTime
     const targetTime = startTime + 1
 
@@ -68,20 +63,19 @@ async function playSequence() {
   try {
     error.value = ''
     sequencePlaying.value = true
-    await initIfNeeded()
-    const ctx = await lib.getAudioContext()
+    const ctx = await getContext()
     const now = ctx.currentTime
 
-    const s1 = await lib.createSound('/ez-web-audio/audio/click.mp3')
-    const s2 = await lib.createSound('/ez-web-audio/audio/Db5.mp3')
-    const s3 = await lib.createSound('/ez-web-audio/audio/Eb5.mp3')
+    const s1 = cleanup.register(await createSound('/ez-web-audio/audio/click.mp3'))
+    const s2 = cleanup.register(await createSound('/ez-web-audio/audio/Db5.mp3'))
+    const s3 = cleanup.register(await createSound('/ez-web-audio/audio/Eb5.mp3'))
 
     s1.playAt(now + 0.0)
     s2.playAt(now + 0.5)
     s3.playAt(now + 1.0)
 
     // Use audioContext-aware setTimeout to keep visual sync with audio clock
-    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = lib.audioContextAwareTimeout(ctx)
+    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = audioContextAwareTimeout(ctx)
     acClearTimeout = acClearTimeoutFn
 
     // Visual feedback synchronized to audio clock
@@ -113,14 +107,13 @@ async function playChord() {
   try {
     error.value = ''
     chordPlaying.value = true
-    await initIfNeeded()
-    const ctx = await lib.getAudioContext()
+    const ctx = await getContext()
     const now = ctx.currentTime
 
     // C major chord (C4, E4, G4)
-    const c = await lib.createOscillator({ frequency: 261.63, type: 'triangle' })
-    const e = await lib.createOscillator({ frequency: 329.63, type: 'triangle' })
-    const g = await lib.createOscillator({ frequency: 392.00, type: 'triangle' })
+    const c = cleanup.register(await createOscillator({ frequency: 261.63, type: 'triangle' }))
+    const e = cleanup.register(await createOscillator({ frequency: 329.63, type: 'triangle' }))
+    const g = cleanup.register(await createOscillator({ frequency: 392.00, type: 'triangle' }))
 
     const oscillators = [c, e, g]
     oscillators.forEach((osc) => {
@@ -129,7 +122,7 @@ async function playChord() {
     })
 
     // Use audioContext-aware setTimeout to keep visual sync with audio clock
-    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = lib.audioContextAwareTimeout(ctx)
+    const { setTimeout: acSetTimeout, clearTimeout: acClearTimeoutFn } = audioContextAwareTimeout(ctx)
     acClearTimeout = acClearTimeoutFn
 
     const t = acSetTimeout(() => {
