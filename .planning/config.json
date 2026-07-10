@@ -8,7 +8,9 @@
     "plan_check": true,
     "verifier": true,
     "auto_advance": true,
-    "_auto_chain_active": false
+    "_auto_chain_active": false,
+    "nyquist_validation": true,
+    "ai_integration_phase": true
   },
   "granularity": "standard"
 }
