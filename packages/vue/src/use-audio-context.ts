@@ -4,6 +4,7 @@ import { ref } from 'vue'
 export interface UseAudioContextReturn {
   ready: Ref<boolean>
   init: () => Promise<void>
+  getContext: () => Promise<AudioContext>
 }
 
 export function useAudioContext(): UseAudioContextReturn {
@@ -15,5 +16,10 @@ export function useAudioContext(): UseAudioContextReturn {
     ready.value = true
   }
 
-  return { ready, init }
+  async function getContext(): Promise<AudioContext> {
+    const { getAudioContext } = await import('ez-web-audio')
+    return getAudioContext()
+  }
+
+  return { ready, init, getContext }
 }

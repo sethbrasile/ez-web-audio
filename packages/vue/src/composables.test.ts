@@ -1,26 +1,38 @@
 import {
+  createAnalyzer,
   createBeatTrack,
+  createFont,
   createGrainPlayer,
+  createLayeredSound,
   createLFO,
   createOscillator,
   createPolySynth,
   createSampler,
+  createSequence,
   createSound,
+  createSprite,
   createTrack,
   createTransport,
+  createWhiteNoise,
 } from 'ez-web-audio'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import {
+  useAnalyzer,
   useBeatTrack,
+  useFont,
   useGrainPlayer,
+  useLayeredSound,
   useLFO,
   useOscillator,
   usePolySynth,
   useSampler,
+  useSequence,
   useSound,
+  useSprite,
   useTrack,
   useTransport,
+  useWhiteNoise,
 } from './composables'
 import { mount } from './test-utils'
 
@@ -34,6 +46,12 @@ vi.mock('ez-web-audio', () => ({
   createLFO: vi.fn(() => ({ id: 'lfo' })),
   createTransport: vi.fn(async () => ({ id: 'transport' })),
   createBeatTrack: vi.fn(async () => ({ id: 'beatTrack' })),
+  createWhiteNoise: vi.fn(async () => ({ id: 'whiteNoise' })),
+  createLayeredSound: vi.fn(async () => ({ id: 'layeredSound' })),
+  createSprite: vi.fn(async () => ({ id: 'sprite' })),
+  createFont: vi.fn(async () => ({ id: 'font' })),
+  createAnalyzer: vi.fn(async () => ({ id: 'analyzer' })),
+  createSequence: vi.fn(() => ({ id: 'sequence' })),
   initAudio: vi.fn(async () => {}),
 }))
 
@@ -142,5 +160,59 @@ describe('composables', () => {
     await result.load(inputs)
 
     expect(vi.mocked(createBeatTrack)).toHaveBeenCalledWith(inputs, { wrapWith: reactive })
+  })
+
+  it('useWhiteNoise calls createWhiteNoise with no args', async () => {
+    const { result } = mount(() => useWhiteNoise())
+
+    const created = await result.load()
+
+    expect(vi.mocked(createWhiteNoise)).toHaveBeenCalledWith()
+    expect(created).toEqual({ id: 'whiteNoise' })
+    expect(result.instance.value).toEqual({ id: 'whiteNoise' })
+  })
+
+  it('useLayeredSound forwards layers and opts verbatim', async () => {
+    const { result } = mount(() => useLayeredSound())
+    const layers = [{ id: 'layer1' }, { id: 'layer2' }] as any
+
+    await result.load(layers, { name: 'stack' } as any)
+
+    expect(vi.mocked(createLayeredSound)).toHaveBeenCalledWith(layers, { name: 'stack' })
+  })
+
+  it('useSprite forwards audioUrl and manifest verbatim', async () => {
+    const { result } = mount(() => useSprite())
+    const manifest = { spritemap: { laser: { start: 0, end: 0.3 } } } as any
+
+    await result.load('sounds.mp3', manifest)
+
+    expect(vi.mocked(createSprite)).toHaveBeenCalledWith('sounds.mp3', manifest)
+  })
+
+  it('useFont forwards url verbatim', async () => {
+    const { result } = mount(() => useFont())
+
+    await result.load('piano.js')
+
+    expect(vi.mocked(createFont)).toHaveBeenCalledWith('piano.js')
+  })
+
+  it('useAnalyzer forwards options verbatim', async () => {
+    const { result } = mount(() => useAnalyzer())
+
+    await result.load({ fftSize: 1024 })
+
+    expect(vi.mocked(createAnalyzer)).toHaveBeenCalledWith({ fftSize: 1024 })
+  })
+
+  it('useSequence wraps the synchronous core factory and still resolves via load()', async () => {
+    const { result } = mount(() => useSequence())
+    const transport = { id: 'transport' } as any
+
+    const created = await result.load(transport, { length: '1m' } as any)
+
+    expect(vi.mocked(createSequence)).toHaveBeenCalledWith(transport, { length: '1m' })
+    expect(created).toEqual({ id: 'sequence' })
   })
 })

@@ -6,6 +6,7 @@ export interface UseFactoryReturn<T, A extends unknown[]> {
   loading: Ref<boolean>
   error: Ref<Error | null>
   load: (...args: A) => Promise<T>
+  reset: () => void
 }
 
 export function createFactoryComposable<T, A extends unknown[]>(
@@ -40,6 +41,12 @@ export function createFactoryComposable<T, A extends unknown[]>(
       return pending
     }
 
-    return { instance, loading, error, load }
+    function reset(): void {
+      instance.value = null
+      error.value = null
+      pending = null
+    }
+
+    return { instance, loading, error, load, reset }
   }
 }

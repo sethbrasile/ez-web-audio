@@ -100,4 +100,45 @@ describe('createFactoryComposable', () => {
 
     expect(factory).not.toHaveBeenCalled()
   })
+
+  it('reset() nulls instance.value so a subsequent load() re-invokes the factory', async () => {
+    const factory = vi.fn(async (name: string) => ({ id: name }))
+    const useFactory = createFactoryComposable(factory)
+    const { result } = mount(() => useFactory())
+
+    const first = await result.load('a')
+    expect(result.instance.value).toEqual({ id: 'a' })
+
+    result.reset()
+
+    expect(result.instance.value).toBeNull()
+
+    const second = await result.load('b')
+
+    expect(factory).toHaveBeenCalledTimes(2)
+    expect(second).toEqual({ id: 'b' })
+    expect(second).not.toBe(first)
+    expect(result.instance.value).toEqual({ id: 'b' })
+  })
+
+  it('reset() during an in-flight load abandons it; a later load() re-invokes the factory', async () => {
+    const factory = vi.fn()
+      .mockImplementationOnce(() => new Promise<{ id: string }>(() => {
+        // never resolves — simulates an abandoned in-flight load
+      }))
+      .mockResolvedValueOnce({ id: 'second' })
+    const useFactory = createFactoryComposable(factory)
+    const { result } = mount(() => useFactory())
+
+    void result.load()
+
+    expect(factory).toHaveBeenCalledTimes(1)
+
+    result.reset()
+
+    const second = await result.load()
+
+    expect(factory).toHaveBeenCalledTimes(2)
+    expect(second).toEqual({ id: 'second' })
+  })
 })

@@ -1,13 +1,19 @@
 export {
+  useAnalyzer,
   useBeatTrack,
+  useFont,
   useGrainPlayer,
+  useLayeredSound,
   useLFO,
   useOscillator,
   usePolySynth,
   useSampler,
+  useSequence,
   useSound,
+  useSprite,
   useTrack,
   useTransport,
+  useWhiteNoise,
 } from './composables'
 export { createFactoryComposable } from './create-factory-composable'
 export type { UseFactoryReturn } from './create-factory-composable'
