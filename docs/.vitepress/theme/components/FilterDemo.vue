@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { FilterEffect, Oscillator, Sound } from 'ez-web-audio'
+import { useCleanup } from '@ez-web-audio/vue'
+import { createFilterEffect, createOscillator, createWhiteNoise } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 const initialized = ref(false)
@@ -14,7 +16,8 @@ const filterGain = ref(0)
 const bypassed = ref(false)
 const sourceType = ref<'oscillator' | 'noise'>('oscillator')
 
-let lib: any = null
+const cleanup = useCleanup()
+
 let source: Sound | Oscillator | null = null
 let filter: FilterEffect | null = null
 
@@ -44,26 +47,21 @@ async function playSound() {
   try {
     loading.value = true
     error.value = ''
-
-    // Dynamically import library
-    if (!lib) {
-      lib = await import('ez-web-audio')
-      initialized.value = true
-    }
+    initialized.value = true
 
     // Create source based on selected type
     if (sourceType.value === 'oscillator') {
-      source = await lib.createOscillator({ frequency: 200, type: 'sawtooth' })
+      source = cleanup.register(await createOscillator({ frequency: 200, type: 'sawtooth' }))
       source.update('gain').to(0.3).as('ratio')
     }
     else {
       // White noise
-      source = await lib.createWhiteNoise()
+      source = cleanup.register(await createWhiteNoise())
       source.changeGainTo(0.15)
     }
 
     // Create filter
-    filter = lib.createFilterEffect(filterType.value, {
+    filter = createFilterEffect(filterType.value, {
       frequency: frequency.value,
       q: q.value,
       gain: filterGain.value,
@@ -76,7 +74,7 @@ async function playSound() {
     source.play()
     playing.value = true
   }
-  catch (err: any) {
+  catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to play audio'
   }
   finally {
@@ -103,7 +101,7 @@ watch(filterType, async (newType) => {
     source.removeEffect(filter)
 
     // Create new filter with new type
-    filter = lib.createFilterEffect(newType, {
+    filter = createFilterEffect(newType, {
       frequency: frequency.value,
       q: q.value,
       gain: filterGain.value,
