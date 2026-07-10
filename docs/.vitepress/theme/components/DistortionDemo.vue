@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import type { EffectWrapper } from 'ez-web-audio'
+import { useAudioContext, useCleanup, useOscillator } from '@ez-web-audio/vue'
+import { wrapEffect } from 'ez-web-audio'
+import { ref } from 'vue'
 
 const error = ref('')
 const playing = ref(false)
@@ -8,15 +11,10 @@ const distortionAmount = ref(400)
 const wetDryMix = ref(0.7)
 const bypassed = ref(false)
 
-let lib: any = null
-let oscillator: any = null
-let effect: any = null
-
-async function initIfNeeded() {
-  if (!lib) {
-    lib = await import('ez-web-audio')
-  }
-}
+const cleanup = useCleanup()
+const { getContext } = useAudioContext()
+const { instance: oscillator, load: loadOsc, reset: resetOsc } = useOscillator()
+let effect: EffectWrapper | null = null
 
 function makeDistortionCurve(amount: number): Float32Array {
   const samples = 44100
@@ -35,25 +33,20 @@ async function togglePlayback() {
 
     if (playing.value) {
       // Stop
-      if (oscillator) {
-        oscillator.stop()
-        oscillator = null
-      }
-      if (effect) {
-        effect = null
-      }
+      oscillator.value?.stop()
+      resetOsc()
+      effect = null
       playing.value = false
       distortionEnabled.value = false
     }
     else {
       // Play
-      await initIfNeeded()
-      oscillator = await lib.createOscillator({
+      const osc = cleanup.register(await loadOsc({
         frequency: 200,
         type: 'sine',
-      })
-      oscillator.changeGainTo(0.3)
-      oscillator.play()
+      }))
+      osc.changeGainTo(0.3)
+      osc.play()
       playing.value = true
     }
   }
@@ -63,17 +56,17 @@ async function togglePlayback() {
 }
 
 async function toggleDistortion() {
-  if (!oscillator)
+  if (!oscillator.value)
     return
 
   try {
     error.value = ''
-    await initIfNeeded()
-    const ctx = await lib.getAudioContext()
+    const ctx = await getContext()
 
     if (distortionEnabled.value) {
       // Remove effect
-      oscillator.removeEffect(effect)
+      if (effect)
+        oscillator.value.removeEffect(effect)
       effect = null
       distortionEnabled.value = false
     }
@@ -83,9 +76,9 @@ async function toggleDistortion() {
       distNode.curve = makeDistortionCurve(distortionAmount.value)
       distNode.oversample = '4x'
 
-      effect = lib.wrapEffect(distNode)
+      effect = wrapEffect(distNode)
       effect.mix = wetDryMix.value
-      oscillator.addEffect(effect)
+      oscillator.value.addEffect(effect)
       distortionEnabled.value = true
     }
   }
@@ -95,7 +88,7 @@ async function toggleDistortion() {
 }
 
 function updateDistortionCurve() {
-  if (!effect || !lib)
+  if (!effect)
     return
 
   try {
@@ -125,15 +118,6 @@ function updateBypass() {
     return
   effect.bypass = bypassed.value
 }
-
-onUnmounted(() => {
-  if (oscillator) {
-    try { oscillator.stop() }
-    catch {}
-    oscillator = null
-  }
-  effect = null
-})
 </script>
 
 <template>
