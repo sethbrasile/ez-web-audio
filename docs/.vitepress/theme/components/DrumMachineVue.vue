@@ -68,6 +68,8 @@ async function init() {
       const def = trackDefs[i]
       const urls = def.samples.map(s => `/ez-web-audio/audio/drum-samples/${s}.wav`)
       const bt = cleanup.register(await beatTrackComposables[i].load(urls, { numBeats: NUM_BEATS }))
+      // Headroom so 3 simultaneous hits don't clip the master bus (phase 75).
+      bt.gain = 0.7
 
       // Transfer pattern from stubs to real beats
       track.beats.forEach((stub, j) => { bt.beats[j].active = stub.active })

@@ -64,6 +64,14 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 
 **Recommendation:** accept the hook (small, additive, backward-compatible; `initAudio` resets it). On approval I implement it (core + unit tests), then Tasks 2–4: demo master bus util + objective loudness E2E (peak ≤ 0.985 no-clip, ≥ 0.05 audible) + gain/preset tuning to the reference table — ending at **human gate 2 (listening checkpoint)**.
 
+## 2026-07-10 · 75 · Library friction: ADSR envelope attack ramps to absolute 1.0, ignoring changeGainTo
+
+**Found (via the loudness harness):** AmbientGenerator clipped the master bus at ~1.05 and would NOT respond to lowering its layer `changeGainTo` values. Root cause: `Envelope.applyTo` (`packages/core/src/envelope.ts:165`) schedules `linearRampToValueAtTime(1, attackTime)` — the attack always ramps the gain param to **absolute 1.0**, overriding any `changeGainTo` target. So any enveloped oscillator hits full scale during attack; three layered enveloped oscillators sum well past clipping regardless of their set gains.
+
+**Done (demo-level fix, phase 75):** replaced Ambient's drone/shimmer full-scale ADSR envelopes with manual `onPlayRamp('gain').from(0).to(<low target>).in(<secs>)` swells — preserves the slow ambient attack character but ramps to a controlled low level. Peak dropped 1.05 → 0.23. **This changes Ambient's sound slightly (linear swell vs ADSR shape, no release tail) — flagged for the gate-2 listening check.** Drum demos were fixed purely by lowering `Sampler.gain` (no envelope involved).
+
+**Library gap surfaced (pre-1.0 candidate, NOT fixed now):** the envelope peaking at absolute 1.0 makes ADSR unusable for any voice that must sit below full scale (layered pads, polyphony, anything summed). Options for later: scale the envelope peak by the instance's target gain (`_targetGain`), or add an envelope `peak`/`amount` option. Per library-fidelity rule — logging, not changing core mid-phase. Related: [[library-fidelity-rule]].
+
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).

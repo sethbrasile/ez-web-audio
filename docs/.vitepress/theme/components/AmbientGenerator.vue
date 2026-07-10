@@ -21,6 +21,13 @@ const droneFrequency = ref(80)
 const textureFilterCutoff = ref(800)
 const shimmerFrequency = ref(600)
 
+// Per-layer gain staging. Kept low so the three simultaneous layers sum
+// without clipping the demo master bus (phase 75 loudness target: peak ≤ 0.985;
+// the bus limiter is a safety net, not part of the sound).
+const DRONE_GAIN = 0.25
+const TEXTURE_GAIN = 0.08
+const SHIMMER_GAIN = 0.05
+
 // Sound instances
 const cleanup = useCleanup()
 const { instance: droneOscillator, load: loadDrone, reset: resetDrone } = useOscillator()
@@ -49,18 +56,15 @@ async function startAll() {
   loading.value = true
 
   try {
-    // Create drone layer - low-frequency sine wave with slow envelope
+    // Create drone layer - low-frequency sine wave. A manual gain ramp gives the
+    // slow ambient swell WITHOUT the ADSR envelope, whose attack ramps to full
+    // scale (1.0) regardless of changeGainTo and would clip when layers sum
+    // (phase 75). Ramping straight to the low target gain keeps headroom.
     const drone = cleanup.register(await loadDrone({
       frequency: droneFrequency.value,
       type: 'sine',
-      envelope: {
-        attack: 1.0,
-        decay: 0.5,
-        sustain: 0.8,
-        release: 2.0,
-      },
     }))
-    drone.changeGainTo(droneEnabled.value ? 0.4 : 0)
+    drone.onPlayRamp('gain').from(0).to(droneEnabled.value ? DRONE_GAIN : 0).in(1.5)
 
     // Create texture layer - white noise through lowpass filter
     const texture = cleanup.register(await loadTexture())
@@ -69,20 +73,15 @@ async function startAll() {
       q: 1.0,
     })
     texture.addEffect(textureFilter)
-    texture.changeGainTo(textureEnabled.value ? 0.15 : 0)
+    texture.changeGainTo(textureEnabled.value ? TEXTURE_GAIN : 0)
 
-    // Create shimmer layer - high-frequency triangle wave
+    // Create shimmer layer - high-frequency triangle wave. Manual swell ramp
+    // (not an ADSR envelope) for the same headroom reason as the drone.
     const shimmer = cleanup.register(await loadShimmer({
       frequency: shimmerFrequency.value,
       type: 'triangle',
-      envelope: {
-        attack: 1.5,
-        decay: 0.3,
-        sustain: 0.9,
-        release: 2.5,
-      },
     }))
-    shimmer.changeGainTo(shimmerEnabled.value ? 0.08 : 0)
+    shimmer.onPlayRamp('gain').from(0).to(shimmerEnabled.value ? SHIMMER_GAIN : 0).in(2.0)
 
     // Start all layers
     drone.play()
@@ -124,13 +123,13 @@ function updateMasterVolume() {
     return
 
   if (droneOscillator.value && droneEnabled.value) {
-    droneOscillator.value.changeGainTo(0.4 * masterVolume.value)
+    droneOscillator.value.changeGainTo(DRONE_GAIN * masterVolume.value)
   }
   if (textureNoise.value && textureEnabled.value) {
-    textureNoise.value.changeGainTo(0.15 * masterVolume.value)
+    textureNoise.value.changeGainTo(TEXTURE_GAIN * masterVolume.value)
   }
   if (shimmerOscillator.value && shimmerEnabled.value) {
-    shimmerOscillator.value.changeGainTo(0.08 * masterVolume.value)
+    shimmerOscillator.value.changeGainTo(SHIMMER_GAIN * masterVolume.value)
   }
 }
 
@@ -139,7 +138,7 @@ function toggleDrone() {
     return
 
   if (droneOscillator.value) {
-    droneOscillator.value.changeGainTo(droneEnabled.value ? 0.4 * masterVolume.value : 0)
+    droneOscillator.value.changeGainTo(droneEnabled.value ? DRONE_GAIN * masterVolume.value : 0)
   }
 }
 
@@ -148,7 +147,7 @@ function toggleTexture() {
     return
 
   if (textureNoise.value) {
-    textureNoise.value.changeGainTo(textureEnabled.value ? 0.15 * masterVolume.value : 0)
+    textureNoise.value.changeGainTo(textureEnabled.value ? TEXTURE_GAIN * masterVolume.value : 0)
   }
 }
 
@@ -157,7 +156,7 @@ function toggleShimmer() {
     return
 
   if (shimmerOscillator.value) {
-    shimmerOscillator.value.changeGainTo(shimmerEnabled.value ? 0.08 * masterVolume.value : 0)
+    shimmerOscillator.value.changeGainTo(shimmerEnabled.value ? SHIMMER_GAIN * masterVolume.value : 0)
   }
 }
 

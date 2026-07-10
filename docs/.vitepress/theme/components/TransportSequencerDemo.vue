@@ -335,14 +335,20 @@ async function ensureLoaded() {
   const kt = cleanup.register(await loadKick(kickUrls, { numBeats: 32 }))
   const st = cleanup.register(await loadSnare(snareUrls, { numBeats: 32 }))
   const ht = cleanup.register(await loadHihat(hihatUrls, { numBeats: 32 }))
+  // Headroom so drums + bass + piano don't clip the master bus (phase 75).
+  kt.gain = 0.7
+  st.gain = 0.7
+  ht.gain = 0.6
 
   // Sync to transport
   kt.syncTo(tp, { noteType: 1 / 16 })
   st.syncTo(tp, { noteType: 1 / 16 })
   ht.syncTo(tp, { noteType: 1 / 16 })
 
-  // Create bass oscillator (triangle wave — less harsh than sawtooth)
-  cleanup.register(await loadBassOsc({ frequency: 41.2, type: 'triangle' }))
+  // Create bass oscillator (triangle wave — less harsh than sawtooth).
+  // Filtered-ish low level so it sits under the piano (phase 75 reference table).
+  const bass = cleanup.register(await loadBassOsc({ frequency: 41.2, type: 'triangle' }))
+  bass.changeGainTo(0.5)
 
   // Create piano soundfont
   cleanup.register(await loadPianoFont('/ez-web-audio/audio/piano.js'))
