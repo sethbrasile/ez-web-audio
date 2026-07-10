@@ -105,7 +105,6 @@ Tests use Vitest with happy-dom environment and `standardized-audio-context-mock
 
 **No loading buttons**: Demo components must NOT have a separate "Load" or "Init" button that hides the example until clicked. The user's first interaction (e.g. clicking "Play") is what initializes the AudioContext and loads audio. Examples should render fully visible immediately and lazily initialize audio on first user interaction.
 
-
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 
