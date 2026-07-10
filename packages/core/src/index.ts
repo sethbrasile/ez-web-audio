@@ -29,7 +29,7 @@ import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Analyzer } from './analyzer'
-import { getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
+import { getMasterDestination as _getMasterDestination, setMasterDestination as _setMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
@@ -160,6 +160,54 @@ export async function initAudio(useIosMuteWorkaround = true): Promise<void> {
 export async function getAudioContext(): Promise<AudioContext> {
   await initAudio()
   return getOrCreateAudioContext()
+}
+
+/**
+ * Route all subsequently-created audio through a master destination node.
+ *
+ * By default every sound, oscillator, sampler, beat track, layered sound,
+ * grain player, poly synth, font, and sprite connects its final output to the
+ * hardware output (`audioContext.destination`). Call `setMasterDestination`
+ * with an `AudioNode` to insert a shared master stage in front of the hardware
+ * — a limiter, a peak meter, a master gain, or an offline-render target — so a
+ * whole mix routes through one place.
+ *
+ * Rules:
+ * - The `node` MUST belong to the shared library context ({@link getAudioContext}).
+ *   Web Audio nodes cannot connect across `AudioContext`s.
+ * - Only instances created AFTER this call pick up the destination. Move an
+ *   existing instance with `instance.setDestination(node)`.
+ * - Pass `null` to restore direct-to-hardware routing for future instances.
+ *
+ * @param node - The master destination node, or `null` to clear it
+ *
+ * @example
+ * ```typescript
+ * import { getAudioContext, setMasterDestination, createSound } from 'ez-web-audio'
+ *
+ * const ctx = await getAudioContext()
+ * const limiter = ctx.createDynamicsCompressor()
+ * limiter.connect(ctx.destination)
+ * setMasterDestination(limiter)      // everything created next runs through the limiter
+ *
+ * const sound = await createSound('hit.mp3')
+ * sound.play()                       // sound → ... → limiter → hardware
+ *
+ * setMasterDestination(null)         // later instances go straight to hardware again
+ * ```
+ */
+export function setMasterDestination(node: AudioNode | null): void {
+  _setMasterDestination(node)
+}
+
+/**
+ * Get the current global master destination set via {@link setMasterDestination},
+ * or `null` when audio routes directly to the hardware output.
+ *
+ * @returns The master destination node, or `null`
+ */
+export function getMasterDestination(): AudioNode | null {
+  return _getMasterDestination()
 }
 
 /**

@@ -1,6 +1,6 @@
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetAudioContext, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed } from './audio-context'
+import { _resetAudioContext, getMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, setMasterDestination } from './audio-context'
 
 describe('audio-context', () => {
   beforeEach(() => {
@@ -87,6 +87,33 @@ describe('audio-context', () => {
       expect(iosWorkaround.performed).toBe(false)
       markIosWorkaroundPerformed()
       expect(iosWorkaround.performed).toBe(true)
+    })
+  })
+
+  describe('master destination', () => {
+    it('defaults to null', () => {
+      expect(getMasterDestination()).toBeNull()
+    })
+
+    it('set/get round-trips a node', () => {
+      const ctx = getOrCreateAudioContext()
+      const node = ctx.createGain()
+      setMasterDestination(node as unknown as AudioNode)
+      expect(getMasterDestination()).toBe(node)
+    })
+
+    it('clears back to null', () => {
+      const ctx = getOrCreateAudioContext()
+      setMasterDestination(ctx.createGain() as unknown as AudioNode)
+      setMasterDestination(null)
+      expect(getMasterDestination()).toBeNull()
+    })
+
+    it('_resetAudioContext clears the master destination', () => {
+      const ctx = getOrCreateAudioContext()
+      setMasterDestination(ctx.createGain() as unknown as AudioNode)
+      _resetAudioContext()
+      expect(getMasterDestination()).toBeNull()
     })
   })
 })

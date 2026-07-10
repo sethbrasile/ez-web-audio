@@ -5,6 +5,7 @@ import type { EnvelopeOptions } from './envelope'
 import type { PolySynthEventMap } from './events/event-types'
 import type { OscillatorFilterOptions } from './oscillator'
 import { convertValue } from '@utils/convert-value'
+import { getMasterDestination } from './audio-context'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import { Oscillator } from './oscillator'
 
@@ -262,7 +263,8 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     this.sharedBusInput = audioContext.createGain()
     this.masterGain = audioContext.createGain()
     this.masterPan = audioContext.createStereoPanner()
-    this._destination = audioContext.destination
+    // Honor a global master bus if one is set; else the hardware destination.
+    this._destination = getMasterDestination() ?? audioContext.destination
 
     this.wireSharedBus()
   }

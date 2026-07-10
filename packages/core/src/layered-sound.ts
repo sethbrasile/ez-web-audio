@@ -2,6 +2,7 @@ import type { Effect } from './effects/index'
 import type { LayeredSoundEventMap } from './events/event-types'
 import type { Oscillator } from './oscillator'
 import type { Sound } from './sound'
+import { getMasterDestination } from './audio-context'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import audioContextAwareTimeout from './utils/timeout'
 
@@ -69,7 +70,8 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
 
     // Create shared output bus — all layers route through this
     this.outputBus = audioContext.createGain()
-    this._destination = audioContext.destination
+    // Honor a global master bus if one is set; else the hardware destination.
+    this._destination = getMasterDestination() ?? audioContext.destination
     this.wireOutputBus()
 
     // Route each layer through the shared bus instead of directly to destination

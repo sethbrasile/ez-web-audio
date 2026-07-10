@@ -12,6 +12,39 @@
 let _audioContext: AudioContext | null = null
 
 /**
+ * Optional global master destination. When set, every newly-created audio
+ * instance routes its final output here instead of `audioContext.destination`,
+ * enabling a shared master bus (limiter, metering, sub-mixing, offline render).
+ * `null` means "use the real hardware destination". @internal
+ */
+let _masterDestination: AudioNode | null = null
+
+/**
+ * Get the current global master destination, or `null` if none is set.
+ *
+ * Instance constructors call this to decide their default output node. It is
+ * exported publicly via the package index as {@link getMasterDestination}.
+ * @internal
+ */
+export function getMasterDestination(): AudioNode | null {
+  return _masterDestination
+}
+
+/**
+ * Set (or clear) the global master destination that new instances route through.
+ *
+ * The node MUST belong to the shared library AudioContext (the one returned by
+ * `getAudioContext()`), since Web Audio nodes cannot connect across contexts.
+ * Pass `null` to restore routing to the hardware destination. Only instances
+ * created AFTER this call pick up the new destination; existing instances keep
+ * their current routing (use `instance.setDestination(node)` to move those).
+ * @internal
+ */
+export function setMasterDestination(node: AudioNode | null): void {
+  _masterDestination = node
+}
+
+/**
  * Get the shared AudioContext instance, creating it lazily if needed.
  *
  * The library uses a single AudioContext for all audio operations. This function
@@ -90,5 +123,6 @@ export function markIosWorkaroundPerformed(): void {
  */
 export function _resetAudioContext(): void {
   _audioContext = null
+  _masterDestination = null
   iosWorkaround.performed = false
 }

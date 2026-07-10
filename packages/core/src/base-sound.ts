@@ -7,6 +7,7 @@ import type { Effect } from './effects'
 import type { BaseSoundEventMap } from './events/event-types'
 import { convertValue } from '@utils/convert-value'
 import audioContextAwareTimeout from '@utils/timeout'
+import { getMasterDestination } from './audio-context'
 import { debugConnection, debugEvent } from './debug'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
@@ -223,7 +224,8 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
 
     // Initialize effect chain infrastructure
     this.effectChainInput = audioContext.createGain()
-    this._destination = audioContext.destination
+    // Honor a global master bus if one is set; else the hardware destination.
+    this._destination = getMasterDestination() ?? audioContext.destination
 
     // Wire up the initial effect chain (no effects yet)
     this.wireEffectChain()

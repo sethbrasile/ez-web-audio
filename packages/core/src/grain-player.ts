@@ -4,6 +4,7 @@ import type { Effect } from './effects'
 import type { GrainPlayerEventMap } from './events/event-types'
 import { convertValue } from '@utils/convert-value'
 import { WorkerTimer } from '@utils/worker-timer'
+import { getMasterDestination } from './audio-context'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
 /**
@@ -110,7 +111,8 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this.sharedBusInput = audioContext.createGain()
     this.masterGain = audioContext.createGain()
     this.masterPan = audioContext.createStereoPanner()
-    this._destination = audioContext.destination
+    // Honor a global master bus if one is set; else the hardware destination.
+    this._destination = getMasterDestination() ?? audioContext.destination
 
     // Apply initial gain/pan
     if (options?.gain !== undefined) {
