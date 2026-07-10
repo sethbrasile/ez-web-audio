@@ -539,4 +539,113 @@ describe('polySynth', () => {
       expect(synth.activeVoices).toBe(2)
     })
   })
+
+  // ─── Voice Independence (gate-2 ez-audio-5b2) ─────────────────
+  // Each voice's ADSR must be independent: releasing one voice must not
+  // affect siblings, and a reused voice's stale source node must never
+  // kill the note that replaced it.
+
+  describe('voice independence', () => {
+    const envelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 }
+
+    function createTrackedSynth(options: ConstructorParameters<typeof PolySynth>[1] = {}) {
+      const oscillators: Oscillator[] = []
+      const synth = new PolySynth(audioContext, {
+        ...options,
+        createVoice: (ctx: AudioContext) => {
+          const osc = new Oscillator(ctx, { envelope })
+          oscillators.push(osc)
+          return osc
+        },
+      })
+      return { synth, oscillators }
+    }
+
+    it('releasing one voice does not stop a sibling voice when its release tail ends', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 4 })
+      const h1 = synth.play({ frequency: 440 })
+      synth.play({ frequency: 550 })
+      await Promise.resolve() // flush async play()
+
+      expect(synth.activeVoices).toBe(2)
+      await h1.stop()
+
+      // Simulate voice 1's release tail finishing (node onended fires)
+      oscillators[0].audioSourceNode.onended?.({} as Event)
+
+      // Voice 2 must be untouched
+      expect(oscillators[1].isPlaying).toBe(true)
+      expect(synth.activeVoices).toBe(1)
+    })
+
+    it('a reused voice is not killed when the previous note\'s scheduled stop lands', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 1 })
+      const h1 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+      const oldNode = oscillators[0].audioSourceNode
+
+      await h1.stop() // release scheduled; node stops at now + release
+
+      // New note reuses the same pooled voice before the tail finished
+      const h2 = synth.play({ frequency: 550 })
+      await Promise.resolve()
+
+      // Old node's delayed onended must not be able to kill the new note:
+      // it must have been neutralized when the voice was reused
+      expect(oldNode.onended).toBeNull()
+      expect(oldNode).not.toBe(oscillators[0].audioSourceNode)
+
+      expect(h2.active).toBe(true)
+      expect(oscillators[0].isPlaying).toBe(true)
+      expect(synth.activeVoices).toBe(1)
+    })
+
+    it('handle.stop() keeps the voice in released state until its tail ends', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 2 })
+      const h1 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+      await h1.stop()
+
+      // Tail still sounding: playing a new note must NOT reuse the releasing
+      // voice while a fresh pool slot exists (release must ring out)
+      synth.play({ frequency: 550 })
+      await Promise.resolve()
+      expect(oscillators.length).toBe(2)
+
+      // Tail finishes -> voice becomes available again
+      oscillators[0].audioSourceNode.onended?.({} as Event)
+      synth.play({ frequency: 660 })
+      await Promise.resolve()
+      // Reused the now-available first voice instead of stealing
+      expect(oscillators.length).toBe(2)
+      expect(synth.activeVoices).toBe(2)
+    })
+
+    it('stealing a released (ringing-out) voice does not emit voicestolen', async () => {
+      const { synth } = createTrackedSynth({ maxVoices: 1 })
+      const handler = vi.fn()
+      synth.on('voicestolen', handler)
+
+      const h1 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+      await h1.stop()
+
+      // Pool full of released voices — reusing one is not an audible steal
+      const h2 = synth.play({ frequency: 550 })
+      expect(h2.active).toBe(true)
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('same-frequency retrigger keeps voice active and activeVoices correct', async () => {
+      const { synth } = createTrackedSynth({ maxVoices: 4 })
+      synth.play({ frequency: 440 })
+      await Promise.resolve() // flush so _isPlaying is true (running-context behavior)
+
+      const h2 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+
+      expect(h2.active).toBe(true)
+      expect(synth.activeVoices).toBe(1)
+    })
+  })
 })

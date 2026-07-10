@@ -102,14 +102,23 @@ export class Track extends Sound<TrackEventMap> {
    * @protected
    */
   protected override _onPlaybackStarted(): void {
-    this.audioSourceNode.onended = () => {
+    // Bind the node locally: source nodes are single-use, so a node replaced
+    // by a later play()/seek may still fire ended afterwards — it must clean
+    // up only itself, never the current source node.
+    const sourceNode = this.audioSourceNode
+    sourceNode.onended = () => {
       // Cleanup: disconnect nodes to free memory
       try {
-        this.audioSourceNode.disconnect()
-        this.audioSourceNode.onended = null
+        sourceNode.disconnect()
+        sourceNode.onended = null
       }
       catch {
         // Already disconnected
+      }
+
+      // Stale node (superseded by a later play()) — ignore its ended event.
+      if (sourceNode !== this.audioSourceNode) {
+        return
       }
 
       // Only handle natural completion — stop() sets _isPlaying=false BEFORE the node stops,

@@ -150,13 +150,22 @@ export class VoiceHandle {
 
   /**
    * Stop this voice. The handle becomes stale after stopping.
+   *
+   * With an ADSR envelope, the voice enters its release phase and keeps
+   * ringing until the tail completes — the pool reclaims it only then.
    */
   async stop(): Promise<void> {
     if (!this._active)
       return
     this._active = false
-    this.onStop()
-    await this.oscillator.stop()
+    try {
+      // The oscillator's 'stop' event drives the active -> released pool
+      // transition; its 'end' event (release tail finished) frees the voice.
+      await this.oscillator.stop()
+    }
+    finally {
+      this.onStop()
+    }
   }
 
   /** @internal */
@@ -389,26 +398,31 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     const victim = this.findVoiceToSteal()
     if (victim) {
       const stolenFreq = victim.frequency
+      const victimWasActive = victim.state === 'active'
       // Invalidate old handle
       victim.handle?._invalidate()
       // Clean up old listeners before stealing
       this.cleanupVoiceListeners(victim)
       // Stop the old voice (anti-click via stopAt)
       victim.oscillator.stopAt(now)
-      if (victim.state === 'active') {
+      if (victimWasActive) {
         this._activeCount--
       }
       victim.state = 'available'
 
       const handle = this.activateVoice(victim, frequency, voiceGain, now)
 
-      // Emit voicestolen event
-      this.emit('voicestolen', {
-        stolenFrequency: stolenFreq,
-        newFrequency: frequency,
-        time: now,
-        source: this,
-      })
+      // Emit voicestolen only when an actively-held note was cut. Reclaiming
+      // a released voice (ringing tail) is normal pool recycling, not a steal
+      // the player needs to hear about.
+      if (victimWasActive) {
+        this.emit('voicestolen', {
+          stolenFrequency: stolenFreq,
+          newFrequency: frequency,
+          time: now,
+          source: this,
+        })
+      }
 
       return handle
     }
@@ -516,19 +530,28 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     this.setupVoiceListeners(entry)
 
     // Create handle
-    const handle = new VoiceHandle(entry.oscillator, () => {
+    entry.handle = this.createHandle(entry)
+    return entry.handle
+  }
+
+  /**
+   * Build a VoiceHandle for an entry. State transitions are driven by the
+   * oscillator's 'stop' (active -> released) and 'end' (released -> available)
+   * events so a released voice keeps ringing its ADSR tail until it truly
+   * finishes. The handle callback only clears the handle reference, plus a
+   * fallback transition for oscillators whose 'stop' event never fired
+   * (e.g. stop() called before playback actually began).
+   * @internal
+   */
+  private createHandle(entry: VoiceEntry): VoiceHandle {
+    return new VoiceHandle(entry.oscillator, () => {
+      entry.handle = null
       if (entry.state === 'active') {
         this._activeCount--
+        entry.releasedAt = this.audioContext.currentTime
+        entry.state = 'released'
       }
-      entry.releasedAt = this.audioContext.currentTime
-      entry.state = 'available'
-      entry.handle = null
-      // Clean up listeners since handle.stop() bypasses the oscillator event flow
-      this.cleanupVoiceListeners(entry)
     })
-    entry.handle = handle
-
-    return handle
   }
 
   private retriggerVoice(
@@ -540,10 +563,16 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     // Invalidate old handle
     entry.handle?._invalidate()
 
+    // Remove lifecycle listeners BEFORE stopping: the voice stays active
+    // through a retrigger, so the old 'stop' listener must not fire and
+    // demote it to released (which also corrupted activeVoices).
+    this.cleanupVoiceListeners(entry)
+
     // Stop and replay (Oscillator.play() -> setup() handles envelope retrigger)
     entry.oscillator.stopAt(now)
     entry.startedAt = now
     entry.frequency = frequency
+    entry.state = 'active'
 
     if (voiceGain !== undefined) {
       entry.oscillator.changeGainTo(voiceGain)
@@ -553,21 +582,11 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     entry.oscillator.setDestination(this.sharedBusInput)
     void entry.oscillator.play()
 
-    // Set up voice lifecycle listeners (handles cleanup of old listeners)
+    // Set up fresh voice lifecycle listeners
     this.setupVoiceListeners(entry)
 
-    const handle = new VoiceHandle(entry.oscillator, () => {
-      if (entry.state === 'active') {
-        this._activeCount--
-      }
-      entry.releasedAt = this.audioContext.currentTime
-      entry.state = 'available'
-      entry.handle = null
-      this.cleanupVoiceListeners(entry)
-    })
-    entry.handle = handle
-
-    return handle
+    entry.handle = this.createHandle(entry)
+    return entry.handle
   }
 
   private findVoiceToSteal(): VoiceEntry | null {

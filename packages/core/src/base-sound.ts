@@ -951,14 +951,24 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
     // Merges disconnect cleanup (previously in Sound.setup()) with end event emission.
     // This handler is the single owner of onended — Track._onPlaybackStarted() will
     // override it with its own version that also emits 'end' (H-2 fix in Task 2).
-    this.audioSourceNode.onended = () => {
+    // The handler binds ITS node locally: source nodes are single-use, so a node
+    // replaced by a later play() may still fire ended afterwards — it must clean up
+    // only itself, never the current source node.
+    const sourceNode = this.audioSourceNode
+    sourceNode.onended = () => {
       // Cleanup: disconnect nodes to free memory (merged from Sound.setup())
       try {
-        this.audioSourceNode.disconnect()
-        this.audioSourceNode.onended = null
+        sourceNode.disconnect()
+        sourceNode.onended = null
       }
       catch {
         // Already disconnected
+      }
+
+      // Stale node (superseded by a later play()) — its ended event must not
+      // touch the current playback state.
+      if (sourceNode !== this.audioSourceNode) {
+        return
       }
 
       // Only emit 'end' if still playing (natural completion)

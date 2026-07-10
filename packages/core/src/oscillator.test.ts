@@ -1,6 +1,6 @@
 import frequencyMap from '@utils/frequency-map'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
 import { InvalidNoteError } from './errors'
 
@@ -598,5 +598,76 @@ describe('wireConnections with filters', () => {
   it('durationRaw returns Infinity (PERF-02)', () => {
     const osc = new Oscillator(audioContext, { frequency: 440 })
     expect(osc.durationRaw).toBe(Infinity)
+  })
+})
+
+// gate-2 ez-audio-5b2: replaying an Oscillator must fully neutralize the
+// previous (single-use) source node — otherwise its delayed scheduled stop
+// and onended handler leak into the new note's lifetime.
+describe('replay neutralizes previous source node', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('play() after an envelope release stops and detaches the old node', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 },
+    })
+    await osc.play()
+    const oldNode = osc.audioSourceNode
+
+    await osc.stop() // schedules oldNode.stop(now + release)
+    await osc.play() // reuse before the tail finished
+
+    expect(osc.audioSourceNode).not.toBe(oldNode)
+    expect(oldNode.onended).toBeNull()
+    expect(osc.isPlaying).toBe(true)
+  })
+
+  it('a stale onended from the previous node cannot kill current playback', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    const oldNode = osc.audioSourceNode
+    const staleHandler = oldNode.onended
+
+    await osc.play() // replaces source node without stop()
+    const currentNode = osc.audioSourceNode
+    expect(currentNode).not.toBe(oldNode)
+
+    // Simulate the old node's delayed ended event with the captured handler
+    staleHandler?.call(oldNode, {} as Event)
+
+    expect(osc.isPlaying).toBe(true)
+  })
+
+  it('stop() with envelope emits end when the release tail actually finishes', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 },
+    })
+    const endHandler = vi.fn()
+    osc.on('end', endHandler)
+
+    await osc.play()
+    await osc.stop()
+    expect(endHandler).not.toHaveBeenCalled() // tail still ringing
+
+    osc.audioSourceNode.onended?.({} as Event)
+    expect(endHandler).toHaveBeenCalledOnce()
+  })
+
+  it('stop() without envelope emits end when the anti-click fade finishes', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    const endHandler = vi.fn()
+    osc.on('end', endHandler)
+
+    await osc.play()
+    await osc.stop()
+
+    osc.audioSourceNode.onended?.({} as Event)
+    expect(endHandler).toHaveBeenCalledOnce()
   })
 })

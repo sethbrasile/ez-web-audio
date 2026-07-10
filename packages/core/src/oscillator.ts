@@ -285,6 +285,28 @@ export class Oscillator extends BaseSound {
    * @protected
    */
   protected setup(): void {
+    // Neutralize the previous source node before replacing it. A prior stop()
+    // may have scheduled a delayed node.stop() (envelope release / anti-click
+    // fade) that hasn't landed yet — without this, the old node keeps sounding
+    // through the shared gain node (riding the new note's envelope) and then
+    // hard-stops at nonzero amplitude (audible pop).
+    const oldNode = this.audioSourceNode
+    if (oldNode) {
+      oldNode.onended = null
+      try {
+        oldNode.stop()
+      }
+      catch {
+        // Never started (constructor placeholder) — nothing to stop
+      }
+      try {
+        oldNode.disconnect()
+      }
+      catch {
+        // Already disconnected
+      }
+    }
+
     // Create a new oscillator on every play (OscillatorNode is single-use per Web Audio spec)
     const oscillator = this.audioContext.createOscillator()
     oscillator.type = this.type || 'sine'
@@ -441,10 +463,44 @@ export class Oscillator extends BaseSound {
 
     // Stop the oscillator node after the fade completes
     this.audioSourceNode.stop(fadeEnd)
+    this.emitEndWhenNodeEnds(this.audioSourceNode)
 
     // Mark as stopped immediately — the fade is an implementation detail
     this._isPlaying = false
     this.emit('stop', { time: now, source: this })
+  }
+
+  /**
+   * Emit 'end' when the given source node actually finishes rendering
+   * (after a scheduled stop — envelope release tail or anti-click fade).
+   *
+   * Oscillators never end naturally, so the base playAt() handler's
+   * `_isPlaying` guard means 'end' would otherwise never fire for them.
+   * Consumers (e.g. PolySynth voice pooling) rely on 'end' to know a
+   * voice's tail has fully rung out.
+   *
+   * The handler is bound to ITS node: if a later play() supersedes this
+   * node, the stale ended event cleans up only itself and emits nothing.
+   * @private
+   */
+  private emitEndWhenNodeEnds(node: OscillatorNode): void {
+    node.onended = () => {
+      try {
+        node.disconnect()
+      }
+      catch {
+        // Already disconnected
+      }
+      node.onended = null
+      if (node !== this.audioSourceNode) {
+        return
+      }
+      this.emit('end', {
+        time: this.audioContext.currentTime,
+        source: this,
+        duration: this.durationRaw,
+      })
+    }
   }
 
   public async stop(): Promise<void> {
@@ -461,6 +517,7 @@ export class Oscillator extends BaseSound {
       // the zero-gain state has been rendered before the node is killed.
       const padding = release < 0.001 ? 0 : 0.01
       this.audioSourceNode.stop(now + release + padding)
+      this.emitEndWhenNodeEnds(this.audioSourceNode)
 
       this._isPlaying = false
       this.emit('stop', { time: now, source: this })
