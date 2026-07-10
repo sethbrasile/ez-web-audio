@@ -51,6 +51,10 @@ Run `pnpm dev`, ~15 min, all demos. Objective clipping is handled (peaks above).
 - **Ambient**: linear `onPlayRamp` swell replaced the ADSR — does the pad still swell/feel right (no release tail now)?
 - **Drum levels** (DrumMachine/Vue/TransportSequencer) at 0.6–0.7 gain — still punchy, not thin?
 - **TransportSequencer bass** lowpass @600 Hz — sits under piano as intended?
+  (Post-hoc review note: a 41.2 Hz triangle's harmonics roll off at 1/n², so its
+  content above 600 Hz is already <−45 dB — the filter is close to an audible
+  no-op. If the bass still fights the piano, the lever is its gain (0.5), not
+  the filter.)
 - General: consistent loudness across demos; presets hit their musical targets (LFO vibrato/tremolo/wah, GrainPlayer freeze/choppy, EffectsChain first-impression).
 
 Seth's findings become fix tasks appended here before Phase 76 unblocks.
