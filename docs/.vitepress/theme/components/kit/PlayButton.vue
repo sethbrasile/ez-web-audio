@@ -23,7 +23,7 @@ defineEmits<{
 <template>
   <button
     type="button"
-    class="ewa-play-btn"
+    class="ewa-play-btn play-btn"
     :class="{ 'ewa-play-btn--playing': playing, 'ewa-play-btn--loading': loading }"
     :disabled="disabled || loading"
     :aria-pressed="playing"
