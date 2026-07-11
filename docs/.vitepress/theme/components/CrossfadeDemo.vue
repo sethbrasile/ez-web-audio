@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCleanup, useTrack } from '@ez-web-audio/vue'
+import { useCleanup, useEnsureLoaded, useTrack } from '@ez-web-audio/vue'
 import { crossfade } from 'ez-web-audio'
 import { computed, onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
@@ -7,9 +7,6 @@ import ParameterSlider from './kit/ParameterSlider.vue'
 import PlayButton from './kit/PlayButton.vue'
 import TriggerPad from './kit/TriggerPad.vue'
 
-const loading = ref(false)
-const loaded = ref(false)
-const error = ref('')
 const activeTrack = ref<'A' | 'B' | null>(null)
 const isCrossfading = ref(false)
 const fadeDuration = ref(2)
@@ -59,47 +56,27 @@ function onFadeDurationInput(v: number) {
   fadeDuration.value = v
 }
 
-async function ensureLoaded() {
-  if (loaded.value)
-    return true
-  if (loading.value)
-    return false
+const { loading, error, ensureLoaded } = useEnsureLoaded(async () => {
+  const [a, b] = await Promise.all([
+    loadTrackA('/ez-web-audio/audio/short-music.mp3'),
+    loadTrackB('/ez-web-audio/audio/short-music.mp3'),
+  ])
 
-  try {
-    loading.value = true
-    error.value = ''
+  cleanup.register(a)
+  cleanup.register(b)
 
-    const [a, b] = await Promise.all([
-      loadTrackA('/ez-web-audio/audio/short-music.mp3'),
-      loadTrackB('/ez-web-audio/audio/short-music.mp3'),
-    ])
+  a.on('stop', () => {
+    if (activeTrack.value === 'A' && !isCrossfading.value) {
+      activeTrack.value = null
+    }
+  })
 
-    cleanup.register(a)
-    cleanup.register(b)
-
-    a.on('stop', () => {
-      if (activeTrack.value === 'A' && !isCrossfading.value) {
-        activeTrack.value = null
-      }
-    })
-
-    b.on('stop', () => {
-      if (activeTrack.value === 'B' && !isCrossfading.value) {
-        activeTrack.value = null
-      }
-    })
-
-    loaded.value = true
-    return true
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load tracks'
-    return false
-  }
-  finally {
-    loading.value = false
-  }
-}
+  b.on('stop', () => {
+    if (activeTrack.value === 'B' && !isCrossfading.value) {
+      activeTrack.value = null
+    }
+  })
+}, 'Failed to load tracks')
 
 function updatePositions() {
   if (trackA.value?.isPlaying) {

@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { useCleanup, useSound, useSprite } from '@ez-web-audio/vue'
+import { useCleanup, useEnsureLoaded, useSound, useSprite } from '@ez-web-audio/vue'
 import { computed, onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
 import PlayButton from './kit/PlayButton.vue'
 import TriggerPad from './kit/TriggerPad.vue'
 
-const loading = ref(false)
-const loaded = ref(false)
-const error = ref('')
 const playing = ref<string | null>(null)
 const playingFull = ref(false)
 
@@ -47,6 +44,11 @@ const manifest = {
 
 const manifestJson = JSON.stringify(manifest, null, 2)
 
+const { loading, error, ensureLoaded } = useEnsureLoaded(async () => {
+  cleanup.register(await loadSprite('/ez-web-audio/audio/sfx-sprite.mp3', manifest))
+  cleanup.register(await loadFull('/ez-web-audio/audio/sfx-sprite.mp3'))
+}, 'Failed to load audio sprite')
+
 const statusText = computed(() => {
   if (loading.value)
     return 'Loading sounds...'
@@ -58,31 +60,6 @@ const statusText = computed(() => {
   }
   return 'Ready'
 })
-
-async function ensureLoaded() {
-  if (loaded.value)
-    return true
-  if (loading.value)
-    return false
-
-  try {
-    loading.value = true
-    error.value = ''
-
-    cleanup.register(await loadSprite('/ez-web-audio/audio/sfx-sprite.mp3', manifest))
-    cleanup.register(await loadFull('/ez-web-audio/audio/sfx-sprite.mp3'))
-
-    loaded.value = true
-    return true
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load audio sprite'
-    return false
-  }
-  finally {
-    loading.value = false
-  }
-}
 
 async function playSegment(name: string) {
   if (!(await ensureLoaded()))

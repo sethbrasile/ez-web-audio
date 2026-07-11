@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LayeredSound, Oscillator, Sound } from 'ez-web-audio'
+import { useCleanup } from '@ez-web-audio/vue'
 import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
@@ -10,6 +11,13 @@ const initialized = ref(false)
 const loading = ref(false)
 const error = ref('')
 const lastPlayed = ref('')
+
+// Escape hatch (composables.ts:39-43): one fresh voice per pad hit — too
+// many concurrent/ephemeral instances for a single-instance factory
+// composable. Every voice (and its LayeredSound composites) is registered
+// with useCleanup() so it still gets stop()+dispose()'d at unmount, even
+// though it's tracked here via a plain array rather than the composable.
+const cleanup = useCleanup()
 
 let activeOscillators: Array<Oscillator | Sound | LayeredSound> = []
 
@@ -39,10 +47,10 @@ async function playKick() {
     await initIfNeeded()
     flashPad('kick')
 
-    const osc = await createOscillator({
+    const osc = cleanup.register(await createOscillator({
       frequency: 150,
       type: 'triangle',
-    })
+    }))
 
     // Frequency sweep: 150Hz down to near 0
     osc.onPlayRamp('frequency').from(150).to(0.01).in(0.1)
@@ -69,10 +77,10 @@ async function playKick() {
 }
 
 async function createSnareMeat() {
-  const osc = await createOscillator({
+  const osc = cleanup.register(await createOscillator({
     frequency: 100,
     type: 'sine',
-  })
+  }))
 
   osc.onPlayRamp('frequency').from(100).to(60).in(0.1)
   osc.onPlayRamp('gain').from(1).to(0.01).in(0.1)
@@ -80,7 +88,7 @@ async function createSnareMeat() {
 }
 
 async function createSnareCrack() {
-  const noise = await createWhiteNoise()
+  const noise = cleanup.register(await createWhiteNoise())
 
   // Apply highpass filter for the "crack"
   const highpass = createFilterEffect('highpass', {
@@ -128,7 +136,7 @@ async function playSnare() {
     // Use LayeredSound to synchronize both layers to the same AudioContext timestamp
     const meat = await createSnareMeat()
     const crack = await createSnareCrack()
-    const snare = await createLayeredSound([meat, crack])
+    const snare = cleanup.register(await createLayeredSound([meat, crack]))
     activeOscillators.push(snare)
     snare.playFor(0.1)
 
@@ -157,10 +165,10 @@ async function playHiHat() {
 
     const oscillators = await Promise.all(
       ratios.map(async (ratio) => {
-        const osc = await createOscillator({
+        const osc = cleanup.register(await createOscillator({
           frequency: fundamentalFreq * ratio,
           type: 'square',
-        })
+        }))
 
         // Highpass + bandpass filters for metallic character
         const highpass = createFilterEffect('highpass', {
@@ -183,7 +191,7 @@ async function playHiHat() {
     )
 
     // Use LayeredSound for synchronized playback
-    const hihat = await createLayeredSound(oscillators)
+    const hihat = cleanup.register(await createLayeredSound(oscillators))
     activeOscillators.push(hihat)
     hihat.playFor(0.1)
 
@@ -204,10 +212,10 @@ async function playBassDrop() {
     error.value = ''
     await initIfNeeded()
 
-    const osc = await createOscillator({
+    const osc = cleanup.register(await createOscillator({
       frequency: 100,
       type: 'sine',
-    })
+    }))
 
     // Linear frequency sweep (steady pitch drop) and exponential gain decay.
     // The original ember-audio demo ran this drop for 10s — verified against

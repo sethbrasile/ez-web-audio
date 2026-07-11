@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Oscillator } from 'ez-web-audio'
 import type { TransportPreset, VoiceSpec } from './transport-sequencer-presets'
-import { useAudioContext, useBeatTrack, useCleanup, useSequence, useTransport } from '@ez-web-audio/vue'
+import { useAudioContext, useBeatTrack, useCleanup, useEnsureLoaded, useSequence, useTransport } from '@ez-web-audio/vue'
 import { createOscillator } from 'ez-web-audio'
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
@@ -48,7 +48,6 @@ const bpm = ref(TRANSPORT_PRESETS[0].bpm)
 const swing = ref(TRANSPORT_PRESETS[0].swing * 100)
 const currentStep = ref(-1)
 const positionDisplay = ref('1:1')
-const error = ref('')
 const activePresetName = ref(TRANSPORT_PRESETS[0].name)
 const trackState = ref({
   kick: { muted: false, soloed: false },
@@ -319,10 +318,7 @@ async function applyPreset(preset: TransportPreset) {
 }
 
 // Lazy-load all audio resources on first play
-async function ensureLoaded() {
-  if (transport.value)
-    return
-
+const { error, ensureLoaded } = useEnsureLoaded(async () => {
   const tp = cleanup.register(await loadTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 12 }))
   tp.loop = true
   tp.loopEnd = '2m'
@@ -379,7 +375,7 @@ async function ensureLoaded() {
     currentStep.value = step % 32
     positionDisplay.value = `${bar}:${beat}`
   })
-}
+}, 'Audio error')
 
 // BPM watch — update transport bpm immediately during playback
 watch(bpm, (v) => {
@@ -397,7 +393,8 @@ watch(swing, (v) => {
 async function play() {
   try {
     error.value = ''
-    await ensureLoaded()
+    if (!(await ensureLoaded()))
+      return
     transport.value?.start()
     playing.value = true
     paused.value = false

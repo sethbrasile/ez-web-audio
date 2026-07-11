@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import type { Sound } from 'ez-web-audio'
-import { useCleanup, useLayeredSound } from '@ez-web-audio/vue'
+import { useCleanup, useEnsureLoaded, useLayeredSound } from '@ez-web-audio/vue'
 import { createSound } from 'ez-web-audio'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
 import ParameterSlider from './kit/ParameterSlider.vue'
 import PlayButton from './kit/PlayButton.vue'
 import TriggerPad from './kit/TriggerPad.vue'
 
-const loading = ref(false)
-const loaded = ref(false)
-const error = ref('')
 const isPlaying = ref(false)
 
 const masterGain = ref(0.8)
@@ -29,6 +26,21 @@ const cleanup = useCleanup()
 const { instance: layered, load: loadLayered } = useLayeredSound()
 let sounds: Sound[] = []
 
+// UI-reset timeouts, captured so onUnmounted can clear them (they only
+// touch reactive refs, but a fired one after unmount is still wasted work).
+let allPlayingTimeout: ReturnType<typeof setTimeout> | null = null
+const layerPlayingTimeouts: Array<ReturnType<typeof setTimeout> | null> = [null, null, null]
+
+const { loading, error, ensureLoaded } = useEnsureLoaded(async () => {
+  // Load each sound individually
+  sounds = (await Promise.all(
+    layerUrls.map(url => createSound(url)),
+  )).map(s => cleanup.register(s))
+
+  // Create layered sound from all three
+  cleanup.register(await loadLayered(sounds))
+}, 'Failed to load sounds')
+
 const statusText = computed(() => {
   if (loading.value)
     return 'Loading sounds...'
@@ -39,36 +51,6 @@ const statusText = computed(() => {
 
 function formatPercent(v: number) {
   return `${Math.round(v * 100)}%`
-}
-
-async function ensureLoaded() {
-  if (loaded.value)
-    return true
-  if (loading.value)
-    return false
-
-  try {
-    loading.value = true
-    error.value = ''
-
-    // Load each sound individually
-    sounds = (await Promise.all(
-      layerUrls.map(url => createSound(url)),
-    )).map(s => cleanup.register(s))
-
-    // Create layered sound from all three
-    cleanup.register(await loadLayered(sounds))
-
-    loaded.value = true
-    return true
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load sounds'
-    return false
-  }
-  finally {
-    loading.value = false
-  }
 }
 
 async function playAll() {
@@ -83,9 +65,12 @@ async function playAll() {
     layerPlaying.value = [true, true, true]
 
     // Sounds are one-shot, so mark as not playing after a moment
-    setTimeout(() => {
+    if (allPlayingTimeout)
+      clearTimeout(allPlayingTimeout)
+    allPlayingTimeout = setTimeout(() => {
       isPlaying.value = false
       layerPlaying.value = [false, false, false]
+      allPlayingTimeout = null
     }, 1500)
   }
   catch (e) {
@@ -116,8 +101,12 @@ async function playLayer(index: number) {
     await sounds[index].play()
     layerPlaying.value[index] = true
 
-    setTimeout(() => {
+    const existing = layerPlayingTimeouts[index]
+    if (existing)
+      clearTimeout(existing)
+    layerPlayingTimeouts[index] = setTimeout(() => {
       layerPlaying.value[index] = false
+      layerPlayingTimeouts[index] = null
     }, 1000)
   }
   catch (e) {
@@ -138,6 +127,15 @@ function updateLayerGain(index: number, val: number) {
     sounds[index].changeGainTo(val)
   }
 }
+
+onUnmounted(() => {
+  if (allPlayingTimeout)
+    clearTimeout(allPlayingTimeout)
+  layerPlayingTimeouts.forEach((t) => {
+    if (t)
+      clearTimeout(t)
+  })
+})
 </script>
 
 <template>

@@ -232,7 +232,10 @@ onUnmounted(() => {
 
   tracks.value.forEach((t) => {
     try {
-      t.beatTrack?.stop()
+      // dispose() calls internalStop() internally, so this also stops
+      // playback — but additionally releases the WorkerTimer + underlying
+      // Sound nodes that a plain stop() would leave connected.
+      t.beatTrack?.dispose()
     }
     catch {}
   })

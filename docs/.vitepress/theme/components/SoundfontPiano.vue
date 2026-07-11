@@ -72,6 +72,10 @@ onUnmounted(() => {
           catch {}
         }
       }
+      // Release every note's audio node graph — a full soundfont can hold
+      // dozens of SampledNotes (1.4MB font), so without this the whole
+      // buffer + node graph leaks on unmount.
+      font.value.dispose()
     }
     activeNotes.value.clear()
   }

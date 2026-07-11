@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCleanup, useGrainPlayer, useSound } from '@ez-web-audio/vue'
+import { useCleanup, useEnsureLoaded, useGrainPlayer, useSound } from '@ez-web-audio/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
 import ParameterSlider from './kit/ParameterSlider.vue'
@@ -51,8 +51,6 @@ let themeObserver: MutationObserver | null = null
 
 // Reactive UI state
 const playing = ref(false)
-const loading = ref(false)
-const error = ref('')
 const waveformLoaded = ref(false)
 const isDragging = ref(false)
 const overlapClamped = ref(false)
@@ -117,9 +115,7 @@ watch(jitter, (v) => {
 })
 
 // Lazy init
-async function ensureLoaded() {
-  if (grainPlayer.value)
-    return
+const { loading, error, ensureLoaded } = useEnsureLoaded(async () => {
   const s = cleanup.register(await loadSound('/ez-web-audio/audio/grain-sample.mp3'))
   cachedBuffer = s.audioBuffer
   bufferDurationSeconds = cachedBuffer.duration
@@ -135,15 +131,13 @@ async function ensureLoaded() {
   setupCanvas()
   drawWaveform()
   waveformLoaded.value = true
-}
+}, 'Audio error')
 
 async function togglePlay() {
-  if (loading.value)
-    return
   try {
-    loading.value = true
     error.value = ''
-    await ensureLoaded()
+    if (!(await ensureLoaded()))
+      return
     if (playing.value) {
       grainPlayer.value?.stop()
       playing.value = false
@@ -157,9 +151,6 @@ async function togglePlay() {
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Audio error'
-  }
-  finally {
-    loading.value = false
   }
 }
 

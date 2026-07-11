@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Oscillator } from 'ez-web-audio'
+import { useCleanup } from '@ez-web-audio/vue'
 import { createOscillator, frequencyMap } from 'ez-web-audio'
 import { computed, onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
@@ -28,6 +29,14 @@ const envelope = ref<EnvelopeConfig>({
 const masterGain = ref(0.3)
 const activeNotes = ref(new Set<string>())
 const error = ref('')
+
+// Escape hatch (composables.ts:39-43): this demo creates one Oscillator per
+// held key — too many concurrent/ephemeral instances for a single-instance
+// factory composable. Each oscillator is registered with useCleanup() so it
+// still gets stop()+dispose()'d, just deferred to unmount instead of
+// note-off (an immediate dispose() right after stop() would hard-disconnect
+// the node and cut the ADSR release tail audibly).
+const cleanup = useCleanup()
 
 // Track active oscillators by note name
 const oscillators = new Map<string, Oscillator>()
@@ -83,11 +92,11 @@ async function handleNoteOn(note: string) {
     }
 
     // Create and start new oscillator
-    const oscillator = await createOscillator({
+    const oscillator = cleanup.register(await createOscillator({
       frequency,
       type: waveType.value,
       envelope: { ...envelope.value },
-    })
+    }))
 
     oscillator.changeGainTo(masterGain.value)
     oscillator.play()

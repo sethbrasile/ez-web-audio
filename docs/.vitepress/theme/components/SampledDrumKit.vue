@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCleanup, useSampler } from '@ez-web-audio/vue'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
 import TriggerPad from './kit/TriggerPad.vue'
 
@@ -13,6 +13,9 @@ const playCount = ref({
   snare: 1,
   hihat: 1,
 })
+
+// UI-reset timeout, captured so onUnmounted can clear it.
+let lastPlayedTimeout: ReturnType<typeof setTimeout> | null = null
 
 const cleanup = useCleanup()
 const { instance: kickSampler, load: loadKick } = useSampler()
@@ -86,16 +89,24 @@ async function playPad(padName: string) {
 
     // Visual feedback
     lastPlayed.value = padName
-    setTimeout(() => {
+    if (lastPlayedTimeout)
+      clearTimeout(lastPlayedTimeout)
+    lastPlayedTimeout = setTimeout(() => {
       if (lastPlayed.value === padName) {
         lastPlayed.value = ''
       }
+      lastPlayedTimeout = null
     }, 100)
   }
   catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to play sound'
   }
 }
+
+onUnmounted(() => {
+  if (lastPlayedTimeout)
+    clearTimeout(lastPlayedTimeout)
+})
 </script>
 
 <template>

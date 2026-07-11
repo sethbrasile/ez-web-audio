@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import type { Sound } from 'ez-web-audio'
-import { useCleanup } from '@ez-web-audio/vue'
+import { useCleanup, useEnsureLoaded } from '@ez-web-audio/vue'
 import { createSound, playTogether as playTogetherUtil } from 'ez-web-audio'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
 import PlayButton from './kit/PlayButton.vue'
 import TriggerPad from './kit/TriggerPad.vue'
 
-const loading = ref(false)
-const loaded = ref(false)
-const error = ref('')
 const status = ref('Ready')
 
 const soundPlaying = ref([false, false, false])
@@ -25,34 +22,17 @@ const soundUrls = [
 const cleanup = useCleanup()
 let sounds: Sound[] = []
 
-async function ensureLoaded() {
-  if (loaded.value)
-    return true
-  if (loading.value)
-    return false
+// UI-reset timeouts, captured so onUnmounted can clear them.
+let allPlayingTimeout: ReturnType<typeof setTimeout> | null = null
+const soundPlayingTimeouts: Array<ReturnType<typeof setTimeout> | null> = [null, null, null]
 
-  try {
-    loading.value = true
-    error.value = ''
-    status.value = 'Loading sounds...'
-
-    sounds = (await Promise.all(
-      soundUrls.map(url => createSound(url)),
-    )).map(s => cleanup.register(s))
-
-    loaded.value = true
-    status.value = 'Ready'
-    return true
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load sounds'
-    status.value = 'Ready'
-    return false
-  }
-  finally {
-    loading.value = false
-  }
-}
+const { loading, error, ensureLoaded } = useEnsureLoaded(async () => {
+  status.value = 'Loading sounds...'
+  sounds = (await Promise.all(
+    soundUrls.map(url => createSound(url)),
+  )).map(s => cleanup.register(s))
+  status.value = 'Ready'
+}, 'Failed to load sounds')
 
 async function playTogether() {
   if (!(await ensureLoaded()))
@@ -65,9 +45,12 @@ async function playTogether() {
 
     await playTogetherUtil(sounds)
 
-    setTimeout(() => {
+    if (allPlayingTimeout)
+      clearTimeout(allPlayingTimeout)
+    allPlayingTimeout = setTimeout(() => {
       soundPlaying.value = [false, false, false]
       status.value = 'Ready'
+      allPlayingTimeout = null
     }, 1200)
   }
   catch (e) {
@@ -90,9 +73,12 @@ async function playSequentially() {
       await new Promise(resolve => setTimeout(resolve, 150))
     }
 
-    setTimeout(() => {
+    if (allPlayingTimeout)
+      clearTimeout(allPlayingTimeout)
+    allPlayingTimeout = setTimeout(() => {
       soundPlaying.value = [false, false, false]
       status.value = 'Ready'
+      allPlayingTimeout = null
     }, 1200)
   }
   catch (e) {
@@ -111,8 +97,12 @@ async function playSound(index: number) {
     soundPlaying.value[index] = true
     await sounds[index].play()
 
-    setTimeout(() => {
+    const existing = soundPlayingTimeouts[index]
+    if (existing)
+      clearTimeout(existing)
+    soundPlayingTimeouts[index] = setTimeout(() => {
       soundPlaying.value[index] = false
+      soundPlayingTimeouts[index] = null
     }, 800)
   }
   catch (e) {
@@ -120,6 +110,15 @@ async function playSound(index: number) {
     soundPlaying.value[index] = false
   }
 }
+
+onUnmounted(() => {
+  if (allPlayingTimeout)
+    clearTimeout(allPlayingTimeout)
+  soundPlayingTimeouts.forEach((t) => {
+    if (t)
+      clearTimeout(t)
+  })
+})
 </script>
 
 <template>

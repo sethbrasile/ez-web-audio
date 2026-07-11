@@ -21,6 +21,8 @@ export { useAudioContext } from './use-audio-context'
 export type { UseAudioContextReturn } from './use-audio-context'
 export { useCleanup } from './use-cleanup'
 export type { Disposable } from './use-cleanup'
+export { useEnsureLoaded } from './use-ensure-loaded'
+export type { UseEnsureLoadedReturn } from './use-ensure-loaded'
 export type {
   AnalyzerOptions,
   AudioInput,
