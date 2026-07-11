@@ -2,6 +2,10 @@
 import type { BeatTrack } from 'ez-web-audio'
 import { useBeatTrack, useCleanup } from '@ez-web-audio/vue'
 import { computed, reactive, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import StepGrid from './kit/StepGrid.vue'
 
 const playing = ref(false)
 const bpm = ref(120)
@@ -25,14 +29,15 @@ function makeBeats(name: string) {
 }
 
 const trackDefs = [
-  { name: 'KICK', samples: ['kick1', 'kick2', 'kick3'] },
-  { name: 'SNARE', samples: ['snare1', 'snare2', 'snare3'] },
-  { name: 'HIHAT', samples: ['hihat1', 'hihat2', 'hihat3'] },
+  { name: 'KICK', samples: ['kick1', 'kick2', 'kick3'], color: 'var(--ewa-kick)' },
+  { name: 'SNARE', samples: ['snare1', 'snare2', 'snare3'], color: 'var(--ewa-snare)' },
+  { name: 'HIHAT', samples: ['hihat1', 'hihat2', 'hihat3'], color: 'var(--ewa-hat)' },
 ]
 
 // Tracks render immediately with stub beats
 const tracks = ref(trackDefs.map(d => ({
   name: d.name,
+  color: d.color,
   beats: makeBeats(d.name),
   beatTrack: null as BeatTrack | null,
   muted: false,
@@ -44,8 +49,26 @@ const beatTrackComposables = [useBeatTrack(), useBeatTrack(), useBeatTrack()]
 
 let initialized = false
 
-// Compute current step from beat states
-const currentStep = computed(() => {
+// StepGrid adapter — bridges the reactive Beat objects onto the shared grid component
+const lanes = computed(() => tracks.value.map(t => ({
+  name: t.name,
+  color: t.color,
+  muted: t.muted,
+  cells: t.beats.map(b => b.active),
+})))
+
+const gridCurrentStep = computed(() => {
+  for (const track of tracks.value) {
+    const idx = track.beats.findIndex(b => b.currentTimeIsPlaying)
+    if (idx !== -1)
+      return idx
+  }
+  return -1
+})
+
+// Step counter badge — kept as its own computed (distinct from the -1-based
+// gridCurrentStep above) so the displayed text is unchanged from before.
+const stepCounter = computed(() => {
   if (!initialized || !playing.value)
     return 0
 
@@ -58,6 +81,14 @@ const currentStep = computed(() => {
   }
   return 0
 })
+
+function onToggle(laneIndex: number, step: number) {
+  tracks.value[laneIndex].beats[step].active = !tracks.value[laneIndex].beats[step].active
+}
+
+function formatBpm(v: number) {
+  return `${v} BPM`
+}
 
 async function init() {
   if (initialized)
@@ -175,325 +206,146 @@ watch(bpm, (val) => {
 </script>
 
 <template>
-  <div class="drum-machine-vue">
+  <DemoFrame class="drum-machine-vue" :error="error" takeaway="The same machine, built with the Vue composables.">
     <div class="controls">
-      <button class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay">
-        {{ playing ? 'Stop' : 'Play' }}
-      </button>
+      <PlayButton :playing="playing" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay" />
 
-      <div class="bpm-control">
-        <label>
-          BPM: {{ bpm }}
-          <input v-model.number="bpm" type="range" min="60" max="200" step="1" aria-label="Tempo in beats per minute">
-        </label>
-      </div>
+      <ParameterSlider
+        id="drum-machine-vue-bpm"
+        v-model="bpm"
+        label="BPM"
+        :min="60"
+        :max="200"
+        :step="1"
+        :format="formatBpm"
+      />
 
-      <div class="step-counter">
-        Step: {{ currentStep + 1 }}/16
+      <span class="step-counter">Step: {{ stepCounter + 1 }}/16</span>
+    </div>
+
+    <div class="track-controls">
+      <div v-for="track in tracks" :key="track.name" class="track-control-group">
+        <span class="track-control-name" :style="{ '--lane-color': track.color }">{{ track.name }}</span>
+        <button
+          type="button"
+          class="mute-btn"
+          :class="{ active: track.muted }"
+          :aria-pressed="track.muted"
+          :aria-label="`Mute ${track.name} track`"
+          title="Mute track"
+          @click="toggleMute(track)"
+        >
+          M
+        </button>
+        <button
+          type="button"
+          class="solo-btn"
+          :class="{ active: soloedTrack === track.name }"
+          :aria-pressed="soloedTrack === track.name"
+          :aria-label="`Solo ${track.name} track`"
+          title="Solo track"
+          @click="toggleSolo(track)"
+        >
+          S
+        </button>
       </div>
     </div>
 
-    <div class="sequencer">
-      <div
-        v-for="track in tracks"
-        :key="track.name"
-        class="track-row"
-        :class="{ muted: track.muted, soloed: soloedTrack === track.name }"
-      >
-        <div class="track-header">
-          <span class="track-name">{{ track.name }}</span>
-          <div class="track-controls">
-            <button
-              class="mute-btn"
-              :class="{ active: track.muted }"
-              title="Mute track"
-              :aria-label="`Mute ${track.name} track`"
-              @click="toggleMute(track)"
-            >
-              M
-            </button>
-            <button
-              class="solo-btn"
-              :class="{ active: soloedTrack === track.name }"
-              title="Solo track"
-              :aria-label="`Solo ${track.name} track`"
-              @click="toggleSolo(track)"
-            >
-              S
-            </button>
-          </div>
-        </div>
-
-        <div class="beat-grid">
-          <button
-            v-for="(beat, i) in track.beats"
-            :key="i"
-            class="beat-cell" :class="[
-              {
-                active: beat.active,
-                current: beat.currentTimeIsPlaying && playing,
-                [`track-${track.name.toLowerCase()}`]: beat.active,
-              },
-            ]"
-            :aria-label="`${track.name} step ${i + 1}${beat.active ? ' (active)' : ' (inactive)'}`"
-            :aria-pressed="beat.active"
-            @click="beat.active = !beat.active"
-          >
-            <span class="beat-number">{{ i + 1 }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+    <StepGrid
+      :lanes="lanes"
+      :current-step="gridCurrentStep"
+      :playing="playing"
+      :show-mutes="false"
+      @toggle="onToggle"
+    />
+  </DemoFrame>
 </template>
 
 <style scoped>
-.drum-machine-vue {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 24px;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 16px;
 }
 
-.play-btn {
-  padding: 0.5rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-dark);
-}
-
-.bpm-control label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.bpm-control input {
-  width: 150px;
+.controls .ewa-slider {
+  flex: 1;
+  min-width: 200px;
 }
 
 .step-counter {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--vp-c-text-1);
-  padding: 0.5rem 1rem;
-  background: var(--vp-c-bg-mute);
-  border-radius: 6px;
-}
-
-.sequencer {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.track-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition: opacity 0.2s;
-}
-
-.track-row.muted {
-  opacity: 0.4;
-}
-
-.track-row.soloed {
-  border: 2px solid var(--vp-c-brand);
-  border-radius: 6px;
-  padding: 0.5rem;
-  margin: -0.5rem;
-}
-
-.track-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  justify-content: space-between;
-}
-
-.track-name {
-  font-weight: 600;
+  font-family: var(--vp-font-family-mono);
   font-size: 0.85rem;
-  min-width: 60px;
-  color: var(--vp-c-text-1);
+  font-weight: 600;
+  color: var(--ewa-text-2);
+  padding: 8px 12px;
+  background: var(--ewa-well);
+  border-radius: 8px;
 }
 
 .track-controls {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.track-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.track-control-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lane-color, var(--ewa-accent));
 }
 
 .mute-btn,
 .solo-btn {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  cursor: pointer;
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--ewa-line-2);
+  background: transparent;
+  color: var(--ewa-text-3);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
   font-weight: 600;
-  transition: all 0.2s;
-  color: var(--vp-c-text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .mute-btn:hover,
 .solo-btn:hover {
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
 .mute-btn.active {
-  background: #ff4444;
-  border-color: #ff4444;
-  color: white;
+  background: var(--ewa-danger);
+  border-color: var(--ewa-danger);
+  color: #fff;
 }
 
 .solo-btn.active {
-  background: var(--vp-c-brand);
-  border-color: var(--vp-c-brand);
-  color: white;
+  background: var(--ewa-accent);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-on-accent);
 }
 
-.beat-grid {
-  display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
-}
-
-.beat-cell {
-  aspect-ratio: 1;
-  min-width: 28px;
-  min-height: 28px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
-  background: var(--vp-c-bg-mute);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  font-size: 0.65rem;
-  color: var(--vp-c-text-3);
-}
-
-.beat-cell:hover {
-  border-color: var(--vp-c-brand);
-  transform: scale(1.05);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+.mute-btn:focus-visible,
+.solo-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
-}
-
-.beat-cell.active {
-  border-width: 2px;
-}
-
-.beat-cell.active.track-kick {
-  background: #4a9eff;
-  border-color: #3a7edf;
-  color: white;
-}
-
-.beat-cell.active.track-snare {
-  background: #ff7b4a;
-  border-color: #df5b2a;
-  color: white;
-}
-
-.beat-cell.active.track-hihat {
-  background: #ffd54f;
-  border-color: #dfb52f;
-  color: #333;
-}
-
-.beat-cell.current {
-  box-shadow: 0 0 12px 4px currentColor;
-  animation: pulse 0.3s ease-out;
-}
-
-.beat-cell.current.track-kick {
-  box-shadow: 0 0 12px 4px #4a9eff;
-}
-
-.beat-cell.current.track-snare {
-  box-shadow: 0 0 12px 4px #ff7b4a;
-}
-
-.beat-cell.current.track-hihat {
-  box-shadow: 0 0 12px 4px #ffd54f;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-.beat-number {
-  opacity: 0.5;
-  font-weight: 500;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
-}
-
-@media (max-width: 768px) {
-  .beat-grid {
-    gap: 2px;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  .beat-cell {
-    min-width: 24px;
-    min-height: 24px;
-  }
-  .track-header {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .beat-cell {
-    min-width: 20px;
-    min-height: 20px;
-    font-size: 0.55rem;
-  }
 }
 </style>

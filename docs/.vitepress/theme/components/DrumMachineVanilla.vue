@@ -5,8 +5,18 @@
 // `beatTrack.on('beat', ...)` event listeners + direct DOM manipulation, and
 // deliberately omits `wrapWith`/reactive. Routing it through the Vue composables
 // would defeat its purpose. See .planning/phases/73-.../73-INVENTORY.md.
+//
+// For the same reason its step grid is NOT the shared kit/StepGrid.vue
+// component (phase 78 restyle) — the playhead here is synced via direct DOM
+// class manipulation rather than a reactive `currentStep` prop, which is the
+// whole point of the demo. Only the visual language (tokens, 44px cells,
+// lane colors) was adopted to match the other two drum-machine demos; the
+// grid markup and event wiring are untouched.
 import type { BeatTrack } from 'ez-web-audio'
 import { onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
 
 const rootEl = ref<HTMLElement>()
 const playing = ref(false)
@@ -25,6 +35,7 @@ const defaultPatterns: Record<string, number[]> = {
 interface TrackState {
   name: string
   samples: string[]
+  color: string
   beatTrack: BeatTrack | null
   activeStates: boolean[]
   muted: boolean
@@ -33,15 +44,16 @@ interface TrackState {
 }
 
 const trackDefs = [
-  { name: 'KICK', samples: ['kick1', 'kick2', 'kick3'] },
-  { name: 'SNARE', samples: ['snare1', 'snare2', 'snare3'] },
-  { name: 'HIHAT', samples: ['hihat1', 'hihat2', 'hihat3'] },
+  { name: 'KICK', samples: ['kick1', 'kick2', 'kick3'], color: 'var(--ewa-kick)' },
+  { name: 'SNARE', samples: ['snare1', 'snare2', 'snare3'], color: 'var(--ewa-snare)' },
+  { name: 'HIHAT', samples: ['hihat1', 'hihat2', 'hihat3'], color: 'var(--ewa-hat)' },
 ]
 
 // Initialize tracks with reactive state for pattern editing
 const tracks = ref<TrackState[]>(trackDefs.map(d => ({
   name: d.name,
   samples: d.samples,
+  color: d.color,
   beatTrack: null,
   activeStates: Array.from({ length: NUM_BEATS }, (_, i) =>
     (defaultPatterns[d.name] ?? []).includes(i)),
@@ -52,6 +64,10 @@ const tracks = ref<TrackState[]>(trackDefs.map(d => ({
 
 let initialized = false
 let beatHandler: ((e: CustomEvent) => void) | null = null
+
+function formatBpm(v: number) {
+  return `${v} BPM`
+}
 
 async function init() {
   if (initialized)
@@ -224,32 +240,45 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="rootEl" class="drum-machine-vanilla">
-    <div class="pattern-label">
-      Event-Based
-    </div>
-
+  <DemoFrame class="drum-machine-vanilla" :error="error" takeaway="The same machine in plain JavaScript.">
     <div class="controls">
-      <button class="play-btn" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay">
-        {{ playing ? 'Stop' : 'Play' }}
-      </button>
+      <PlayButton :playing="playing" :aria-label="playing ? 'Stop playback' : 'Start playback'" @click="togglePlay" />
 
-      <div class="bpm-control">
-        <label>
-          BPM: {{ bpm }}
-          <input v-model.number="bpm" type="range" min="60" max="200" step="1" aria-label="Tempo in beats per minute">
-        </label>
-      </div>
+      <ParameterSlider
+        id="drum-machine-vanilla-bpm"
+        v-model="bpm"
+        label="BPM"
+        :min="60"
+        :max="200"
+        :step="1"
+        :format="formatBpm"
+      />
+
+      <span class="pattern-label">Event-Based</span>
     </div>
 
-    <div class="sequencer">
+    <div ref="rootEl" class="sequencer">
+      <div class="track-row track-row--header" aria-hidden="true">
+        <div class="track-header" />
+        <div class="beat-grid">
+          <span
+            v-for="i in NUM_BEATS"
+            :key="`head-${i - 1}`"
+            class="step-header"
+            :class="{ 'step-header--beat': (i - 1) % 4 === 0 }"
+          >{{ (i - 1) % 4 === 0 ? (i - 1) / 4 + 1 : '·' }}</span>
+        </div>
+      </div>
+
       <div v-for="track in tracks" :key="track.name" class="track-row">
         <div class="track-header">
-          <span class="track-name">{{ track.name }}</span>
+          <span class="track-name" :style="{ '--lane-color': track.color }">{{ track.name }}</span>
           <div class="track-controls">
             <button
               class="control-btn" :class="[{ active: track.muted }]"
               title="Mute"
+              :aria-pressed="track.muted"
+              :aria-label="`Mute ${track.name} track`"
               @click="toggleMute(track)"
             >
               M
@@ -257,6 +286,8 @@ onUnmounted(() => {
             <button
               class="control-btn" :class="[{ active: track.solo }]"
               title="Solo"
+              :aria-pressed="track.solo"
+              :aria-label="`Solo ${track.name} track`"
               @click="toggleSolo(track)"
             >
               S
@@ -274,252 +305,180 @@ onUnmounted(() => {
             :class="[
               {
                 active,
-                [`track-${track.name.toLowerCase()}`]: active,
               },
-            ]" :aria-label="`${track.name} step ${i + 1}${active ? ' (active)' : ' (inactive)'}`"
+            ]"
+            :style="{ '--lane-color': track.color }"
+            :aria-label="`${track.name} step ${i + 1}${active ? ' (active)' : ' (inactive)'}`"
             :aria-pressed="active"
             @click="toggleBeat(track, i)"
-          >
-            <span class="beat-number">{{ i + 1 }}</span>
-          </button>
+          />
         </div>
       </div>
     </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.drum-machine-vanilla {
-  position: relative;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.pattern-label {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 24px;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
 }
 
-.play-btn {
-  padding: 0.5rem 1.5rem;
-  border-radius: 6px;
-  border: none;
+.controls .ewa-slider {
+  flex: 1;
+  min-width: 200px;
+}
+
+.pattern-label {
+  margin-left: auto;
+  font-size: 11px;
   font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-dark);
-}
-
-.bpm-control label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.bpm-control input {
-  width: 150px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-accent-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sequencer {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 12px;
+  overflow-x: auto;
 }
 
 .track-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  align-items: center;
+  gap: 8px;
 }
 
 .track-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 6px;
+}
+
+.track-row--header {
+  margin-bottom: 2px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 20px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  text-align: center;
+  color: var(--ewa-text-3);
+}
+
+.step-header--beat {
+  color: var(--ewa-text-2);
 }
 
 .track-name {
+  font-size: 11px;
   font-weight: 600;
-  font-size: 0.85rem;
-  min-width: 60px;
-  color: var(--vp-c-text-1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lane-color, var(--ewa-accent));
 }
 
 .track-controls {
   display: flex;
-  gap: 0.25rem;
+  gap: 4px;
+  margin-left: auto;
 }
 
 .control-btn {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-mute);
-  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--ewa-line-2);
+  background: transparent;
+  color: var(--ewa-text-3);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  color: var(--vp-c-text-2);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .control-btn:hover {
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
 .control-btn.active {
-  background: var(--vp-c-brand);
-  border-color: var(--vp-c-brand);
-  color: white;
+  background: var(--ewa-accent);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-on-accent);
+}
+
+.control-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
 .beat-grid {
   display: grid;
-  grid-template-columns: repeat(16, 1fr);
+  grid-template-columns: repeat(16, 44px);
   gap: 4px;
+  width: max-content;
 }
 
 .vanilla-beat-cell {
-  aspect-ratio: 1;
-  min-width: 28px;
-  min-height: 28px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
-  background: var(--vp-c-bg-mute);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
-  font-size: 0.65rem;
-  color: var(--vp-c-text-3);
-}
-
-.vanilla-beat-cell:hover {
-  border-color: var(--vp-c-brand);
-  transform: scale(1.05);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.12s, background 0.12s;
 }
 
 .vanilla-beat-cell.active {
-  border-width: 2px;
+  background: var(--lane-color, var(--ewa-accent));
+  border-color: var(--lane-color, var(--ewa-accent));
 }
 
-.vanilla-beat-cell.active.track-kick {
-  background: #4a9eff;
-  border-color: #3a7edf;
-  color: white;
+.vanilla-beat-cell.current.active {
+  box-shadow: 0 0 0 2px var(--ewa-bg), 0 0 14px 2px var(--lane-color, var(--ewa-accent));
+  transform: scale(1.06);
 }
 
-.vanilla-beat-cell.active.track-snare {
-  background: #ff7b4a;
-  border-color: #df5b2a;
-  color: white;
+.vanilla-beat-cell.current:not(.active) {
+  box-shadow: inset 0 0 0 2px var(--ewa-accent-soft);
 }
 
-.vanilla-beat-cell.active.track-hihat {
-  background: #ffd54f;
-  border-color: #dfb52f;
-  color: #333;
+.vanilla-beat-cell:hover {
+  border-color: var(--ewa-accent);
+  transform: scale(1.05);
 }
 
-.vanilla-beat-cell.current {
-  box-shadow: 0 0 12px 4px currentColor;
-  animation: pulse 0.3s ease-out;
-}
-
-.vanilla-beat-cell.current.track-kick {
-  box-shadow: 0 0 12px 4px #4a9eff;
-}
-
-.vanilla-beat-cell.current.track-snare {
-  box-shadow: 0 0 12px 4px #ff7b4a;
-}
-
-.vanilla-beat-cell.current.track-hihat {
-  box-shadow: 0 0 12px 4px #ffd54f;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-.beat-number {
-  opacity: 0.5;
-  font-weight: 500;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+.vanilla-beat-cell:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
 @media (max-width: 768px) {
-  .beat-grid {
-    gap: 2px;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  .vanilla-beat-cell {
-    min-width: 24px;
-    min-height: 24px;
-  }
-  .track-header {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .vanilla-beat-cell {
-    min-width: 20px;
-    min-height: 20px;
-    font-size: 0.55rem;
+  .track-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

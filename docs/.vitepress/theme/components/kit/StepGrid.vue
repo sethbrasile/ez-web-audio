@@ -97,7 +97,7 @@ function isCurrentStep(stepIndex: number) {
             v-for="(active, stepIndex) in lane.cells"
             :key="`${lane.name}-${stepIndex}`"
             type="button"
-            class="ewa-step-grid__cell"
+            class="ewa-step-grid__cell beat-cell"
             :class="{
               'ewa-step-grid__cell--active': active,
               'ewa-step-grid__cell--muted': lane.muted,
