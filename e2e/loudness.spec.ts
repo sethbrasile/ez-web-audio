@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { DemoPage } from './demo-pages'
 import { expect, test } from '@playwright/test'
 
 /**
@@ -48,7 +49,7 @@ async function sampleMaxPeak(page: Page, ms = 3000): Promise<number> {
   }, ms)
 }
 
-interface Demo { path: string, name: string, trigger: (p: Page) => Promise<void> }
+interface Demo { path: DemoPage, name: string, trigger: (p: Page) => Promise<void> }
 
 const demos: Demo[] = [
   { path: 'examples/synthesis', name: 'Oscillator', trigger: p => clickByName(p, '^play$', 'play') },

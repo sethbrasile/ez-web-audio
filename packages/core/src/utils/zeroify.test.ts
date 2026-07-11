@@ -30,3 +30,8 @@ it('works for 175', () => {
   const result = zeroify(175)
   assert.strictEqual(result, '175')
 })
+
+it('clamps negative input to 0', () => {
+  const result = zeroify(-5)
+  assert.strictEqual(result, '00')
+})

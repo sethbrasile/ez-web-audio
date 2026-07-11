@@ -152,6 +152,22 @@ describe('audioContextAwareTimeout — with valid audioContext', () => {
     expect(window.requestAnimationFrame).toHaveBeenCalledOnce()
   })
 
+  it('does not fire a task cancelled by an earlier same-tick callback', () => {
+    const { setTimeout: customSetTimeout, clearTimeout: customClearTimeout } = audioContextAwareTimeout(audioContext)
+    const second = vi.fn()
+    let secondId = -1
+
+    // First task cancels the second task when it runs.
+    customSetTimeout(() => customClearTimeout(secondId), 100)
+    secondId = customSetTimeout(second, 100)
+
+    // Both are due in the same tick.
+    ;(audioContext as unknown as { currentTime: number }).currentTime = 0.2
+    rafCallback!(performance.now())
+
+    expect(second).not.toHaveBeenCalled()
+  })
+
   it('continues scheduling RAF while tasks still remain', () => {
     const { setTimeout: customSetTimeout } = audioContextAwareTimeout(audioContext)
     const fn1 = vi.fn()

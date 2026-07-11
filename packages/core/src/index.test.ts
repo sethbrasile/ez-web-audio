@@ -1341,14 +1341,16 @@ describe('factory functions with explicit AudioContext (BaseAudioContext overloa
 
     it('createFont(ctx, url) returns Font using provided context', async () => {
       // Mock soundfont parsing: mungeSoundFont returns data strings,
-      // extractDecodedKeyValuePairs returns note pairs, createNoteObjectsForFont returns notes
+      // extractDecodedKeyValuePairs returns note pairs. createNoteObjectsForFont
+      // (in ./font, alongside the Font class it feeds) runs for real here — with
+      // an empty pair list it deterministically produces an empty notes array.
       vi.doMock('./utils/decode-base64', () => ({
         mungeSoundFont: vi.fn().mockReturnValue([]),
         decodeBase64ToArrayBuffer: vi.fn(),
       }))
-      vi.doMock('./utils/note-methods', () => ({
+      vi.doMock('./utils/note-methods', async importOriginal => ({
+        ...(await importOriginal<typeof import('./utils/note-methods')>()),
         extractDecodedKeyValuePairs: vi.fn().mockResolvedValue([]),
-        createNoteObjectsForFont: vi.fn().mockReturnValue([]),
       }))
 
       mockFetch.mockResolvedValue(makeMockResponse({ text: 'MIDI.Soundfont.piano = {}' }))

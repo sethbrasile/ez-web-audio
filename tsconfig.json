@@ -13,6 +13,6 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["docs/.vitepress/**/*.mts", "docs/.vitepress/**/*.ts", "docs/.vitepress/**/*.vue", "e2e", "local-docs-server.ts", "playwright.config.ts", "vite.docs.config.js", "eslint.config.js", "typedoc.config.mjs", "scripts"],
-  "exclude": ["node_modules", "dist", "dist-app", "docs/.vitepress/dist", "docs/.vitepress/cache", "packages"]
+  "include": ["docs/.vitepress/**/*.mts", "docs/.vitepress/**/*.ts", "docs/.vitepress/**/*.vue", "e2e", "local-docs-server.ts", "playwright.config.ts", "eslint.config.js", "typedoc.config.mjs", "scripts"],
+  "exclude": ["node_modules", "dist", "docs/.vitepress/dist", "docs/.vitepress/cache", "packages"]
 }

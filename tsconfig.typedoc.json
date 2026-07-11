@@ -8,7 +8,6 @@
   "exclude": [
     "packages/core/src/**/*.test.ts",
     "packages/core/src/**/*.spec.ts",
-    "packages/core/src/app/**",
     "packages/core/src/test/**"
   ]
 }

@@ -10,7 +10,6 @@
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts",
-    "packages/core/src/app/**",
     "packages/core/src/test/**"
   ],
   "excludePrivate": true,

@@ -52,6 +52,10 @@ export function musicalTimeToBeats(
   beatsPerBar: number = 4,
   ticksPerBeat: number = 4,
 ): number {
+  if (!Number.isFinite(ticksPerBeat) || ticksPerBeat <= 0) {
+    throw new ValidationError(`ticksPerBeat must be a finite number greater than 0. Received: ${ticksPerBeat}`)
+  }
+
   // Numeric passthrough
   if (typeof notation === 'number') {
     return notation
@@ -129,8 +133,12 @@ export function parseMusicalTime(
   timeSignature: [number, number] = [4, 4],
   ticksPerBeat: number = 4,
 ): number {
-  if (bpm <= 0) {
-    throw new ValidationError(`BPM must be greater than 0. Received: ${bpm}`)
+  if (!Number.isFinite(bpm) || bpm <= 0) {
+    throw new ValidationError(`BPM must be a finite number greater than 0. Received: ${bpm}`)
+  }
+
+  if (!Number.isFinite(timeSignature[1]) || timeSignature[1] <= 0) {
+    throw new ValidationError(`Time signature beat unit must be a finite number greater than 0. Received: ${timeSignature[1]}`)
   }
 
   const beats = musicalTimeToBeats(notation, timeSignature[0], ticksPerBeat)

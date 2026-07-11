@@ -14,12 +14,10 @@
  * @return {Array} The swapped/shifted array.
  */
 export function arraySwap<T>(arr: T[], index: number): T[] {
-  const endOfArr = arr.slice(0, index)
-  const beginOfArr = arr.slice(index, arr.length)
-  // console.log('begin', beginOfArr)
-  // console.log(index, arr.length)
-  beginOfArr.push(...endOfArr)
-  return beginOfArr
+  const beginOfArr = arr.slice(0, index)
+  const endOfArr = arr.slice(index, arr.length)
+  endOfArr.push(...beginOfArr)
+  return endOfArr
 }
 
 // replaces array so don't use on observable array

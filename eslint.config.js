@@ -6,7 +6,6 @@ export default antfu(
       '.beads/**',
       '.claude/**',
       '.superpowers/**',
-      'packages/core/src/app/public',
       '.planning/**',
       'docs/assets/**',
       'docs/public/audio/**',

@@ -1,7 +1,6 @@
 import type { AcceptableNote, IMusicallyAware } from '@/musical-identity'
 import { arraySwap, unique } from '@utils/array-methods'
 import { base64ToUint8 } from '@utils/decode-base64'
-import { SampledNote } from '@/sampled-note'
 
 type NotesTuple = [IMusicallyAware[], string[]]
 
@@ -195,26 +194,4 @@ export function extractDecodedKeyValuePairs(ctx: AudioContext, notes: string[]):
 
   // Wait for array of promises to resolve before continuing
   return Promise.all(promises) as Promise<[AcceptableNote, AudioBuffer][]>
-}
-
-/**
- * Create SampledNote instances from decoded audio data.
- *
- * Takes an array of [noteName, audioBuffer] tuples and creates sorted
- * SampledNote instances for use in a Font.
- *
- * @param ctx - AudioContext for creating nodes
- * @param audioData - Array of [noteName, audioBuffer] tuples
- * @returns Sorted array of SampledNote instances
- * @internal
- */
-export function createNoteObjectsForFont(ctx: AudioContext, audioData: [AcceptableNote, AudioBuffer][]): SampledNote[] {
-  const notes = audioData.map((note) => {
-    const [identifier, audioBuffer] = note
-    const sampledNote = new SampledNote(ctx, audioBuffer)
-    sampledNote.identifier = identifier
-    return sampledNote
-  })
-
-  return sortNotes<SampledNote>(notes)
 }

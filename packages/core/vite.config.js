@@ -14,7 +14,7 @@ export default defineConfig({
       declarationMap: true, // Enable .d.ts.map files (still works with rollupTypes)
       insertTypesEntry: true, // Auto-add types entry
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/app/**', 'src/test/**'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/test/**'],
     }),
   ],
   test: {

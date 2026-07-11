@@ -1,6 +1,7 @@
 import type { AcceptableNote } from './musical-identity'
-import type { SampledNote } from './sampled-note'
 import { ValidationError } from './errors'
+import { SampledNote } from './sampled-note'
+import { sortNotes } from './utils/note-methods'
 
 /**
  * Collection of sampled notes for instrument playback.
@@ -104,4 +105,26 @@ export class Font {
       note.dispose()
     }
   }
+}
+
+/**
+ * Create SampledNote instances from decoded audio data.
+ *
+ * Takes an array of [noteName, audioBuffer] tuples and creates sorted
+ * SampledNote instances for use in a Font.
+ *
+ * @param ctx - AudioContext for creating nodes
+ * @param audioData - Array of [noteName, audioBuffer] tuples
+ * @returns Sorted array of SampledNote instances
+ * @internal
+ */
+export function createNoteObjectsForFont(ctx: AudioContext, audioData: [AcceptableNote, AudioBuffer][]): SampledNote[] {
+  const notes = audioData.map((note) => {
+    const [identifier, audioBuffer] = note
+    const sampledNote = new SampledNote(ctx, audioBuffer)
+    sampledNote.identifier = identifier
+    return sampledNote
+  })
+
+  return sortNotes<SampledNote>(notes)
 }

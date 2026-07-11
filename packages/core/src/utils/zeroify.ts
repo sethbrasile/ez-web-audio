@@ -12,7 +12,7 @@
  * @return {string} The number formatted and converted to string
  */
 export default function zeroify(input: number): string {
-  const num = Math.floor(input)
+  const num = Math.max(0, Math.floor(input))
 
   if (num < 10) {
     return `0${num}`

@@ -32,9 +32,16 @@ function getOrCreateScheduler(audioContext: ContextLike): SharedScheduler {
     tick() {
       const currentTime = scheduler!.now()
 
-      // Call due tasks
-      scheduler!.tasks.forEach((task) => {
-        if (task.due <= currentTime)
+      // Snapshot due tasks before invoking any of them. A task's callback can
+      // call clearTimeout on another due task in the same tick, and
+      // clearTimeout reassigns scheduler.tasks to a new filtered array —
+      // iterating the live array with forEach would still invoke a task that
+      // was just cancelled by an earlier callback. Checking membership in the
+      // current scheduler.tasks immediately before each fn() call catches
+      // that cancellation.
+      const dueTasks = scheduler!.tasks.filter(task => task.due <= currentTime)
+      dueTasks.forEach((task) => {
+        if (scheduler!.tasks.includes(task))
           task.fn()
       })
 

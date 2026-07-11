@@ -1,7 +1,13 @@
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetAudioContext, getMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, muteAll, setGlobalVolume, setMasterDestination } from './audio-context'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { _resetAudioContext, getMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, muteAll, setGlobalVolume, setMasterDestination, unlockAudioContext } from './audio-context'
 import { ValidationError } from './errors'
+
+function createSuspendedContext(): AudioContext {
+  const ctx = new MockAudioContext() as unknown as AudioContext
+  Object.defineProperty(ctx, 'state', { get: () => 'suspended', configurable: true })
+  return ctx
+}
 
 describe('audio-context', () => {
   beforeEach(() => {
@@ -171,6 +177,78 @@ describe('audio-context', () => {
       expect(getMasterDestination()).toBeNull()
       setGlobalVolume(0.5)
       expect(getMasterDestination()).not.toBe(first)
+    })
+  })
+
+  describe('unlockAudioContext (R14#3)', () => {
+    afterEach(() => {
+      // Restore document.body.addEventListener/removeEventListener spies so
+      // each test's call counts aren't inflated by wrapping a prior test's
+      // un-restored spy (vi.spyOn stacks by default).
+      vi.restoreAllMocks()
+    })
+
+    it('returns immediately without registering listeners when the context is not suspended', async () => {
+      const ctx = new MockAudioContext() as unknown as AudioContext
+      Object.defineProperty(ctx, 'state', { get: () => 'running', configurable: true })
+      const addSpy = vi.spyOn(document.body, 'addEventListener')
+      const resumeSpy = vi.spyOn(ctx, 'resume')
+
+      await unlockAudioContext(ctx)
+
+      expect(addSpy).not.toHaveBeenCalled()
+      expect(resumeSpy).not.toHaveBeenCalled()
+    })
+
+    it('registers touchstart/touchend/mousedown/keydown listeners on document.body when suspended', async () => {
+      const ctx = createSuspendedContext()
+      const addSpy = vi.spyOn(document.body, 'addEventListener')
+
+      await unlockAudioContext(ctx)
+
+      expect(addSpy).toHaveBeenCalledWith('touchstart', expect.any(Function), false)
+      expect(addSpy).toHaveBeenCalledWith('touchend', expect.any(Function), false)
+      expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), false)
+      expect(addSpy).toHaveBeenCalledWith('keydown', expect.any(Function), false)
+    })
+
+    it('a simulated gesture resolves via resume() and removes the gesture listeners', async () => {
+      const ctx = createSuspendedContext()
+      const resumeSpy = vi.spyOn(ctx, 'resume')
+      const removeSpy = vi.spyOn(document.body, 'removeEventListener')
+
+      // Initial call fires the "attempt resume immediately" path — await it so
+      // the gesture listeners are fully registered before we simulate one.
+      await unlockAudioContext(ctx)
+      const resumeCallsFromInitialAttempt = resumeSpy.mock.calls.length
+
+      // Simulate a user gesture (mousedown) — this is the addEventListener
+      // callback the module registered, not a call to unlockAudioContext.
+      document.body.dispatchEvent(new Event('mousedown'))
+      // Let the unlock() handler's `resume().then(clean)` microtask settle.
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(resumeSpy.mock.calls.length).toBeGreaterThan(resumeCallsFromInitialAttempt)
+      expect(removeSpy).toHaveBeenCalledWith('touchstart', expect.any(Function))
+      expect(removeSpy).toHaveBeenCalledWith('touchend', expect.any(Function))
+      expect(removeSpy).toHaveBeenCalledWith('mousedown', expect.any(Function))
+      expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    })
+
+    it('concurrent calls for the same suspended context share one promise and register listeners once', async () => {
+      const ctx = createSuspendedContext()
+      const addSpy = vi.spyOn(document.body, 'addEventListener')
+
+      const first = unlockAudioContext(ctx)
+      const second = unlockAudioContext(ctx)
+
+      // Only the first call's synchronous body registers listeners — the
+      // second call finds the pending entry and returns it directly.
+      expect(addSpy).toHaveBeenCalledTimes(4)
+
+      await expect(first).resolves.toBeUndefined()
+      await expect(second).resolves.toBeUndefined()
     })
   })
 })

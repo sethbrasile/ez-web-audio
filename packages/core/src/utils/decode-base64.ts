@@ -12,11 +12,12 @@
  * @return {Uint8Array} A Uint8Array of converted binary audio data.
  */
 export function base64ToUint8(base64String: string): Uint8Array {
-  return new Uint8Array(
-    atob(base64String)
-      .split('')
-      .map(char => char.charCodeAt(0)),
-  )
+  const binaryString = atob(base64String)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return bytes
 }
 
 /**

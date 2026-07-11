@@ -20,3 +20,24 @@ it('mungeSoundFont works', () => {
   const result = mungeSoundFont(soundfont)
   assert.deepEqual(result, munged)
 })
+
+it('mungeSoundFont throws when input is not a non-empty string', () => {
+  assert.throws(() => mungeSoundFont(''), /must be a non-empty string/)
+  assert.throws(() => mungeSoundFont(undefined as unknown as string), /must be a non-empty string/)
+})
+
+it('mungeSoundFont throws when input does not contain the MIDI.Soundfont marker', () => {
+  assert.throws(() => mungeSoundFont('not a soundfont at all'), /does not appear to be a valid MIDI\.js soundfont/)
+})
+
+it('mungeSoundFont throws when input is missing the "=" assignment after the marker', () => {
+  assert.throws(() => mungeSoundFont('MIDI.Soundfont.acoustic_grand_piano'), /missing "=" assignment/)
+})
+
+it('mungeSoundFont throws when note data boundaries cannot be located', () => {
+  assert.throws(() => mungeSoundFont('MIDI.Soundfont.acoustic_grand_piano ='), /could not locate note data boundaries/)
+})
+
+it('mungeSoundFont throws when the extracted note data is not valid JSON', () => {
+  assert.throws(() => mungeSoundFont('MIDI.Soundfont.acoustic_grand_piano = {"A0": ,}"'), /failed to parse soundfont JSON/)
+})
