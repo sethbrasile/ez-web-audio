@@ -367,4 +367,117 @@ describe('reverbEffect', () => {
       })
     })
   })
+
+  describe('dispose (H9)', () => {
+    it('disconnects combMerge (previously the only network node left connected)', () => {
+      const effect = new ReverbEffect(audioContext)
+      const combMerge = (effect as any).combMerge as GainNode
+      const spy = vi.spyOn(combMerge, 'disconnect')
+      effect.dispose()
+      expect(spy).toHaveBeenCalled()
+    })
+
+    it('disconnects every node in the algorithmic network', () => {
+      const effect = new ReverbEffect(audioContext)
+      const combFilters = (effect as any).combFilters as { delay: DelayNode, feedback: GainNode, damping: BiquadFilterNode }[]
+      const allpassFilters = (effect as any).allpassFilters as { delay: DelayNode, gain: GainNode }[]
+      const preDelayNode = (effect as any).preDelayNode as DelayNode
+      const combMerge = (effect as any).combMerge as GainNode
+
+      const spies = [
+        ...combFilters.flatMap(c => [vi.spyOn(c.delay, 'disconnect'), vi.spyOn(c.feedback, 'disconnect'), vi.spyOn(c.damping, 'disconnect')]),
+        ...allpassFilters.flatMap(a => [vi.spyOn(a.delay, 'disconnect'), vi.spyOn(a.gain, 'disconnect')]),
+        vi.spyOn(preDelayNode, 'disconnect'),
+        vi.spyOn(combMerge, 'disconnect'),
+      ]
+
+      effect.dispose()
+
+      for (const spy of spies) {
+        expect(spy).toHaveBeenCalled()
+      }
+    })
+
+    it('is safe to call twice (no throw on double disconnect, incl. combMerge)', () => {
+      const effect = new ReverbEffect(audioContext)
+      effect.dispose()
+      expect(() => effect.dispose()).not.toThrow()
+    })
+  })
+
+  describe('ctor-setter-parity', () => {
+    it('preDelay floors negative ctor input at 0 (matches setter clamp)', () => {
+      const effect = new ReverbEffect(audioContext, { preDelay: -5 })
+      expect(effect.preDelay).toBe(0)
+    })
+
+    it('preDelay clamps ctor input above 0.1 (matches setter clamp)', () => {
+      const effect = new ReverbEffect(audioContext, { preDelay: 5 })
+      expect(effect.preDelay).toBeCloseTo(0.1)
+    })
+
+    it('decay floors non-positive ctor input at 0.05 (matches setter clamp)', () => {
+      const effect = new ReverbEffect(audioContext, { decay: -3 })
+      expect(effect.decay).toBe(0.05)
+    })
+
+    it('damping clamps ctor input to [0,1] (matches setter clamp)', () => {
+      const over = new ReverbEffect(audioContext, { damping: 5 })
+      const under = new ReverbEffect(audioContext, { damping: -5 })
+      expect(over.damping).toBe(1)
+      expect(under.damping).toBe(0)
+    })
+  })
+
+  describe('preDelay lower floor (R10#6)', () => {
+    it('setter floors negative preDelay at 0', () => {
+      const effect = new ReverbEffect(audioContext)
+      effect.preDelay = -1
+      expect(effect.preDelay).toBe(0)
+    })
+  })
+
+  describe('decay clamp (M10)', () => {
+    it('setter floors negative decay at 0.05', () => {
+      const effect = new ReverbEffect(audioContext)
+      effect.decay = -10
+      expect(effect.decay).toBe(0.05)
+    })
+
+    it('setter ignores non-finite decay (does not poison state)', () => {
+      const effect = new ReverbEffect(audioContext, { decay: 2 })
+      effect.decay = Number.NaN
+      expect(Number.isFinite(effect.decay)).toBe(true)
+    })
+  })
+
+  describe('rampTo — ramp-setter-desync', () => {
+    it('getter reflects the target immediately after rampTo("preDelay", ...)', () => {
+      const effect = new ReverbEffect(audioContext)
+      effect.rampTo('preDelay', 0.07, 1)
+      expect(effect.preDelay).toBeCloseTo(0.07)
+    })
+
+    it('rampTo("preDelay", ...) clamps to [0, 0.1] same as the setter', () => {
+      const effect = new ReverbEffect(audioContext)
+      effect.rampTo('preDelay', 5, 1)
+      expect(effect.preDelay).toBeCloseTo(0.1)
+    })
+
+    it('warns when rampTo() is called with "decay" (unrampable — multi-node network)', () => {
+      const effect = new ReverbEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('decay', 3, 1)
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('warns when rampTo() is called with "damping" (unrampable — multi-node network)', () => {
+      const effect = new ReverbEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('damping', 0.5, 1)
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+  })
 })

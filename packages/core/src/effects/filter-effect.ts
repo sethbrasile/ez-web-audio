@@ -15,6 +15,9 @@ export type FilterType
     | 'notch'
     | 'allpass'
 
+/** Filter types where BiquadFilterNode.gain has an audible effect (per Web Audio spec). */
+const GAIN_AWARE_TYPES = new Set<FilterType>(['lowshelf', 'highshelf', 'peaking'])
+
 /**
  * Options for creating a FilterEffect.
  */
@@ -51,10 +54,10 @@ export class FilterEffect extends BaseEffect {
 
   // Shadow state: setters smooth via setTargetAtTime, so node .value lags
   // the target — getters return these instead
-  private _frequency: number
-  private _q: number
-  private _gain: number
-  private _detune: number
+  private _frequency!: number
+  private _q!: number
+  private _gain!: number
+  private _detune!: number
 
   constructor(
     audioContext: AudioContext,
@@ -63,50 +66,68 @@ export class FilterEffect extends BaseEffect {
   ) {
     super(audioContext)
 
-    this._frequency = options.frequency ?? 350
-    this._q = options.q ?? 1
-    this._gain = options.gain ?? 0
-    this._detune = options.detune ?? 0
-
-    // Create and configure filter
+    // Create the filter node first...
     this.filterNode = audioContext.createBiquadFilter()
     this.filterNode.type = type
-    this.filterNode.frequency.value = this._frequency
-    this.filterNode.Q.value = this._q
-    this.filterNode.gain.value = this._gain
-    this.filterNode.detune.value = this._detune
+
+    // ...then initialize via the public setters (ctor-setter-parity) so
+    // ctor values can't diverge from the setters' validation (R11#5: this
+    // effect previously had ZERO validation anywhere, ctor or setter).
+    this.frequency = options.frequency ?? 350
+    this.q = options.q ?? 1
+    this.gain = options.gain ?? 0
+    this.detune = options.detune ?? 0
 
     // Wire effect chain: input -> filter -> wetGain
     this.inputNode.connect(this.filterNode)
     this.filterNode.connect(this.wetGain)
   }
 
-  /** Filter frequency in Hz */
+  /**
+   * Filter frequency in Hz. Clamped to [0, sampleRate / 2] (Nyquist) —
+   * BiquadFilterNode.frequency is spec'd over that range; anything outside
+   * it is meaningless (and some implementations clamp/misbehave silently).
+   */
   get frequency(): number {
     return this._frequency
   }
 
   set frequency(v: number) {
-    this._frequency = v
-    smoothParamSet(this.filterNode.frequency, v, this.audioContext.currentTime)
+    this._frequency = this.clampFrequency(v)
+    smoothParamSet(this.filterNode.frequency, this._frequency, this.audioContext.currentTime)
   }
 
-  /** Filter Q factor (resonance) */
+  /**
+   * Filter Q factor (resonance). Floored just above 0 — a Q of exactly 0
+   * (or negative) is undefined/unstable for resonant filter types
+   * (bandpass/notch/peaking).
+   */
   get q(): number {
     return this._q
   }
 
   set q(v: number) {
-    this._q = v
-    smoothParamSet(this.filterNode.Q, v, this.audioContext.currentTime)
+    this._q = this.clampQ(v)
+    smoothParamSet(this.filterNode.Q, this._q, this.audioContext.currentTime)
   }
 
-  /** Filter gain in dB (for shelf and peaking filters) */
+  /**
+   * Filter gain in dB. Only affects `lowshelf`, `highshelf`, and `peaking`
+   * filter types — the other 5 types (lowpass, highpass, bandpass, notch,
+   * allpass) ignore gain entirely per the Web Audio spec. Setting gain on
+   * one of those types is a silent no-op audibly; a dev warning is emitted
+   * to catch the mistake early.
+   */
   get gain(): number {
     return this._gain
   }
 
   set gain(v: number) {
+    if (v !== 0 && !GAIN_AWARE_TYPES.has(this.filterNode.type)) {
+      console.warn(
+        `[ez-web-audio] FilterEffect.gain has no audible effect on type "${this.filterNode.type}" — gain only applies to lowshelf/highshelf/peaking.`,
+      )
+    }
     this._gain = v
     smoothParamSet(this.filterNode.gain, v, this.audioContext.currentTime)
   }
@@ -121,7 +142,17 @@ export class FilterEffect extends BaseEffect {
     smoothParamSet(this.filterNode.detune, v, this.audioContext.currentTime)
   }
 
-  /** The current filter type */
+  /**
+   * The current filter type.
+   *
+   * **Hard-cut, not a crossfade:** changing type reconfigures the
+   * BiquadFilterNode's internal coefficients instantly — there is no
+   * ramp/interpolation between the old and new filter response. If audio
+   * is actively flowing through this effect when the type changes, expect
+   * an audible discontinuity (click/thump), the same class of pop that
+   * curve-swap effects (e.g. DistortionEffect) have. Wrap the change in a
+   * `mix` fade-to-0 / fade-back-to-target if that's audible in context.
+   */
   get type(): FilterType {
     return this.filterNode.type as FilterType
   }
@@ -146,6 +177,44 @@ export class FilterEffect extends BaseEffect {
       case 'detune': return this.filterNode.detune
       default: return null
     }
+  }
+
+  /**
+   * ramp-setter-desync fix: rampTo('frequency'/'q', ...) re-applies the
+   * same clamps the property setters use so the getter and AudioParam can
+   * never diverge; gain/detune have no range restriction so they pass
+   * through (matching their setters).
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    switch (param) {
+      case 'frequency':
+        this._frequency = this.clampFrequency(value)
+        return this._frequency
+      case 'q':
+        this._q = this.clampQ(value)
+        return this._q
+      case 'gain':
+        this._gain = value
+        return value
+      case 'detune':
+        this._detune = value
+        return value
+      default:
+        return value
+    }
+  }
+
+  private clampFrequency(v: number): number {
+    if (!Number.isFinite(v))
+      return this._frequency ?? 0
+    const nyquist = this.audioContext.sampleRate / 2
+    return Math.max(0, Math.min(nyquist, v))
+  }
+
+  private clampQ(v: number): number {
+    if (!Number.isFinite(v))
+      return this._q ?? Number.EPSILON
+    return Math.max(Number.EPSILON, v)
   }
 }
 

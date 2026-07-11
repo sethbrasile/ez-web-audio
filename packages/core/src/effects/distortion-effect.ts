@@ -147,7 +147,23 @@ export class DistortionEffect extends BaseEffect {
     }
   }
 
-  /** Distortion amount (0-100) */
+  /**
+   * Distortion amount (0-100).
+   *
+   * **Known gap (M8):** this regenerates `waveShaperNode.curve` and swaps
+   * it in synchronously. `curve` is a plain array property, not an
+   * AudioParam, so it can't be smoothed with `setTargetAtTime` the way
+   * every other effect parameter in this library is — the swap is a hard
+   * discontinuity in the transfer function and can click if audio is
+   * actively flowing through the waveshaper at the moment of the change.
+   * A true fix requires either a dual-waveshaper crossfade (two
+   * WaveShaperNodes summed through a short gain crossfade) or a
+   * duck-under-swap-restore mix-gain ramp around the assignment — both
+   * add a real chunk of new audio-graph machinery. Deliberately left
+   * unfixed for this pass (documented gap, not silently dropped); use
+   * `rampTo('mix', 0, ...)` / back up around a type or large amount change
+   * if the click is audible in your context.
+   */
   get amount(): number {
     return this._amount
   }
@@ -159,7 +175,12 @@ export class DistortionEffect extends BaseEffect {
     }
   }
 
-  /** Distortion curve type */
+  /**
+   * Distortion curve type.
+   *
+   * **Known gap (M8):** same curve-swap click as {@link amount} — see its
+   * JSDoc for the full explanation and workaround.
+   */
   get type(): DistortionType {
     return this._type
   }
@@ -214,6 +235,34 @@ export class DistortionEffect extends BaseEffect {
       case 'tone': return this.toneFilter.frequency
       default: return null
     }
+  }
+
+  /**
+   * `amount` and `type` are documented DistortionEffect properties but
+   * aren't backed by a single AudioParam (they swap `waveShaperNode.curve`
+   * directly — see the M8 JSDoc on those setters) — rampTo() warns rather
+   * than silently no-op-ing if called with either name.
+   */
+  protected override getUnrampableParams(): readonly string[] {
+    return ['amount', 'type']
+  }
+
+  /**
+   * ramp-setter-desync fix: `tone`'s public domain is 0-1 (mapped
+   * exponentially to the toneFilter's Hz range by `applyTone()`), but
+   * `getAudioParam('tone')` exposes the underlying Hz-valued AudioParam
+   * directly — before this fix, `rampTo('tone', v, duration)` wrote the
+   * raw 0-1 `v` straight into the Hz AudioParam (e.g. `rampTo('tone', 0.8,
+   * 1)` set the filter to 0.8 Hz, not ~3.5kHz), silently diverging from
+   * what `effect.tone = 0.8` actually does. This re-applies the exact same
+   * clamp + Hz mapping the `tone` setter uses, so both paths agree.
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    if (param === 'tone') {
+      this._tone = Math.max(0, Math.min(1, value))
+      return 200 * 40 ** this._tone
+    }
+    return value
   }
 
   /**

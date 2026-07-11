@@ -162,6 +162,50 @@ describe('compressorEffect', () => {
       const effect = new CompressorEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 1)).not.toThrow()
     })
+
+    // ramp-setter-desync (H10): getters must reflect the ramp target
+    it('getters reflect the ramp target immediately for all 5 params', () => {
+      const effect = new CompressorEffect(audioContext)
+      effect.rampTo('threshold', -30, 1)
+      effect.rampTo('ratio', 8, 1)
+      effect.rampTo('knee', 10, 1)
+      effect.rampTo('attack', 0.05, 1)
+      effect.rampTo('release', 0.5, 1)
+      expect(effect.threshold).toBe(-30)
+      expect(effect.ratio).toBe(8)
+      expect(effect.knee).toBe(10)
+      expect(effect.attack).toBe(0.05)
+      expect(effect.release).toBe(0.5)
+    })
+
+    it('rampTo() applies the same clamps as the setters', () => {
+      const effect = new CompressorEffect(audioContext)
+      effect.rampTo('ratio', 25, 1)
+      expect(effect.ratio).toBeLessThanOrEqual(20)
+      effect.rampTo('threshold', 10, 1)
+      expect(effect.threshold).toBeLessThanOrEqual(0)
+    })
+  })
+
+  describe('ctor-setter-parity (H12 pattern applied to compressor)', () => {
+    it('ctor threshold gets the same clamp as the setter', () => {
+      const effect = new CompressorEffect(audioContext, { threshold: 10 })
+      expect(effect.threshold).toBeLessThanOrEqual(0)
+    })
+
+    it('ctor ratio gets the same clamp as the setter', () => {
+      const over = new CompressorEffect(audioContext, { ratio: 25 })
+      const under = new CompressorEffect(audioContext, { ratio: 0.1 })
+      expect(over.ratio).toBeLessThanOrEqual(20)
+      expect(under.ratio).toBeGreaterThanOrEqual(1)
+    })
+
+    it('ctor knee/attack/release get the same clamps as the setters', () => {
+      const effect = new CompressorEffect(audioContext, { knee: 100, attack: -5, release: 5 })
+      expect(effect.knee).toBeLessThanOrEqual(40)
+      expect(effect.attack).toBeGreaterThanOrEqual(0)
+      expect(effect.release).toBeLessThanOrEqual(1)
+    })
   })
 
   describe('createCompressor factory', () => {

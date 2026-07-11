@@ -13,10 +13,21 @@ export const PARAM_SMOOTHING_TIME_CONSTANT = 0.01 / 3
  *
  * Use instead of raw `param.value = x` assignments in real-time setters.
  *
+ * Non-finite values (`NaN`, `Infinity`, `-Infinity`) are rejected with a
+ * `console.warn` rather than being handed to `setTargetAtTime` — a NaN
+ * written to a BiquadFilter/DynamicsCompressor AudioParam poisons the
+ * node's internal IIR/DSP state permanently (it never recovers, even once
+ * a valid value is set later), so this guard is defensive-in-depth on top
+ * of any per-effect setter validation.
+ *
  * @param param - The AudioParam to change
  * @param value - The target value
  * @param currentTime - The AudioContext's currentTime
  */
 export function smoothParamSet(param: AudioParam, value: number, currentTime: number): void {
+  if (!Number.isFinite(value)) {
+    console.warn(`[ez-web-audio] smoothParamSet: ignoring non-finite value (${value}) — AudioParam left unchanged.`)
+    return
+  }
   param.setTargetAtTime(value, currentTime, PARAM_SMOOTHING_TIME_CONSTANT)
 }

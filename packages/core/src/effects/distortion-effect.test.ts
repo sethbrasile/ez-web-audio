@@ -1,6 +1,6 @@
 import type { Effect } from './index'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDistortion, DistortionEffect } from './distortion-effect'
 
 function createMockContext() {
@@ -175,6 +175,49 @@ describe('distortionEffect', () => {
     it('is no-op for unknown parameters', () => {
       const effect = new DistortionEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 1)).not.toThrow()
+    })
+
+    // ramp-setter-desync (H10): getter must reflect the ramp target
+    it('getter reflects the ramp target immediately after rampTo("tone", ...)', () => {
+      const effect = new DistortionEffect(audioContext)
+      effect.rampTo('tone', 0.8, 1)
+      expect(effect.tone).toBe(0.8)
+    })
+
+    it('rampTo("tone", ...) applies the same 0-1 clamp the setter uses', () => {
+      const effect = new DistortionEffect(audioContext)
+      effect.rampTo('tone', 5, 1)
+      expect(effect.tone).toBe(1)
+      effect.rampTo('tone', -5, 1)
+      expect(effect.tone).toBe(0)
+    })
+
+    // Previously rampTo('tone', v, duration) wrote the raw 0-1 `v` straight
+    // into the underlying Hz-valued toneFilter.frequency AudioParam,
+    // bypassing the exponential 200*40^tone mapping applyTone() uses —
+    // rampTo('tone', 0.8, 1) set the filter to 0.8Hz instead of ~3.5kHz.
+    it('rampTo("tone", ...) writes the mapped Hz value to the AudioParam, not the raw 0-1 input', () => {
+      const effect = new DistortionEffect(audioContext)
+      const spy = vi.spyOn(effect.getParam('tone')!, 'setTargetAtTime')
+      effect.rampTo('tone', 0.8, 1)
+      const expectedHz = 200 * 40 ** 0.8
+      expect(spy).toHaveBeenCalledWith(expectedHz, expect.any(Number), expect.any(Number))
+    })
+
+    it('warns when rampTo() is called with "amount" (unrampable — curve swap, not an AudioParam)', () => {
+      const effect = new DistortionEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('amount', 80, 1)
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('warns when rampTo() is called with "type" (unrampable — curve swap, not an AudioParam)', () => {
+      const effect = new DistortionEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('type', 'fuzz' as any, 1)
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
     })
   })
 

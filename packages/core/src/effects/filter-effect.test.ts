@@ -1,7 +1,7 @@
 import type { FilterType } from './filter-effect'
 import type { Effect } from './index'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFilterEffect, FilterEffect } from './filter-effect'
 
 function createMockContext() {
@@ -263,6 +263,80 @@ describe('filterEffect', () => {
     it('allpass filter can be created', () => {
       const effect = createFilterEffect(audioContext, 'allpass')
       expect(effect.type).toBe('allpass')
+    })
+  })
+
+  describe('validation (R11#5 — previously ZERO validation anywhere)', () => {
+    it('clamps frequency to [0, sampleRate/2] (Nyquist)', () => {
+      const effect = new FilterEffect(audioContext, 'lowpass')
+      const nyquist = audioContext.sampleRate / 2
+      effect.frequency = nyquist * 10
+      expect(effect.frequency).toBeLessThanOrEqual(nyquist)
+      effect.frequency = -100
+      expect(effect.frequency).toBeGreaterThanOrEqual(0)
+    })
+
+    it('floors Q above 0 (0 or negative Q is unstable for resonant types)', () => {
+      const effect = new FilterEffect(audioContext, 'bandpass')
+      effect.q = -5
+      expect(effect.q).toBeGreaterThan(0)
+      effect.q = 0
+      expect(effect.q).toBeGreaterThan(0)
+    })
+
+    it('ctor gets the same frequency/Q clamps as the setters (ctor-setter-parity)', () => {
+      const nyquist = audioContext.sampleRate / 2
+      const effect = new FilterEffect(audioContext, 'lowpass', { frequency: nyquist * 10, q: -5 })
+      expect(effect.frequency).toBeLessThanOrEqual(nyquist)
+      expect(effect.q).toBeGreaterThan(0)
+    })
+
+    it('warns when a non-zero gain is set on a type that ignores it', () => {
+      const effect = new FilterEffect(audioContext, 'lowpass')
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.gain = 6
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('does NOT warn when gain is set on a gain-aware type', () => {
+      const effect = new FilterEffect(audioContext, 'peaking')
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.gain = 6
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+  })
+
+  describe('rampTo — ramp-setter-desync', () => {
+    it('getter reflects the ramp target immediately for frequency/q/gain/detune', () => {
+      const effect = new FilterEffect(audioContext, 'lowpass')
+      effect.rampTo('frequency', 1200, 1)
+      effect.rampTo('q', 4, 1)
+      effect.rampTo('gain', -3, 1)
+      effect.rampTo('detune', 50, 1)
+      expect(effect.frequency).toBe(1200)
+      expect(effect.q).toBe(4)
+      expect(effect.gain).toBe(-3)
+      expect(effect.detune).toBe(50)
+    })
+
+    it('rampTo("frequency", ...) clamps to Nyquist same as the setter', () => {
+      const effect = new FilterEffect(audioContext, 'lowpass')
+      const nyquist = audioContext.sampleRate / 2
+      effect.rampTo('frequency', nyquist * 10, 1)
+      expect(effect.frequency).toBeLessThanOrEqual(nyquist)
+    })
+
+    it('rampTo("q", ...) floors above 0 same as the setter', () => {
+      const effect = new FilterEffect(audioContext, 'bandpass')
+      effect.rampTo('q', -5, 1)
+      expect(effect.q).toBeGreaterThan(0)
+    })
+
+    it('is no-op for unknown parameters', () => {
+      const effect = new FilterEffect(audioContext, 'lowpass')
+      expect(() => effect.rampTo('nonexistent', 0.5, 1)).not.toThrow()
     })
   })
 })

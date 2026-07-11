@@ -148,6 +148,51 @@ describe('eqEffect', () => {
       const effect = new EQEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 1)).not.toThrow()
     })
+
+    // ramp-setter-desync (H10): all 7 band-param getters must reflect the
+    // ramp target immediately, not just "not throw"
+    it('getters reflect the ramp target immediately for all 7 band params', () => {
+      const effect = new EQEffect(audioContext)
+      effect.rampTo('low', 6, 1)
+      effect.rampTo('mid', -3, 1)
+      effect.rampTo('high', 4, 1)
+      effect.rampTo('lowFrequency', 150, 1)
+      effect.rampTo('midFrequency', 900, 1)
+      effect.rampTo('highFrequency', 4000, 1)
+      effect.rampTo('midQ', 1.2, 1)
+      expect(effect.low).toBe(6)
+      expect(effect.mid).toBe(-3)
+      expect(effect.high).toBe(4)
+      expect(effect.lowFrequency).toBe(150)
+      expect(effect.midFrequency).toBe(900)
+      expect(effect.highFrequency).toBe(4000)
+      expect(effect.midQ).toBe(1.2)
+    })
+
+    it('rampTo("midQ", ...) applies the same positive clamp the setter uses', () => {
+      const effect = new EQEffect(audioContext)
+      effect.rampTo('midQ', -5, 1)
+      expect(effect.midQ).toBeGreaterThan(0)
+    })
+  })
+
+  describe('midQ validation (M9)', () => {
+    it('clamps non-positive midQ to a small positive floor', () => {
+      const effect = new EQEffect(audioContext)
+      effect.midQ = -5
+      expect(effect.midQ).toBeGreaterThan(0)
+    })
+
+    it('rejects non-finite midQ instead of poisoning the filter Q', () => {
+      const effect = new EQEffect(audioContext, { midQ: 2 })
+      effect.midQ = Number.NaN
+      expect(Number.isFinite(effect.midQ)).toBe(true)
+    })
+
+    it('ctor midQ gets the same clamp as the setter (ctor-setter-parity)', () => {
+      const effect = new EQEffect(audioContext, { midQ: -5 })
+      expect(effect.midQ).toBeGreaterThan(0)
+    })
   })
 
   describe('createEQ factory', () => {

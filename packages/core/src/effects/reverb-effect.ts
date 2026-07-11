@@ -81,7 +81,7 @@ export class ReverbEffect extends BaseEffect {
   private allpassFilters?: AllpassFilter[]
   private _decay: number = 1.5
   private _damping: number = 0.3
-  private _preDelay: number = 0.01
+  private _preDelay!: number
 
   // Convolution mode nodes
   private convolverNode?: ConvolverNode
@@ -114,13 +114,18 @@ export class ReverbEffect extends BaseEffect {
   }
 
   private buildAlgorithmic(audioContext: AudioContext, options: AlgorithmicReverbOptions): void {
-    this._decay = options.decay ?? 1.5
-    this._damping = options.damping ?? 0.3
+    // ctor-setter-parity: decay/damping feed the initial comb/allpass node
+    // construction below, so (unlike preDelay) they can't be routed through
+    // their public setters directly — those setters require combFilters to
+    // already exist. Instead, ctor and setter share the same clamp
+    // functions (clampDecay/clampDamping) so validation can't diverge.
+    this._decay = this.clampDecay(options.decay ?? 1.5)
+    this._damping = this.clampDamping(options.damping ?? 0.3)
 
-    // Pre-delay
-    this._preDelay = Math.min(options.preDelay ?? 0.01, 0.1)
+    // Pre-delay: preDelayNode exists before comb construction, so this CAN
+    // (and does) route through the public setter for ctor-setter-parity.
     this.preDelayNode = audioContext.createDelay(0.1)
-    this.preDelayNode.delayTime.value = this._preDelay
+    this.preDelay = options.preDelay ?? 0.01
 
     // Comb merge gain (averages 4 parallel comb outputs)
     this.combMerge = audioContext.createGain()
@@ -224,13 +229,16 @@ export class ReverbEffect extends BaseEffect {
   set decay(v: number) {
     if (this._mode !== 'algorithmic' || !this.combFilters)
       return
-    this._decay = v
-    // M7: Use setTargetAtTime for smooth (click-free) transitions
+    // M10: clamp (a non-finite/negative decay produces a negative or NaN
+    // comb delay time). Previously stored `v` verbatim, unclamped.
+    this._decay = this.clampDecay(v)
+    // R10#7: use the shared smoothing helper instead of a hand-rolled
+    // timeConstant literal (was drift risk — it happened to already equal
+    // PARAM_SMOOTHING_TIME_CONSTANT, but nothing enforced that).
     const now = this.audioContext.currentTime
-    const timeConstant = 0.01 / 3 // ~10ms smooth transition
     this.combFilters.forEach((comb, i) => {
-      const newDelayTime = COMB_DELAY_TIMES[i] * (v / 1.5)
-      comb.delay.delayTime.setTargetAtTime(newDelayTime, now, timeConstant)
+      const newDelayTime = COMB_DELAY_TIMES[i] * (this._decay / 1.5)
+      smoothParamSet(comb.delay.delayTime, newDelayTime, now)
     })
   }
 
@@ -242,7 +250,9 @@ export class ReverbEffect extends BaseEffect {
   set preDelay(v: number) {
     if (this._mode !== 'algorithmic' || !this.preDelayNode)
       return
-    this._preDelay = Math.min(v, 0.1)
+    // R10#6: floor at 0 (previously only the 0.1s upper bound was clamped;
+    // a negative preDelay is meaningless for a DelayNode).
+    this._preDelay = this.clampPreDelay(v)
     smoothParamSet(this.preDelayNode.delayTime, this._preDelay, this.audioContext.currentTime)
   }
 
@@ -254,13 +264,12 @@ export class ReverbEffect extends BaseEffect {
   set damping(v: number) {
     if (this._mode !== 'algorithmic' || !this.combFilters)
       return
-    this._damping = Math.max(0, Math.min(1, v))
+    this._damping = this.clampDamping(v)
     const freq = this.dampingToFrequency(this._damping)
-    // M7: Use setTargetAtTime for smooth (click-free) transitions
+    // R10#7: shared smoothing helper (see decay setter comment above).
     const now = this.audioContext.currentTime
-    const timeConstant = 0.01 / 3 // ~10ms smooth transition
     for (const comb of this.combFilters) {
-      comb.damping.frequency.setTargetAtTime(freq, now, timeConstant)
+      smoothParamSet(comb.damping.frequency, freq, now)
     }
   }
 
@@ -291,6 +300,15 @@ export class ReverbEffect extends BaseEffect {
         }
         catch { /* already disconnected */ }
       }
+    }
+    // H9: combMerge (the GainNode averaging the 4 parallel comb outputs
+    // before the allpass chain) was never disconnected — every other node
+    // in the algorithmic network was, but this one was missed.
+    if (this.combMerge) {
+      try {
+        this.combMerge.disconnect()
+      }
+      catch { /* already disconnected */ }
     }
     if (this.allpassFilters) {
       for (const ap of this.allpassFilters) {
@@ -324,6 +342,41 @@ export class ReverbEffect extends BaseEffect {
       case 'preDelay': return this.preDelayNode?.delayTime ?? null
       default: return null
     }
+  }
+
+  /**
+   * `decay` and `damping` are documented ReverbEffect properties but drive
+   * a multi-node comb-filter network (4 delay times + 4 biquad
+   * frequencies), not a single AudioParam — rampTo() warns rather than
+   * silently no-op-ing if called with either name. Use the direct property
+   * setters instead (they're already smoothed via setTargetAtTime).
+   */
+  protected override getUnrampableParams(): readonly string[] {
+    return ['decay', 'damping']
+  }
+
+  /**
+   * ramp-setter-desync fix: rampTo('preDelay', ...) re-applies the same
+   * [0, 0.1] clamp the `preDelay` setter uses and updates the shadow field.
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    if (param === 'preDelay') {
+      this._preDelay = this.clampPreDelay(value)
+      return this._preDelay
+    }
+    return value
+  }
+
+  private clampDecay(v: number): number {
+    return Number.isFinite(v) ? Math.max(0.05, v) : 0.05
+  }
+
+  private clampDamping(v: number): number {
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0
+  }
+
+  private clampPreDelay(v: number): number {
+    return Number.isFinite(v) ? Math.max(0, Math.min(v, 0.1)) : 0
   }
 
   /** Convert damping value (0-1) to lowpass frequency */

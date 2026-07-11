@@ -238,4 +238,36 @@ describe('effectWrapper', () => {
       expect(effectWithInput.connect).toHaveBeenCalled()
     })
   })
+
+  describe('minimal-interface wiring fallback (R11#10)', () => {
+    // Before this fix: an external effect with connect() but neither
+    // `.input` (branch 1) nor a `disconnect()` method making it look like
+    // an AudioNode (branch 2) fell through BOTH branches with NO input
+    // wiring at all — the documented "any object with connect()" minimum
+    // interface silently left the effect's input dead (signal from the
+    // chain never reached it; only the wet-path `externalEffect.connect
+    // (wetGain)` ran). The fix adds a best-effort fallback: attempt
+    // `inputNode.connect(externalEffect)` directly, swallowing the error
+    // if the object isn't actually AudioNode-compatible.
+    it('does not throw for a connect()-only external effect (no .input, no disconnect)', () => {
+      const externalEffect = createMockExternalEffect()
+      expect(() => new EffectWrapper(audioContext, externalEffect)).not.toThrow()
+    })
+
+    it('the wrapper remains fully usable (bypass/mix) after the fallback wiring attempt', () => {
+      const externalEffect = createMockExternalEffect()
+      const wrapper = new EffectWrapper(audioContext, externalEffect)
+      expect(() => {
+        wrapper.bypass = true
+        wrapper.mix = 0.5
+        wrapper.bypass = false
+      }).not.toThrow()
+    })
+
+    it('still wires the wet path (unconditional externalEffect.connect(wetGain)) regardless of the fallback outcome', () => {
+      const externalEffect = createMockExternalEffect()
+      const _wrapper = new EffectWrapper(audioContext, externalEffect)
+      expect(externalEffect.connectCalled).toBe(true)
+    })
+  })
 })

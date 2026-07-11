@@ -27,6 +27,51 @@ class TestEffect extends BaseEffect {
   }
 }
 
+/**
+ * Concrete test subclass with a shadow-state param (mirrors real effects
+ * like DelayEffect/EQEffect: a private field the getter reads, kept in
+ * sync by the setter via smoothParamSet). Used to test the
+ * ramp-setter-desync structural fix (onParamRamped hook).
+ */
+class ShadowedTestEffect extends BaseEffect {
+  readonly testGain: GainNode
+  private _level = 0.5
+
+  constructor(audioContext: AudioContext) {
+    super(audioContext)
+    this.testGain = audioContext.createGain()
+    this.inputNode.connect(this.testGain)
+    this.testGain.connect(this.wetGain)
+  }
+
+  get level(): number {
+    return this._level
+  }
+
+  set level(v: number) {
+    this._level = Math.max(0, Math.min(1, v))
+    this.testGain.gain.setTargetAtTime(this._level, this.getAudioContext().currentTime, 0.01)
+  }
+
+  protected getAudioParam(name: string): AudioParam | null {
+    if (name === 'level')
+      return this.testGain.gain
+    return null
+  }
+
+  protected override onParamRamped(param: string, value: number): number {
+    if (param === 'level') {
+      this._level = Math.max(0, Math.min(1, value))
+      return this._level
+    }
+    return value
+  }
+
+  protected override getUnrampableParams(): readonly string[] {
+    return ['unrampableThing']
+  }
+}
+
 describe('baseEffect', () => {
   let audioContext: AudioContext
 
@@ -149,6 +194,71 @@ describe('baseEffect', () => {
     it('l3: rampTo(unknownParam, value, 0) is a no-op — no throw', () => {
       const effect = new TestEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 0)).not.toThrow()
+    })
+  })
+
+  describe('rampTo — ramp-setter-desync structural fix', () => {
+    it('getter reflects the ramp target immediately after rampTo() (duration > 0)', () => {
+      const effect = new ShadowedTestEffect(audioContext)
+      effect.rampTo('level', 0.75, 2)
+      expect(effect.level).toBe(0.75)
+    })
+
+    it('getter reflects the ramp target immediately after rampTo() (duration === 0)', () => {
+      const effect = new ShadowedTestEffect(audioContext)
+      effect.rampTo('level', 0.2, 0)
+      expect(effect.level).toBe(0.2)
+    })
+
+    it('rampTo() applies the same clamp the property setter uses (shadow AND AudioParam)', () => {
+      const effect = new ShadowedTestEffect(audioContext)
+      const spy = vi.spyOn(effect.testGain.gain, 'setTargetAtTime')
+      effect.rampTo('level', 5, 1) // out of [0,1] range
+      expect(effect.level).toBe(1) // shadow clamped
+      expect(spy).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number)) // AudioParam gets the SAME clamped value
+    })
+
+    it('warns via console.warn for a documented-but-unrampable param name', () => {
+      const effect = new ShadowedTestEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('unrampableThing', 1, 1)
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('does NOT warn for a genuinely unknown param name', () => {
+      const effect = new ShadowedTestEffect(audioContext)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      effect.rampTo('totallyMadeUp', 1, 1)
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+  })
+
+  describe('rampTo("mix", ...) — bypass lock (H11)', () => {
+    it('does NOT audibly re-fade wet in while bypassed', () => {
+      const effect = new TestEffect(audioContext)
+      effect.bypass = true
+      const wetSpy = vi.spyOn((effect as any).wetGain.gain as AudioParam, 'setTargetAtTime')
+      const drySpy = vi.spyOn((effect as any).dryGain.gain as AudioParam, 'setTargetAtTime')
+      effect.rampTo('mix', 1, 1)
+      expect(wetSpy).not.toHaveBeenCalled()
+      expect(drySpy).not.toHaveBeenCalled()
+    })
+
+    it('still updates the mix getter while bypassed (pending value, applied on un-bypass)', () => {
+      const effect = new TestEffect(audioContext)
+      effect.bypass = true
+      effect.rampTo('mix', 0.9, 1)
+      expect(effect.mix).toBe(0.9)
+    })
+
+    it('ramps wet/dry gains normally when not bypassed', () => {
+      const effect = new TestEffect(audioContext)
+      const wetSpy = vi.spyOn((effect as any).wetGain.gain as AudioParam, 'setTargetAtTime')
+      effect.rampTo('mix', 0.5, 1)
+      expect(wetSpy).toHaveBeenCalled()
+      expect(effect.mix).toBe(0.5)
     })
   })
 

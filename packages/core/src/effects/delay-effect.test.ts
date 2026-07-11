@@ -192,6 +192,50 @@ describe('delayEffect', () => {
       const effect = new DelayEffect(audioContext)
       expect(() => effect.rampTo('nonexistent', 0.5, 1)).not.toThrow()
     })
+
+    // ramp-setter-desync (H10): getter must reflect the ramp target immediately
+    it('getter reflects target immediately after rampTo("time", ...)', () => {
+      const effect = new DelayEffect(audioContext)
+      effect.rampTo('time', 0.9, 1)
+      expect(effect.time).toBe(0.9)
+    })
+
+    it('getter reflects target immediately after rampTo("feedback", ...)', () => {
+      const effect = new DelayEffect(audioContext)
+      effect.rampTo('feedback', 0.6, 1)
+      expect(effect.feedback).toBe(0.6)
+    })
+
+    it('rampTo("feedback", ...) clamps to [0, 0.99] same as the setter (ear-damage guard)', () => {
+      const effect = new DelayEffect(audioContext)
+      effect.rampTo('feedback', -5, 1)
+      expect(effect.feedback).toBe(0)
+    })
+
+    it('rampTo("time", ...) clamps to [0, maxTime] same as the setter', () => {
+      const effect = new DelayEffect(audioContext, { maxTime: 1 })
+      effect.rampTo('time', 5, 1)
+      expect(effect.time).toBe(1)
+    })
+  })
+
+  describe('ctor-setter-parity (H12 — ear damage)', () => {
+    it('createDelay({ feedback: -5 }) is clamped to 0, not left negative', () => {
+      const effect = createDelay(audioContext, { feedback: -5 })
+      expect(effect.feedback).toBe(0)
+    })
+
+    it('createDelay({ feedback: 5 }) is clamped to 0.99, not left runaway', () => {
+      const effect = createDelay(audioContext, { feedback: 5 })
+      expect(effect.feedback).toBe(0.99)
+    })
+
+    it('ctor time is clamped to [0, maxTime] same as the setter', () => {
+      const effect = new DelayEffect(audioContext, { time: -1, maxTime: 2 })
+      expect(effect.time).toBe(0)
+      const effect2 = new DelayEffect(audioContext, { time: 10, maxTime: 2 })
+      expect(effect2.time).toBe(2)
+    })
   })
 
   describe('createDelay factory', () => {

@@ -55,13 +55,13 @@ export class EQEffect extends BaseEffect {
 
   // Shadow state: setters smooth via setTargetAtTime, so node .value lags
   // the target — getters return these instead
-  private _low: number
-  private _mid: number
-  private _high: number
-  private _lowFrequency: number
-  private _midFrequency: number
-  private _highFrequency: number
-  private _midQ: number
+  private _low!: number
+  private _mid!: number
+  private _high!: number
+  private _lowFrequency!: number
+  private _midFrequency!: number
+  private _highFrequency!: number
+  private _midQ!: number
 
   constructor(
     audioContext: AudioContext,
@@ -69,30 +69,26 @@ export class EQEffect extends BaseEffect {
   ) {
     super(audioContext)
 
-    this._low = options.low ?? 0
-    this._mid = options.mid ?? 0
-    this._high = options.high ?? 0
-    this._lowFrequency = options.lowFrequency ?? 200
-    this._midFrequency = options.midFrequency ?? 1000
-    this._highFrequency = options.highFrequency ?? 3000
-    this._midQ = options.midQ ?? 0.7
-
-    // Create and configure three-band EQ
+    // Create the three-band EQ nodes first...
     this.lowFilter = audioContext.createBiquadFilter()
     this.lowFilter.type = 'lowshelf'
-    this.lowFilter.frequency.value = this._lowFrequency
-    this.lowFilter.gain.value = this._low
 
     this.midFilter = audioContext.createBiquadFilter()
     this.midFilter.type = 'peaking'
-    this.midFilter.frequency.value = this._midFrequency
-    this.midFilter.Q.value = this._midQ
-    this.midFilter.gain.value = this._mid
 
     this.highFilter = audioContext.createBiquadFilter()
     this.highFilter.type = 'highshelf'
-    this.highFilter.frequency.value = this._highFrequency
-    this.highFilter.gain.value = this._high
+
+    // ...then initialize via the public setters (ctor-setter-parity) so
+    // ctor values can't diverge from real-time validation — e.g. midQ's
+    // positive/finite clamp (M9).
+    this.low = options.low ?? 0
+    this.mid = options.mid ?? 0
+    this.high = options.high ?? 0
+    this.lowFrequency = options.lowFrequency ?? 200
+    this.midFrequency = options.midFrequency ?? 1000
+    this.highFrequency = options.highFrequency ?? 3000
+    this.midQ = options.midQ ?? 0.7
 
     // Wire effect chain: input -> low -> mid -> high -> wetGain
     this.inputNode.connect(this.lowFilter)
@@ -166,14 +162,16 @@ export class EQEffect extends BaseEffect {
     smoothParamSet(this.highFilter.frequency, v, this.audioContext.currentTime)
   }
 
-  /** Mid band Q factor (bandwidth) */
+  /** Mid band Q factor (bandwidth). Clamped positive; non-finite input is ignored. */
   get midQ(): number {
     return this._midQ
   }
 
   set midQ(v: number) {
-    this._midQ = v
-    smoothParamSet(this.midFilter.Q, v, this.audioContext.currentTime)
+    // M9: reject non-finite input (NaN permanently poisons the biquad's IIR
+    // state — there is no recovery once it happens) and clamp to positive.
+    this._midQ = this.clampMidQ(v)
+    smoothParamSet(this.midFilter.Q, this._midQ, this.audioContext.currentTime)
   }
 
   public override dispose(): void {
@@ -203,6 +201,44 @@ export class EQEffect extends BaseEffect {
       case 'midQ': return this.midFilter.Q
       default: return null
     }
+  }
+
+  /**
+   * ramp-setter-desync fix: rampTo() on any of the 7 band params updates
+   * the matching shadow field (midQ additionally re-applies the same
+   * positive/finite clamp the setter uses) so getters stay honest after a
+   * ramp completes.
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    switch (param) {
+      case 'low':
+        this._low = value
+        return value
+      case 'mid':
+        this._mid = value
+        return value
+      case 'high':
+        this._high = value
+        return value
+      case 'lowFrequency':
+        this._lowFrequency = value
+        return value
+      case 'midFrequency':
+        this._midFrequency = value
+        return value
+      case 'highFrequency':
+        this._highFrequency = value
+        return value
+      case 'midQ':
+        this._midQ = this.clampMidQ(value)
+        return this._midQ
+      default:
+        return value
+    }
+  }
+
+  private clampMidQ(v: number): number {
+    return Number.isFinite(v) ? Math.max(0.0001, v) : 0.0001
   }
 }
 

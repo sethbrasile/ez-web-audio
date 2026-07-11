@@ -46,8 +46,8 @@ export class DelayEffect extends BaseEffect {
 
   // Shadow state: setters smooth via setTargetAtTime, so node .value lags
   // the target — getters return these instead
-  private _time: number
-  private _feedback: number
+  private _time!: number
+  private _feedback!: number
 
   constructor(
     audioContext: AudioContext,
@@ -61,11 +61,14 @@ export class DelayEffect extends BaseEffect {
     this.delayNode = audioContext.createDelay(this._maxTime)
     this.feedbackGain = audioContext.createGain()
 
-    // Configure
-    this._time = options.time ?? 0.3
-    this._feedback = Math.min(options.feedback ?? 0.4, 0.99)
-    this.delayNode.delayTime.value = this._time
-    this.feedbackGain.gain.value = this._feedback
+    // ctor-setter-parity (H12): initialize via the public setters so ctor
+    // validation can't diverge from real-time validation. Without this,
+    // createDelay({ feedback: -5 }) previously clamped only the upper
+    // bound (Math.min(v, 0.99)) and let negative feedback straight into
+    // the feedback loop — a negative-gain feedback loop is an
+    // exponentially-growing oscillator (ear-damage class bug).
+    this.time = options.time ?? 0.3
+    this.feedback = options.feedback ?? 0.4
 
     // Wire effect chain with feedback loop:
     // input -> delayNode -> feedbackGain -> delayNode (loop)
@@ -88,7 +91,7 @@ export class DelayEffect extends BaseEffect {
 
   set time(v: number) {
     // M9: Clamp to valid range [0, maxTime]
-    this._time = Math.max(0, Math.min(this._maxTime, v))
+    this._time = this.clampTime(v)
     smoothParamSet(this.delayNode.delayTime, this._time, this.audioContext.currentTime)
   }
 
@@ -98,7 +101,7 @@ export class DelayEffect extends BaseEffect {
   }
 
   set feedback(v: number) {
-    this._feedback = Math.max(0, Math.min(0.99, v))
+    this._feedback = this.clampFeedback(v)
     smoothParamSet(this.feedbackGain.gain, this._feedback, this.audioContext.currentTime)
   }
 
@@ -125,6 +128,32 @@ export class DelayEffect extends BaseEffect {
       case 'feedback': return this.feedbackGain.gain
       default: return null
     }
+  }
+
+  /**
+   * ramp-setter-desync fix: rampTo('time'/'feedback', ...) routes through
+   * these same clamp functions the property setters use, and updates the
+   * shadow field, so the getter and the AudioParam can never diverge.
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    switch (param) {
+      case 'time':
+        this._time = this.clampTime(value)
+        return this._time
+      case 'feedback':
+        this._feedback = this.clampFeedback(value)
+        return this._feedback
+      default:
+        return value
+    }
+  }
+
+  private clampTime(v: number): number {
+    return Math.max(0, Math.min(this._maxTime, v))
+  }
+
+  private clampFeedback(v: number): number {
+    return Math.max(0, Math.min(0.99, v))
   }
 }
 

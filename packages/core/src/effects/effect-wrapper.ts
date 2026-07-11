@@ -92,6 +92,24 @@ export class EffectWrapper implements Effect {
       // We detect this by checking for both methods (duck-typing).
       this.inputNode.connect(externalEffect as unknown as AudioNode)
     }
+    else {
+      // Branch 3 (R11#10 fix): the documented minimum interface for
+      // ExternalEffect is "any object with connect()" — an object that has
+      // connect() but neither an `.input` property nor a `disconnect()`
+      // method (so it doesn't look like an AudioNode) previously fell
+      // through both branches above with NO input wiring at all: signal
+      // from the chain would never reach it, only
+      // `externalEffect.connect(this.wetGain)` below would run, wiring the
+      // *output* while the *input* stayed silently dead. Attempt the same
+      // direct connect as branch 2 as a last resort; if the object isn't
+      // actually AudioNode-compatible, `connect()` throws and we swallow
+      // it — the effect's `input` getter still exists, it just won't carry
+      // signal for effects that don't meet the documented minimum.
+      try {
+        this.inputNode.connect(externalEffect as unknown as AudioNode)
+      }
+      catch { /* externalEffect isn't AudioNode-connectable; input left unwired */ }
+    }
 
     // Connect external effect output to wetGain
     externalEffect.connect(this.wetGain)

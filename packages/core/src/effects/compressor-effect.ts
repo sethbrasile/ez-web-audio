@@ -52,11 +52,11 @@ export class CompressorEffect extends BaseEffect {
 
   // Shadow state: setters smooth via setTargetAtTime, so node .value lags
   // the target — getters return these instead
-  private _threshold: number
-  private _ratio: number
-  private _knee: number
-  private _attack: number
-  private _release: number
+  private _threshold!: number
+  private _ratio!: number
+  private _knee!: number
+  private _attack!: number
+  private _release!: number
 
   constructor(
     audioContext: AudioContext,
@@ -64,19 +64,16 @@ export class CompressorEffect extends BaseEffect {
   ) {
     super(audioContext)
 
-    this._threshold = options.threshold ?? -24
-    this._ratio = options.ratio ?? 4
-    this._knee = options.knee ?? 30
-    this._attack = options.attack ?? 0.003
-    this._release = options.release ?? 0.25
-
-    // Create and configure compressor
+    // Create the compressor node first...
     this.compressorNode = audioContext.createDynamicsCompressor()
-    this.compressorNode.threshold.value = this._threshold
-    this.compressorNode.ratio.value = this._ratio
-    this.compressorNode.knee.value = this._knee
-    this.compressorNode.attack.value = this._attack
-    this.compressorNode.release.value = this._release
+
+    // ...then initialize via the public setters (ctor-setter-parity) so
+    // ctor values can't diverge from the setters' clamp ranges.
+    this.threshold = options.threshold ?? -24
+    this.ratio = options.ratio ?? 4
+    this.knee = options.knee ?? 30
+    this.attack = options.attack ?? 0.003
+    this.release = options.release ?? 0.25
 
     // Wire effect chain: input -> compressor -> wetGain
     this.inputNode.connect(this.compressorNode)
@@ -95,7 +92,7 @@ export class CompressorEffect extends BaseEffect {
 
   set threshold(v: number) {
     // M8: Clamp to valid range [-100, 0] dB
-    this._threshold = Math.max(-100, Math.min(0, v))
+    this._threshold = this.clampThreshold(v)
     smoothParamSet(this.compressorNode.threshold, this._threshold, this.audioContext.currentTime)
   }
 
@@ -106,7 +103,7 @@ export class CompressorEffect extends BaseEffect {
 
   set ratio(v: number) {
     // M8: Clamp to valid range [1, 20]
-    this._ratio = Math.max(1, Math.min(20, v))
+    this._ratio = this.clampRatio(v)
     smoothParamSet(this.compressorNode.ratio, this._ratio, this.audioContext.currentTime)
   }
 
@@ -117,7 +114,7 @@ export class CompressorEffect extends BaseEffect {
 
   set knee(v: number) {
     // M8: Clamp to valid range [0, 40] dB
-    this._knee = Math.max(0, Math.min(40, v))
+    this._knee = this.clampKnee(v)
     smoothParamSet(this.compressorNode.knee, this._knee, this.audioContext.currentTime)
   }
 
@@ -128,7 +125,7 @@ export class CompressorEffect extends BaseEffect {
 
   set attack(v: number) {
     // M8: Clamp to valid range [0, 1] seconds
-    this._attack = Math.max(0, Math.min(1, v))
+    this._attack = this.clampAttack(v)
     smoothParamSet(this.compressorNode.attack, this._attack, this.audioContext.currentTime)
   }
 
@@ -139,7 +136,7 @@ export class CompressorEffect extends BaseEffect {
 
   set release(v: number) {
     // M8: Clamp to valid range [0, 1] seconds
-    this._release = Math.max(0, Math.min(1, v))
+    this._release = this.clampRelease(v)
     smoothParamSet(this.compressorNode.release, this._release, this.audioContext.currentTime)
   }
 
@@ -165,6 +162,54 @@ export class CompressorEffect extends BaseEffect {
       case 'release': return this.compressorNode.release
       default: return null
     }
+  }
+
+  /**
+   * ramp-setter-desync fix: rampTo() re-applies the same clamp each
+   * property setter uses and updates the shadow field, so getters stay
+   * honest after a ramp and the AudioParam can never receive an
+   * out-of-range value the setter would have rejected.
+   */
+  protected override onParamRamped(param: string, value: number): number {
+    switch (param) {
+      case 'threshold':
+        this._threshold = this.clampThreshold(value)
+        return this._threshold
+      case 'ratio':
+        this._ratio = this.clampRatio(value)
+        return this._ratio
+      case 'knee':
+        this._knee = this.clampKnee(value)
+        return this._knee
+      case 'attack':
+        this._attack = this.clampAttack(value)
+        return this._attack
+      case 'release':
+        this._release = this.clampRelease(value)
+        return this._release
+      default:
+        return value
+    }
+  }
+
+  private clampThreshold(v: number): number {
+    return Math.max(-100, Math.min(0, v))
+  }
+
+  private clampRatio(v: number): number {
+    return Math.max(1, Math.min(20, v))
+  }
+
+  private clampKnee(v: number): number {
+    return Math.max(0, Math.min(40, v))
+  }
+
+  private clampAttack(v: number): number {
+    return Math.max(0, Math.min(1, v))
+  }
+
+  private clampRelease(v: number): number {
+    return Math.max(0, Math.min(1, v))
   }
 }
 
