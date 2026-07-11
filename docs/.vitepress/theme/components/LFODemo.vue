@@ -3,13 +3,22 @@ import type { FilterEffect } from 'ez-web-audio'
 import { useCleanup, useLFO, useOscillator } from '@ez-web-audio/vue'
 import { createFilterEffect } from 'ez-web-audio'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 
 type TabType = 'tremolo' | 'vibrato' | 'filter'
 
-const TAB_COLORS: Record<TabType, string> = {
-  tremolo: '#4ecdc4',
-  vibrato: '#ff6b6b',
-  filter: '#ffd93d',
+// Mode caption shown under the tab bar. Mode differentiation used to be
+// carried by a hardcoded per-tab hex color (also used for the waveform
+// stroke); the canvas now always draws with the single --ewa-accent token,
+// so the caption text is what tells the modes apart visually.
+const MODE_CAPTIONS: Record<TabType, string> = {
+  tremolo: 'Tremolo · amplitude',
+  vibrato: 'Vibrato · pitch',
+  filter: 'Filter Sweep · frequency',
 }
 
 const playing = ref(false)
@@ -29,6 +38,7 @@ let animationFrameId: number | null = null
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let animationPhase = 0
 let lastFrameTime = 0
+let themeObserver: MutationObserver | null = null
 
 // Logarithmic rate mapping: 0-100 -> ~0.1-20 Hz
 // Midpoint (50) -> ~3.2 Hz, which falls squarely in the tremolo/vibrato range
@@ -40,6 +50,8 @@ const rate = computed(() => {
 const depth = computed(() => {
   return depthSlider.value / 100
 })
+
+const modeCaption = computed(() => MODE_CAPTIONS[activeTab.value])
 
 function computeDepthForTab(): number {
   const d = depth.value
@@ -79,6 +91,22 @@ const depthDisplayLabel = computed(() => {
       return ''
   }
 })
+
+// ParameterSlider format callbacks. Both sliders keep their existing 0-100
+// raw domain (see rate/depth computeds above) — these just translate that
+// raw value into the same display text the pre-kit markup rendered, with no
+// change to the underlying log-mapped rate math or per-mode depth math.
+function formatRate(v: number): string {
+  return `${(0.1 * (100 ** (v / 100))).toFixed(1)} Hz`
+}
+
+function formatDepth(_v: number): string {
+  return depthDisplayLabel.value
+}
+
+function onWaveformSelect(wave: string) {
+  waveformType.value = wave as typeof waveformType.value
+}
 
 function connectLFOToTab() {
   if (!lfo.value || !oscillator.value)
@@ -255,7 +283,9 @@ function computeWaveformY(t: number, type: string): number {
   }
 }
 
-// Shared waveform drawing logic — used by both static and animated paths
+// Shared waveform drawing logic — used by both static and animated paths.
+// Colors are read from --ewa-* tokens via getComputedStyle at draw time (not
+// hardcoded hex) so the canvas tracks light/dark theme automatically.
 function drawWaveformToCanvas(
   ctx: CanvasRenderingContext2D,
   logicalWidth: number,
@@ -264,7 +294,10 @@ function drawWaveformToCanvas(
   alpha: number,
 ) {
   const dpr = window.devicePixelRatio || 1
-  const accentColor = TAB_COLORS[activeTab.value]
+  const style = getComputedStyle(document.documentElement)
+  const accentColor = style.getPropertyValue('--ewa-accent').trim() || '#4a9eff'
+  const gridColor = style.getPropertyValue('--ewa-line-2').trim() || 'rgba(128, 128, 128, 0.2)'
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const amplitude = logicalHeight * 0.35 * depth.value
   const centerY = logicalHeight / 2
 
@@ -273,7 +306,7 @@ function drawWaveformToCanvas(
   ctx.clearRect(0, 0, logicalWidth, logicalHeight)
 
   // Center line
-  ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'
+  ctx.strokeStyle = gridColor
   ctx.lineWidth = 1
   ctx.setLineDash([4, 4])
   ctx.globalAlpha = 1
@@ -283,10 +316,13 @@ function drawWaveformToCanvas(
   ctx.stroke()
   ctx.setLineDash([])
 
-  // Waveform
+  // Waveform — accent stroke with a soft glow (no glow under reduced motion)
+  ctx.save()
   ctx.strokeStyle = accentColor
-  ctx.lineWidth = 2.5
+  ctx.lineWidth = 3.5
   ctx.globalAlpha = alpha
+  ctx.shadowColor = accentColor
+  ctx.shadowBlur = reducedMotion ? 0 : 10
   ctx.beginPath()
 
   const visibleCycles = 3
@@ -303,6 +339,7 @@ function drawWaveformToCanvas(
     }
   }
   ctx.stroke()
+  ctx.restore()
   ctx.globalAlpha = 1
 }
 
@@ -371,6 +408,18 @@ onMounted(() => {
   nextTick(() => {
     drawStaticWaveform()
   })
+
+  // Canvas colors are read from --ewa-* tokens at draw time. While playing,
+  // the rAF loop (drawLoop) repaints every frame and naturally picks up a
+  // theme flip. While idle, only drawStaticWaveform() runs on mount/resize/
+  // param-change — nothing repaints on a theme change alone, so watch
+  // <html class> and redraw the static frame.
+  themeObserver = new MutationObserver(() => {
+    if (!playing.value) {
+      drawStaticWaveform()
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
 onUnmounted(() => {
@@ -379,376 +428,232 @@ onUnmounted(() => {
     animationFrameId = null
   }
   window.removeEventListener('resize', handleResize)
+  themeObserver?.disconnect()
+  themeObserver = null
 })
 </script>
 
 <template>
-  <div class="lfo-demo">
-    <div class="warning">
+  <DemoFrame
+    class="lfo-demo"
+    :error="error"
+    takeaway="One LFO, three musical effects, seen and heard at once."
+  >
+    <VolumeWarning>
       <strong>Note:</strong> Audio sources can be loud. Start with low volume.
-    </div>
+    </VolumeWarning>
 
-    <!-- Presets -->
-    <div class="control-group">
-      <div class="row preset-row">
-        <label>Presets:</label>
-        <div class="button-group preset-group">
-          <button
-            v-for="preset in presets"
-            :key="preset.name"
-            class="preset-button"
-            @click="applyPreset(preset)"
-          >
-            {{ preset.name }}
-          </button>
-        </div>
+    <!--
+      Mode tabs stay as the demo's own buttons (not kit PresetSelector) —
+      e2e/interactions.spec.ts asserts on `.tab-button` and toggling of the
+      `.active` class directly, so the class contract is preserved.
+    -->
+    <div class="mode-row">
+      <div class="tab-bar">
+        <button
+          v-for="tab in (['tremolo', 'vibrato', 'filter'] as TabType[])"
+          :key="tab"
+          class="tab-button"
+          :class="{ active: activeTab === tab }"
+          @click="activeTab = tab"
+        >
+          {{ tab === 'filter' ? 'Filter Sweep' : tab.charAt(0).toUpperCase() + tab.slice(1) }}
+        </button>
       </div>
+
+      <!--
+        `class="play-button"` merges (Vue attr fallthrough) onto PlayButton's
+        root <button>, alongside its own `ewa-play-btn play-btn` classes, so
+        the e2e `.play-button` selector keeps matching.
+      -->
+      <PlayButton class="play-button" :playing="playing" :loading="loading" @click="togglePlayback" />
     </div>
 
-    <!-- Play button — prominent position above tab bar -->
-    <div class="play-row">
-      <button
-        class="play-button"
-        :disabled="loading"
-        @click="togglePlayback"
-      >
-        {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
-      </button>
-    </div>
+    <p class="mode-caption">
+      {{ modeCaption }}
+    </p>
 
-    <!-- Tab bar -->
-    <div class="tab-bar">
-      <button
-        v-for="tab in (['tremolo', 'vibrato', 'filter'] as TabType[])"
-        :key="tab"
-        class="tab-button"
-        :class="{ active: activeTab === tab }"
-        :style="activeTab === tab ? { borderBottomColor: TAB_COLORS[tab], color: TAB_COLORS[tab] } : {}"
-        @click="activeTab = tab"
-      >
-        {{ tab === 'filter' ? 'Filter Sweep' : tab.charAt(0).toUpperCase() + tab.slice(1) }}
-      </button>
-    </div>
-
-    <!-- Canvas visualization -->
     <div class="canvas-container">
       <canvas ref="canvasRef" class="waveform-canvas" />
     </div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <div class="control-group">
-        <div class="row">
-          <label for="lfo-rate">Rate:</label>
-          <input
-            id="lfo-rate"
-            v-model.number="rateSlider"
-            type="range"
-            min="0"
-            max="100"
-            :aria-label="`LFO rate: ${rate.toFixed(1)} Hz`"
-          >
-          <span class="value">{{ rate.toFixed(1) }} Hz</span>
-        </div>
-
-        <div class="row">
-          <label for="lfo-depth">Depth:</label>
-          <input
-            id="lfo-depth"
-            v-model.number="depthSlider"
-            type="range"
-            min="0"
-            max="100"
-            :aria-label="`LFO depth: ${depthDisplayLabel}`"
-          >
-          <span class="value">{{ depthDisplayLabel }}</span>
-        </div>
-
-        <div class="row">
-          <label>Waveform:</label>
-          <div class="button-group waveform-group">
-            <button
-              v-for="wf in (['sine', 'square', 'sawtooth', 'triangle'] as const)"
-              :key="wf"
-              :class="{ active: waveformType === wf }"
-              :aria-label="`Waveform: ${wf}`"
-              @click="waveformType = wf"
-            >
-              <svg width="24" height="12" viewBox="0 0 24 12" class="waveform-icon">
-                <path
-                  v-if="wf === 'sine'"
-                  d="M0,6 C4,0 8,0 12,6 C16,12 20,12 24,6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-                <path
-                  v-else-if="wf === 'square'"
-                  d="M0,10 L0,2 L6,2 L6,10 L12,10 L12,2 L18,2 L18,10 L24,10"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-                <path
-                  v-else-if="wf === 'sawtooth'"
-                  d="M0,10 L8,2 L8,10 L16,2 L16,10 L24,2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-                <path
-                  v-else-if="wf === 'triangle'"
-                  d="M0,10 L6,2 L12,10 L18,2 L24,10"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-              <span class="waveform-label">{{ wf }}</span>
-            </button>
-          </div>
-        </div>
+    <div class="presets-row">
+      <span class="presets-label">Presets:</span>
+      <div class="preset-chips">
+        <button
+          v-for="preset in presets"
+          :key="preset.name"
+          class="preset-chip"
+          @click="applyPreset(preset)"
+        >
+          {{ preset.name }}
+        </button>
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
+    <div class="sliders">
+      <ParameterSlider
+        id="lfo-rate"
+        v-model="rateSlider"
+        label="Rate"
+        :min="0"
+        :max="100"
+        :format="formatRate"
+      />
+
+      <ParameterSlider
+        id="lfo-depth"
+        v-model="depthSlider"
+        label="Depth"
+        :min="0"
+        :max="100"
+        :format="formatDepth"
+      />
     </div>
-  </div>
+
+    <WaveformSelector
+      :model-value="waveformType"
+      small
+      @update:model-value="onWaveformSelect"
+    />
+  </DemoFrame>
 </template>
 
 <style scoped>
-.lfo-demo {
-  padding: 1.5rem;
-  background: var(--vp-c-bg-soft);
-  border-radius: 8px;
-  margin: 1.5rem 0;
-}
-
-.warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border-left: 3px solid var(--vp-c-warning);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-}
-
-.warning strong {
-  color: var(--vp-c-warning);
-}
-
-.play-row {
+.mode-row {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
 .tab-bar {
   display: flex;
-  gap: 0;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--vp-c-divider);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
 }
 
 .tab-button {
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   border: none;
-  border-bottom: 3px solid transparent;
-  background: none;
-  color: var(--vp-c-text-2);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ewa-text-2);
   cursor: pointer;
-  font-size: 0.9em;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--vp-font-family-base);
+  transition: background 0.15s, color 0.15s;
 }
 
-.tab-button:hover {
-  color: var(--vp-c-text-1);
+.tab-button:hover:not(.active) {
+  color: var(--ewa-text);
+  background: var(--ewa-accent-soft);
 }
 
 .tab-button.active {
-  font-weight: 600;
+  background: var(--ewa-accent);
+  color: var(--ewa-on-accent);
+  box-shadow: var(--ewa-shadow);
 }
 
 .tab-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: -2px;
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
+}
+
+.mode-caption {
+  margin: 12px 0 0;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.8rem;
+  color: var(--ewa-text-2);
 }
 
 .canvas-container {
-  margin-bottom: 1rem;
+  margin: 12px 0 20px;
 }
 
 .waveform-canvas {
   width: 100%;
-  border-radius: 8px;
-  background: var(--vp-c-bg);
+  border-radius: 10px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
   display: block;
 }
 
-.controls {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.row {
+.presets-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.preset-row {
-  margin-bottom: 0.5rem;
-}
-
-label {
-  min-width: 100px;
+.presets-label {
+  font-size: 0.85rem;
   font-weight: 500;
-  font-size: 0.9em;
+  color: var(--ewa-text-2);
 }
 
-input[type="range"] {
-  flex: 1;
-  min-width: 200px;
-  max-width: 400px;
-}
-
-.value {
-  min-width: 80px;
-  font-family: monospace;
-  font-size: 0.9em;
-  color: var(--vp-c-text-2);
-}
-
-.button-group {
+.preset-chips {
   display: flex;
-  gap: 0.5rem;
-}
-
-.preset-group {
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+.preset-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
   cursor: pointer;
-  font-size: 0.9em;
-  transition: all 0.2s;
+  font-size: 0.8rem;
+  font-family: var(--vp-font-family-base);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-button:hover:not(:disabled) {
-  background: var(--vp-c-bg-soft);
-  border-color: var(--vp-c-brand);
+.preset-chip:hover {
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-accent-ink);
+  border-color: var(--ewa-accent);
 }
 
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+.preset-chip:focus-visible {
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-button.active {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
-  font-weight: 600;
-}
-
-.preset-button {
-  font-size: 0.85em;
-  padding: 0.35rem 0.75rem;
-}
-
-.waveform-group button {
-  padding: 0.4rem 0.6rem;
+.sliders {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  min-width: 64px;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 20px;
 }
 
-.waveform-icon {
-  display: block;
-}
-
-.waveform-label {
-  font-size: 0.75em;
-  text-transform: capitalize;
-  line-height: 1;
-}
-
-.play-button {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-weight: 600;
-  min-width: 80px;
-}
-
-.play-button:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.5rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger-1);
-  border-radius: 4px;
-  font-size: 0.9em;
+.sliders > * {
+  flex: 1;
+  min-width: 200px;
 }
 
 @media (max-width: 640px) {
-  .row {
+  .mode-row {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  label {
-    min-width: auto;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .button-group {
-    width: 100%;
-  }
-
-  .button-group button {
-    flex: 1;
+    align-items: stretch;
   }
 
   .tab-bar {
-    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .tab-button {
+    flex: 1;
+    text-align: center;
   }
 }
 </style>
