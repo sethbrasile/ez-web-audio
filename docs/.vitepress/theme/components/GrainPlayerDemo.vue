@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useCleanup, useGrainPlayer, useSound } from '@ez-web-audio/vue'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import PresetSelector from './kit/PresetSelector.vue'
 
 // Module-level preset constant — allocated once, not per call
 const PRESETS: Record<string, { grainSize: number, overlap: number, jitter: number, speed: number, pitch: number, position?: number }> = {
@@ -29,6 +33,9 @@ const PRESET_NAMES = [
   { id: 'freeze', label: 'Freeze' },
 ]
 
+// Kit PresetSelector option shape — derived once from the frozen PRESET_NAMES above.
+const PRESET_OPTIONS = PRESET_NAMES.map(({ id, label }) => ({ value: id, label }))
+
 // Composable-managed audio state
 const cleanup = useCleanup()
 const { instance: sound, load: loadSound } = useSound()
@@ -40,6 +47,7 @@ let waveformImageData: ImageData | null = null
 let animFrameId: number | null = null
 let lastFrameTime = 0
 let bufferDurationSeconds = 4
+let themeObserver: MutationObserver | null = null
 
 // Reactive UI state
 const playing = ref(false)
@@ -59,6 +67,30 @@ const grainSize = ref(0.1) // seconds
 const overlap = ref(0.05) // seconds
 const jitter = ref(0) // 0–1
 const loop = ref(true)
+
+// PresetSelector's v-model is typed as a generic string; this narrows it back
+// to `string | null` and routes writes through applyPreset (which does more
+// than assign — it also sets grainSize/overlap/jitter/speed/pitch/position)
+// without changing any playback logic.
+const activePresetModel = computed<string>({
+  get: () => activePreset.value ?? '',
+  set: (v) => { applyPreset(v) },
+})
+
+// Value readouts for ParameterSlider — same formatting as the original raw
+// <input type="range"> readouts, just handed to the kit component instead.
+function formatSpeed(v: number) {
+  return `${v.toFixed(2)}x`
+}
+function formatPitch(v: number) {
+  return `${v > 0 ? '+' : ''}${v} semitones`
+}
+function formatMs(v: number) {
+  return `${(v * 1000).toFixed(0)}ms`
+}
+function formatPercent(v: number) {
+  return `${(v * 100).toFixed(0)}%`
+}
 
 // Parameter watches
 watch(pitch, (v) => {
@@ -156,17 +188,15 @@ function setupCanvas() {
     ctx.scale(dpr, dpr)
 }
 
-// Resolve CSS custom properties for canvas drawing (light/dark mode aware) (H10)
+// Resolve --ewa-* design tokens for canvas drawing, read at draw time so
+// light/dark theme switches are picked up automatically (see themeObserver
+// below for the case where nothing else would trigger a redraw).
 function resolveCanvasColors() {
   const style = getComputedStyle(document.documentElement)
-  const bg = style.getPropertyValue('--vp-c-bg-soft').trim() || '#f6f6f7'
-  const stroke = style.getPropertyValue('--vp-c-brand-1').trim() || '#3c8cf8'
-  return {
-    bg,
-    stroke,
-    position: '#ff6b6b',
-    jitterFill: 'rgba(60,140,248,0.15)',
-  }
+  const bg = style.getPropertyValue('--ewa-well').trim() || '#1a1a2e'
+  const stroke = style.getPropertyValue('--ewa-accent').trim() || '#0e9268'
+  const position = style.getPropertyValue('--ewa-lead').trim() || '#2f9fd6'
+  return { bg, stroke, position }
 }
 
 // Unified waveform drawing — renders waveform from AudioBuffer (M29)
@@ -226,11 +256,15 @@ function drawOverlayOnCtx(
 ) {
   const posX = position.value * width
 
-  // Jitter zone (translucent shaded region around position)
+  // Jitter zone (translucent shaded region around position) — same --ewa-lead
+  // hue as the position marker, at reduced alpha instead of a hardcoded rgba()
+  // so it tracks light/dark theme without needing to parse the token's format.
   if (jitter.value > 0) {
     const jitterPx = jitter.value * width * 0.5
-    ctx.fillStyle = colors.jitterFill
+    ctx.globalAlpha = 0.15
+    ctx.fillStyle = colors.position
     ctx.fillRect(posX - jitterPx, 0, jitterPx * 2, height)
+    ctx.globalAlpha = 1
   }
 
   // Position line
@@ -376,6 +410,19 @@ onMounted(() => {
   document.addEventListener('touchend', handleTouchEnd)
   document.addEventListener('touchcancel', handleTouchEnd)
   window.addEventListener('resize', handleResize)
+
+  // Canvas colors are read from --ewa-* tokens at draw time, but the rAF
+  // overlay loop only runs while playing — nothing repaints when the user
+  // flips light/dark theme while idle. Watch <html class> and redraw the
+  // cached waveform + overlay so the canvas doesn't get stuck showing the
+  // previous theme (same pattern as XYPad.vue).
+  themeObserver = new MutationObserver(() => {
+    if (waveformLoaded.value) {
+      drawWaveform()
+      drawOverlay()
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
 onUnmounted(() => {
@@ -384,16 +431,17 @@ onUnmounted(() => {
   document.removeEventListener('touchend', handleTouchEnd)
   document.removeEventListener('touchcancel', handleTouchEnd)
   window.removeEventListener('resize', handleResize)
+  themeObserver?.disconnect()
+  themeObserver = null
 })
 </script>
 
 <template>
-  <div class="grain-player-demo">
-    <!-- Error banner -->
-    <div v-if="error" class="error-banner">
-      {{ error }}
-    </div>
-
+  <DemoFrame
+    class="grain-player-demo"
+    :error="error"
+    takeaway="Granular synthesis — pitch and speed are independent."
+  >
     <!-- Waveform canvas — interaction AND visualization surface -->
     <div class="canvas-container">
       <canvas
@@ -411,100 +459,112 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Playback row -->
-    <div class="controls-row playback-row">
-      <button
-        class="play-button"
-        :aria-label="playing ? 'Stop' : 'Play'"
-        :disabled="loading"
-        @click="togglePlay"
-      >
-        {{ loading ? 'Loading...' : playing ? 'Stop' : 'Play' }}
-      </button>
+    <div class="controls">
+      <!-- Playback row -->
+      <div class="playback-row">
+        <PlayButton
+          class="play-button"
+          :playing="playing"
+          :loading="loading"
+          loading-label="Loading..."
+          @click="togglePlay"
+        />
 
-      <label class="control-group">
-        <span>Speed</span>
-        <input v-model.number="speed" type="range" min="0.1" max="3" step="0.05">
-        <span class="readout">{{ speed.toFixed(2) }}x</span>
-      </label>
+        <ParameterSlider
+          v-model="speed"
+          class="speed-slider"
+          label="Speed"
+          :min="0.1"
+          :max="3"
+          :step="0.05"
+          :format="formatSpeed"
+        />
 
-      <label class="control-group loop-toggle">
-        <input v-model="loop" type="checkbox" @change="onLoopChange">
-        <span>Loop</span>
-      </label>
+        <label class="loop-toggle">
+          <input v-model="loop" type="checkbox" @change="onLoopChange">
+          <span>Loop</span>
+        </label>
+      </div>
+
+      <!-- Pitch -->
+      <ParameterSlider
+        v-model="pitch"
+        label="Pitch in semitones"
+        :min="-24"
+        :max="24"
+        :step="1"
+        center
+        :format="formatPitch"
+      />
+
+      <!-- Grain parameters -->
+      <div class="grain-row">
+        <ParameterSlider
+          v-model="grainSize"
+          label="Grain size"
+          :min="0.01"
+          :max="0.5"
+          :step="0.01"
+          :format="formatMs"
+        />
+
+        <ParameterSlider
+          v-model="overlap"
+          label="Grain overlap"
+          :min="0"
+          :max="grainSize - 0.001"
+          :step="0.001"
+          :format="formatMs"
+        />
+
+        <ParameterSlider
+          v-model="jitter"
+          label="Grain jitter"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          :format="formatPercent"
+        />
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-row">
+        <PresetSelector
+          v-model="activePresetModel"
+          label="Presets"
+          :options="PRESET_OPTIONS"
+        />
+      </div>
     </div>
 
-    <!-- Pitch row -->
-    <div class="controls-row pitch-row">
-      <label class="control-group wide">
-        <span>Pitch</span>
-        <input v-model.number="pitch" type="range" min="-24" max="24" step="1" aria-label="Pitch in semitones">
-        <span class="readout">{{ pitch > 0 ? '+' : '' }}{{ pitch }} semitones</span>
-      </label>
-    </div>
-
-    <!-- Grain row -->
-    <div class="controls-row grain-row">
-      <label class="control-group">
-        <span>Grain Size</span>
-        <input v-model.number="grainSize" type="range" min="0.01" max="0.5" step="0.01" aria-label="Grain size">
-        <span class="readout">{{ (grainSize * 1000).toFixed(0) }}ms</span>
-      </label>
-
-      <label class="control-group">
-        <span>Overlap</span>
-        <input v-model.number="overlap" type="range" min="0" :max="grainSize - 0.001" step="0.001" aria-label="Grain overlap">
-        <span class="readout">{{ (overlap * 1000).toFixed(0) }}ms</span>
-        <span v-if="overlapClamped" class="clamp-hint" aria-live="polite">clamped to grain max</span>
-      </label>
-
-      <label class="control-group">
-        <span>Jitter</span>
-        <input v-model.number="jitter" type="range" min="0" max="1" step="0.01" aria-label="Grain jitter">
-        <span class="readout">{{ (jitter * 100).toFixed(0) }}%</span>
-      </label>
-    </div>
-
-    <!-- Preset buttons -->
-    <div class="presets-row">
-      <span class="presets-label">Presets:</span>
-      <button
-        v-for="preset in PRESET_NAMES"
-        :key="preset.id"
-        :class="{ active: activePreset === preset.id }"
-        @click="applyPreset(preset.id)"
-      >
-        {{ preset.label }}
-      </button>
-    </div>
-  </div>
+    <template v-if="overlapClamped" #status>
+      <span class="status-hint" role="status" aria-live="polite">Overlap clamped to grain size max</span>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-/* M31: bordered card container matching EffectsChainDemo.vue pattern */
-.grain-player-demo {
-  max-width: 800px;
-  margin: auto;
-  padding: 1.5rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  background: var(--vp-c-bg-soft);
-}
-
 .canvas-container {
   position: relative;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .waveform-canvas {
   display: block;
   width: 100%;
   height: 160px;
-  border-radius: 4px;
-  /* H10: background uses theme token — renders correctly in light and dark mode */
-  background: var(--vp-c-bg-soft);
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  /* Background matches the JS fill color read from --ewa-well at draw time,
+     so there's no flash-of-wrong-color before the first paint. */
+  background: var(--ewa-well);
   user-select: none;
+}
+
+.waveform-canvas:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
 .canvas-placeholder {
@@ -513,121 +573,70 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--vp-c-text-3);
+  color: var(--ewa-text-3);
   pointer-events: none;
 }
 
-.controls-row {
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.playback-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
 }
 
-.control-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.control-group.wide {
+.speed-slider {
   flex: 1;
-}
-
-.control-group span:first-child {
-  white-space: nowrap;
-  min-width: 5ch;
-}
-
-.control-group input[type='range'] {
-  flex: 1;
-  min-width: 80px;
+  min-width: 160px;
 }
 
 .loop-toggle {
-  gap: 0.35rem;
-  cursor: pointer;
-}
-
-.play-button {
-  padding: 0.5rem 1.5rem;
-  background: var(--vp-c-brand-1);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  color: var(--vp-c-white);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.play-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.play-button:hover:not(:disabled) {
-  background: var(--vp-c-brand-2);
-}
-
-.readout {
-  font-variant-numeric: tabular-nums;
-  min-width: 4ch;
-  text-align: right;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.9em;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-/* M14: inline feedback when overlap is silently clamped */
-.clamp-hint {
-  font-size: 0.75em;
-  color: var(--vp-c-warning-1, #e6a817);
-  white-space: nowrap;
-  margin-left: 0.25rem;
+.loop-toggle input[type='checkbox'] {
+  accent-color: var(--ewa-accent);
+  width: 16px;
+  height: 16px;
+}
+
+.grain-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.grain-row > * {
+  flex: 1;
+  min-width: 160px;
 }
 
 .presets-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
 }
 
-.presets-label {
-  font-size: 0.9em;
-  color: var(--vp-c-text-2);
-}
-
-.presets-row button {
-  padding: 0.3rem 0.75rem;
-  background: transparent;
-  border: 1px solid var(--vp-c-brand-1);
-  border-radius: 4px;
-  cursor: pointer;
+.status-hint {
   font-size: 0.85rem;
-  color: var(--vp-c-brand-1);
-  transition: background 0.15s, color 0.15s;
+  color: var(--ewa-warn);
 }
 
-.presets-row button:hover {
-  background: var(--vp-c-brand-soft);
-}
-
-/* M15: active preset indicator */
-.presets-row button.active {
-  background: var(--vp-c-brand-1);
-  color: var(--vp-c-white);
-}
-
-.error-banner {
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger-1);
-  border: 1px solid var(--vp-c-danger-1);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
+@media (max-width: 640px) {
+  .playback-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>
