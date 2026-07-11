@@ -11,5 +11,21 @@
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "files": ["LICENSE", "README.md", "dist"],
   "engines": { "node": ">=18" },
-  "peerDependencies": { "ez-web-audio": "workspace:^", "react": ">=18" }
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "peerDependencies": { "ez-web-audio": "workspace:^", "react": ">=18" },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "ez-web-audio": "workspace:*",
+    "happy-dom": "^20.6.1",
+    "react": "^19.2.7",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.18"
+  }
 }
