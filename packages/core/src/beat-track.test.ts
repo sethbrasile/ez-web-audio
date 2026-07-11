@@ -589,6 +589,11 @@ describe('edge cases', () => {
       expect(track.beats).toHaveLength(0)
     })
 
+    it('constructor throws for numBeats: 0 (R6: truthy-check silently ignored 0)', () => {
+      const context = new Mock() as unknown as AudioContext
+      expect(() => new BeatTrack(context, [], { numBeats: 0 })).toThrow('numBeats must be greater than 0')
+    })
+
     it('numBeats = 1 creates single beat', () => {
       const track = createBeatTrack()
       track.numBeats = 1
@@ -832,6 +837,105 @@ describe('velocity', () => {
     track.setPattern([true, false])
     expect(track.beats[0].active).toBe(true)
     expect(track.beats[0].velocity).toBe(1)
+  })
+})
+
+describe('g3: BeatTrack-level timer tracking + pattern length + restart', () => {
+  it('shrinking numBeats while playing shrinks beats.length; growing back restores active states (H4)', () => {
+    const track = createBeatTrack()
+    const sound = createSound()
+    track.addSound(sound)
+
+    track.beats[0].active = true
+    track.beats[3].active = true
+
+    track.playActiveBeats(120, 1 / 4)
+
+    track.numBeats = 2
+    expect(track.beats.length).toBe(2)
+    expect(track.beats[0].active).toBe(true)
+
+    track.numBeats = 4
+    expect(track.beats.length).toBe(4)
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[3].active).toBe(true)
+
+    track.stop()
+  })
+
+  it('stop() cancels pending BeatTrack-level beat-emit timers (no stray "beat" events after stop) (H3)', () => {
+    vi.useFakeTimers()
+    try {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      const beatEvents: any[] = []
+      track.addEventListener('beat', (e: any) => beatEvents.push(e.detail))
+
+      // beatDuration = 240 * (1/4) / 1200 = 0.05s -> beat index 0 fires
+      // synchronously (offset 0), beat index 1 is scheduled 50ms out via
+      // BeatTrack's own acTimeout (untracked prior to the H3 fix).
+      track.playActiveBeats(1200, 1 / 4)
+      const countAtStop = beatEvents.length
+      expect(countAtStop).toBe(1)
+
+      track.stop()
+
+      // Advance the AudioContext clock past the pending index-1 timer's due
+      // time and pump the shared RAF-driven acTimeout scheduler.
+      const audioContext = (track as any).audioContext
+      ;(audioContext as any)._deLorean._position = 0.05
+      vi.advanceTimersByTime(20)
+
+      // Without the fix, the index-1 'beat' emit (scheduled before stop())
+      // still fires ~50ms later even though playback was stopped.
+      expect(beatEvents.length).toBe(countAtStop)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restarting playActiveBeats cancels the still-pending pre-restart schedule (no flam) (M2)', () => {
+    vi.useFakeTimers()
+    try {
+      const track = createBeatTrack()
+      const sound = createSound()
+      track.addSound(sound)
+
+      const beatEvents: any[] = []
+      track.addEventListener('beat', (e: any) => beatEvents.push(e.detail))
+
+      // beatDuration = 240 * (1/4) / 1200 = 0.05s -> exactly two beats land in
+      // the 100ms lookahead window per call: index 0 (offset 0, sync) and
+      // index 1 (offset 50ms, deferred via acTimeout).
+      track.playActiveBeats(1200, 1 / 4)
+      expect(beatEvents).toHaveLength(1) // only the synchronous index-0 emit so far
+
+      // Restart before the deferred index-1 timer from the FIRST call fires.
+      track.playActiveBeats(1200, 1 / 4)
+
+      // Prevent the lookahead scheduler from scheduling any further beats so
+      // the test isolates exactly what the two calls above already scheduled.
+      ;(track as any).workerTimer.stop()
+
+      // Advance the AudioContext clock past both calls' 50ms deferred offset
+      // and pump the shared RAF-driven acTimeout scheduler once.
+      const audioContext = (track as any).audioContext
+      ;(audioContext as any)._deLorean._position = 0.05
+      vi.advanceTimersByTime(20)
+
+      const index1Events = beatEvents.filter((e: any) => e.beatIndex === 1)
+      // Without the fix: the pre-restart schedule's index-1 timer AND the
+      // post-restart schedule's index-1 timer both fire -> 2 events (flam).
+      // With the fix: the pre-restart schedule is cancelled at the top of
+      // playActiveBeats(), so only the post-restart index-1 timer fires.
+      expect(index1Events).toHaveLength(1)
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 })
 

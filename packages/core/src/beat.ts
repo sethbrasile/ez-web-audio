@@ -122,13 +122,8 @@ export class Beat {
     this.parentPlayIn(offset, this.velocity)
 
     this.trackedTimeout(() => {
-      this.isPlaying = true
-      this.currentTimeIsPlaying = true
-      // Schedule reset after duration elapses (matching markPlaying/markCurrentTimePlaying pattern)
-      this.trackedTimeout(() => {
-        this.isPlaying = false
-        this.currentTimeIsPlaying = false
-      }, this.duration)
+      this.markPlaying()
+      this.markCurrentTimePlaying()
     }, msOffset)
   }
 

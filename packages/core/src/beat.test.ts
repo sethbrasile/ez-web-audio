@@ -77,6 +77,24 @@ it('sets `isPlaying` to `true` when played and sets up a timer that sets `isPlay
   expect(await settle(() => beat.isPlaying)).toBe(false)
 })
 
+it('playIn() sets isPlaying and currentTimeIsPlaying after offset elapses, resetting after duration (R6: reuse markPlaying/markCurrentTimePlaying)', async () => {
+  const parent = new MockParentClass()
+  const beat = createBeat({
+    play: parent.play.bind(parent),
+    playIn: parent.playIn.bind(parent),
+    duration: 1,
+    setTimeout: mockSetTimeout,
+  })
+
+  beat.playIn(0)
+
+  expect(await settle(() => beat.isPlaying)).toBe(true)
+  expect(beat.currentTimeIsPlaying).toBe(true)
+
+  expect(await settle(() => beat.isPlaying)).toBe(false)
+  expect(beat.currentTimeIsPlaying).toBe(false)
+})
+
 describe('playIfActive()', () => {
   it('when active=true, calls parent play and sets isPlaying=true', () => {
     const parent = new MockParentClass()

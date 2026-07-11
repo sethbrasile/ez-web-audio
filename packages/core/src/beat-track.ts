@@ -107,12 +107,19 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
 
   // AudioContext-aware setTimeout for precise event timing
   private acTimeout: (fn: () => void, delayMillis: number) => number
+  private acClearTimeout: (id: number) => void
+
+  // IDs of BeatTrack-level acTimeout calls (emitBeat, triggerVisualOnly) that
+  // are still pending. Tracked so internalStop() (and restart) can cancel them
+  // — mirrors Beat's own pendingTimerIds pattern.
+  private pendingTimerIds: number[] = []
 
   constructor(private audioContext: AudioContext, sounds: (Playable & Connectable)[], opts?: BeatTrackOptions) {
     super(sounds, opts)
-    const { setTimeout } = audioContextAwareTimeout(audioContext)
+    const { setTimeout, clearTimeout } = audioContextAwareTimeout(audioContext)
     this.acTimeout = setTimeout
-    if (opts?.numBeats) {
+    this.acClearTimeout = clearTimeout
+    if (opts?.numBeats !== undefined) {
       this.numBeats = opts.numBeats
     }
     if (opts?.duration) {
@@ -164,23 +171,23 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    * ```
    */
   public get beats(): Beat[] {
-    if (this._beats.length >= this.numBeats) {
-      return this._beats
+    if (this._beats.length < this.numBeats) {
+      const needed = this.numBeats - this._beats.length
+
+      for (let i = 0; i < needed; i++) {
+        const beat = new Beat(this.audioContext, {
+          duration: this.duration,
+          playIn: this.playIn.bind(this),
+          play: this.play.bind(this),
+        })
+
+        this._beats.push(this.wrapWith ? this.wrapWith(beat) : beat)
+      }
     }
 
-    const needed = this.numBeats - this._beats.length
-
-    for (let i = 0; i < needed; i++) {
-      const beat = new Beat(this.audioContext, {
-        duration: this.duration,
-        playIn: this.playIn.bind(this),
-        play: this.play.bind(this),
-      })
-
-      this._beats.push(this.wrapWith ? this.wrapWith(beat) : beat)
-    }
-
-    return this._beats
+    // Cache retains beats beyond numBeats (on shrink) so their `active` state
+    // survives regrow; the returned view is always exactly numBeats long.
+    return this._beats.slice(0, this.numBeats)
   }
 
   /**
@@ -253,6 +260,9 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
     if (noteType <= 0) {
       throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
+    // Cancel any in-flight schedule before reinitializing so a restart never
+    // leaves stale pre-restart timers to fire alongside the new schedule.
+    this.cancelScheduledWork()
     this._playAllBeats = true
     this.currentTempo = bpm
     this.noteType = noteType
@@ -286,6 +296,9 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
     if (noteType <= 0) {
       throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
     }
+    // Cancel any in-flight schedule before reinitializing so a restart never
+    // leaves stale pre-restart timers to fire alongside the new schedule.
+    this.cancelScheduledWork()
     this._playAllBeats = false
     this.currentTempo = bpm
     this.noteType = noteType
@@ -495,7 +508,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
         beat.triggerVisualOnly()
       }
       else {
-        this.acTimeout(() => beat.triggerVisualOnly(), msOffset)
+        this.trackedAcTimeout(() => beat.triggerVisualOnly(), msOffset)
       }
     }
 
@@ -509,7 +522,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
       emitBeat()
     }
     else {
-      this.acTimeout(emitBeat, msOffset)
+      this.trackedAcTimeout(emitBeat, msOffset)
     }
   }
 
@@ -526,17 +539,53 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   }
 
   /**
-   * Internal stop implementation that doesn't check sync state.
-   * Used by unsync() to cleanly stop without throwing.
+   * Schedule a callback via the AudioContext-aware timeout, tracking its ID so
+   * it can be cancelled by cancelScheduledWork()/internalStop(). The ID is
+   * removed from pendingTimerIds once the callback runs, so the array only
+   * ever holds IDs for still-pending timers — mirrors Beat.trackedTimeout().
    * @internal
    */
-  private internalStop(): void {
+  private trackedAcTimeout(fn: () => void, delayMillis: number): number {
+    const id = this.acTimeout(() => {
+      const idx = this.pendingTimerIds.indexOf(id)
+      if (idx !== -1)
+        this.pendingTimerIds.splice(idx, 1)
+      fn()
+    }, delayMillis)
+    this.pendingTimerIds.push(id)
+    return id
+  }
+
+  /**
+   * Cancel all in-flight scheduled work (WorkerTimer loop, BeatTrack-level
+   * acTimeout callbacks, and per-Beat timers) without resetting playback
+   * position or emitting a 'stop' event. Used by internalStop() and by
+   * playBeats()/playActiveBeats() on restart so a fresh schedule never races
+   * against timers left over from a still-in-flight previous one.
+   * @internal
+   */
+  private cancelScheduledWork(): void {
     this.workerTimer.stop()
+
+    // Cancel any pending BeatTrack-level timers (emitBeat, triggerVisualOnly)
+    for (const id of this.pendingTimerIds) {
+      this.acClearTimeout(id)
+    }
+    this.pendingTimerIds = []
 
     // Cancel any pending beat-level timers to prevent post-stop visual flicker
     for (const beat of this.beats) {
       beat.cancelPendingTimers()
     }
+  }
+
+  /**
+   * Internal stop implementation that doesn't check sync state.
+   * Used by unsync() to cleanly stop without throwing.
+   * @internal
+   */
+  private internalStop(): void {
+    this.cancelScheduledWork()
 
     this.currentBeatIndex = 0
     this.nextBeatTime = 0
@@ -612,7 +661,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
       emitBeat()
     }
     else {
-      this.acTimeout(emitBeat, msOffset)
+      this.trackedAcTimeout(emitBeat, msOffset)
     }
   }
 
