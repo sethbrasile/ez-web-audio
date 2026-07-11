@@ -128,6 +128,37 @@ describe('baseParamController', () => {
     })
   })
 
+  describe('gain/pan validation parity with BaseSound.changeGainTo/changePanTo (R1#1)', () => {
+    it('update("gain").to(-1).as("ratio") throws the same ValidationError changeGainTo(-1) would', () => {
+      expect(() => controller.update('gain').to(-1).as('ratio')).toThrow('Gain must be >= 0. Received: -1')
+    })
+
+    it('update("gain") negative throw leaves gainNode.gain untouched', () => {
+      const before = controller.gain
+      expect(() => controller.update('gain').to(-1).as('ratio')).toThrow()
+      expect(controller.gain).toBe(before)
+    })
+
+    it('update("gain").to(1.5).as("ratio") warns instead of throwing (values > 1 are allowed)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      controller.update('gain').to(1.5).as('ratio')
+      expect(controller.gain).toBe(1.5)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('exceeds 1.0'))
+      warnSpy.mockRestore()
+    })
+
+    it('update("pan").to(1.5).as("ratio") warns but does not throw (Web Audio clamps pan)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(() => controller.update('pan').to(1.5).as('ratio')).not.toThrow()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('outside the [-1, 1] range'))
+      warnSpy.mockRestore()
+    })
+
+    it('update("pan").to(50).as("percent") throws — percent is not supported for pan (R1#2)', () => {
+      expect(() => controller.update('pan').to(50).as('percent')).toThrow(/percent.*not supported for.*pan/i)
+    })
+  })
+
   describe('onPlaySet() scheduling', () => {
     it('onPlaySet("gain").to(0.5) adds to startingValues', () => {
       controller.onPlaySet('gain').to(0.5)

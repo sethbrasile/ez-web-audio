@@ -840,6 +840,14 @@ describe('lfo', () => {
       }).toThrow(/must be a positive finite number/)
     })
 
+    it('frequency validation throws a ValidationError (G10 sweep, R1#3), not a plain Error', async () => {
+      const { ValidationError } = await import('./errors')
+      const lfo = new LFO()
+      expect(() => {
+        lfo.frequency = -1
+      }).toThrow(ValidationError)
+    })
+
     // L2: depth setter
     it('depth = NaN throws a descriptive error', () => {
       const lfo = new LFO()

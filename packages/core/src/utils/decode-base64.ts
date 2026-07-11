@@ -23,6 +23,13 @@ export function base64ToUint8(base64String: string): Uint8Array {
  * Strips extraneous stuff from a soundfont and splits the soundfont into a JSON
  * object. Keys are note names and values are base64 encoded strings.
  *
+ * Note (G10 ValidationError sweep, R1#3): the throws below are intentionally
+ * left as plain `Error`, not `ValidationError`. This function is `@private`
+ * and its only caller — `createFont()` in index.ts — wraps every failure
+ * (regardless of the thrown error's class) in an `AudioLoadError` before it
+ * reaches the public API, so the specific class thrown here never escapes to
+ * a consumer; converting would add no observable behavior.
+ *
  * @private
  * @method mungeSoundFont
  * @param {string} soundfont A soundfont as a long base64 string

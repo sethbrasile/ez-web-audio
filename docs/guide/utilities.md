@@ -21,6 +21,28 @@ pauseAll(sounds) // Pause all tracks (no effect on non-track sounds)
 stopAll(sounds) // Stop all sounds
 ```
 
+## Global Volume / Mute
+
+Set an app-wide volume or mute switch without touching every sound individually. Both are sugar over `setMasterDestination()`: the first call lazily creates a managed `GainNode` and installs it as the master destination, so instances created afterward route through it automatically:
+
+```typescript
+import { createSound, muteAll, setGlobalVolume } from 'ez-web-audio'
+
+setGlobalVolume(0.5) // app-wide volume knob, set once at startup
+
+const music = await createSound('theme.mp3')
+music.play() // plays at half the master volume
+
+// Mute button
+let isMuted = false
+document.getElementById('mute-btn')!.addEventListener('click', () => {
+  isMuted = !isMuted
+  muteAll(isMuted) // unmuting restores the last setGlobalVolume() value
+})
+```
+
+Same caveat as `setMasterDestination()`: only instances created **after** the first `setGlobalVolume()`/`muteAll()` call pick up the managed bus. Call it early (app startup) if you want it to cover everything, or move an existing instance with `instance.setDestination(...)`. `setGlobalVolume()` throws a `ValidationError` for negative values and warns on the console above 1 — the same rule as `sound.changeGainTo()`.
+
 ## Synchronized Playback
 
 Play multiple sounds at the exact same AudioContext timestamp. Unlike calling `play()` on each sound sequentially (which introduces tiny timing gaps), `playTogether` schedules all sources to a shared start time slightly in the future:
@@ -180,6 +202,15 @@ setDebugHandler(null)
 ## Interaction Helpers
 
 Bind touch and mouse events to a sound for piano-style interactive controls.
+
+::: tip Plain DOM conveniences, not framework hooks
+`useInteractionMethods` and `preventEventDefaults` live in the root package
+namespace and use the `use*` prefix, which can read like a React/Vue hook.
+They're not — both are framework-agnostic `addEventListener`/`removeEventListener`
+wrappers around plain DOM elements, safe to call from vanilla JS, React,
+Vue, or anywhere else. They stay in the root namespace for now (a future
+major version may move them under a `/dom` subpath for clarity).
+:::
 
 `useInteractionMethods(element, player)` attaches `touchstart`/`mousedown` → `play()` and `touchend`/`mouseup`/`mouseleave` → `stop()`. It returns a cleanup function to remove all listeners:
 

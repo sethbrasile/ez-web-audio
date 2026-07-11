@@ -1,10 +1,11 @@
-import type { RatioType } from '@controllers/base-param-controller'
+import type { RampType, RatioType } from '@controllers/base-param-controller'
 import type { Analyzer } from './analyzer'
 import type { Effect } from './effects'
 import type { GrainPlayerEventMap } from './events/event-types'
 import { convertValue } from '@utils/convert-value'
 import { WorkerTimer } from '@utils/worker-timer'
 import { getMasterDestination } from './audio-context'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
 /**
@@ -28,6 +29,14 @@ export interface GrainPlayerOptions {
   /** Initial master pan, -1 to 1 (default: 0). */
   pan?: number
 }
+
+/**
+ * exponentialRampToValueAtTime cannot ramp to or from exactly 0 (Web Audio API
+ * constraint). Mirrors BaseParamController's SAFE_NEAR_ZERO for the master
+ * gain/pan onPlaySet()/onPlayRamp() scheduling below.
+ * @internal
+ */
+const SAFE_NEAR_ZERO = 0.00001
 
 /**
  * Granular synthesis player that generates continuous texture/pad sounds from an audio buffer.
@@ -89,6 +98,14 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
   private _destination: AudioNode
   private _analyzer: Analyzer | null = null
   private effects: Effect[] = []
+
+  // onPlaySet()/onPlayRamp() scheduling for the master gain/pan bus (R1#6) —
+  // consume-once, applied by play() the same way BaseSound's onPlaySet/onPlayRamp
+  // apply at playAt(). Mirrors BaseParamController's scheduling arrays at a
+  // smaller scale (gain/pan only — no detune/frequency on a master bus).
+  private _masterStartingValues: { type: 'gain' | 'pan', value: number }[] = []
+  private _masterValuesAtTime: { type: 'gain' | 'pan', value: number, time: number }[] = []
+  private _masterRampValues: { type: 'gain' | 'pan', value: number, time: number, rampType: 'exponential' | 'linear' }[] = []
 
   constructor(
     public readonly audioContext: AudioContext,
@@ -270,7 +287,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
    */
   play(): void {
     if (this._disposed) {
-      throw new Error('Cannot play a disposed GrainPlayer. Create a new instance.')
+      throw new ValidationError('Cannot play a disposed GrainPlayer. Create a new instance.')
     }
     if (this._playing && this._paused) {
       // Already playing but paused — delegate to resume() so the correct
@@ -284,6 +301,10 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this._playing = true
     this._paused = false
     this.nextGrainTime = this.audioContext.currentTime
+
+    // Apply and clear any onPlaySet()/onPlayRamp() schedule for the master
+    // gain/pan bus — consume-once, same semantics as BaseSound (R1#6).
+    this.applyScheduledMasterValues()
 
     if (!this.timer) {
       this.timer = new WorkerTimer({ interval: this.SCHEDULE_INTERVAL })
@@ -491,10 +512,128 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     return {
       to: (value: number) => ({
         as: (method: RatioType): void => {
-          param.setValueAtTime(convertValue(value, method), this.audioContext.currentTime)
+          param.setValueAtTime(convertValue(value, method, type), this.audioContext.currentTime)
         },
       }),
     }
+  }
+
+  /**
+   * Schedule a master gain/pan value to be set when play() is called.
+   *
+   * Same fluent shape as `BaseSound.onPlaySet()` (R1#6) — use `.at(time)` for
+   * an immediate `setValueAtTime`, or `.endingAt(time, rampType)` to ramp to
+   * the value. Consume-once: the schedule is applied and cleared by the next
+   * play() call.
+   *
+   * @param type - 'gain' or 'pan'
+   * @returns Fluent builder for setting value and timing
+   *
+   * @example
+   * ```typescript
+   * // Fade the texture in over 2 seconds
+   * grainPlayer.onPlaySet('gain').to(0).at(0)
+   * grainPlayer.onPlaySet('gain').to(0.8).endingAt(2, 'linear')
+   * grainPlayer.play()
+   * ```
+   */
+  onPlaySet(type: 'gain' | 'pan'): {
+    to: (value: number) => {
+      at: (time: number) => void
+      endingAt: (time: number, rampType?: RampType) => void
+    }
+  } {
+    return {
+      to: (value: number) => {
+        this._masterStartingValues = this._masterStartingValues.filter(v => v.type !== type)
+        const entry = { type, value }
+        this._masterStartingValues.push(entry)
+        return {
+          at: (time: number) => {
+            this._masterStartingValues = this._masterStartingValues.filter(v => v !== entry)
+            this._masterValuesAtTime.push({ ...entry, time })
+          },
+          endingAt: (time: number, rampType: RampType = 'exponential') => {
+            this._masterStartingValues = this._masterStartingValues.filter(v => v !== entry)
+            this._masterRampValues.push({ ...entry, time, rampType })
+          },
+        }
+      },
+    }
+  }
+
+  /**
+   * Schedule a master gain/pan ramp when play() is called.
+   *
+   * Same fluent shape as `BaseSound.onPlayRamp()` (R1#6). Consume-once: the
+   * ramp is applied and cleared by the next play() call.
+   *
+   * @param type - 'gain' or 'pan'
+   * @param rampType - 'linear' or 'exponential' (default: 'exponential')
+   * @returns Fluent builder for setting start value, end value, and duration
+   *
+   * @example
+   * ```typescript
+   * grainPlayer.onPlayRamp('gain', 'linear').from(0).to(0.8).in(2)
+   * grainPlayer.play()
+   * ```
+   */
+  onPlayRamp(type: 'gain' | 'pan', rampType?: RampType): {
+    from: (startValue: number) => {
+      to: (endValue: number) => {
+        in: (endTime: number) => void
+      }
+    }
+  } {
+    return {
+      from: (startValue: number) => ({
+        to: (endValue: number) => ({
+          in: (endTime: number) => {
+            const resolvedRampType = rampType ?? 'exponential'
+            const safeStartValue = resolvedRampType === 'exponential' && startValue === 0
+              ? SAFE_NEAR_ZERO
+              : startValue
+            this._masterValuesAtTime.push({ type, value: safeStartValue, time: 0 })
+            this._masterRampValues.push({ type, value: endValue, time: endTime, rampType: resolvedRampType })
+          },
+        }),
+      }),
+    }
+  }
+
+  /**
+   * Apply and clear the onPlaySet()/onPlayRamp() schedule for the master bus.
+   * Called once at the top of play(). @internal
+   */
+  private applyScheduledMasterValues(): void {
+    if (this._masterStartingValues.length === 0 && this._masterValuesAtTime.length === 0 && this._masterRampValues.length === 0) {
+      return
+    }
+
+    const currentTime = this.audioContext.currentTime
+    const paramFor = (type: 'gain' | 'pan'): AudioParam => type === 'gain' ? this.masterGain.gain : this.masterPan.pan
+
+    for (const item of this._masterStartingValues) {
+      paramFor(item.type).setValueAtTime(item.value, currentTime)
+    }
+    for (const item of this._masterValuesAtTime) {
+      paramFor(item.type).setValueAtTime(item.value, currentTime + item.time)
+    }
+    for (const item of this._masterRampValues) {
+      const param = paramFor(item.type)
+      const time = currentTime + item.time
+      if (item.rampType === 'exponential') {
+        const safeValue = item.value === 0 ? SAFE_NEAR_ZERO : item.value
+        param.exponentialRampToValueAtTime(safeValue, time)
+      }
+      else {
+        param.linearRampToValueAtTime(item.value, time)
+      }
+    }
+
+    this._masterStartingValues = []
+    this._masterValuesAtTime = []
+    this._masterRampValues = []
   }
 
   /**

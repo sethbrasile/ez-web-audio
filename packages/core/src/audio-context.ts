@@ -8,6 +8,7 @@
  * @module audio-context
  * @internal
  */
+import { validateGain } from '@utils/validate-param'
 
 let _audioContext: AudioContext | null = null
 
@@ -65,6 +66,92 @@ export function getOrCreateAudioContext(): AudioContext {
     _audioContext = new AudioContext()
   }
   return _audioContext
+}
+
+// ─── Global Volume / Mute (R2#7) ──────────────────────────────────────────
+
+/** The managed GainNode created lazily by setGlobalVolume()/muteAll(). @internal */
+let _globalGainNode: GainNode | null = null
+/** Last value passed to setGlobalVolume(), restored when muteAll(false) runs. @internal */
+let _globalVolume = 1
+/** Current mute state, applied on top of _globalVolume. @internal */
+let _globalMuted = false
+
+/**
+ * Lazily create (or return the existing) managed master GainNode and route it
+ * through {@link setMasterDestination} so every instance created after the
+ * first `setGlobalVolume()`/`muteAll()` call passes through it automatically.
+ *
+ * Same caveat as `setMasterDestination()` itself: only instances created
+ * AFTER this runs pick up the managed gain — existing instances keep their
+ * current routing. If you already called `setMasterDestination()` yourself
+ * (e.g. to install a limiter), call `setGlobalVolume()`/`muteAll()` BEFORE
+ * that so your own bus takes over the master routing last, or route your bus
+ * through `getGlobalVolumeNode()` explicitly instead of the hardware destination.
+ * @internal
+ */
+function getOrCreateManagedMasterGain(): GainNode {
+  if (_globalGainNode)
+    return _globalGainNode
+
+  const audioContext = getOrCreateAudioContext()
+  const gain = audioContext.createGain()
+  gain.gain.value = _globalMuted ? 0 : _globalVolume
+  gain.connect(audioContext.destination)
+  setMasterDestination(gain)
+  _globalGainNode = gain
+  return gain
+}
+
+/**
+ * Set the global volume applied to every sound routed through the shared
+ * master bus (lazily created on first call via {@link setMasterDestination}).
+ *
+ * Only instances created AFTER the first `setGlobalVolume()`/`muteAll()` call
+ * pick up the managed bus — call this early (e.g. at app startup) if you want
+ * it to affect everything. Existing instances keep their prior routing; move
+ * them with `instance.setDestination(getGlobalVolumeNode())` if needed.
+ *
+ * @param value - Volume from 0 (silent) to 1 (full). Throws for negative values,
+ *   warns on the console for values above 1 — same rule as `BaseSound.changeGainTo()`.
+ *
+ * @example
+ * ```typescript
+ * import { setGlobalVolume } from 'ez-web-audio'
+ *
+ * setGlobalVolume(0.5) // halve the volume of everything created from here on
+ * ```
+ */
+export function setGlobalVolume(value: number): void {
+  validateGain(value)
+  _globalVolume = value
+  const gain = getOrCreateManagedMasterGain()
+  if (!_globalMuted) {
+    gain.gain.setValueAtTime(value, getOrCreateAudioContext().currentTime)
+  }
+}
+
+/**
+ * Mute or unmute every sound routed through the shared master bus (lazily
+ * created on first call via {@link setMasterDestination}).
+ *
+ * Unmuting restores the volume last set via {@link setGlobalVolume} (default 1).
+ * Same "only instances created after the first call" caveat as {@link setGlobalVolume}.
+ *
+ * @param muted - `true` to silence everything, `false` to restore the last volume
+ *
+ * @example
+ * ```typescript
+ * import { muteAll } from 'ez-web-audio'
+ *
+ * muteAll(true)  // silence everything
+ * muteAll(false) // restore previous volume
+ * ```
+ */
+export function muteAll(muted: boolean): void {
+  _globalMuted = muted
+  const gain = getOrCreateManagedMasterGain()
+  gain.gain.setValueAtTime(muted ? 0 : _globalVolume, getOrCreateAudioContext().currentTime)
 }
 
 /**
@@ -146,4 +233,7 @@ export function _resetAudioContext(): void {
   _audioContext = null
   _masterDestination = null
   iosWorkaround.performed = false
+  _globalGainNode = null
+  _globalVolume = 1
+  _globalMuted = false
 }

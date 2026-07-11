@@ -129,6 +129,12 @@ describe('audioSprite', () => {
         'Sprite "notfound" not found. Available: laser, explosion, bgm',
       )
     })
+
+    it('throws a ValidationError (G10 sweep, R1#3), not a plain Error', async () => {
+      const { ValidationError } = await import('./errors')
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+      expect(() => sprite.getDuration('notfound')).toThrow(ValidationError)
+    })
   })
 
   describe('play()', () => {

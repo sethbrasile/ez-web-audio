@@ -1,3 +1,5 @@
+import { ValidationError } from '../errors'
+
 /**
  * Shared Worker-backed timer utility for background-tab-resilient scheduling.
  *
@@ -63,7 +65,7 @@ export class WorkerTimer {
    */
   start(callback: () => void): void {
     if (this._isDisposed) {
-      throw new Error('WorkerTimer has been disposed')
+      throw new ValidationError('WorkerTimer has been disposed')
     }
     if (this._isRunning)
       return

@@ -74,6 +74,26 @@ it('can be created', () => {
   expect(track).toBeTruthy()
 })
 
+describe('gain/pan validated accessors (R1#1 — inherited from Sampler)', () => {
+  it('gain/pan setters validate the same as Sampler', () => {
+    const track = createBeatTrack()
+    expect(() => (track.gain = -1)).toThrow('Gain must be >= 0. Received: -1')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    track.pan = 5
+    expect(track.pan).toBe(5)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('outside the [-1, 1] range'))
+    warnSpy.mockRestore()
+  })
+
+  it('changeGainTo/changePanTo work on BeatTrack and return this for chaining', () => {
+    const track = createBeatTrack()
+    const result = track.changeGainTo(0.5).changePanTo(-0.5)
+    expect(track.gain).toBe(0.5)
+    expect(track.pan).toBe(-0.5)
+    expect(result).toBe(track)
+  })
+})
+
 it(`remembers beats' 'active' state when numBeats changes`, () => {
   const beatTrack = createBeatTrack()
   let [beat1, beat2, beat3] = beatTrack.beats

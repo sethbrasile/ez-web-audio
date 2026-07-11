@@ -1,5 +1,6 @@
 import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
+import { ValidationError } from '@/errors'
 import { BaseEffect } from './base-effect'
 
 /**
@@ -115,7 +116,7 @@ export class DistortionEffect extends BaseEffect {
 
     // M5: Guard against 'custom' type without a curve
     if (this._type === 'custom' && !options.curve) {
-      throw new Error('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
+      throw new ValidationError('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
     }
 
     // Create nodes
@@ -188,7 +189,7 @@ export class DistortionEffect extends BaseEffect {
   set type(v: DistortionType) {
     // M5: Guard against 'custom' type without a curve
     if (v === 'custom' && !this._customCurve) {
-      throw new Error('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
+      throw new ValidationError('DistortionEffect: cannot set type to "custom" without providing a curve via constructor options.')
     }
     this._type = v
     if (v === 'custom' && this._customCurve) {

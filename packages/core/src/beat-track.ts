@@ -4,6 +4,7 @@ import type { Playable } from './interfaces/playable'
 import type { SamplerOptions } from './sampler'
 import type { SyncableBeatTrack, Transport } from './transport'
 import { Beat } from './beat'
+import { ValidationError } from './errors'
 import { Sampler } from './sampler'
 import audioContextAwareTimeout from './utils/timeout'
 import { WorkerTimer } from './utils/worker-timer'
@@ -129,7 +130,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
       this.wrapWith = opts.wrapWith
     }
     if (this.numBeats <= 0) {
-      throw new Error(`numBeats must be greater than 0. Received: ${this.numBeats}`)
+      throw new ValidationError(`numBeats must be greater than 0. Received: ${this.numBeats}`)
     }
   }
 
@@ -255,10 +256,10 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   public playBeats(bpm: number, noteType: number): void {
     this.guardSynced('playBeats')
     if (bpm <= 0) {
-      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
+      throw new ValidationError(`BPM must be greater than 0. Received: ${bpm}`)
     }
     if (noteType <= 0) {
-      throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
+      throw new ValidationError(`noteType must be greater than 0. Received: ${noteType}`)
     }
     // Cancel any in-flight schedule before reinitializing so a restart never
     // leaves stale pre-restart timers to fire alongside the new schedule.
@@ -291,10 +292,10 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   public playActiveBeats(bpm: number, noteType: number): void {
     this.guardSynced('playActiveBeats')
     if (bpm <= 0) {
-      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
+      throw new ValidationError(`BPM must be greater than 0. Received: ${bpm}`)
     }
     if (noteType <= 0) {
-      throw new Error(`noteType must be greater than 0. Received: ${noteType}`)
+      throw new ValidationError(`noteType must be greater than 0. Received: ${noteType}`)
     }
     // Cancel any in-flight schedule before reinitializing so a restart never
     // leaves stale pre-restart timers to fire alongside the new schedule.
@@ -399,7 +400,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   public setTempo(bpm: number): void {
     this.guardSynced('setTempo')
     if (bpm <= 0) {
-      throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
+      throw new ValidationError(`BPM must be greater than 0. Received: ${bpm}`)
     }
     this.currentTempo = bpm
   }
@@ -532,7 +533,7 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    */
   private guardSynced(methodName: string): void {
     if (this._syncedTo) {
-      throw new Error(
+      throw new ValidationError(
         `Cannot call ${methodName}() on a synced BeatTrack. Use transport.start()/stop() instead.`,
       )
     }

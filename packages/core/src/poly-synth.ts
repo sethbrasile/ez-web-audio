@@ -6,6 +6,7 @@ import type { PolySynthEventMap } from './events/event-types'
 import type { OscillatorFilterOptions } from './oscillator'
 import { convertValue } from '@utils/convert-value'
 import { getMasterDestination } from './audio-context'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import { Oscillator } from './oscillator'
 
@@ -249,7 +250,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     // pool, hitting the generic "No voice available for allocation" throw
     // with no indication the real problem is construction-time config.
     if (!Number.isFinite(this._maxVoices) || this._maxVoices < 1) {
-      throw new Error(`PolySynth maxVoices must be a finite number >= 1. Received: ${this._maxVoices}`)
+      throw new ValidationError(`PolySynth maxVoices must be a finite number >= 1. Received: ${this._maxVoices}`)
     }
     this._stealStrategy = options?.stealStrategy ?? 'lru'
 
@@ -374,7 +375,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
    */
   play(options: PlayOptions): VoiceHandle {
     if (this._disposed) {
-      throw new Error('Cannot play a disposed PolySynth. Create a new instance.')
+      throw new ValidationError('Cannot play a disposed PolySynth. Create a new instance.')
     }
 
     const { frequency, gain: voiceGain } = options
@@ -434,7 +435,10 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
       return handle
     }
 
-    // Should not reach here if maxVoices > 0
+    // Should not reach here if maxVoices > 0 — an internal invariant guard,
+    // not caller misuse (maxVoices is already validated in the constructor),
+    // so left as a plain Error rather than ValidationError (G10 ValidationError
+    // sweep, R1#3).
     throw new Error('No voice available for allocation')
   }
 
@@ -724,6 +728,15 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
   /**
    * Update a master bus parameter immediately.
    *
+   * Note: unlike {@link GrainPlayer}, PolySynth's master bus intentionally does
+   * NOT have `onPlaySet()`/`onPlayRamp()` (R1#6 evaluated this and skipped it) —
+   * PolySynth has no singular "play()" for the whole instance to hook a
+   * consume-once schedule onto; `play(options)` triggers one voice at a time
+   * and each returned {@link VoiceHandle} already exposes its own
+   * `onPlaySet()`/`onPlayRamp()` (delegating to the voice's Oscillator) for
+   * per-note envelopes. Use those for per-note fades, or `update('gain')` /
+   * `changeGainTo()` here for master-bus-wide immediate changes.
+   *
    * @param type - 'gain' or 'pan'
    * @returns Fluent builder
    *
@@ -741,7 +754,7 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     return {
       to: (value: number) => ({
         as: (method: RatioType): void => {
-          param.setValueAtTime(convertValue(value, method), this.audioContext.currentTime)
+          param.setValueAtTime(convertValue(value, method, type), this.audioContext.currentTime)
         },
       }),
     }

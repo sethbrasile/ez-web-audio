@@ -21,6 +21,8 @@
  *     console.error(`Failed to load: ${e.url}`);
  *   } else if (e instanceof AudioContextError) {
  *     console.error(`Context issue: ${e.state}`);
+ *   } else if (e instanceof ValidationError) {
+ *     console.error(`Invalid input: ${e.message}`);
  *   }
  * }
  * ```
@@ -29,3 +31,4 @@ export { AudioError } from './audio-error'
 export { AudioContextError } from './context-error'
 export { InvalidNoteError } from './invalid-note-error'
 export { AggregateAudioLoadError, AudioLoadError } from './load-error'
+export { ValidationError } from './validation-error'

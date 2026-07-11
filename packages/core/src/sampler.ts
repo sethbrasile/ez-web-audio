@@ -1,5 +1,7 @@
 import type { Connectable } from './interfaces/connectable'
 import type { Playable } from './interfaces/playable'
+import { ValidationError } from './errors'
+import { validateGain, validatePan } from './utils/validate-param'
 
 export interface SamplerOptions {
   name?: string
@@ -51,20 +53,74 @@ export class Sampler {
   public name: string
 
   /**
+   * @internal
+   */
+  private _gain: number = 1
+
+  /**
+   * @internal
+   */
+  private _pan: number = 0
+
+  /**
    * Gain level applied to each sample when played.
    * This value is applied to the underlying Sound on every play() call,
    * overriding any per-sound gain customization.
-   * @default 1
+   *
+   * Validated the same way as {@link Sampler.changeGainTo} / `BaseSound.changeGainTo`:
+   * throws a {@link ValidationError} for negative values, warns on the console
+   * for values above 1 (R1#1 — previously this was a raw mutable field with no
+   * validation at all). Defaults to 1.
    */
-  public gain: number = 1
+  public get gain(): number {
+    return this._gain
+  }
+
+  public set gain(value: number) {
+    validateGain(value)
+    this._gain = value
+  }
 
   /**
    * Stereo pan position applied to each sample (-1 = left, 0 = center, 1 = right).
    * This value is applied to the underlying Sound on every play() call,
    * overriding any per-sound pan customization.
-   * @default 0
+   *
+   * Validated the same way as {@link Sampler.changePanTo} / `BaseSound.changePanTo`:
+   * warns on the console for values outside [-1, 1] (R1#1). Defaults to 0.
    */
-  public pan: number = 0
+  public get pan(): number {
+    return this._pan
+  }
+
+  public set pan(value: number) {
+    validatePan(value)
+    this._pan = value
+  }
+
+  /**
+   * Set the gain level applied to each sample. Equivalent to `sampler.gain = value`,
+   * provided for API symmetry with `BaseSound.changeGainTo()` / `LayeredSound.changeGainTo()`.
+   *
+   * @param value - The gain value (0-1 typical range)
+   * @returns this for chaining
+   */
+  public changeGainTo(value: number): this {
+    this.gain = value
+    return this
+  }
+
+  /**
+   * Set the pan position applied to each sample. Equivalent to `sampler.pan = value`,
+   * provided for API symmetry with `BaseSound.changePanTo()` / `LayeredSound.changePanTo()`.
+   *
+   * @param value - The pan value (-1 to 1)
+   * @returns this for chaining
+   */
+  public changePanTo(value: number): this {
+    this.pan = value
+    return this
+  }
 
   /**
    * Iterator over the sounds Set for round-robin cycling.
@@ -160,7 +216,7 @@ export class Sampler {
    */
   private getNextSound(velocity = 1): Playable & Connectable {
     if (this.sounds.size === 0) {
-      throw new Error('Sampler has no sounds. Add sounds before calling play().')
+      throw new ValidationError('Sampler has no sounds. Add sounds before calling play().')
     }
 
     let soundIterator = this.soundIterator

@@ -50,6 +50,11 @@ describe('transport', () => {
       expect(() => new Transport(audioContext as any, { bpm: 0 })).toThrow('BPM must be greater than 0')
       expect(() => new Transport(audioContext as any, { bpm: -10 })).toThrow('BPM must be greater than 0')
     })
+
+    it('throws a ValidationError (G10 sweep, R1#3), not a plain Error', async () => {
+      const { ValidationError } = await import('./errors')
+      expect(() => new Transport(audioContext as any, { bpm: 0 })).toThrow(ValidationError)
+    })
   })
 
   describe('initial state', () => {

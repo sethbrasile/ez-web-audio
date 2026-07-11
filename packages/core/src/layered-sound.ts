@@ -3,8 +3,10 @@ import type { LayeredSoundEventMap } from './events/event-types'
 import type { Oscillator } from './oscillator'
 import type { Sound } from './sound'
 import { getMasterDestination } from './audio-context'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import audioContextAwareTimeout from './utils/timeout'
+import { validateGain, validatePan } from './utils/validate-param'
 
 /**
  * Options for creating a LayeredSound.
@@ -36,7 +38,7 @@ export interface LayeredSoundOptions {
  *
  * const layered = new LayeredSound(audioContext, [bass, melody, synth])
  * layered.play() // All layers start at exact same time
- * layered.setGain(0.5) // Affects all layers
+ * layered.changeGainTo(0.5) // Affects all layers
  * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
  * ```
  */
@@ -130,7 +132,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    */
   async play(): Promise<void> {
     if (this._disposed) {
-      throw new Error('Cannot play a disposed LayeredSound. Create a new instance.')
+      throw new ValidationError('Cannot play a disposed LayeredSound. Create a new instance.')
     }
 
     // CRITICAL: Capture startTime FIRST, then pass same value to all layers
@@ -188,7 +190,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    */
   async playFor(duration: number): Promise<void> {
     if (this._disposed) {
-      throw new Error('Cannot play a disposed LayeredSound. Create a new instance.')
+      throw new ValidationError('Cannot play a disposed LayeredSound. Create a new instance.')
     }
     await this.play()
     this.setTimeout(() => this.stop(), duration * 1000)
@@ -199,7 +201,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    */
   async stop(): Promise<void> {
     if (this._disposed) {
-      throw new Error('Cannot stop a disposed LayeredSound.')
+      throw new ValidationError('Cannot stop a disposed LayeredSound.')
     }
     await Promise.all(this.layers.map(layer => layer.stop()))
     this.emit('stop', {
@@ -209,27 +211,61 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
   }
 
   /**
-   * Set the gain for all layers.
+   * Set the gain for all layers via the shared output bus.
    *
-   * @param value - The gain value (0-1 range typical)
+   * Validated identically to {@link BaseSound.changeGainTo}: throws a
+   * {@link ValidationError} for negative values, warns on the console for
+   * values above 1 (R1#1 — previously this bypassed validation entirely via
+   * a raw `setValueAtTime` call).
+   *
+   * @param value - The gain value (0-1 typical range)
+   * @returns this for chaining
+   */
+  changeGainTo(value: number): this {
+    if (this._disposed) {
+      throw new ValidationError('Cannot set gain on a disposed LayeredSound.')
+    }
+    validateGain(value)
+    this.outputBus.gain.setValueAtTime(value, this.audioContext.currentTime)
+    return this
+  }
+
+  /**
+   * @deprecated Use {@link changeGainTo} instead — identical behavior, renamed
+   * for API symmetry with BaseSound/Sampler (R1#1). Will be removed in a
+   * future major version.
+   * @param value - The gain value (0-1 typical range)
    */
   setGain(value: number): void {
-    if (this._disposed) {
-      throw new Error('Cannot set gain on a disposed LayeredSound.')
-    }
-    this.outputBus.gain.setValueAtTime(value, this.audioContext.currentTime)
+    this.changeGainTo(value)
   }
 
   /**
    * Set the pan for all layers.
    *
+   * Validated identically to {@link BaseSound.changePanTo}: warns on the
+   * console for values outside [-1, 1] (R1#1).
+   *
+   * @param value - The pan value (-1 to 1, where -1 is full left, 1 is full right)
+   * @returns this for chaining
+   */
+  changePanTo(value: number): this {
+    if (this._disposed) {
+      throw new ValidationError('Cannot set pan on a disposed LayeredSound.')
+    }
+    validatePan(value)
+    this.layers.forEach(layer => layer.changePanTo(value))
+    return this
+  }
+
+  /**
+   * @deprecated Use {@link changePanTo} instead — identical behavior, renamed
+   * for API symmetry with BaseSound/Sampler (R1#1). Will be removed in a
+   * future major version.
    * @param value - The pan value (-1 to 1, where -1 is full left, 1 is full right)
    */
   setPan(value: number): void {
-    if (this._disposed) {
-      throw new Error('Cannot set pan on a disposed LayeredSound.')
-    }
-    this.layers.forEach(layer => layer.changePanTo(value))
+    this.changePanTo(value)
   }
 
   /**
@@ -242,7 +278,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    */
   addEffect(effect: Effect, position?: number): this {
     if (this._disposed)
-      throw new Error('Cannot add effect to a disposed LayeredSound.')
+      throw new ValidationError('Cannot add effect to a disposed LayeredSound.')
     if (position !== undefined) {
       this.effects.splice(position, 0, effect)
     }
@@ -261,7 +297,7 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
    */
   removeEffect(effect: Effect): this {
     if (this._disposed)
-      throw new Error('Cannot remove effect from a disposed LayeredSound.')
+      throw new ValidationError('Cannot remove effect from a disposed LayeredSound.')
     const index = this.effects.indexOf(effect)
     if (index !== -1) {
       this.effects.splice(index, 1)

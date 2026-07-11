@@ -54,6 +54,51 @@ describe('sampler', () => {
     })
   })
 
+  describe('gain/pan validation (R1#1 — validated accessors, not raw mutable fields)', () => {
+    it('gain setter throws a ValidationError for negative values, same rule as BaseSound.changeGainTo', () => {
+      const sampler = new Sampler([createMockSound()])
+      expect(() => (sampler.gain = -1)).toThrow('Gain must be >= 0. Received: -1')
+    })
+
+    it('gain setter warns (does not throw) for values above 1', () => {
+      const sampler = new Sampler([createMockSound()])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      sampler.gain = 1.5
+      expect(sampler.gain).toBe(1.5)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('exceeds 1.0'))
+      warnSpy.mockRestore()
+    })
+
+    it('a rejected gain assignment leaves the previous value in place', () => {
+      const sampler = new Sampler([createMockSound()])
+      sampler.gain = 0.5
+      expect(() => (sampler.gain = -1)).toThrow()
+      expect(sampler.gain).toBe(0.5)
+    })
+
+    it('pan setter warns (does not throw) for values outside [-1, 1]', () => {
+      const sampler = new Sampler([createMockSound()])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(() => (sampler.pan = 2)).not.toThrow()
+      expect(sampler.pan).toBe(2)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('outside the [-1, 1] range'))
+      warnSpy.mockRestore()
+    })
+
+    it('changeGainTo/changePanTo are equivalent to the property setters and return this for chaining', () => {
+      const sampler = new Sampler([createMockSound()])
+      const result = sampler.changeGainTo(0.4).changePanTo(-0.3)
+      expect(sampler.gain).toBe(0.4)
+      expect(sampler.pan).toBe(-0.3)
+      expect(result).toBe(sampler)
+    })
+
+    it('changeGainTo validates identically to assigning .gain directly', () => {
+      const sampler = new Sampler([createMockSound()])
+      expect(() => sampler.changeGainTo(-1)).toThrow('Gain must be >= 0. Received: -1')
+    })
+  })
+
   describe('round-robin behavior', () => {
     let sounds: (Playable & Connectable)[]
     let sampler: Sampler

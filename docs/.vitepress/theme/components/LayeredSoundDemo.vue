@@ -59,7 +59,7 @@ async function playAll() {
 
   try {
     error.value = ''
-    layered.value!.setGain(masterGain.value)
+    layered.value!.changeGainTo(masterGain.value)
     await layered.value!.play()
     isPlaying.value = true
     layerPlaying.value = [true, true, true]
@@ -117,7 +117,7 @@ async function playLayer(index: number) {
 function updateMasterGain(val: number) {
   masterGain.value = val
   if (layered.value) {
-    layered.value.setGain(val)
+    layered.value.changeGainTo(val)
   }
 }
 

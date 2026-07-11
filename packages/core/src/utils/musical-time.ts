@@ -1,3 +1,5 @@
+import { ValidationError } from '../errors'
+
 /**
  * Musical time notation type — accepts string notation or numeric beat values.
  *
@@ -33,7 +35,7 @@ const POSITION_PATTERN = /^(\d+):(\d+):(\d+)$/
  * @param beatsPerBar - Beats per bar for measure/position calculations (default: 4)
  * @param ticksPerBeat - Ticks per beat for position calculations (default: 4)
  * @returns Number of beats
- * @throws Error if notation is invalid
+ * @throws {ValidationError} if notation is invalid
  *
  * @example
  * ```typescript
@@ -56,7 +58,7 @@ export function musicalTimeToBeats(
   }
 
   if (typeof notation !== 'string' || notation === '') {
-    throw new Error(`Invalid musical time notation: "${notation}"`)
+    throw new ValidationError(`Invalid musical time notation: "${notation}"`)
   }
 
   // Note values: 1n, 2n, 4n, 8n, 16n, 32n (with optional dot)
@@ -64,7 +66,7 @@ export function musicalTimeToBeats(
   if (match) {
     const noteValue = Number.parseInt(match[1], 10)
     if (noteValue === 0) {
-      throw new Error(`Invalid musical time notation: "${notation}" — note value cannot be 0`)
+      throw new ValidationError(`Invalid musical time notation: "${notation}" — note value cannot be 0`)
     }
     const isDotted = !!match[2]
     const beats = 4 / noteValue
@@ -76,7 +78,7 @@ export function musicalTimeToBeats(
   if (match) {
     const noteValue = Number.parseInt(match[1], 10)
     if (noteValue === 0) {
-      throw new Error(`Invalid musical time notation: "${notation}" — note value cannot be 0`)
+      throw new ValidationError(`Invalid musical time notation: "${notation}" — note value cannot be 0`)
     }
     return (4 / noteValue) * (2 / 3)
   }
@@ -97,7 +99,7 @@ export function musicalTimeToBeats(
     return (bar - 1) * beatsPerBar + (beat - 1) + tick / ticksPerBeat
   }
 
-  throw new Error(`Invalid musical time notation: "${notation}"`)
+  throw new ValidationError(`Invalid musical time notation: "${notation}"`)
 }
 
 /**
@@ -111,7 +113,7 @@ export function musicalTimeToBeats(
  * @param timeSignature - Time signature as [beatsPerBar, beatUnit] (default: [4, 4])
  * @param ticksPerBeat - Ticks per beat for position calculations (default: 4)
  * @returns Duration in seconds
- * @throws Error if BPM <= 0 or notation is invalid
+ * @throws {ValidationError} if BPM <= 0 or notation is invalid
  *
  * @example
  * ```typescript
@@ -128,7 +130,7 @@ export function parseMusicalTime(
   ticksPerBeat: number = 4,
 ): number {
   if (bpm <= 0) {
-    throw new Error(`BPM must be greater than 0. Received: ${bpm}`)
+    throw new ValidationError(`BPM must be greater than 0. Received: ${bpm}`)
   }
 
   const beats = musicalTimeToBeats(notation, timeSignature[0], ticksPerBeat)

@@ -5,6 +5,10 @@
  * for programmatic error handling. Subclasses add specific context
  * like URL, note identifier, or AudioContext state.
  *
+ * Subclasses include {@link ValidationError} (invalid parameters or API
+ * misuse), {@link AudioLoadError} (fetch/decode failures), {@link AudioContextError}
+ * (AudioContext state issues), and {@link InvalidNoteError} (bad note identifiers).
+ *
  * @example
  * ```typescript
  * import { AudioError } from 'ez-web-audio'

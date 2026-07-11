@@ -1,5 +1,6 @@
 import type { AcceptableNote } from './musical-identity'
 import type { SampledNote } from './sampled-note'
+import { ValidationError } from './errors'
 
 /**
  * Collection of sampled notes for instrument playback.
@@ -73,7 +74,7 @@ export class Font {
     if (!note) {
       const availableNotes = this.notes.map(n => n.identifier).slice(0, 10).join(', ')
       const totalCount = this.notes.length > 10 ? ` (${this.notes.length} total)` : ''
-      throw new Error(`EZ Web Audio: No note with identifier '${identifier}' found. Available notes: ${availableNotes}${this.notes.length > 10 ? '...' : ''}${totalCount}`)
+      throw new ValidationError(`EZ Web Audio: No note with identifier '${identifier}' found. Available notes: ${availableNotes}${this.notes.length > 10 ? '...' : ''}${totalCount}`)
     }
     note.play()
   }

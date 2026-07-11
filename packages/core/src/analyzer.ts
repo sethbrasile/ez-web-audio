@@ -1,3 +1,5 @@
+import { ValidationError } from './errors'
+
 /**
  * Configuration options for creating an Analyzer.
  */
@@ -74,7 +76,7 @@ export class Analyzer {
     // Apply options with validation
     const fftSize = options?.fftSize ?? 2048
     if (!isValidFftSize(fftSize)) {
-      throw new Error(`fftSize must be a power of 2 between 32 and 32768. Got: ${fftSize}`)
+      throw new ValidationError(`fftSize must be a power of 2 between 32 and 32768. Got: ${fftSize}`)
     }
     this.input.fftSize = fftSize
 
@@ -114,7 +116,7 @@ export class Analyzer {
 
   set fftSize(value: number) {
     if (!isValidFftSize(value)) {
-      throw new Error(`fftSize must be a power of 2 between 32 and 32768. Got: ${value}`)
+      throw new ValidationError(`fftSize must be a power of 2 between 32 and 32768. Got: ${value}`)
     }
     this.input.fftSize = value
     // Re-allocate arrays for new size (fftSize / 2)

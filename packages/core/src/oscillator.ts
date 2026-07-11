@@ -9,7 +9,7 @@ import { get } from '@utils/prop-access'
 import { BaseSound } from './base-sound'
 import { OscillatorController } from './controllers/oscillator-controller'
 import { Envelope } from './envelope'
-import { InvalidNoteError } from './errors'
+import { InvalidNoteError, ValidationError } from './errors'
 
 /**
  * Filter configuration for oscillator frequency shaping.
@@ -201,7 +201,7 @@ export class Oscillator extends BaseSound {
     }
 
     if (this.freq <= 0) {
-      throw new Error(`Oscillator frequency must be greater than 0. Received: ${this.freq}`)
+      throw new ValidationError(`Oscillator frequency must be greater than 0. Received: ${this.freq}`)
     }
 
     // This is just to keep the null checks down, this oscillator instance will never be used

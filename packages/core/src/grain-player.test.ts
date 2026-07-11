@@ -611,6 +611,67 @@ describe('grainPlayer', () => {
       const result = gp.changePanTo(-0.5)
       expect(result).toBe(gp) // chainable
     })
+
+    it('update(pan) with percent throws — percent is not supported for pan (R1#2)', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      expect(() => gp.update('pan').to(50).as('percent')).toThrow(/percent.*not supported for.*pan/i)
+    })
+  })
+
+  describe('onPlaySet()/onPlayRamp() for the master bus (R1#6)', () => {
+    it('onPlaySet("gain").to(value).at(0) applies the value when play() is called', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const spy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      gp.onPlaySet('gain').to(0.3).at(0)
+      gp.play()
+      expect(spy).toHaveBeenCalledWith(0.3, expect.any(Number))
+    })
+
+    it('onPlaySet("gain").to(value).endingAt(time) ramps to the value when play() is called', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const rampSpy = vi.spyOn(gp.getGainNode().gain, 'exponentialRampToValueAtTime')
+      gp.onPlaySet('gain').to(0.8).endingAt(1, 'exponential')
+      gp.play()
+      expect(rampSpy).toHaveBeenCalledWith(0.8, expect.any(Number))
+    })
+
+    it('onPlayRamp("gain").from(a).to(b).in(t) sets the start value and ramps to the end value on play()', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const setSpy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      const rampSpy = vi.spyOn(gp.getGainNode().gain, 'linearRampToValueAtTime')
+      gp.onPlayRamp('gain', 'linear').from(0).to(0.9).in(2)
+      gp.play()
+      expect(setSpy).toHaveBeenCalledWith(0, expect.any(Number))
+      expect(rampSpy).toHaveBeenCalledWith(0.9, expect.any(Number))
+    })
+
+    it('onPlaySet works for "pan" too', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const spy = vi.spyOn(gp.getPannerNode().pan, 'setValueAtTime')
+      gp.onPlaySet('pan').to(-0.6).at(0)
+      gp.play()
+      expect(spy).toHaveBeenCalledWith(-0.6, expect.any(Number))
+    })
+
+    it('schedule is consume-once: a second play() does not re-apply a prior schedule', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      gp.onPlaySet('gain').to(0.3).at(0)
+      gp.play()
+      gp.stop()
+      const spy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      gp.play()
+      expect(spy).not.toHaveBeenCalledWith(0.3, expect.any(Number))
+    })
+
+    it('exponential ramp from 0 is clamped to near-zero to avoid the hold-then-jump pop', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const rampSpy = vi.spyOn(gp.getGainNode().gain, 'exponentialRampToValueAtTime')
+      const setSpy = vi.spyOn(gp.getGainNode().gain, 'setValueAtTime')
+      gp.onPlayRamp('gain').from(0).to(1).in(1)
+      gp.play()
+      expect(setSpy).toHaveBeenCalledWith(expect.closeTo(0.00001, 5), expect.any(Number))
+      expect(rampSpy).toHaveBeenCalledWith(1, expect.any(Number))
+    })
   })
 
   // ─── Effects Chain ─────────────────────────────────────────────

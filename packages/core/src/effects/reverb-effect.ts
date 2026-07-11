@@ -1,5 +1,6 @@
 import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
+import { AudioLoadError } from '@/errors'
 import { BaseEffect } from './base-effect'
 
 /**
@@ -474,7 +475,10 @@ async function loadConvolutionReverb(
 ): Promise<ReverbEffect> {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to load impulse response from "${url}": ${response.status} ${response.statusText}`)
+    // AudioLoadError (not ValidationError): this is a network/fetch failure
+    // loading an external resource, the same category as AudioLoadError's
+    // other use in createFont()/createSound() — not caller-input validation.
+    throw new AudioLoadError(`Failed to load impulse response from "${url}": ${response.status} ${response.statusText}`, url)
   }
   const arrayBuffer = await response.arrayBuffer()
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)

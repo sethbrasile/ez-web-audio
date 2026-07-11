@@ -79,10 +79,10 @@ Control all layers together using master gain and pan:
 
 ```typescript
 // Set master volume for all layers (0–1 range)
-layered.setGain(0.75)
+layered.changeGainTo(0.75)
 
 // Set stereo panning for all layers (-1 left, 0 center, 1 right)
-layered.setPan(-0.2)
+layered.changePanTo(-0.2)
 
 await layered.play()
 ```

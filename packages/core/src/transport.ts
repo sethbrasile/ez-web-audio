@@ -1,6 +1,7 @@
 import type { TransportEventMap } from './events/event-types'
 import type { Sequence } from './sequence'
 import type { MusicalTimeNotation } from './utils/musical-time'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import { musicalTimeToBeats } from './utils/musical-time'
 import { WorkerTimer } from './utils/worker-timer'
@@ -145,7 +146,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   constructor(audioContext: AudioContext, options: TransportOptions) {
     super()
     if (options.bpm <= 0) {
-      throw new Error(`BPM must be greater than 0. Received: ${options.bpm}`)
+      throw new ValidationError(`BPM must be greater than 0. Received: ${options.bpm}`)
     }
 
     this.audioContext = audioContext
@@ -164,7 +165,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
   set bpm(value: number) {
     if (value <= 0) {
-      throw new Error(`BPM must be greater than 0. Received: ${value}`)
+      throw new ValidationError(`BPM must be greater than 0. Received: ${value}`)
     }
     this._bpm = value
   }
@@ -227,7 +228,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
   set swing(value: number) {
     if (value < 0 || value > 1) {
-      throw new Error(`swing must be between 0 and 1. Received: ${value}`)
+      throw new ValidationError(`swing must be between 0 and 1. Received: ${value}`)
     }
     this._swing = value
   }
@@ -249,7 +250,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
   set swingSubdivision(value: number) {
     if (value !== 1 / 8 && value !== 1 / 16) {
-      throw new Error(`swingSubdivision must be 1/8 or 1/16. Received: ${value}`)
+      throw new ValidationError(`swingSubdivision must be 1/8 or 1/16. Received: ${value}`)
     }
     this._swingSubdivision = value
   }
@@ -330,7 +331,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    */
   start(): void {
     if (this._disposed) {
-      throw new Error('Transport has been disposed')
+      throw new ValidationError('Transport has been disposed')
     }
     if (this._playing)
       return
@@ -338,7 +339,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     if (this._paused) {
       // Resume from paused state
       if (this._loop && this._loopEndBeats <= this._loopStartBeats) {
-        throw new Error('loopEnd must be greater than loopStart when loop is enabled')
+        throw new ValidationError('loopEnd must be greater than loopStart when loop is enabled')
       }
       this.currentTickIndex = this.pausedTickIndex
       this.startTime = this.audioContext.currentTime - this.pausedElapsed
@@ -367,7 +368,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     else {
       // Fresh start
       if (this._loop && this._loopEndBeats <= this._loopStartBeats) {
-        throw new Error('loopEnd must be greater than loopStart when loop is enabled')
+        throw new ValidationError('loopEnd must be greater than loopStart when loop is enabled')
       }
       this.currentTickIndex = 0
       this.startTime = this.audioContext.currentTime

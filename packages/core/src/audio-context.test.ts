@@ -1,6 +1,7 @@
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetAudioContext, getMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, setMasterDestination } from './audio-context'
+import { _resetAudioContext, getMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, muteAll, setGlobalVolume, setMasterDestination } from './audio-context'
+import { ValidationError } from './errors'
 
 describe('audio-context', () => {
   beforeEach(() => {
@@ -114,6 +115,62 @@ describe('audio-context', () => {
       setMasterDestination(ctx.createGain() as unknown as AudioNode)
       _resetAudioContext()
       expect(getMasterDestination()).toBeNull()
+    })
+  })
+
+  describe('setGlobalVolume / muteAll (R2#7)', () => {
+    it('setGlobalVolume lazily installs a managed GainNode as the master destination', () => {
+      expect(getMasterDestination()).toBeNull()
+      setGlobalVolume(0.5)
+      const dest = getMasterDestination()
+      expect(dest).not.toBeNull()
+      expect((dest as unknown as GainNode).gain.value).toBe(0.5)
+    })
+
+    it('reuses the same managed GainNode across multiple setGlobalVolume calls', () => {
+      setGlobalVolume(0.5)
+      const first = getMasterDestination()
+      setGlobalVolume(0.8)
+      const second = getMasterDestination()
+      expect(second).toBe(first)
+      expect((second as unknown as GainNode).gain.value).toBe(0.8)
+    })
+
+    it('throws ValidationError for negative volume, same rule as changeGainTo', () => {
+      expect(() => setGlobalVolume(-0.5)).toThrow(ValidationError)
+      expect(() => setGlobalVolume(-0.5)).toThrow('Gain must be >= 0. Received: -0.5')
+    })
+
+    it('warns for volume > 1', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      setGlobalVolume(1.5)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('exceeds 1.0'))
+      warnSpy.mockRestore()
+    })
+
+    it('muteAll(true) zeroes the managed gain and muteAll(false) restores the last volume', () => {
+      setGlobalVolume(0.7)
+      muteAll(true)
+      const dest = getMasterDestination() as unknown as GainNode
+      expect(dest.gain.value).toBe(0)
+      muteAll(false)
+      expect(dest.gain.value).toBe(0.7)
+    })
+
+    it('muteAll lazily installs the managed GainNode even if setGlobalVolume was never called', () => {
+      expect(getMasterDestination()).toBeNull()
+      muteAll(true)
+      expect(getMasterDestination()).not.toBeNull()
+      expect((getMasterDestination() as unknown as GainNode).gain.value).toBe(0)
+    })
+
+    it('_resetAudioContext clears the managed gain so a later call recreates it', () => {
+      setGlobalVolume(0.5)
+      const first = getMasterDestination()
+      _resetAudioContext()
+      expect(getMasterDestination()).toBeNull()
+      setGlobalVolume(0.5)
+      expect(getMasterDestination()).not.toBe(first)
     })
   })
 })

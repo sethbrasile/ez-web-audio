@@ -248,7 +248,20 @@ All noise types return a 1-second `Sound` instance. Set `.loop = true` for conti
 
 ## Error Classes
 
-The library exports typed error classes: `AudioError` (base), `AudioLoadError` (load/decode failure), `AudioContextError` (context issues), and `InvalidNoteError` (invalid note name). All extend `AudioError` for catch-all handling.
+The library exports typed error classes: `AudioError` (base), `AudioLoadError` (load/decode failure), `AudioContextError` (context issues), `InvalidNoteError` (invalid note name), and `ValidationError` (invalid parameters or API misuse — negative gain, non-positive BPM/frequency, calling a method after `dispose()`, unsupported control/ratio/ramp type names, and similar caller-input checks throughout the library). All extend `AudioError` for catch-all handling:
+
+```typescript
+import { ValidationError } from 'ez-web-audio'
+
+try {
+  sound.changeGainTo(-1)
+}
+catch (e) {
+  if (e instanceof ValidationError) {
+    console.error(`Invalid input: ${e.message}`)
+  }
+}
+```
 
 ## Advanced Exports
 

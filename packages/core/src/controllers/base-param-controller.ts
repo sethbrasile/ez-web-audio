@@ -1,4 +1,6 @@
 import { convertValue } from '@utils/convert-value'
+import { validateGain, validatePan } from '@utils/validate-param'
+import { ValidationError } from '../errors'
 
 /**
  * Map of built-in control type names to their string literals.
@@ -17,11 +19,14 @@ export type ControlType = ControlTypeMap[keyof ControlTypeMap]
 /**
  * Control types available on Sound and Track.
  *
- * Excludes 'frequency' since Sound/Track instances play pre-recorded audio
- * buffers which do not have a frequency AudioParam.
+ * Derived from {@link ControlTypeMap} (excluding 'frequency', since Sound/Track
+ * instances play pre-recorded audio buffers which do not have a frequency
+ * AudioParam) rather than hardcoded, so that module augmentation of
+ * `ControlTypeMap` (see the "Extending ControlType" docs) actually extends
+ * this type too — not just {@link ControlType} / {@link OscillatorControlType}.
  * Use {@link OscillatorControlType} for oscillator-specific parameters.
  */
-export type SoundControlType = 'gain' | 'pan' | 'detune'
+export type SoundControlType = Exclude<ControlType, 'frequency'>
 
 /**
  * Control types available on Oscillator (full set including frequency).
@@ -173,18 +178,27 @@ export class BaseParamController {
   protected _update(type: ControlType, value: number): void {
     switch (type) {
       case 'pan':
+        // Validated here (not just in changePanTo()) so update('pan').to() and
+        // changePanTo() enforce the identical rule — previously only
+        // changePanTo() warned on out-of-range pan (R1#1: "same instance, two
+        // behaviors").
+        validatePan(value)
         this.pan = value
         break
       case 'gain':
+        // Same rationale as pan above: update('gain').to(-1) now throws the
+        // same ValidationError changeGainTo(-1) does, instead of silently
+        // writing a negative gain to the AudioParam.
+        validateGain(value)
         this.gain = value
         break
       case 'detune':
         if (!this.audioSource.detune)
-          throw new Error('Audio source does not support detune. Only Oscillator instances support the \'detune\' control type.')
+          throw new ValidationError('Audio source does not support detune. Only Oscillator instances support the \'detune\' control type.')
         this.audioSource.detune.value = value
         break
       default:
-        throw new Error(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).`)
+        throw new ValidationError(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune', 'frequency' (Oscillator only).`)
     }
   }
 
@@ -205,7 +219,7 @@ export class BaseParamController {
       to: (value: number) => {
         return {
           as: (method: RatioType) => {
-            this._update(type, convertValue(value, method))
+            this._update(type, convertValue(value, method, type))
           },
         }
       },
@@ -311,7 +325,7 @@ export class BaseParamController {
    *
    * @param type - The control type to resolve
    * @returns The AudioParam corresponding to the control type
-   * @throws Error if the type is not supported by this controller
+   * @throws {ValidationError} if the type is not supported by this controller
    * @protected
    */
   protected resolveParam(type: ControlType): AudioParam {
@@ -323,7 +337,7 @@ export class BaseParamController {
       case 'detune':
         return this.audioSource.detune
       default:
-        throw new Error(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune'.`)
+        throw new ValidationError(`Unsupported control type: '${type}'. Supported types: 'gain', 'pan', 'detune'.`)
     }
   }
 
@@ -422,7 +436,7 @@ export class BaseParamController {
         this.linearValues.push(valueAtTime)
         break
       default:
-        throw new Error(`Unsupported ramp type: '${rampType}'. Supported types: 'linear', 'exponential'.`)
+        throw new ValidationError(`Unsupported ramp type: '${rampType}'. Supported types: 'linear', 'exponential'.`)
     }
   }
 
@@ -466,7 +480,7 @@ export class BaseParamController {
         param.linearRampToValueAtTime(value, time)
         break
       default:
-        throw new Error(`Unsupported ramp type: ${rampType}`)
+        throw new ValidationError(`Unsupported ramp type: ${rampType}`)
     }
   }
 }

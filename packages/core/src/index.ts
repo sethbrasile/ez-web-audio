@@ -29,7 +29,7 @@ import { Sampler } from '@/sampler'
 import { Sound } from '@/sound'
 import { Track } from '@/track'
 import { Analyzer } from './analyzer'
-import { getMasterDestination as _getMasterDestination, setMasterDestination as _setMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
+import { getMasterDestination as _getMasterDestination, muteAll as _muteAll, setGlobalVolume as _setGlobalVolume, setMasterDestination as _setMasterDestination, getOrCreateAudioContext, iosWorkaround, markIosWorkaroundPerformed, unlockAudioContext } from './audio-context'
 import { BeatTrack } from './beat-track'
 import { setDebugHandler, setDebugMode } from './debug'
 import {
@@ -53,7 +53,7 @@ import {
   wrapEffect,
 } from './effects'
 import { Envelope } from './envelope'
-import { AggregateAudioLoadError, AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
+import { AggregateAudioLoadError, AudioContextError, AudioError, AudioLoadError, InvalidNoteError, ValidationError } from './errors'
 import { Font } from './font'
 import { GrainPlayer } from './grain-player'
 import { LayeredSound } from './layered-sound'
@@ -240,6 +240,60 @@ export function setMasterDestination(node: AudioNode | null): void {
  */
 export function getMasterDestination(): AudioNode | null {
   return _getMasterDestination()
+}
+
+/**
+ * Set the global volume applied to every sound routed through the shared
+ * master bus (R2#7). This is sugar over {@link setMasterDestination}: the
+ * first call lazily creates a managed `GainNode` wired to the hardware
+ * destination and installs it as the master destination, so instances
+ * created afterward pick it up automatically.
+ *
+ * Only instances created AFTER the first `setGlobalVolume()`/`muteAll()` call
+ * route through the managed bus — existing instances keep their prior
+ * routing (move one with `instance.setDestination(...)` if needed). If you
+ * already installed your own bus via {@link setMasterDestination} (e.g. a
+ * limiter), call `setGlobalVolume()`/`muteAll()` first so your own call wins,
+ * or chain your node in front of the managed gain yourself.
+ *
+ * @param value - Volume from 0 (silent) to 1 (full). Throws a {@link ValidationError}
+ *   for negative values, warns on the console above 1 — same rule as `BaseSound.changeGainTo()`.
+ *
+ * @example
+ * ```typescript
+ * import { createSound, setGlobalVolume } from 'ez-web-audio'
+ *
+ * setGlobalVolume(0.5) // app-wide volume knob, set once at startup
+ *
+ * const music = await createSound('theme.mp3')
+ * music.play() // plays at half the master volume
+ * ```
+ */
+export function setGlobalVolume(value: number): void {
+  _setGlobalVolume(value)
+}
+
+/**
+ * Mute or unmute every sound routed through the shared master bus (R2#7).
+ * Sugar over {@link setMasterDestination} — see {@link setGlobalVolume} for the
+ * "only instances created after the first call" caveat, which applies here too.
+ *
+ * Unmuting restores the volume last set via {@link setGlobalVolume} (default 1).
+ *
+ * @param muted - `true` to silence everything, `false` to restore the last volume
+ *
+ * @example
+ * ```typescript
+ * import { muteAll } from 'ez-web-audio'
+ *
+ * document.getElementById('mute-btn')!.addEventListener('click', () => {
+ *   isMuted = !isMuted
+ *   muteAll(isMuted)
+ * })
+ * ```
+ */
+export function muteAll(muted: boolean): void {
+  _muteAll(muted)
 }
 
 /**
@@ -980,7 +1034,7 @@ export function createSequence(transport: Transport, options: SequenceOptions): 
  *
  * const layered = await createLayeredSound([bass, melody, synth])
  * layered.play() // All layers start at exact same time
- * layered.setGain(0.5) // Affects all layers
+ * layered.changeGainTo(0.5) // Affects all layers
  * layered.getLayer(2)?.changeGainTo(0.8) // Control individual layer
  */
 export async function createLayeredSound(layers: (Sound | Oscillator)[], opts?: LayeredSoundOptions): Promise<LayeredSound>
@@ -1351,6 +1405,14 @@ export type Player = InteractionTarget
  * Useful for piano keys or other interactive audio controls where you want
  * to prevent text selection, context menus, and drag-and-drop behaviors.
  *
+ * @remarks
+ * This is a plain DOM convenience — a thin `addEventListener`/`removeEventListener`
+ * wrapper around an `HTMLElement` — not a framework hook, despite living in the
+ * root package namespace alongside factory functions (R1#7). Safe to call from
+ * vanilla JS, React, Vue, or any other framework. May move under a `/dom`
+ * subpath at a future major version for clarity; kept in the root namespace
+ * for now (churn not worth it pre-1.0).
+ *
  * @param key - HTML element to attach event prevention to
  *
  * @example
@@ -1397,6 +1459,11 @@ export function preventEventDefaults(key: HTMLElement): () => void {
  *
  * Binds touchstart/mousedown to play() and touchend/mouseup/mouseleave to stop().
  * Automatically initializes audio on first interaction.
+ *
+ * @remarks
+ * Like {@link preventEventDefaults}, this is a plain DOM convenience — not a
+ * framework hook — despite the `use*` prefix (R1#7). Framework-agnostic; safe
+ * to call from vanilla JS, React, Vue, etc.
  *
  * @param key - HTML element to attach handlers to
  * @param player - Object with play() and stop() methods
@@ -1504,6 +1571,7 @@ export {
   stopAll,
   Track,
   Transport,
+  ValidationError,
   VoiceHandle,
   wrapEffect,
 }

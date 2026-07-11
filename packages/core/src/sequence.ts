@@ -1,6 +1,7 @@
 import type { SequenceEventMap } from './events/event-types'
 import type { Transport, TransportPosition } from './transport'
 import type { MusicalTimeNotation } from './utils/musical-time'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 import { musicalTimeToBeats } from './utils/musical-time'
 
@@ -98,7 +99,7 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
   constructor(transport: Transport, options: SequenceOptions) {
     super()
     if (!options.length && options.length !== 0) {
-      throw new Error('Sequence requires a length option')
+      throw new ValidationError('Sequence requires a length option')
     }
 
     this.transport = transport
@@ -109,7 +110,7 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
     )
 
     if (this.lengthInBeats <= 0) {
-      throw new Error(`Sequence length must be greater than 0. Received: ${this.lengthInBeats} beats`)
+      throw new ValidationError(`Sequence length must be greater than 0. Received: ${this.lengthInBeats} beats`)
     }
 
     this._loop = options.loop ?? true
@@ -157,13 +158,13 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
     )
 
     if (beats >= this.lengthInBeats) {
-      throw new Error(
+      throw new ValidationError(
         `Event at ${beats} beats exceeds sequence length of ${this.lengthInBeats} beats`,
       )
     }
 
     if (beats < 0) {
-      throw new Error(`Event position must be >= 0. Received: ${beats}`)
+      throw new ValidationError(`Event position must be >= 0. Received: ${beats}`)
     }
 
     const id = `seq-${this.nextEventId++}`

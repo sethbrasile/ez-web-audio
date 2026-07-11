@@ -205,6 +205,88 @@ describe('layeredSound', () => {
     })
   })
 
+  describe('changeGainTo/changePanTo rename + validation (R1#1)', () => {
+    it('changeGainTo modifies output bus, not individual layer gains', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+      const changeGainSpy1 = vi.spyOn(sound1, 'changeGainTo')
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+      const result = layered.changeGainTo(0.5)
+
+      expect(changeGainSpy1).not.toHaveBeenCalled()
+      expect(result).toBe(layered) // returns this for chaining
+    })
+
+    it('changePanTo affects all layers and returns this', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound1 = new Sound(audioContext, buffer)
+      const sound2 = new Sound(audioContext, buffer)
+      const changePanSpy1 = vi.spyOn(sound1, 'changePanTo')
+      const changePanSpy2 = vi.spyOn(sound2, 'changePanTo')
+
+      const layered = new LayeredSound(audioContext, [sound1, sound2])
+      const result = layered.changePanTo(0.4)
+
+      expect(changePanSpy1).toHaveBeenCalledWith(0.4)
+      expect(changePanSpy2).toHaveBeenCalledWith(0.4)
+      expect(result).toBe(layered)
+    })
+
+    it('changeGainTo throws a ValidationError for negative values, same rule as BaseSound.changeGainTo', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      expect(() => layered.changeGainTo(-1)).toThrow('Gain must be >= 0. Received: -1')
+    })
+
+    it('changeGainTo warns for values above 1', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      layered.changeGainTo(1.2)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('exceeds 1.0'))
+      warnSpy.mockRestore()
+    })
+
+    it('changePanTo warns (does not throw) for values outside [-1, 1]', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(() => layered.changePanTo(1.5)).not.toThrow()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('outside the [-1, 1] range'))
+      warnSpy.mockRestore()
+    })
+
+    it('setGain/setPan remain as working deprecated aliases for changeGainTo/changePanTo', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const changeGainSpy = vi.spyOn(layered, 'changeGainTo')
+      const changePanSpy = vi.spyOn(layered, 'changePanTo')
+
+      layered.setGain(0.6)
+      layered.setPan(0.2)
+
+      expect(changeGainSpy).toHaveBeenCalledWith(0.6)
+      expect(changePanSpy).toHaveBeenCalledWith(0.2)
+    })
+
+    it('setGain still throws the same validation error as changeGainTo (deprecated alias, not bypassed)', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      expect(() => layered.setGain(-1)).toThrow('Gain must be >= 0. Received: -1')
+    })
+
+    it('changeGainTo/setGain throw when called on a disposed LayeredSound', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const layered = new LayeredSound(audioContext, [new Sound(audioContext, buffer)])
+      layered.dispose()
+      expect(() => layered.changeGainTo(0.5)).toThrow('disposed')
+      expect(() => layered.setPan(0)).toThrow('disposed')
+    })
+  })
+
   describe('layer Access', () => {
     it('getLayer returns correct layer by index', async () => {
       const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)

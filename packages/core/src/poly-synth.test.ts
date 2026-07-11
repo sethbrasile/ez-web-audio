@@ -33,6 +33,12 @@ describe('polySynth', () => {
       expect(synth.activeVoices).toBe(0)
     })
 
+    it('throws a ValidationError for maxVoices <= 0 (G10 sweep, R1#3)', async () => {
+      const { ValidationError } = await import('./errors')
+      expect(() => new PolySynth(audioContext, { maxVoices: 0 })).toThrow(ValidationError)
+      expect(() => new PolySynth(audioContext, { maxVoices: 0 })).toThrow('maxVoices must be a finite number >= 1')
+    })
+
     it('reports maxVoices available initially', () => {
       const synth = new PolySynth(audioContext, { maxVoices: 4 })
       expect(synth.availableVoices).toBe(4)
@@ -315,6 +321,11 @@ describe('polySynth', () => {
     it('changeGainTo does not throw', () => {
       const synth = new PolySynth(audioContext)
       expect(() => synth.changeGainTo(0.5)).not.toThrow()
+    })
+
+    it('update(pan) with percent throws — percent is not supported for pan (R1#2)', () => {
+      const synth = new PolySynth(audioContext)
+      expect(() => synth.update('pan').to(50).as('percent')).toThrow(/percent.*not supported for.*pan/i)
     })
 
     it('addEffect does not throw', () => {

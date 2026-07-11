@@ -7,6 +7,15 @@ description: Automate audio parameters with immediate updates, scheduled ramps, 
 
 EZ Web Audio provides a fluent API for controlling and automating audio parameters — gain, pan, frequency, detune — either immediately or scheduled relative to playback start.
 
+::: tip Validation is unified across `update()` and the shorthand setters
+`update('gain').to(v).as('ratio')` and `sound.changeGainTo(v)` enforce the
+identical rule (negative gain throws a `ValidationError`, values above 1
+warn on the console) — they route through the same validation, so there's
+no case where one throws and the other silently accepts a bad value. Same
+for `update('pan')` / `changePanTo()` (out-of-range warns, doesn't throw —
+the Web Audio API clamps pan automatically).
+:::
+
 ## Immediate Updates
 
 Change a parameter right now using `update().to().as()`:
@@ -27,8 +36,20 @@ The `as()` method specifies the unit type:
 | Unit | Range | Description |
 |------|-------|-------------|
 | `'ratio'` | 0–1 (gain), -1–1 (pan) | Direct value |
-| `'percent'` | 0–100 | Percentage of full range |
+| `'percent'` | 0–100 | Percentage of full range — **gain-like parameters only** (see below) |
 | `'inverseRatio'` | 0–1 | Inverted (1 - value) |
+
+::: warning `'percent'` is not supported for `'pan'`
+Pan's range is -1 (left) to 1 (right), but `'percent'` (0–100) can only ever
+produce values 0 to 1 — there's no way to express "left" as a percentage.
+`sound.update('pan').to(50).as('percent')` throws a `ValidationError` rather
+than silently producing a pan that can never go left. Use `'ratio'` for pan:
+
+```typescript
+sound.update('pan').to(-1).as('ratio') // hard left
+sound.update('pan').to(50).as('percent') // throws ValidationError
+```
+:::
 
 ## Scheduled Updates
 
@@ -164,11 +185,13 @@ declare module 'ez-web-audio' {
   }
 }
 
-// Now 'playbackRate' is accepted by update(), onPlaySet(), etc.
+// Now 'playbackRate' is accepted by update(), onPlaySet(), etc. —
+// on Oscillator (ControlType) AND on Sound/Track (SoundControlType), since
+// SoundControlType is derived from ControlTypeMap too (Exclude<ControlType, 'frequency'>).
 // Note: You must provide custom controller logic to handle the new type.
 ```
 
-This is useful when wrapping custom AudioNodes that expose non-standard parameters.
+This is useful when wrapping custom AudioNodes that expose non-standard parameters. Augmenting `ControlTypeMap` extends every type derived from it — `ControlType`, `OscillatorControlType`, and `SoundControlType` all pick up the new member automatically, so you don't need to separately widen `Sound`/`Track`'s narrower type.
 
 ## API Quick Reference
 

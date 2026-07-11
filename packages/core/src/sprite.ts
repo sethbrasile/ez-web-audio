@@ -1,4 +1,5 @@
 import { getMasterDestination } from './audio-context'
+import { ValidationError } from './errors'
 
 /**
  * Definition of a single sprite within the audio file.
@@ -180,13 +181,13 @@ export class AudioSprite {
     // than deferring to the first play() call — R9 finding 8).
     for (const [name, def] of Object.entries(manifest.spritemap)) {
       if (def.end < def.start) {
-        throw new Error(
+        throw new ValidationError(
           `Sprite "${name}" has end (${def.end}) before start (${def.start}). `
           + 'End time must be >= start time.',
         )
       }
       if (def.end > audioBuffer.duration) {
-        throw new Error(
+        throw new ValidationError(
           `Sprite "${name}" end time ${def.end}s exceeds buffer duration ${audioBuffer.duration}s`,
         )
       }
@@ -195,7 +196,7 @@ export class AudioSprite {
       // bounds configured" — the source loops the ENTIRE buffer instead of
       // nothing, silently defeating the sprite boundaries (R9 finding 9).
       if (def.loop && def.end <= def.start) {
-        throw new Error(
+        throw new ValidationError(
           `Sprite "${name}" has loop: true but zero length (start === end === ${def.start}s). `
           + 'A zero-length loop would play the entire buffer instead of nothing, per the Web Audio spec.',
         )
@@ -248,7 +249,7 @@ export class AudioSprite {
   getDuration(name: string): number {
     const sprite = this.manifest.spritemap[name]
     if (!sprite) {
-      throw new Error(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
+      throw new ValidationError(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
     }
     return sprite.end - sprite.start
   }
@@ -279,19 +280,19 @@ export class AudioSprite {
    */
   play(name: string, options: SpritePlayOptions = {}): void {
     if (this._disposed || !this.audioBuffer) {
-      throw new Error('AudioSprite has been disposed')
+      throw new ValidationError('AudioSprite has been disposed')
     }
 
     const sprite = this.manifest.spritemap[name]
     if (!sprite) {
-      throw new Error(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
+      throw new ValidationError(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
     }
 
     // Validate sprite boundaries against the audio buffer. (end > duration
     // and zero-length loops are already rejected at construction time —
     // see the constructor — since the buffer never changes after that.)
     if (sprite.start < 0) {
-      throw new Error(`Sprite "${name}" has invalid start time: ${sprite.start} (must be >= 0)`)
+      throw new ValidationError(`Sprite "${name}" has invalid start time: ${sprite.start} (must be >= 0)`)
     }
 
     const { gain = 1, pan = 0 } = options

@@ -2,6 +2,7 @@ import type { BaseSound } from './base-sound'
 import type { BaseEffect } from './effects/base-effect'
 import type { Oscillator } from './oscillator'
 import { smoothParamSet } from '@utils/param-smoothing'
+import { ValidationError } from './errors'
 import { GrainPlayer } from './grain-player'
 import { PolySynth } from './poly-synth'
 
@@ -137,7 +138,7 @@ export class LFO {
 
   set frequency(value: number) {
     if (!Number.isFinite(value) || value <= 0) {
-      throw new Error(`LFO frequency must be a positive finite number, got ${value}`)
+      throw new ValidationError(`LFO frequency must be a positive finite number, got ${value}`)
     }
     this._frequency = value
     if (this._oscillatorNode) {
@@ -213,14 +214,14 @@ export class LFO {
    */
   connect(target: LFOTarget, paramName: string, options?: LFOConnectOptions): this {
     if (this._disposed) {
-      throw new Error('Cannot connect a disposed LFO. Create a new instance.')
+      throw new ValidationError('Cannot connect a disposed LFO. Create a new instance.')
     }
 
     const opts: LFOConnectOptions = options ?? {}
 
     // H1: Mutual exclusion guard — syncLifecycle and retrigger are incompatible
     if (opts.syncLifecycle && opts.retrigger) {
-      throw new Error('LFO connect(): "syncLifecycle" and "retrigger" are mutually exclusive — use one or the other.')
+      throw new ValidationError('LFO connect(): "syncLifecycle" and "retrigger" are mutually exclusive — use one or the other.')
     }
 
     // M5: connecting the same target+param twice used to silently double the
@@ -374,11 +375,11 @@ export class LFO {
    */
   start(): this {
     if (this._disposed) {
-      throw new Error('Cannot start a disposed LFO. Create a new instance.')
+      throw new ValidationError('Cannot start a disposed LFO. Create a new instance.')
     }
 
     if (!this._audioContext) {
-      throw new Error('LFO has no AudioContext — call connect() first or pass audioContext to createLFO()')
+      throw new ValidationError('LFO has no AudioContext — call connect() first or pass audioContext to createLFO()')
     }
 
     if (this._isRunning) {
@@ -472,16 +473,16 @@ export class LFO {
    */
   syncToBPM(bpm: number, noteLength: string): this {
     if (!Number.isFinite(bpm) || bpm <= 0) {
-      throw new Error(`syncToBPM: bpm must be a positive finite number, got ${bpm}`)
+      throw new ValidationError(`syncToBPM: bpm must be a positive finite number, got ${bpm}`)
     }
     const parts = noteLength.split('/')
     if (parts.length !== 2) {
-      throw new Error(`syncToBPM: noteLength must be "N/D" format (e.g., "1/4"), got "${noteLength}"`)
+      throw new ValidationError(`syncToBPM: noteLength must be "N/D" format (e.g., "1/4"), got "${noteLength}"`)
     }
     const numerator = Number.parseInt(parts[0], 10)
     const denominator = Number.parseInt(parts[1], 10)
     if (!Number.isFinite(numerator) || numerator <= 0 || !Number.isFinite(denominator) || denominator <= 0) {
-      throw new Error(`syncToBPM: noteLength "${noteLength}" has invalid numerator or denominator`)
+      throw new ValidationError(`syncToBPM: noteLength "${noteLength}" has invalid numerator or denominator`)
     }
     // Quarter note at given BPM: bpm/60 Hz
     // Eighth note: (bpm/60) * 2 Hz, etc.
@@ -578,18 +579,18 @@ export class LFO {
           return target.getPannerNode().pan
         case 'frequency': {
           if (!this._isOscillator(target)) {
-            throw new Error('Cannot connect to "frequency" — target is not an Oscillator')
+            throw new ValidationError('Cannot connect to "frequency" — target is not an Oscillator')
           }
           return target.audioSourceNode.frequency
         }
         case 'detune': {
           if (!this._isOscillator(target)) {
-            throw new Error('Cannot connect to "detune" — target is not an Oscillator')
+            throw new ValidationError('Cannot connect to "detune" — target is not an Oscillator')
           }
           return target.audioSourceNode.detune
         }
         default:
-          throw new Error(`Unknown parameter "${paramName}" for BaseSound target. Valid: gain, pan, frequency, detune`)
+          throw new ValidationError(`Unknown parameter "${paramName}" for BaseSound target. Valid: gain, pan, frequency, detune`)
       }
     }
 
@@ -597,7 +598,7 @@ export class LFO {
     const effect = target as BaseEffect & { getParam: (name: string) => AudioParam | null }
     const param = effect.getParam(paramName)
     if (!param) {
-      throw new Error(`Effect parameter "${paramName}" not found. Check the effect's getAudioParam() implementation.`)
+      throw new ValidationError(`Effect parameter "${paramName}" not found. Check the effect's getAudioParam() implementation.`)
     }
     return param
   }

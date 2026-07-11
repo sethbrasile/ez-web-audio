@@ -9,6 +9,7 @@ import { convertValue } from '@utils/convert-value'
 import audioContextAwareTimeout from '@utils/timeout'
 import { getMasterDestination } from './audio-context'
 import { debugConnection, debugEvent } from './debug'
+import { ValidationError } from './errors'
 import { TypedEventEmitter } from './events/typed-event-emitter'
 
 /**
@@ -399,7 +400,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    */
   public addEffect(effect: Effect, position?: number): this {
     if (position !== undefined && position < 0) {
-      throw new Error(`addEffect() position must be >= 0. Received: ${position}`)
+      throw new ValidationError(`addEffect() position must be >= 0. Received: ${position}`)
     }
     if (position !== undefined && position <= this.effects.length) {
       this.effects.splice(position, 0, effect)
@@ -472,7 +473,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
       return this
 
     if (position !== undefined && position < 0) {
-      throw new Error(`addEffects() position must be >= 0. Received: ${position}`)
+      throw new ValidationError(`addEffects() position must be >= 0. Received: ${position}`)
     }
 
     if (position !== undefined && position <= this.effects.length) {
@@ -667,12 +668,9 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public changePanTo(value: number): this {
-    if (value < -1 || value > 1) {
-      console.warn(
-        `ez-web-audio: Pan value ${value} is outside the [-1, 1] range. `
-        + 'Values are clamped by the Web Audio API. Use -1 (left) to 1 (right).',
-      )
-    }
+    // Validation lives in BaseParamController's update() path (see _update's
+    // 'pan' case) so this convenience method and update('pan').to() enforce
+    // the identical rule from a single source of truth (R1#1).
     this.controller.update('pan').to(value).as('ratio')
     return this
   }
@@ -693,14 +691,12 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    * ```
    */
   public changeGainTo(value: number): this {
-    if (value < 0) {
-      throw new Error(`Gain must be >= 0. Received: ${value}`)
-    }
-    if (value > 1) {
-      console.warn(`ez-web-audio: Gain value ${value} exceeds 1.0. Values above 1 amplify the signal and may cause distortion.`)
-    }
-    this._targetGain = value
+    // Validation lives in BaseParamController's update() path (see _update's
+    // 'gain' case) — it throws before _targetGain is touched below, so an
+    // invalid value never corrupts the tracked target gain. Single source of
+    // truth shared with update('gain').to() (R1#1).
     this.controller.update('gain').to(value).as('ratio')
+    this._targetGain = value
     return this
   }
 
@@ -898,7 +894,7 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
    */
   public async playAt(time: number): Promise<void> {
     if (this._disposed) {
-      throw new Error('Cannot play a disposed sound. Create a new instance.')
+      throw new ValidationError('Cannot play a disposed sound. Create a new instance.')
     }
 
     const { audioContext } = this

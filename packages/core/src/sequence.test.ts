@@ -54,6 +54,11 @@ describe('sequence', () => {
       expect(() => new Sequence(transport, { length: -1 })).toThrow('greater than 0')
     })
 
+    it('throws a ValidationError (G10 sweep, R1#3), not a plain Error', async () => {
+      const { ValidationError } = await import('./errors')
+      expect(() => new Sequence(transport, { length: -1 })).toThrow(ValidationError)
+    })
+
     it('schedules initial events from options', () => {
       const cb = vi.fn()
       const seq = new Sequence(transport, {

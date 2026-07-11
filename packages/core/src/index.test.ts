@@ -984,6 +984,31 @@ describe('factory functions', () => {
   })
 })
 
+describe('g10 DX/API unification exports', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('exports ValidationError, and it extends AudioError', async () => {
+    const { ValidationError, AudioError } = await import('./index')
+    const err = new ValidationError('bad input')
+    expect(err).toBeInstanceOf(AudioError)
+    expect(err).toBeInstanceOf(Error)
+    expect(err.name).toBe('ValidationError')
+  })
+
+  it('exports setGlobalVolume and muteAll as functions', async () => {
+    const { setGlobalVolume, muteAll } = await import('./index')
+    expect(typeof setGlobalVolume).toBe('function')
+    expect(typeof muteAll).toBe('function')
+  })
+
+  it('setGlobalVolume throws ValidationError for negative values via the public entrypoint', async () => {
+    const { setGlobalVolume, ValidationError } = await import('./index')
+    expect(() => setGlobalVolume(-1)).toThrow(ValidationError)
+  })
+})
+
 describe('preventEventDefaults', () => {
   let mockAudioContext: AudioContext
   let AudioContextConstructor: ReturnType<typeof vi.fn>
