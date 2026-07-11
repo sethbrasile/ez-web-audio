@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { Oscillator } from 'ez-web-audio'
-import { useAudioContext, useBeatTrack, useCleanup, useFont, useSequence, useTransport } from '@ez-web-audio/vue'
+import type { TransportPreset, VoiceSpec } from './transport-sequencer-presets'
+import { useAudioContext, useBeatTrack, useCleanup, useSequence, useTransport } from '@ez-web-audio/vue'
 import { createOscillator } from 'ez-web-audio'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import DemoFrame from './kit/DemoFrame.vue'
+import Knob from './kit/Knob.vue'
 import PlayButton from './kit/PlayButton.vue'
 import SegmentDisplay from './kit/SegmentDisplay.vue'
+import { ACCENT, NORMAL, TRANSPORT_PRESETS } from './transport-sequencer-presets'
 
 // Audio state — composable-managed, single instance per component lifetime.
 // Created once in ensureLoaded(); disposed automatically by useCleanup() on unmount.
@@ -15,216 +18,128 @@ const { instance: transport, load: loadTransport } = useTransport()
 const { instance: kickTrack, load: loadKick } = useBeatTrack()
 const { instance: snareTrack, load: loadSnare } = useBeatTrack()
 const { instance: hihatTrack, load: loadHihat } = useBeatTrack()
-const { instance: pianoFont, load: loadPianoFont } = useFont()
 const { instance: bassSeq, load: loadBassSeq } = useSequence()
-const { instance: pianoSeq, load: loadPianoSeq } = useSequence()
+const { instance: leadSeq, load: loadLeadSeq } = useSequence()
 let audioContext: AudioContext | null = null
 
-// Per-note bass oscillators (ephemeral-churn escape hatch — see composables.ts).
-// Each scheduled bass note owns its Oscillator so overlapping/adjacent notes
-// never fight over one instance; recreated on preset change, disposed manually.
+// Per-note melodic oscillators (ephemeral-churn escape hatch — see composables.ts).
+// Each scheduled note owns its Oscillator so overlapping/adjacent notes never
+// fight over one instance; recreated on preset change, disposed manually.
+// Bass: one Oscillator per NoteEvent. Lead: one Oscillator per chord tone,
+// grouped by ChordEvent so a chord's notes trigger together.
 let bassNoteOscs: Oscillator[] = []
-// Piano note identifiers the active preset uses — so stop() can silence them.
-let usedPianoNotes: string[] = []
+let leadNoteOscs: Oscillator[][] = []
+
+type DrumKey = 'kick' | 'snare' | 'hihat'
+type TrackKey = DrumKey | 'bass' | 'lead'
+
+interface CellDisplay { active: boolean, accent: boolean, text: string | null }
 
 // Reactive UI state
 const playing = ref(false)
 const paused = ref(false)
-const bpm = ref(120)
+const bpm = ref(TRANSPORT_PRESETS[0].bpm)
+const swing = ref(TRANSPORT_PRESETS[0].swing * 100)
 const currentStep = ref(-1)
 const positionDisplay = ref('1:1')
 const error = ref('')
-const activePreset = ref('Straight Rock')
+const activePresetName = ref(TRANSPORT_PRESETS[0].name)
 const trackState = ref({
   kick: { muted: false, soloed: false },
   snare: { muted: false, soloed: false },
   hihat: { muted: false, soloed: false },
   bass: { muted: false, soloed: false },
-  piano: { muted: false, soloed: false },
+  lead: { muted: false, soloed: false },
 })
 
-// Preset data — 32-step patterns (16th-note grid, 2 bars).
-// Times are numeric beats (0-indexed, 0..7.75) so they map exactly onto the
-// grid and stay BPM-independent. Each preset is written in one key so drums,
-// bass, and piano actually work together (gate-2 musical redesign):
-//   Straight Rock  — E minor: root-motion bass, Em/G piano stabs on offbeats
-//   Funk Groove    — A minor: syncopated octave bass, Am7 stabs
-//   Triplet Feel   — E minor shuffle: swung walk-up bass, swung Em stabs
-interface Preset {
-  kick: number[]
-  snare: number[]
-  hihat: number[]
-  /** Bass notes: beat position, frequency (Hz), gate time (seconds). */
-  bassNotes: { time: number, freq: number, duration: number }[]
-  /** Piano stabs: beat position, chord tones, display label for the grid. */
-  pianoNotes: { time: number, notes: string[], label: string }[]
-}
-
-const PRESETS: Record<string, Preset> = {
-  'Straight Rock': {
-    // Kick on 1 & 3 with an and-of-2 pickup in bar 2; snare backbeat; 8th hats
-    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-    hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
-    // Em: root E2 anchoring beats, G2/A2 passing tones, D2 walkdown into the loop
-    bassNotes: [
-      { time: 0, freq: 82.41, duration: 0.45 }, // E2
-      { time: 1.5, freq: 82.41, duration: 0.2 }, // E2 (and-of-2 push)
-      { time: 2, freq: 98, duration: 0.45 }, // G2
-      { time: 3, freq: 110, duration: 0.45 }, // A2
-      { time: 4, freq: 82.41, duration: 0.45 }, // E2
-      { time: 5.5, freq: 82.41, duration: 0.2 }, // E2
-      { time: 6, freq: 98, duration: 0.45 }, // G2
-      { time: 7, freq: 73.42, duration: 0.4 }, // D2 (walk back to E)
-    ],
-    // Em stabs on the and-of-2 / and-of-4; G major turn at the loop end
-    pianoNotes: [
-      { time: 1.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 3.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 5.5, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 7.5, notes: ['G4', 'B4', 'D5'], label: 'G' },
-    ],
-  },
-  'Funk Groove': {
-    // Syncopated kick, backbeat snare with a ghost, 16th hats with gaps
-    kick: [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-    snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-    hihat: [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
-    // Am octave funk: A1 root with 16th pushes, A2 octave pop, pentatonic
-    // walk-up (C-D-E) in bar 2 resolving back to A1
-    bassNotes: [
-      { time: 0, freq: 55, duration: 0.2 }, // A1
-      { time: 0.75, freq: 55, duration: 0.15 }, // A1 (16th push)
-      { time: 1.25, freq: 110, duration: 0.15 }, // A2 (octave pop)
-      { time: 2.5, freq: 49, duration: 0.2 }, // G1
-      { time: 3, freq: 55, duration: 0.3 }, // A1
-      { time: 4, freq: 55, duration: 0.2 }, // A1
-      { time: 4.75, freq: 65.41, duration: 0.15 }, // C2
-      { time: 5, freq: 73.42, duration: 0.2 }, // D2
-      { time: 5.75, freq: 82.41, duration: 0.15 }, // E2
-      { time: 6.5, freq: 49, duration: 0.2 }, // G1
-      { time: 7, freq: 55, duration: 0.4 }, // A1
-    ],
-    // Am7 stabs on offbeats — classic funk comping placement
-    pianoNotes: [
-      { time: 1.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
-      { time: 3.75, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
-      { time: 5.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
-      { time: 7.5, notes: ['A3', 'C4', 'E4', 'G4'], label: 'Am7' },
-    ],
-  },
-  'Triplet Feel': {
-    // Shuffle approximated on the 16th grid: swung positions at x.75
-    kick: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    snare: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    hihat: [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-    // Em shuffle walk: swung pickups (x.75) between chord tones
-    bassNotes: [
-      { time: 0, freq: 82.41, duration: 0.35 }, // E2
-      { time: 0.75, freq: 98, duration: 0.2 }, // G2 (swung pickup)
-      { time: 1, freq: 110, duration: 0.35 }, // A2
-      { time: 2, freq: 123.47, duration: 0.35 }, // B2
-      { time: 2.75, freq: 110, duration: 0.2 }, // A2
-      { time: 3, freq: 98, duration: 0.35 }, // G2
-      { time: 4, freq: 82.41, duration: 0.35 }, // E2
-      { time: 4.75, freq: 98, duration: 0.2 }, // G2
-      { time: 5, freq: 110, duration: 0.35 }, // A2
-      { time: 6, freq: 123.47, duration: 0.35 }, // B2
-      { time: 6.75, freq: 110, duration: 0.2 }, // A2
-      { time: 7, freq: 98, duration: 0.35 }, // G2 (resolves to E on loop)
-    ],
-    // Em stabs on swung offbeats
-    pianoNotes: [
-      { time: 1.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 3.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 5.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-      { time: 7.75, notes: ['E4', 'G4', 'B4'], label: 'Em' },
-    ],
-  },
-}
-
-// Compute step cells per track for the grid display
-// Each track gets a map: stepIndex (0-31) -> { active: boolean, noteName: string | null }
-const stepCells = computed(() => {
-  const preset = PRESETS[activePreset.value]
-  const result: Record<string, { active: boolean, noteName: string | null }[]> = {}
-
-  // Drum tracks — direct from pattern array
-  for (const drumName of ['kick', 'snare', 'hihat'] as const) {
-    result[drumName] = preset[drumName].map(v => ({ active: v === 1, noteName: null }))
-  }
-
-  // Melody tracks — map beat positions to 16th-note steps
-  // (beat values are 0-indexed; 2 bars = 8 beats = 32 steps)
-  function beatToStep(beatValue: number): number {
-    return Math.round(beatValue * 4) % 32
-  }
-
-  // Bass cells
-  const bassCells: { active: boolean, noteName: string | null }[] = Array.from({ length: 32 }, () => ({
-    active: false,
-    noteName: null,
-  }))
-  for (const note of preset.bassNotes) {
-    const step = beatToStep(note.time)
-    if (step >= 0 && step < 32) {
-      bassCells[step] = { active: true, noteName: freqToNoteName(note.freq) }
-    }
-  }
-  result.bass = bassCells
-
-  // Piano cells — one cell per chord stab, labelled with the chord name
-  const pianoCells: { active: boolean, noteName: string | null }[] = Array.from({ length: 32 }, () => ({
-    active: false,
-    noteName: null,
-  }))
-  for (const chord of preset.pianoNotes) {
-    const step = beatToStep(chord.time)
-    if (step >= 0 && step < 32) {
-      pianoCells[step] = { active: true, noteName: chord.label }
-    }
-  }
-  result.piano = pianoCells
-
-  return result
+// Local editable mirror of the drum patterns — seeded from the active preset,
+// mutated by cell clicks, and pushed to the BeatTracks via setPattern().
+const drumSteps = reactive<Record<DrumKey, number[]>>({
+  kick: [...TRANSPORT_PRESETS[0].kick.steps],
+  snare: [...TRANSPORT_PRESETS[0].snare.steps],
+  hihat: [...TRANSPORT_PRESETS[0].hihat.steps],
 })
 
-// Helper to convert frequency to a note name for display
-function freqToNoteName(freq?: number): string {
-  if (!freq)
-    return ''
-  const noteNames: Record<number, string> = {
-    41.2: 'E1',
-    49: 'G1',
-    55: 'A1',
-    65.41: 'C2',
-    73.42: 'D2',
-    82.41: 'E2',
-    98: 'G2',
-    110: 'A2',
-    123.47: 'B2',
+const activePreset = computed<TransportPreset>(() =>
+  TRANSPORT_PRESETS.find(p => p.name === activePresetName.value) ?? TRANSPORT_PRESETS[0],
+)
+
+// Map a beat position (0-indexed, 0..7.75) onto its 16th-note step (0-31).
+function beatToStep(beatValue: number): number {
+  return Math.min(31, Math.max(0, Math.round(beatValue * 4)))
+}
+
+// Per-track cell state for the grid. Drum lanes reflect the editable
+// drumSteps mirror; melody lanes are read-only, derived straight from the
+// active preset's note/chord data.
+const gridCells = computed<Record<TrackKey, CellDisplay[]>>(() => {
+  const kick = drumSteps.kick.map(v => ({ active: v > 0, accent: v === ACCENT, text: null }))
+  const snare = drumSteps.snare.map(v => ({ active: v > 0, accent: v === ACCENT, text: null }))
+  const hihat = drumSteps.hihat.map(v => ({ active: v > 0, accent: v === ACCENT, text: null }))
+
+  const bass: CellDisplay[] = Array.from({ length: 32 }, () => ({ active: false, accent: false, text: null }))
+  for (const note of activePreset.value.bass.notes)
+    bass[beatToStep(note.time)] = { active: true, accent: false, text: note.note }
+
+  const lead: CellDisplay[] = Array.from({ length: 32 }, () => ({ active: false, accent: false, text: null }))
+  for (const chord of activePreset.value.lead.notes)
+    lead[beatToStep(chord.time)] = { active: true, accent: false, text: chord.label }
+
+  return { kick, snare, hihat, bass, lead }
+})
+
+function isDrumKey(key: string): key is DrumKey {
+  return key === 'kick' || key === 'snare' || key === 'hihat'
+}
+
+// Cycle a step's velocity: rest -> normal -> accent -> rest.
+function cycleStep(v: number): number {
+  if (v <= 0)
+    return NORMAL
+  if (v < ACCENT)
+    return ACCENT
+  return 0
+}
+
+function drumTrackInstance(key: DrumKey) {
+  if (key === 'kick')
+    return kickTrack.value
+  if (key === 'snare')
+    return snareTrack.value
+  return hihatTrack.value
+}
+
+// Cell click cycles the visual pattern immediately; audio is only updated
+// if the library has been initialized (guarded — matches the no-load-button
+// lazy-init pattern used everywhere else in this demo).
+function clickStep(key: string, index: number) {
+  if (!isDrumKey(key))
+    return
+  drumSteps[key][index] = cycleStep(drumSteps[key][index])
+  if (!transport.value)
+    return
+  drumTrackInstance(key)?.setPattern(drumSteps[key])
+}
+
+function cellAriaLabel(track: { key: TrackKey, label: string, isDrum: boolean }, i: number): string {
+  const cell = gridCells.value[track.key]?.[i - 1]
+  if (!cell)
+    return `${track.label} step ${i}`
+  if (track.isDrum) {
+    const state = cell.accent ? ' (accent)' : cell.active ? ' (active)' : ''
+    return `${track.label} step ${i}${state}`
   }
-  // Find closest match
-  let closestNote = ''
-  let closestDiff = Infinity
-  for (const [f, name] of Object.entries(noteNames)) {
-    const diff = Math.abs(Number(f) - freq)
-    if (diff < closestDiff) {
-      closestDiff = diff
-      closestNote = name
-    }
-  }
-  return closestNote
+  return `${track.label} step ${i}${cell.text ? ` (${cell.text})` : ''}`
 }
 
 // Check if any track is soloed
 function anySoloed(): boolean {
   const ts = trackState.value
-  return ts.kick.soloed || ts.snare.soloed || ts.hihat.soloed || ts.bass.soloed || ts.piano.soloed
+  return ts.kick.soloed || ts.snare.soloed || ts.hihat.soloed || ts.bass.soloed || ts.lead.soloed
 }
 
 // Mute/solo guard for melody tracks
-function shouldPlay(name: 'bass' | 'piano'): boolean {
+function shouldPlay(name: 'bass' | 'lead'): boolean {
   const ts = trackState.value
   if (anySoloed())
     return ts[name].soloed
@@ -239,7 +154,6 @@ function syncDrumMuteSolo() {
   const ts = trackState.value
   const hasSolo = anySoloed()
 
-  // For drums, use BeatTrack.muted and BeatTrack.solo
   kickTrack.value.muted = hasSolo ? !ts.kick.soloed : ts.kick.muted
   snareTrack.value.muted = hasSolo ? !ts.snare.soloed : ts.snare.muted
   hihatTrack.value.muted = hasSolo ? !ts.hihat.soloed : ts.hihat.muted
@@ -255,98 +169,88 @@ function toggleSolo(track: keyof typeof trackState.value) {
   syncDrumMuteSolo()
 }
 
-// Silence all bass oscillators. stop() also cancels a lookahead-scheduled
+// Silence all melodic oscillators. stop() also cancels a lookahead-scheduled
 // play that hasn't started yet (core guarantees this), so no note slips
 // through after the transport stops.
-function stopBassNotes() {
-  for (const osc of bassNoteOscs) {
-    void osc.stop()
+function stopVoiceOscs() {
+  for (const osc of bassNoteOscs) void osc.stop()
+  for (const chordOscs of leadNoteOscs) {
+    for (const osc of chordOscs) void osc.stop()
   }
 }
 
-// Silence the piano notes the active preset uses (Font caches one
-// SampledNote instance per identifier, so stopping by name works).
-function stopPianoNotes() {
-  if (!pianoFont.value)
-    return
-  for (const id of usedPianoNotes) {
-    void pianoFont.value.getNote(id)?.stop()
-  }
-}
-
-function disposeBassNotes() {
-  stopBassNotes()
-  for (const osc of bassNoteOscs) {
-    osc.dispose()
+function disposeVoiceOscs() {
+  stopVoiceOscs()
+  for (const osc of bassNoteOscs) osc.dispose()
+  for (const chordOscs of leadNoteOscs) {
+    for (const osc of chordOscs) osc.dispose()
   }
   bassNoteOscs = []
+  leadNoteOscs = []
 }
 
-// Apply preset — update patterns and re-schedule melody
-// Audio-side calls are guarded: if audio not yet initialized, only visual state updates.
-// The preset is re-applied after ensureLoaded() completes.
-async function applyPreset(name: string) {
-  activePreset.value = name
+async function buildVoiceOscillators(ctx: AudioContext, voice: VoiceSpec, notes: string[]): Promise<Oscillator[]> {
+  return Promise.all(notes.map(note =>
+    createOscillator(ctx, { note, type: voice.type, gain: voice.gain, envelope: voice.envelope }),
+  ))
+}
 
-  // Guard: only apply audio-side if library is initialized
+// Apply preset — update patterns and re-schedule melody.
+// Visual state (drum mirror, swing, bpm display) updates unconditionally.
+// Audio-side calls are guarded: if audio not yet initialized, only visual
+// state updates. The preset is re-applied after ensureLoaded() completes.
+async function applyPreset(preset: TransportPreset) {
+  activePresetName.value = preset.name
+  bpm.value = preset.bpm
+  swing.value = preset.swing * 100
+  drumSteps.kick = [...preset.kick.steps]
+  drumSteps.snare = [...preset.snare.steps]
+  drumSteps.hihat = [...preset.hihat.steps]
+
   if (!transport.value || !audioContext)
     return
 
-  const preset = PRESETS[name]
+  transport.value.bpm = preset.bpm
+  transport.value.swing = preset.swing
 
-  // Update drum patterns
-  kickTrack.value?.setPattern(preset.kick)
-  snareTrack.value?.setPattern(preset.snare)
-  hihatTrack.value?.setPattern(preset.hihat)
+  kickTrack.value?.setPattern(drumSteps.kick)
+  snareTrack.value?.setPattern(drumSteps.snare)
+  hihatTrack.value?.setPattern(drumSteps.hihat)
 
-  // Re-schedule melody sequences
   bassSeq.value?.clear()
-  pianoSeq.value?.clear()
+  leadSeq.value?.clear()
 
-  // One Oscillator per bass note: adjacent/overlapping notes never fight over
-  // a shared instance (the old single-oscillator approach orphaned nodes and
-  // left bass notes hanging). Triangle for a round bass tone; gain 0.5 is the
-  // level lever (phase-75 note: a lowpass on a triangle this low is inaudible).
-  disposeBassNotes()
+  disposeVoiceOscs()
   const ctx = audioContext
-  bassNoteOscs = await Promise.all(preset.bassNotes.map(noteEvt =>
-    createOscillator(ctx, { frequency: noteEvt.freq, type: 'triangle', gain: 0.5 }),
-  ))
+  bassNoteOscs = await buildVoiceOscillators(ctx, preset.bass.voice, preset.bass.notes.map(n => n.note))
+  leadNoteOscs = await Promise.all(
+    preset.lead.notes.map(chord => buildVoiceOscillators(ctx, preset.lead.voice, chord.notes)),
+  )
 
-  preset.bassNotes.forEach((noteEvt, i) => {
+  preset.bass.notes.forEach((noteEvt, i) => {
     bassSeq.value?.at(noteEvt.time, (t: number) => {
       if (!shouldPlay('bass'))
         return
       const osc = bassNoteOscs[i]
       if (!osc || !audioContext)
         return
-      const offset = Math.max(0, t - audioContext.currentTime)
-      osc.playIn(offset)
-      // Gate the note off with a short sample-accurate gain fade at its exact
-      // end time — background-tab safe (no JS timers on the audio path) and
-      // click-free. The node keeps running silently; the next play() replaces
-      // it (setup neutralizes the old node) and stop() kills it outright.
-      const stopT = t + noteEvt.duration
-      const level = osc.volume
-      const gain = osc.getGainNode().gain
-      gain.setValueAtTime(level, stopT - 0.02)
-      gain.linearRampToValueAtTime(0, stopT)
+      osc.playIn(Math.max(0, t - audioContext.currentTime))
     })
   })
 
-  usedPianoNotes = [...new Set(preset.pianoNotes.flatMap(c => c.notes))]
-  for (const chord of preset.pianoNotes) {
-    pianoSeq.value?.at(chord.time, (t: number) => {
-      if (!shouldPlay('piano'))
+  preset.lead.notes.forEach((chord, i) => {
+    leadSeq.value?.at(chord.time, (t: number) => {
+      if (!shouldPlay('lead'))
         return
-      if (!pianoFont.value || !audioContext)
+      if (!audioContext)
+        return
+      const oscs = leadNoteOscs[i]
+      if (!oscs)
         return
       const offset = Math.max(0, t - audioContext.currentTime)
-      for (const noteName of chord.notes) {
-        pianoFont.value.getNote(noteName)?.playIn(offset)
-      }
+      for (const osc of oscs) osc.playIn(offset)
     })
-  }
+  })
 }
 
 // Lazy-load all audio resources on first play
@@ -355,6 +259,8 @@ async function ensureLoaded() {
     return
 
   const tp = cleanup.register(await loadTransport({ bpm: bpm.value, timeSignature: [4, 4], ticksPerBeat: 12 }))
+  tp.loop = true
+  tp.loopEnd = '2m'
   audioContext = await getContext()
 
   // Create drum BeatTracks
@@ -377,7 +283,7 @@ async function ensureLoaded() {
   const kt = cleanup.register(await loadKick(kickUrls, { numBeats: 32 }))
   const st = cleanup.register(await loadSnare(snareUrls, { numBeats: 32 }))
   const ht = cleanup.register(await loadHihat(hihatUrls, { numBeats: 32 }))
-  // Headroom so drums + bass + piano don't clip the master bus (phase 75).
+  // Headroom so drums + bass + lead don't clip the master bus.
   kt.gain = 0.7
   st.gain = 0.7
   ht.gain = 0.6
@@ -387,17 +293,15 @@ async function ensureLoaded() {
   st.syncTo(tp, { noteType: 1 / 16 })
   ht.syncTo(tp, { noteType: 1 / 16 })
 
-  // Bass oscillators are created per-note in applyPreset() — see bassNoteOscs.
-
-  // Create piano soundfont
-  cleanup.register(await loadPianoFont('/ez-web-audio/audio/piano.js'))
+  // Bass/lead oscillators are created per-note in applyPreset() — see
+  // bassNoteOscs / leadNoteOscs.
 
   // Create melody sequences
   cleanup.register(await loadBassSeq(tp, { length: '2m', loop: true }))
-  cleanup.register(await loadPianoSeq(tp, { length: '2m', loop: true }))
+  cleanup.register(await loadLeadSeq(tp, { length: '2m', loop: true }))
 
   // Apply whatever preset was active when ensureLoaded was triggered
-  // (may differ from 'Straight Rock' if user clicked a preset before Play)
+  // (may differ from the default if the user clicked a preset before Play)
   await applyPreset(activePreset.value)
 
   // Register tick handler to drive step grid playhead
@@ -418,6 +322,12 @@ watch(bpm, (v) => {
     transport.value.bpm = Math.max(40, Math.min(300, v))
 })
 
+// Swing watch — Knob emits 0-100; transport.swing wants 0-1
+watch(swing, (v) => {
+  if (transport.value)
+    transport.value.swing = v / 100
+})
+
 // Transport controls
 async function play() {
   try {
@@ -435,9 +345,8 @@ async function play() {
 function pause() {
   transport.value?.pause()
   // Cut sounding melody notes — a paused sequencer should go quiet, not
-  // trail 4-second piano tails into the silence
-  stopBassNotes()
-  stopPianoNotes()
+  // trail note tails into the silence
+  stopVoiceOscs()
   paused.value = true
   currentStep.value = -1
 }
@@ -451,8 +360,7 @@ function stop() {
   transport.value?.stop()
   // Transport.stop() halts the scheduler, but notes already sounding (or
   // lookahead-scheduled) must be silenced explicitly
-  stopBassNotes()
-  stopPianoNotes()
+  stopVoiceOscs()
   playing.value = false
   paused.value = false
   currentStep.value = -1
@@ -461,34 +369,32 @@ function stop() {
 
 // Handle preset button click — visual update is immediate;
 // audio is applied only if initialized (guarded inside applyPreset).
-function selectPreset(name: string) {
-  void applyPreset(name)
+function selectPreset(preset: TransportPreset) {
+  void applyPreset(preset)
 }
 
 // Cleanup on unmount is handled by useCleanup() for composable-managed
-// instances; per-note bass oscillators are disposed manually (ephemeral-churn
-// escape hatch — useCleanup has no unregister)
+// instances; per-note melodic oscillators are disposed manually (ephemeral-
+// churn escape hatch — useCleanup has no unregister)
 onUnmounted(() => {
-  disposeBassNotes()
+  disposeVoiceOscs()
 })
 
 // Track definitions for template iteration
-const tracks = [
-  { key: 'kick' as const, label: 'Kick', isDrum: true },
-  { key: 'snare' as const, label: 'Snare', isDrum: true },
-  { key: 'hihat' as const, label: 'Hi-hat', isDrum: true },
-  { key: 'bass' as const, label: 'Bass', isDrum: false },
-  { key: 'piano' as const, label: 'Piano', isDrum: false },
+const tracks: { key: TrackKey, label: string, isDrum: boolean }[] = [
+  { key: 'kick', label: 'Kick', isDrum: true },
+  { key: 'snare', label: 'Snare', isDrum: true },
+  { key: 'hihat', label: 'Hi-hat', isDrum: true },
+  { key: 'bass', label: 'Bass', isDrum: false },
+  { key: 'lead', label: 'Lead', isDrum: false },
 ]
-
-const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 </script>
 
 <template>
   <DemoFrame
     class="transport-sequencer-demo"
     :error="error"
-    takeaway="A BPM-synced timeline with musical time notation."
+    takeaway="A BPM-synced, editable timeline with musical time notation."
   >
     <!-- Transport controls bar -->
     <div class="transport-bar">
@@ -536,28 +442,37 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
           :aria-label="`BPM value: ${bpm}`"
         >
       </div>
+
+      <Knob
+        v-model="swing"
+        label="Swing"
+        :min="0"
+        :max="100"
+        :step="1"
+        :format="(v: number) => `${Math.round(v)}%`"
+      />
     </div>
 
     <!-- Preset buttons -->
     <div class="preset-row">
       <span class="preset-label">Preset:</span>
       <button
-        v-for="name in presetNames"
-        :key="name"
+        v-for="preset in TRANSPORT_PRESETS"
+        :key="preset.name"
         class="preset-btn"
-        :class="{ active: activePreset === name }"
-        :aria-label="`Load preset: ${name}`"
-        :aria-pressed="activePreset === name"
-        @click="selectPreset(name)"
+        :class="{ active: activePresetName === preset.name }"
+        :aria-label="`Load preset: ${preset.name}`"
+        :aria-pressed="activePresetName === preset.name"
+        @click="selectPreset(preset)"
       >
-        {{ name }}
+        {{ preset.name }}
       </button>
     </div>
 
     <!-- Step grid — scrolls horizontally; track controls and labels are sticky -->
-    <div class="step-grid-wrap" aria-label="Step sequencer grid (read-only — use presets to change patterns)">
+    <div class="step-grid-wrap" aria-label="Step sequencer grid">
       <p class="grid-read-only-note">
-        Patterns are preset-driven. Press Play and switch presets to hear the difference.
+        Click drum cells to edit the pattern (rest → normal → accent → rest). Bass/Lead follow the preset.
       </p>
 
       <div class="step-grid">
@@ -627,16 +542,18 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
               :key="`${track.key}-step-${i}`"
               class="step-cell"
               :class="{
-                'active': stepCells[track.key]?.[i - 1]?.active,
+                'active': gridCells[track.key]?.[i - 1]?.active,
+                'accent': gridCells[track.key]?.[i - 1]?.accent,
                 'playhead': (i - 1) === currentStep,
                 'drum-cell': track.isDrum,
                 'melody-cell': !track.isDrum,
                 'bar-divider': (i - 1) === 16,
               }"
-              :aria-label="`${track.label} step ${i}${stepCells[track.key]?.[i - 1]?.active ? ' (active)' : ''}`"
+              :aria-label="cellAriaLabel(track, i)"
+              @click="clickStep(track.key, i - 1)"
             >
-              <span v-if="!track.isDrum && stepCells[track.key]?.[i - 1]?.noteName" class="note-name">
-                {{ stepCells[track.key][i - 1].noteName }}
+              <span v-if="!track.isDrum && gridCells[track.key]?.[i - 1]?.text" class="note-name">
+                {{ gridCells[track.key][i - 1].text }}
               </span>
             </div>
           </div>
@@ -756,8 +673,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 /* Step grid wrapper — fluid by default; horizontal scroll only kicks in
-   below the grid's minimum usable width (gate-2 jui: grid used fixed-width
-   cells and always overflowed the content column) */
+   below the grid's minimum usable width */
 .step-grid-wrap {
   overflow-x: auto;
 }
@@ -949,13 +865,20 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   border-left: 2px solid var(--ewa-accent);
 }
 
-/* Active cells — single accent tone for both drum and melody lanes (this
-   read-only grid has no per-instrument color data plumbed to the template,
-   so it follows the kit's own default active-cell treatment, e.g. StepGrid's
-   `lane.color ?? 'var(--ewa-accent)'` fallback) */
+/* Drum cells are editable — pointer cursor signals clickability */
+.step-cell.drum-cell {
+  cursor: pointer;
+}
+
+/* Normal-velocity active cells — softer fill than accent */
 .step-cell.drum-cell.active {
-  background: var(--ewa-accent);
+  background: color-mix(in srgb, var(--ewa-accent) 55%, var(--ewa-bg));
   color: transparent;
+}
+
+/* Accent cells — full-strength fill, visually stronger than normal */
+.step-cell.drum-cell.active.accent {
+  background: var(--ewa-accent);
 }
 
 .step-cell.melody-cell.active {

@@ -770,10 +770,10 @@ const shuffle: TransportPreset = {
       envelope: { attack: 0.005, decay: 0.25, sustain: 0, release: 0.08 },
     },
     notes: [
-      { time: 1.5, notes: ['E4', 'G#4', 'D5'], label: 'E7' },
-      { time: 3.5, notes: ['E4', 'G#4', 'D5'], label: 'E7' },
-      { time: 5.5, notes: ['E4', 'G#4', 'D5'], label: 'E7' },
-      { time: 7.5, notes: ['A4', 'C#5', 'E5'], label: 'A' },
+      { time: 1.5, notes: ['E4', 'Ab4', 'D5'], label: 'E7' },
+      { time: 3.5, notes: ['E4', 'Ab4', 'D5'], label: 'E7' },
+      { time: 5.5, notes: ['E4', 'Ab4', 'D5'], label: 'E7' },
+      { time: 7.5, notes: ['A4', 'Db5', 'E5'], label: 'A' },
     ],
   },
 }
