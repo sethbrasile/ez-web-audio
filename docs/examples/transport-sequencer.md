@@ -53,27 +53,27 @@ Turn the swing knob down to `0` while Shuffle is playing and the groove flattens
 
 ### Melody Tracks via Sequence
 
-The Bass and Lead tracks use `createSequence()` to schedule notes at precise musical time positions, rather than syncing to a fixed grid like the drum lanes. `Sequence` events are addressed by raw beat number here (`0`, `1.5`, `2.5`...) but also support bar:beat:tick notation and note names (`'4n'`, `'8t'`) -- the same API expresses a bass line or a chord stab equally well. Because each preset supplies its own `length: '2m', loop: true`, matching the Transport's own `loopEnd = '2m'`, both the drum lanes and the melody sequences wrap back to the top of the pattern together:
+The Bass and Lead tracks use `createSequence()` to schedule notes at precise musical time positions, rather than syncing to a fixed grid like the drum lanes. `Sequence` events are addressed by raw beat number here (`0`, `1.5`, `2.5`...) but also support bar:beat:tick notation and note names (`'4n'`, `'8t'`) -- the same API expresses a bass line or a chord stab equally well. Because each preset supplies its own `length: '2m', loop: true`, matching the Transport's own `loopEnd = '2m'`, both the drum lanes and the melody sequences wrap back to the top of the pattern together.
+
+Each note gets its own `Oscillator` instead of one shared oscillator being retriggered -- reusing a single oscillator across triggers means a new note can race the previous note's release tail and click or screech. A chord stab (several notes at once, like the Lead track) is just several Oscillators triggered by the same sequence event:
 
 ```typescript
-import { createOscillator, createSequence, createTransport } from 'ez-web-audio'
+import { createOscillator, createSequence, createTransport, getAudioContext } from 'ez-web-audio'
 
 const transport = await createTransport({ bpm: 96, timeSignature: [4, 4] })
 transport.loop = true
 transport.loopEnd = '2m'
+const ctx = await getAudioContext()
 
-// Bass: one Oscillator retriggered at each note event
-const bass = await createOscillator({ type: 'triangle' })
+// sustain: 0 -- each note fades out on its own after decay, so it never
+// needs to be stopped or retriggered
+const envelope = { attack: 0.005, decay: 0.25, sustain: 0, release: 0.05 }
+const e2 = await createOscillator(ctx, { note: 'E2', type: 'triangle', gain: 0.5, envelope })
+const g2 = await createOscillator(ctx, { note: 'G2', type: 'triangle', gain: 0.5, envelope })
+
 const bassSeq = createSequence(transport, { length: '2m', loop: true }) // SYNC -- no await
-
-bassSeq.at(0, (time) => { bass.frequency = 82.4; bass.playFor(0.4) }) // E2
-bassSeq.at(1.5, (time) => { bass.frequency = 98; bass.playFor(0.4) }) // G2
-
-// Lead: a chord stab is just several Oscillators triggered at the same event
-const chordTones = await Promise.all(['E4', 'G4', 'B4'].map(note => createOscillator({ note, type: 'sawtooth' })))
-const leadSeq = createSequence(transport, { length: '2m', loop: true })
-
-leadSeq.at(1.5, time => chordTones.forEach(osc => osc.playFor(0.3))) // Em chord stab
+bassSeq.at(0, t => e2.playIn(Math.max(0, t - ctx.currentTime))) // E2
+bassSeq.at(1.5, t => g2.playIn(Math.max(0, t - ctx.currentTime))) // G2
 
 transport.start()
 ```
