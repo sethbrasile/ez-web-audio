@@ -53,12 +53,14 @@ export class EffectWrapper implements Effect {
   private readonly outputNode: GainNode
   private readonly dryGain: GainNode
   private readonly wetGain: GainNode
+  private readonly audioContext: AudioContext
 
   private _bypass = false
   private _mix = 1
 
   constructor(audioContext: AudioContext, externalEffect: ExternalEffect) {
     this._effect = externalEffect
+    this.audioContext = audioContext
 
     // Create nodes for wet/dry mixing
     this.inputNode = audioContext.createGain()
@@ -95,8 +97,8 @@ export class EffectWrapper implements Effect {
     externalEffect.connect(this.wetGain)
     this.wetGain.connect(this.outputNode)
 
-    // Apply initial mix (full wet by default)
-    this.applyMix()
+    // Apply initial mix (full wet by default) — instant, no signal yet
+    this.applyMix(false)
   }
 
   /** The input AudioNode (receives signal from chain) */
@@ -146,8 +148,14 @@ export class EffectWrapper implements Effect {
    * Apply wet/dry mix using equal-power crossfade.
    * Delegates to shared utility for consistent mixing across all effects.
    */
-  private applyMix(): void {
-    applyEqualPowerCrossfade(this.dryGain, this.wetGain, this._mix, this._bypass)
+  private applyMix(smooth: boolean = true): void {
+    applyEqualPowerCrossfade(
+      this.dryGain,
+      this.wetGain,
+      this._mix,
+      this._bypass,
+      smooth ? this.audioContext.currentTime : undefined,
+    )
   }
 }
 

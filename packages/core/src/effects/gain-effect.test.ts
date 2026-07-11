@@ -4,7 +4,21 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createGainEffect, GainEffect } from './gain-effect'
 
 function createMockContext() {
-  return new Mock() as unknown as AudioContext
+  const ctx = new Mock() as unknown as AudioContext
+
+  // GainEffect setters smooth via setTargetAtTime; make the mock converge
+  // .value to the target immediately so assertions read the settled value
+  const originalCreateGain = ctx.createGain.bind(ctx)
+  ;(ctx as any).createGain = () => {
+    const node = originalCreateGain()
+    node.gain.setTargetAtTime = (value: number) => {
+      ;(node.gain as any).value = value
+      return node.gain
+    }
+    return node
+  }
+
+  return ctx
 }
 
 describe('gainEffect', () => {

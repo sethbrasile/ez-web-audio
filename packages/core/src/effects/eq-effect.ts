@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -52,28 +53,46 @@ export class EQEffect extends BaseEffect {
   private readonly midFilter: BiquadFilterNode
   private readonly highFilter: BiquadFilterNode
 
+  // Shadow state: setters smooth via setTargetAtTime, so node .value lags
+  // the target — getters return these instead
+  private _low: number
+  private _mid: number
+  private _high: number
+  private _lowFrequency: number
+  private _midFrequency: number
+  private _highFrequency: number
+  private _midQ: number
+
   constructor(
     audioContext: AudioContext,
     options: EQOptions = {},
   ) {
     super(audioContext)
 
+    this._low = options.low ?? 0
+    this._mid = options.mid ?? 0
+    this._high = options.high ?? 0
+    this._lowFrequency = options.lowFrequency ?? 200
+    this._midFrequency = options.midFrequency ?? 1000
+    this._highFrequency = options.highFrequency ?? 3000
+    this._midQ = options.midQ ?? 0.7
+
     // Create and configure three-band EQ
     this.lowFilter = audioContext.createBiquadFilter()
     this.lowFilter.type = 'lowshelf'
-    this.lowFilter.frequency.value = options.lowFrequency ?? 200
-    this.lowFilter.gain.value = options.low ?? 0
+    this.lowFilter.frequency.value = this._lowFrequency
+    this.lowFilter.gain.value = this._low
 
     this.midFilter = audioContext.createBiquadFilter()
     this.midFilter.type = 'peaking'
-    this.midFilter.frequency.value = options.midFrequency ?? 1000
-    this.midFilter.Q.value = options.midQ ?? 0.7
-    this.midFilter.gain.value = options.mid ?? 0
+    this.midFilter.frequency.value = this._midFrequency
+    this.midFilter.Q.value = this._midQ
+    this.midFilter.gain.value = this._mid
 
     this.highFilter = audioContext.createBiquadFilter()
     this.highFilter.type = 'highshelf'
-    this.highFilter.frequency.value = options.highFrequency ?? 3000
-    this.highFilter.gain.value = options.high ?? 0
+    this.highFilter.frequency.value = this._highFrequency
+    this.highFilter.gain.value = this._high
 
     // Wire effect chain: input -> low -> mid -> high -> wetGain
     this.inputNode.connect(this.lowFilter)
@@ -89,65 +108,72 @@ export class EQEffect extends BaseEffect {
 
   /** Low band gain in dB */
   get low(): number {
-    return this.lowFilter.gain.value
+    return this._low
   }
 
   set low(v: number) {
-    this.lowFilter.gain.value = v
+    this._low = v
+    smoothParamSet(this.lowFilter.gain, v, this.audioContext.currentTime)
   }
 
   /** Mid band gain in dB */
   get mid(): number {
-    return this.midFilter.gain.value
+    return this._mid
   }
 
   set mid(v: number) {
-    this.midFilter.gain.value = v
+    this._mid = v
+    smoothParamSet(this.midFilter.gain, v, this.audioContext.currentTime)
   }
 
   /** High band gain in dB */
   get high(): number {
-    return this.highFilter.gain.value
+    return this._high
   }
 
   set high(v: number) {
-    this.highFilter.gain.value = v
+    this._high = v
+    smoothParamSet(this.highFilter.gain, v, this.audioContext.currentTime)
   }
 
   /** Low band crossover frequency in Hz */
   get lowFrequency(): number {
-    return this.lowFilter.frequency.value
+    return this._lowFrequency
   }
 
   set lowFrequency(v: number) {
-    this.lowFilter.frequency.value = v
+    this._lowFrequency = v
+    smoothParamSet(this.lowFilter.frequency, v, this.audioContext.currentTime)
   }
 
   /** Mid band center frequency in Hz */
   get midFrequency(): number {
-    return this.midFilter.frequency.value
+    return this._midFrequency
   }
 
   set midFrequency(v: number) {
-    this.midFilter.frequency.value = v
+    this._midFrequency = v
+    smoothParamSet(this.midFilter.frequency, v, this.audioContext.currentTime)
   }
 
   /** High band crossover frequency in Hz */
   get highFrequency(): number {
-    return this.highFilter.frequency.value
+    return this._highFrequency
   }
 
   set highFrequency(v: number) {
-    this.highFilter.frequency.value = v
+    this._highFrequency = v
+    smoothParamSet(this.highFilter.frequency, v, this.audioContext.currentTime)
   }
 
   /** Mid band Q factor (bandwidth) */
   get midQ(): number {
-    return this.midFilter.Q.value
+    return this._midQ
   }
 
   set midQ(v: number) {
-    this.midFilter.Q.value = v
+    this._midQ = v
+    smoothParamSet(this.midFilter.Q, v, this.audioContext.currentTime)
   }
 
   public override dispose(): void {

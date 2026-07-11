@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -48,6 +49,13 @@ export interface FilterEffectOptions {
 export class FilterEffect extends BaseEffect {
   private readonly filterNode: BiquadFilterNode
 
+  // Shadow state: setters smooth via setTargetAtTime, so node .value lags
+  // the target — getters return these instead
+  private _frequency: number
+  private _q: number
+  private _gain: number
+  private _detune: number
+
   constructor(
     audioContext: AudioContext,
     type: FilterType,
@@ -55,13 +63,18 @@ export class FilterEffect extends BaseEffect {
   ) {
     super(audioContext)
 
+    this._frequency = options.frequency ?? 350
+    this._q = options.q ?? 1
+    this._gain = options.gain ?? 0
+    this._detune = options.detune ?? 0
+
     // Create and configure filter
     this.filterNode = audioContext.createBiquadFilter()
     this.filterNode.type = type
-    this.filterNode.frequency.value = options.frequency ?? 350
-    this.filterNode.Q.value = options.q ?? 1
-    this.filterNode.gain.value = options.gain ?? 0
-    this.filterNode.detune.value = options.detune ?? 0
+    this.filterNode.frequency.value = this._frequency
+    this.filterNode.Q.value = this._q
+    this.filterNode.gain.value = this._gain
+    this.filterNode.detune.value = this._detune
 
     // Wire effect chain: input -> filter -> wetGain
     this.inputNode.connect(this.filterNode)
@@ -70,38 +83,42 @@ export class FilterEffect extends BaseEffect {
 
   /** Filter frequency in Hz */
   get frequency(): number {
-    return this.filterNode.frequency.value
+    return this._frequency
   }
 
   set frequency(v: number) {
-    this.filterNode.frequency.value = v
+    this._frequency = v
+    smoothParamSet(this.filterNode.frequency, v, this.audioContext.currentTime)
   }
 
   /** Filter Q factor (resonance) */
   get q(): number {
-    return this.filterNode.Q.value
+    return this._q
   }
 
   set q(v: number) {
-    this.filterNode.Q.value = v
+    this._q = v
+    smoothParamSet(this.filterNode.Q, v, this.audioContext.currentTime)
   }
 
   /** Filter gain in dB (for shelf and peaking filters) */
   get gain(): number {
-    return this.filterNode.gain.value
+    return this._gain
   }
 
   set gain(v: number) {
-    this.filterNode.gain.value = v
+    this._gain = v
+    smoothParamSet(this.filterNode.gain, v, this.audioContext.currentTime)
   }
 
   /** Filter detune in cents */
   get detune(): number {
-    return this.filterNode.detune.value
+    return this._detune
   }
 
   set detune(v: number) {
-    this.filterNode.detune.value = v
+    this._detune = v
+    smoothParamSet(this.filterNode.detune, v, this.audioContext.currentTime)
   }
 
   /** The current filter type */

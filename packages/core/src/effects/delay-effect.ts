@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -43,6 +44,11 @@ export class DelayEffect extends BaseEffect {
   private readonly feedbackGain: GainNode
   private readonly _maxTime: number
 
+  // Shadow state: setters smooth via setTargetAtTime, so node .value lags
+  // the target — getters return these instead
+  private _time: number
+  private _feedback: number
+
   constructor(
     audioContext: AudioContext,
     options: DelayOptions = {},
@@ -56,8 +62,10 @@ export class DelayEffect extends BaseEffect {
     this.feedbackGain = audioContext.createGain()
 
     // Configure
-    this.delayNode.delayTime.value = options.time ?? 0.3
-    this.feedbackGain.gain.value = Math.min(options.feedback ?? 0.4, 0.99)
+    this._time = options.time ?? 0.3
+    this._feedback = Math.min(options.feedback ?? 0.4, 0.99)
+    this.delayNode.delayTime.value = this._time
+    this.feedbackGain.gain.value = this._feedback
 
     // Wire effect chain with feedback loop:
     // input -> delayNode -> feedbackGain -> delayNode (loop)
@@ -75,21 +83,23 @@ export class DelayEffect extends BaseEffect {
 
   /** Delay time in seconds */
   get time(): number {
-    return this.delayNode.delayTime.value
+    return this._time
   }
 
   set time(v: number) {
     // M9: Clamp to valid range [0, maxTime]
-    this.delayNode.delayTime.value = Math.max(0, Math.min(this._maxTime, v))
+    this._time = Math.max(0, Math.min(this._maxTime, v))
+    smoothParamSet(this.delayNode.delayTime, this._time, this.audioContext.currentTime)
   }
 
   /** Feedback amount (0-0.99). Higher values = more repeats */
   get feedback(): number {
-    return this.feedbackGain.gain.value
+    return this._feedback
   }
 
   set feedback(v: number) {
-    this.feedbackGain.gain.value = Math.max(0, Math.min(0.99, v))
+    this._feedback = Math.max(0, Math.min(0.99, v))
+    smoothParamSet(this.feedbackGain.gain, this._feedback, this.audioContext.currentTime)
   }
 
   /** Maximum delay time in seconds (read-only, set at construction) */

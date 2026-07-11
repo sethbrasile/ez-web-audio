@@ -75,8 +75,8 @@ export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> i
     // Subclass wires: inputNode -> [effect chain] -> wetGain
     this.wetGain.connect(this.outputNode)
 
-    // Apply initial mix (full wet by default)
-    this.applyMix()
+    // Apply initial mix (full wet by default) — instant, no signal yet
+    this.applyMix(false)
   }
 
   /** The input AudioNode (receives signal from chain) */
@@ -241,7 +241,13 @@ export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> i
    * Apply wet/dry mix using equal-power crossfade.
    * @internal
    */
-  private applyMix(): void {
-    applyEqualPowerCrossfade(this.dryGain, this.wetGain, this._mix, this._bypass)
+  private applyMix(smooth: boolean = true): void {
+    applyEqualPowerCrossfade(
+      this.dryGain,
+      this.wetGain,
+      this._mix,
+      this._bypass,
+      smooth ? this.audioContext.currentTime : undefined,
+    )
   }
 }

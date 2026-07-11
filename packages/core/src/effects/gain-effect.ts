@@ -1,4 +1,5 @@
 import type { Effect } from './index'
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 
 /**
@@ -20,11 +21,13 @@ import { getOrCreateAudioContext } from '@/audio-context'
  */
 export class GainEffect implements Effect {
   private readonly gainNode: GainNode
+  private readonly audioContext: AudioContext
   private _bypass = false
   private _mix = 1
   private _value: number
 
   constructor(audioContext: AudioContext, initialValue = 1.0) {
+    this.audioContext = audioContext
     this.gainNode = audioContext.createGain()
     this._value = initialValue
     this.gainNode.gain.value = initialValue
@@ -64,7 +67,7 @@ export class GainEffect implements Effect {
     this._bypass = v
     if (v) {
       // Bypass: set gain to 1.0 (passthrough)
-      this.gainNode.gain.value = 1.0
+      smoothParamSet(this.gainNode.gain, 1.0, this.audioContext.currentTime)
     }
     else {
       // Restore effect
@@ -98,7 +101,7 @@ export class GainEffect implements Effect {
     const dryGain = Math.cos(this._mix * Math.PI / 2)
     const wetGain = Math.sin(this._mix * Math.PI / 2)
     const effectiveGain = dryGain * 1 + wetGain * this._value
-    this.gainNode.gain.value = effectiveGain
+    smoothParamSet(this.gainNode.gain, effectiveGain, this.audioContext.currentTime)
   }
 }
 

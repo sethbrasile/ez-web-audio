@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -131,9 +132,9 @@ export class DistortionEffect extends BaseEffect {
       this.waveShaperNode.curve = generateCurve(this._type, this._amount)
     }
 
-    // Configure tone filter (lowpass)
+    // Configure tone filter (lowpass) — instant, no signal yet
     this.toneFilter.type = 'lowpass'
-    this.applyTone()
+    this.applyTone(false)
 
     // Wire effect chain: input -> waveshaper -> toneFilter -> wetGain
     this.inputNode.connect(this.waveShaperNode)
@@ -219,8 +220,14 @@ export class DistortionEffect extends BaseEffect {
    * Map tone 0-1 to lowpass frequency using exponential scale.
    * 0 = 200Hz (dark), 1 = 8000Hz (bright)
    */
-  private applyTone(): void {
-    this.toneFilter.frequency.value = 200 * 40 ** this._tone
+  private applyTone(smooth: boolean = true): void {
+    const freq = 200 * 40 ** this._tone
+    if (smooth) {
+      smoothParamSet(this.toneFilter.frequency, freq, this.audioContext.currentTime)
+    }
+    else {
+      this.toneFilter.frequency.value = freq
+    }
   }
 }
 

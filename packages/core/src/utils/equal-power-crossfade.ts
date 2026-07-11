@@ -1,3 +1,5 @@
+import { smoothParamSet } from './param-smoothing'
+
 /**
  * Apply equal-power crossfade to wet/dry gain nodes.
  *
@@ -12,13 +14,16 @@
  * @param wetGain - GainNode for the wet (processed) signal
  * @param mix - Mix amount from 0 (dry) to 1 (wet)
  * @param bypass - When true, sets full dry (overrides mix parameter)
+ * @param currentTime - When provided, gains transition smoothly via
+ *   setTargetAtTime (click-free live changes); omit for instant assignment
+ *   (e.g. initial setup before any signal flows)
  *
  * @example
  * ```typescript
  * const dryGain = audioContext.createGain()
  * const wetGain = audioContext.createGain()
- * applyEqualPowerCrossfade(dryGain, wetGain, 0.7, false) // 70% wet
- * applyEqualPowerCrossfade(dryGain, wetGain, 0, true) // bypass: full dry
+ * applyEqualPowerCrossfade(dryGain, wetGain, 0.7, false) // 70% wet, instant
+ * applyEqualPowerCrossfade(dryGain, wetGain, 0.7, false, ctx.currentTime) // smooth
  * ```
  */
 export function applyEqualPowerCrossfade(
@@ -26,16 +31,29 @@ export function applyEqualPowerCrossfade(
   wetGain: GainNode,
   mix: number,
   bypass: boolean,
+  currentTime?: number,
 ): void {
+  let dryValue: number
+  let wetValue: number
+
   if (bypass) {
     // Full dry when bypassed
-    dryGain.gain.value = 1
-    wetGain.gain.value = 0
+    dryValue = 1
+    wetValue = 0
   }
   else {
     // Equal-power crossfade
     const angle = mix * 0.5 * Math.PI // 0 to PI/2
-    dryGain.gain.value = Math.cos(angle) // 1 -> 0
-    wetGain.gain.value = Math.sin(angle) // 0 -> 1
+    dryValue = Math.cos(angle) // 1 -> 0
+    wetValue = Math.sin(angle) // 0 -> 1
+  }
+
+  if (currentTime !== undefined) {
+    smoothParamSet(dryGain.gain, dryValue, currentTime)
+    smoothParamSet(wetGain.gain, wetValue, currentTime)
+  }
+  else {
+    dryGain.gain.value = dryValue
+    wetGain.gain.value = wetValue
   }
 }

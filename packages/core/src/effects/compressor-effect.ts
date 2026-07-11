@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -49,19 +50,33 @@ export interface CompressorOptions {
 export class CompressorEffect extends BaseEffect {
   private readonly compressorNode: DynamicsCompressorNode
 
+  // Shadow state: setters smooth via setTargetAtTime, so node .value lags
+  // the target — getters return these instead
+  private _threshold: number
+  private _ratio: number
+  private _knee: number
+  private _attack: number
+  private _release: number
+
   constructor(
     audioContext: AudioContext,
     options: CompressorOptions = {},
   ) {
     super(audioContext)
 
+    this._threshold = options.threshold ?? -24
+    this._ratio = options.ratio ?? 4
+    this._knee = options.knee ?? 30
+    this._attack = options.attack ?? 0.003
+    this._release = options.release ?? 0.25
+
     // Create and configure compressor
     this.compressorNode = audioContext.createDynamicsCompressor()
-    this.compressorNode.threshold.value = options.threshold ?? -24
-    this.compressorNode.ratio.value = options.ratio ?? 4
-    this.compressorNode.knee.value = options.knee ?? 30
-    this.compressorNode.attack.value = options.attack ?? 0.003
-    this.compressorNode.release.value = options.release ?? 0.25
+    this.compressorNode.threshold.value = this._threshold
+    this.compressorNode.ratio.value = this._ratio
+    this.compressorNode.knee.value = this._knee
+    this.compressorNode.attack.value = this._attack
+    this.compressorNode.release.value = this._release
 
     // Wire effect chain: input -> compressor -> wetGain
     this.inputNode.connect(this.compressorNode)
@@ -75,52 +90,57 @@ export class CompressorEffect extends BaseEffect {
 
   /** Threshold in dB above which compression starts */
   get threshold(): number {
-    return this.compressorNode.threshold.value
+    return this._threshold
   }
 
   set threshold(v: number) {
     // M8: Clamp to valid range [-100, 0] dB
-    this.compressorNode.threshold.value = Math.max(-100, Math.min(0, v))
+    this._threshold = Math.max(-100, Math.min(0, v))
+    smoothParamSet(this.compressorNode.threshold, this._threshold, this.audioContext.currentTime)
   }
 
   /** Compression ratio (e.g., 4 = 4:1) */
   get ratio(): number {
-    return this.compressorNode.ratio.value
+    return this._ratio
   }
 
   set ratio(v: number) {
     // M8: Clamp to valid range [1, 20]
-    this.compressorNode.ratio.value = Math.max(1, Math.min(20, v))
+    this._ratio = Math.max(1, Math.min(20, v))
+    smoothParamSet(this.compressorNode.ratio, this._ratio, this.audioContext.currentTime)
   }
 
   /** Knee width in dB */
   get knee(): number {
-    return this.compressorNode.knee.value
+    return this._knee
   }
 
   set knee(v: number) {
     // M8: Clamp to valid range [0, 40] dB
-    this.compressorNode.knee.value = Math.max(0, Math.min(40, v))
+    this._knee = Math.max(0, Math.min(40, v))
+    smoothParamSet(this.compressorNode.knee, this._knee, this.audioContext.currentTime)
   }
 
   /** Attack time in seconds */
   get attack(): number {
-    return this.compressorNode.attack.value
+    return this._attack
   }
 
   set attack(v: number) {
     // M8: Clamp to valid range [0, 1] seconds
-    this.compressorNode.attack.value = Math.max(0, Math.min(1, v))
+    this._attack = Math.max(0, Math.min(1, v))
+    smoothParamSet(this.compressorNode.attack, this._attack, this.audioContext.currentTime)
   }
 
   /** Release time in seconds */
   get release(): number {
-    return this.compressorNode.release.value
+    return this._release
   }
 
   set release(v: number) {
     // M8: Clamp to valid range [0, 1] seconds
-    this.compressorNode.release.value = Math.max(0, Math.min(1, v))
+    this._release = Math.max(0, Math.min(1, v))
+    smoothParamSet(this.compressorNode.release, this._release, this.audioContext.currentTime)
   }
 
   /** Current gain reduction in dB (read-only). Useful for metering */

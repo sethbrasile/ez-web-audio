@@ -1,3 +1,4 @@
+import { smoothParamSet } from '@utils/param-smoothing'
 import { getOrCreateAudioContext } from '@/audio-context'
 import { BaseEffect } from './base-effect'
 
@@ -80,6 +81,7 @@ export class ReverbEffect extends BaseEffect {
   private allpassFilters?: AllpassFilter[]
   private _decay: number = 1.5
   private _damping: number = 0.3
+  private _preDelay: number = 0.01
 
   // Convolution mode nodes
   private convolverNode?: ConvolverNode
@@ -116,8 +118,9 @@ export class ReverbEffect extends BaseEffect {
     this._damping = options.damping ?? 0.3
 
     // Pre-delay
+    this._preDelay = Math.min(options.preDelay ?? 0.01, 0.1)
     this.preDelayNode = audioContext.createDelay(0.1)
-    this.preDelayNode.delayTime.value = Math.min(options.preDelay ?? 0.01, 0.1)
+    this.preDelayNode.delayTime.value = this._preDelay
 
     // Comb merge gain (averages 4 parallel comb outputs)
     this.combMerge = audioContext.createGain()
@@ -233,13 +236,14 @@ export class ReverbEffect extends BaseEffect {
 
   /** Pre-delay time in seconds (algorithmic mode only) */
   get preDelay(): number {
-    return this.preDelayNode?.delayTime.value ?? 0
+    return this._mode === 'algorithmic' ? this._preDelay : 0
   }
 
   set preDelay(v: number) {
     if (this._mode !== 'algorithmic' || !this.preDelayNode)
       return
-    this.preDelayNode.delayTime.value = Math.min(v, 0.1)
+    this._preDelay = Math.min(v, 0.1)
+    smoothParamSet(this.preDelayNode.delayTime, this._preDelay, this.audioContext.currentTime)
   }
 
   /** Damping amount 0-1 (algorithmic mode only). Higher = darker */
