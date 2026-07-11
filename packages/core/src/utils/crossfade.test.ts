@@ -498,7 +498,9 @@ describe('crossfade', () => {
     await trackX.play()
 
     let fade1Resolved = false
-    const fade1 = crossfade(trackX, trackB, 0.05).then(() => { fade1Resolved = true })
+    const fade1 = crossfade(trackX, trackB, 0.05).then(() => {
+      fade1Resolved = true
+    })
     const fade2 = crossfade(trackC, trackX, 0.05)
 
     await Promise.all([fade1, fade2])

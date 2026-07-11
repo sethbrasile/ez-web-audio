@@ -74,7 +74,8 @@ To reflect `BeatTrack` playback state in React, either:
 
 ```tsx
 useEffect(() => {
-  if (!beatTrack) return
+  if (!beatTrack)
+    return
   const handleBeat = () => setTick(t => t + 1) // force a re-render on each beat
   beatTrack.on('beat', handleBeat)
   return () => beatTrack.off('beat', handleBeat)

@@ -1,21 +1,3 @@
-export type {
-  AnalyzerOptions,
-  AudioInput,
-  Beat,
-  BeatTrackOptions,
-  GrainPlayerOptions,
-  LayeredSoundOptions,
-  LFOOptions,
-  Oscillator,
-  OscillatorOptions,
-  PolySynthOptions,
-  SamplerOptions,
-  SequenceOptions,
-  Sound,
-  SpriteManifest,
-  Transport,
-  TransportOptions,
-} from 'ez-web-audio'
 export {
   useAnalyzer,
   useBeatTrack,
@@ -39,3 +21,21 @@ export { useAudioContext } from './use-audio-context'
 export type { UseAudioContextReturn } from './use-audio-context'
 export { useCleanup } from './use-cleanup'
 export type { Disposable } from './use-cleanup'
+export type {
+  AnalyzerOptions,
+  AudioInput,
+  Beat,
+  BeatTrackOptions,
+  GrainPlayerOptions,
+  LayeredSoundOptions,
+  LFOOptions,
+  Oscillator,
+  OscillatorOptions,
+  PolySynthOptions,
+  SamplerOptions,
+  SequenceOptions,
+  Sound,
+  SpriteManifest,
+  Transport,
+  TransportOptions,
+} from 'ez-web-audio'

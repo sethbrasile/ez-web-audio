@@ -287,7 +287,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    * Loop region start. Set with musical notation (`'1m'`, `'2:1:0'`) or a
    * numeric beat count; reads back as beats. Not validated against
    * {@link loopEnd} until the next {@link start} call — see {@link loop}.
-   * @default 0
+   * @default
    *
    * @example
    * ```typescript

@@ -708,7 +708,17 @@ describe('factory functions', () => {
   })
 
   describe('createSprite()', () => {
+    // AudioSprite validates segment bounds against the decoded buffer at
+    // construction; the mock's decodeAudioData returns a ~10-sample buffer,
+    // so stub it to return one long enough for the manifests below.
+    function stubLongDecode() {
+      vi.spyOn(mockAudioContext, 'decodeAudioData').mockResolvedValue(
+        (mockAudioContext as AudioContext).createBuffer(1, 44100 * 2, 44100),
+      )
+    }
+
     it('returns an AudioSprite instance on successful fetch', async () => {
+      stubLongDecode()
       mockFetch.mockResolvedValue(makeMockResponse())
       const { createSprite, AudioSprite } = await import('./index')
       const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }
@@ -735,6 +745,7 @@ describe('factory functions', () => {
     })
 
     it('creates AudioSprite from Howler manifest format', async () => {
+      stubLongDecode()
       mockFetch.mockResolvedValue(makeMockResponse())
       const { createSprite, AudioSprite } = await import('./index')
       const howlerManifest = {
@@ -752,6 +763,7 @@ describe('factory functions', () => {
     })
 
     it('howler manifest normalizes ms to seconds', async () => {
+      stubLongDecode()
       mockFetch.mockResolvedValue(makeMockResponse())
       const { createSprite } = await import('./index')
       const howlerManifest = {
@@ -1277,6 +1289,11 @@ describe('factory functions with explicit AudioContext (BaseAudioContext overloa
     })
 
     it('createSprite(ctx, url, manifest) returns AudioSprite using provided context', async () => {
+      // Sprite bounds validate against the decoded buffer at construction —
+      // stub decode to return a buffer longer than the manifest's end time
+      vi.spyOn(mockAudioContext, 'decodeAudioData').mockResolvedValue(
+        (mockAudioContext as AudioContext).createBuffer(1, 44100, 44100),
+      )
       mockFetch.mockResolvedValue(makeMockResponse())
       const { createSprite, AudioSprite } = await import('./index')
       const manifest = { spritemap: { laser: { start: 0, end: 0.1 } } }

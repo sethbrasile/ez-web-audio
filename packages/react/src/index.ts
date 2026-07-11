@@ -1,20 +1,3 @@
-export type {
-  AnalyzerOptions,
-  AudioInput,
-  BeatTrackOptions,
-  GrainPlayerOptions,
-  LayeredSoundOptions,
-  LFOOptions,
-  Oscillator,
-  OscillatorOptions,
-  PolySynthOptions,
-  SamplerOptions,
-  SequenceOptions,
-  Sound,
-  SpriteManifest,
-  Transport,
-  TransportOptions,
-} from 'ez-web-audio'
 export { createFactoryHook } from './create-factory-hook'
 export type { UseFactoryReturn } from './create-factory-hook'
 export {
@@ -38,3 +21,20 @@ export { useAudioContext } from './use-audio-context'
 export type { UseAudioContextReturn } from './use-audio-context'
 export { useCleanup } from './use-cleanup'
 export type { Disposable } from './use-cleanup'
+export type {
+  AnalyzerOptions,
+  AudioInput,
+  BeatTrackOptions,
+  GrainPlayerOptions,
+  LayeredSoundOptions,
+  LFOOptions,
+  Oscillator,
+  OscillatorOptions,
+  PolySynthOptions,
+  SamplerOptions,
+  SequenceOptions,
+  Sound,
+  SpriteManifest,
+  Transport,
+  TransportOptions,
+} from 'ez-web-audio'
