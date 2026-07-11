@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: 7
 milestone_name: Feature Demos
 status: awaiting_uat
-stopped_at: M8 Phase 74 COMPLETE (74-02 design implementation shipped); gate-2 re-listen still pending (deferred by Seth) — Phase 76 blocked on it; 77-01 parallel-runnable
-last_updated: "2026-07-10T23:30:00.000Z"
-last_activity: 2026-07-10 — Phase 74 complete. 74-02 implemented the claude-design packet — EWA token layer + Signal-green brand override, 12-SFC kit at docs/.vitepress/theme/components/kit/ (+README), all 22 demos + PianoKeyboard restyled (presentation-only, audio frozen), IA triage (2 outcome renames adopted; structural items → M8-QUESTIONS w/ recommendations). 19 commits, per-task gates, exit gate green (1944 core + 31 vue, docs build, 72/72 E2E). Full light+dark screenshot set in phases/74-demo-design-cohesion/screenshots/. Gate-2 re-listen still deferred (Seth); visual review folds into that/UAT. Next: 77-01 (React) parallel-ok, or wait on gate 2 for Phase 76. ~90 commits ahead of origin (Seth pushes).
+stopped_at: M8 Phases 74 + 77 COMPLETE — all machine-runnable work done; STOPPED at HUMAN GATE 2 (listening, deferred) which blocks Phase 76; gate 3 (UAT) then blocks 78
+last_updated: "2026-07-11T01:30:00.000Z"
+last_activity: 2026-07-10 — Phases 74 AND 77 complete in one run. 74-02: claude-design packet implemented (EWA tokens + Signal-green brand, 12-SFC kit, all 22 demos + PianoKeyboard restyled presentation-only, IA triage; screenshots in phase dir). 77-01: @ez-web-audio/react — 15 hooks mirroring Vue 1:1, SSR/StrictMode-safe, 34 TDD tests, examples/react-basic StackBlitz app (embed dead until publish), react-integration guide rewritten on real package. Exit gates green (1944 core + 31 vue + 34 react unit, docs build, 72/72 E2E). REMAINING M8: Phase 76 (needs gate-2 listen), Phase 78 (needs gate-3 UAT + gate-4 publish). Nothing machine-runnable left — waiting on Seth. ~100 commits ahead of origin (Seth pushes).
 progress:
   total_phases: 11
   completed_phases: 11
