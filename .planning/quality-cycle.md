@@ -36,7 +36,7 @@ max_rounds: 3
 | G8 | Musical identity + controllers | DONE 7070d80+c191457 | H16, H17, H18, H19 |
 | G9 | Disposal cascade structural | DONE 831d6d5 (follow-up: layered-sound+poly-synth effects[] dispose gap flagged) | H20 (+nb) |
 | G10 | DX/API unification | pending | (nb, sanctioned) |
-| G11 | Demos cleanup sweep | pending | (nb) |
+| G11 | Demos cleanup sweep | DONE c5bf480 | (nb) |
 | G12 | Packaging + bindings hygiene | DONE cf59ec7 | (nb) |
 | G13 | Tests + utils hardening | pending | (nb) |
 
