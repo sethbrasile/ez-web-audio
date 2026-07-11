@@ -6,8 +6,17 @@
       "mode": "mid-build",
       "scope": "Delta since 2026-02-28: M5 Effects & Transport, M6 DX & Discoverability",
       "file": "2026-03-07-deep-review.md",
-      "counts": { "critical": 0, "high": 7, "medium": 18, "low": 22 },
-      "structuralPatterns": ["inconsistent-event-systems", "missing-effect-dispose", "fluent-api-conversion-gap"]
+      "counts": {
+        "critical": 0,
+        "high": 7,
+        "medium": 18,
+        "low": 22
+      },
+      "structuralPatterns": [
+        "inconsistent-event-systems",
+        "missing-effect-dispose",
+        "fluent-api-conversion-gap"
+      ]
     },
     {
       "date": "2026-03-19",
@@ -15,15 +24,45 @@
       "mode": "mid-build",
       "scope": "Milestone 7 Feature Demos (Phases 67-71): LFO, PolySynth, Effects Chain, GrainPlayer, Transport+Sequencer",
       "file": "2026-03-19-deep-review-m7-demos.md",
-      "counts": { "critical": 2, "high": 19, "medium": 38, "low": 28 },
-      "structuralPatterns": ["demo-resource-cleanup-inconsistency", "demo-audio-init-duplication"]
+      "counts": {
+        "critical": 2,
+        "high": 19,
+        "medium": 38,
+        "low": 28
+      },
+      "structuralPatterns": [
+        "demo-resource-cleanup-inconsistency",
+        "demo-audio-init-duplication"
+      ]
+    },
+    {
+      "date": "2026-07-11",
+      "type": "deep-review",
+      "mode": "full-codebase health check (pre-1.0 API audit)",
+      "scope": "Entire monorepo: core, demos, bindings, tests, packaging; custom DX/API + use-case lenses",
+      "file": "2026-07-11-deep-review.md",
+      "counts": {
+        "critical": 2,
+        "high": 19,
+        "medium": 11,
+        "low": 1
+      },
+      "countsNote": "blocking counts; ~87 additional non-blocking findings documented",
+      "structuralPatterns": [
+        "stale-scheduled-work",
+        "ramp-setter-desync",
+        "ctor-setter-parity",
+        "incomplete-disposal-cascade"
+      ]
     }
   ],
   "patterns": {
     "inconsistent-event-systems": {
       "name": "Inconsistent event system implementations",
       "firstSeen": "2026-03-07",
-      "reviews": ["2026-03-07-deep-review.md"],
+      "reviews": [
+        "2026-03-07-deep-review.md"
+      ],
       "status": "resolved",
       "fixPhase": "57.1",
       "resolvedDate": "2026-03-19"
@@ -31,7 +70,9 @@
     "missing-effect-dispose": {
       "name": "Missing dispose() overrides in effect subclasses",
       "firstSeen": "2026-03-07",
-      "reviews": ["2026-03-07-deep-review.md"],
+      "reviews": [
+        "2026-03-07-deep-review.md"
+      ],
       "status": "resolved",
       "fixPhase": "54.2",
       "resolvedDate": "2026-03-19"
@@ -39,7 +80,9 @@
     "fluent-api-conversion-gap": {
       "name": "Fluent API reimplementation without RatioType conversion",
       "firstSeen": "2026-03-07",
-      "reviews": ["2026-03-07-deep-review.md"],
+      "reviews": [
+        "2026-03-07-deep-review.md"
+      ],
       "status": "resolved",
       "fixPhase": "59.1",
       "resolvedDate": "2026-03-19"
@@ -47,13 +90,53 @@
     "demo-resource-cleanup-inconsistency": {
       "name": "Demo resource cleanup inconsistency across components",
       "firstSeen": "2026-03-19",
-      "reviews": ["2026-03-19-deep-review-m7-demos.md"],
-      "status": "open"
+      "reviews": [
+        "2026-03-19-deep-review-m7-demos.md",
+        "2026-07-11-deep-review.md"
+      ],
+      "status": "fix-in-progress",
+      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11."
     },
     "demo-audio-init-duplication": {
       "name": "Duplicated audio initialization pattern across demos",
       "firstSeen": "2026-03-19",
-      "reviews": ["2026-03-19-deep-review-m7-demos.md"],
+      "reviews": [
+        "2026-03-19-deep-review-m7-demos.md",
+        "2026-07-11-deep-review.md"
+      ],
+      "status": "fix-in-progress",
+      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11."
+    },
+    "stale-scheduled-work": {
+      "name": "Stale scheduled work survives state transitions",
+      "firstSeen": "2026-07-11",
+      "reviews": [
+        "2026-07-11-deep-review.md"
+      ],
+      "status": "open"
+    },
+    "ramp-setter-desync": {
+      "name": "rampTo/setter dual-path desync",
+      "firstSeen": "2026-07-11",
+      "reviews": [
+        "2026-07-11-deep-review.md"
+      ],
+      "status": "open"
+    },
+    "ctor-setter-parity": {
+      "name": "Constructor-vs-setter validation parity",
+      "firstSeen": "2026-07-11",
+      "reviews": [
+        "2026-07-11-deep-review.md"
+      ],
+      "status": "open"
+    },
+    "incomplete-disposal-cascade": {
+      "name": "Incomplete disposal cascade",
+      "firstSeen": "2026-07-11",
+      "reviews": [
+        "2026-07-11-deep-review.md"
+      ],
       "status": "open"
     }
   }
