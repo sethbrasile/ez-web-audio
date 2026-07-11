@@ -880,7 +880,14 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     this.safeDisconnect(this.masterGain)
     this.safeDisconnect(this.masterPan)
 
-    // Clear effects
+    // Dispose each effect's own internal node graph + listeners (same class
+    // as base-sound.ts H20 fix — previously effects were only dropped from
+    // the array with no disconnect/dispose, leaking every attached effect's
+    // internal nodes on PolySynth disposal).
+    for (const effect of this.effects) {
+      this.safeDisconnect(effect.output)
+      effect.dispose?.()
+    }
     this.effects = []
     this._analyzer = null
 

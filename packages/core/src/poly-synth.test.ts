@@ -409,6 +409,26 @@ describe('polySynth', () => {
       expect(h1.active).toBe(false)
       expect(h2.active).toBe(false)
     })
+
+    // Same class of gap as base-sound.ts H20: dispose() previously only
+    // cleared `this.effects = []` without disconnecting/disposing each
+    // effect — leaking every attached effect's own internal node graph +
+    // listeners.
+    it('disposes each attached effect (same class as H20)', () => {
+      const synth = new PolySynth(audioContext)
+      const mockEffect = {
+        input: audioContext.createGain(),
+        output: audioContext.createGain(),
+        bypass: false,
+        mix: 1,
+        dispose: vi.fn(),
+      }
+      synth.addEffect(mockEffect)
+
+      synth.dispose()
+
+      expect(mockEffect.dispose).toHaveBeenCalled()
+    })
   })
 
   // ─── Voice Factory ────────────────────────────────────────────

@@ -358,8 +358,13 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
 
     // Disconnect shared bus and clear effects
     this.safeDisconnect(this.outputBus)
+    // Dispose each effect's own internal node graph + listeners (same class
+    // as base-sound.ts H20 fix — previously only the shared bus's own
+    // connection to effect.output was torn down, leaking every attached
+    // effect's internal nodes on LayeredSound disposal).
     for (const effect of this.effects) {
       this.safeDisconnect(effect.output)
+      effect.dispose?.()
     }
     this.effects = []
 

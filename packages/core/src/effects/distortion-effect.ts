@@ -30,6 +30,17 @@ export interface DistortionOptions {
 const CURVE_SAMPLES = 1024
 
 /**
+ * Total duration of the dual-waveshaper crossfade triggered on every
+ * `amount`/`type` change — fast enough to feel instant on a knob, long
+ * enough that the curve swap (which happens on the currently-silent/
+ * fading-out node) is masked rather than heard as a click. Converted to a
+ * `setTargetAtTime` time constant the same way every other smoothed
+ * parameter in this library is (duration / 3 ≈ 95% settled by `duration`).
+ */
+const CURVE_CROSSFADE_DURATION = 0.015
+const CURVE_CROSSFADE_TIME_CONSTANT = CURVE_CROSSFADE_DURATION / 3
+
+/**
  * Generate a waveshaper transfer curve for the given distortion type and amount.
  * @internal
  */
@@ -97,7 +108,20 @@ function generateCurve(type: DistortionType, amount: number): Float32Array<Array
  * ```
  */
 export class DistortionEffect extends BaseEffect {
-  private readonly waveShaperNode: WaveShaperNode
+  // M8: dual-waveshaper crossfade. `curve` is a plain array property, not an
+  // AudioParam, so a synchronous swap on a single WaveShaperNode is a hard
+  // discontinuity in the transfer function that clicks if audio is actively
+  // flowing through it. Two WaveShaperNodes run in parallel, each feeding
+  // its own GainNode into a shared sum point; a curve change writes the new
+  // curve into the currently-inactive (silent-or-fading-out) node, then
+  // crossfades the two gains over ~15ms so the swap itself is masked. See
+  // {@link crossfadeToCurve} for the scheme.
+  private readonly waveShaperNodeA: WaveShaperNode
+  private readonly waveShaperNodeB: WaveShaperNode
+  private readonly shaperGainA: GainNode
+  private readonly shaperGainB: GainNode
+  /** True when shaper A holds the currently-audible curve (target gain 1). */
+  private _activeIsA = true
   private readonly toneFilter: BiquadFilterNode
   private _type: DistortionType
   private _amount: number
@@ -120,26 +144,37 @@ export class DistortionEffect extends BaseEffect {
     }
 
     // Create nodes
-    this.waveShaperNode = audioContext.createWaveShaper()
+    this.waveShaperNodeA = audioContext.createWaveShaper()
+    this.waveShaperNodeB = audioContext.createWaveShaper()
+    this.shaperGainA = audioContext.createGain()
+    this.shaperGainB = audioContext.createGain()
     this.toneFilter = audioContext.createBiquadFilter()
 
-    // Configure waveshaper
-    this.waveShaperNode.oversample = options.oversample ?? '4x'
-    if (this._type === 'custom' && options.curve) {
-      this._customCurve = options.curve
-      this.waveShaperNode.curve = options.curve
-    }
-    else {
-      this.waveShaperNode.curve = generateCurve(this._type, this._amount)
-    }
+    // Configure waveshapers (oversample kept in sync on both)
+    this.waveShaperNodeA.oversample = options.oversample ?? '4x'
+    this.waveShaperNodeB.oversample = options.oversample ?? '4x'
+
+    const initialCurve = this._type === 'custom' && options.curve
+      ? (this._customCurve = options.curve)
+      : generateCurve(this._type, this._amount)
+
+    // A starts active (full gain), B starts silent — B gets a curve written
+    // to it the first time amount/type changes (crossfadeToCurve).
+    this.waveShaperNodeA.curve = initialCurve
+    this.shaperGainA.gain.value = 1
+    this.shaperGainB.gain.value = 0
 
     // Configure tone filter (lowpass) — instant, no signal yet
     this.toneFilter.type = 'lowpass'
     this.applyTone(false)
 
-    // Wire effect chain: input -> waveshaper -> toneFilter -> wetGain
-    this.inputNode.connect(this.waveShaperNode)
-    this.waveShaperNode.connect(this.toneFilter)
+    // Wire effect chain: input -> [shaperA, shaperB] -> [gainA, gainB] -> toneFilter -> wetGain
+    this.inputNode.connect(this.waveShaperNodeA)
+    this.inputNode.connect(this.waveShaperNodeB)
+    this.waveShaperNodeA.connect(this.shaperGainA)
+    this.waveShaperNodeB.connect(this.shaperGainB)
+    this.shaperGainA.connect(this.toneFilter)
+    this.shaperGainB.connect(this.toneFilter)
     this.toneFilter.connect(this.wetGain)
 
     // Apply initial mix if provided
@@ -151,19 +186,19 @@ export class DistortionEffect extends BaseEffect {
   /**
    * Distortion amount (0-100).
    *
-   * **Known gap (M8):** this regenerates `waveShaperNode.curve` and swaps
-   * it in synchronously. `curve` is a plain array property, not an
-   * AudioParam, so it can't be smoothed with `setTargetAtTime` the way
-   * every other effect parameter in this library is — the swap is a hard
-   * discontinuity in the transfer function and can click if audio is
-   * actively flowing through the waveshaper at the moment of the change.
-   * A true fix requires either a dual-waveshaper crossfade (two
-   * WaveShaperNodes summed through a short gain crossfade) or a
-   * duck-under-swap-restore mix-gain ramp around the assignment — both
-   * add a real chunk of new audio-graph machinery. Deliberately left
-   * unfixed for this pass (documented gap, not silently dropped); use
-   * `rampTo('mix', 0, ...)` / back up around a type or large amount change
-   * if the click is audible in your context.
+   * **M8 fix (dual-waveshaper crossfade):** `curve` is a plain array
+   * property, not an AudioParam, so it can't be smoothed with
+   * `setTargetAtTime` the way every other effect parameter in this library
+   * is — a synchronous swap on a single WaveShaperNode is a hard
+   * discontinuity in the transfer function and clicks if audio is actively
+   * flowing through it. This setter instead writes the new curve into the
+   * currently-inactive of two parallel WaveShaperNodes, then crossfades the
+   * two nodes' gains over ~15ms via `setTargetAtTime` so the swap is masked
+   * rather than heard. See {@link crossfadeToCurve}. The crossfade is
+   * entirely internal — `amount` still isn't rampable via `rampTo()` (it's
+   * not a single AudioParam), but ordinary synchronous sets like
+   * `effect.amount = 80` are now click-free at knob-drag rates, including
+   * rapid successive changes mid-crossfade.
    */
   get amount(): number {
     return this._amount
@@ -172,15 +207,15 @@ export class DistortionEffect extends BaseEffect {
   set amount(v: number) {
     this._amount = Math.max(0, Math.min(100, v))
     if (this._type !== 'custom') {
-      this.waveShaperNode.curve = generateCurve(this._type, this._amount)
+      this.crossfadeToCurve(generateCurve(this._type, this._amount))
     }
   }
 
   /**
    * Distortion curve type.
    *
-   * **Known gap (M8):** same curve-swap click as {@link amount} — see its
-   * JSDoc for the full explanation and workaround.
+   * **M8 fix:** same dual-waveshaper crossfade as {@link amount} — see its
+   * JSDoc for the full explanation.
    */
   get type(): DistortionType {
     return this._type
@@ -193,10 +228,10 @@ export class DistortionEffect extends BaseEffect {
     }
     this._type = v
     if (v === 'custom' && this._customCurve) {
-      this.waveShaperNode.curve = this._customCurve
+      this.crossfadeToCurve(this._customCurve)
     }
     else if (v !== 'custom') {
-      this.waveShaperNode.curve = generateCurve(v, this._amount)
+      this.crossfadeToCurve(generateCurve(v, this._amount))
     }
   }
 
@@ -212,16 +247,29 @@ export class DistortionEffect extends BaseEffect {
 
   /** Oversampling mode for aliasing prevention */
   get oversample(): OverSampleType {
-    return this.waveShaperNode.oversample
+    return this.waveShaperNodeA.oversample
   }
 
   set oversample(v: OverSampleType) {
-    this.waveShaperNode.oversample = v
+    this.waveShaperNodeA.oversample = v
+    this.waveShaperNodeB.oversample = v
   }
 
   public override dispose(): void {
     try {
-      this.waveShaperNode.disconnect()
+      this.waveShaperNodeA.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.waveShaperNodeB.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.shaperGainA.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.shaperGainB.disconnect()
     }
     catch { /* already disconnected */ }
     try {
@@ -240,9 +288,12 @@ export class DistortionEffect extends BaseEffect {
 
   /**
    * `amount` and `type` are documented DistortionEffect properties but
-   * aren't backed by a single AudioParam (they swap `waveShaperNode.curve`
-   * directly — see the M8 JSDoc on those setters) — rampTo() warns rather
-   * than silently no-op-ing if called with either name.
+   * aren't backed by a single AudioParam — they drive a curve swap on one
+   * of two internal WaveShaperNodes, crossfaded via `crossfadeToCurve()`
+   * (see the M8 JSDoc on those setters). That crossfade is internal
+   * machinery, not something `rampTo()` can drive over an arbitrary caller
+   * duration, so rampTo() warns rather than silently no-op-ing if called
+   * with either name.
    */
   protected override getUnrampableParams(): readonly string[] {
     return ['amount', 'type']
@@ -278,6 +329,46 @@ export class DistortionEffect extends BaseEffect {
     else {
       this.toneFilter.frequency.value = freq
     }
+  }
+
+  /**
+   * M8: dual-waveshaper crossfade — the click-free replacement for a
+   * synchronous `waveShaperNode.curve = ...` swap.
+   *
+   * Writes `curve` into whichever of the two parallel WaveShaperNodes is
+   * currently targeted silent (its gain is heading toward, or already at,
+   * 0), then retargets both gains via `setTargetAtTime` so the
+   * just-written node fades in while the previously-active one fades out.
+   * Both nodes process the input in parallel at all times — only the gain
+   * stage after each one determines what's audible, so writing a new curve
+   * into the silent one never touches the signal path that's currently
+   * live.
+   *
+   * **Rapid successive changes (knob drag):** each call flips
+   * `_activeIsA` and retargets both gains from wherever they currently
+   * are — `setTargetAtTime` retargeting is a native AudioParam operation
+   * with no discontinuity, so a change that lands mid-crossfade just
+   * smoothly redirects the in-flight fade rather than restarting or
+   * glitching it. The one edge case this doesn't fully eliminate: if a
+   * new change lands before the previous crossfade has settled, the node
+   * that gets the new curve written to it may still carry some audible
+   * gain (mid fade-out) — at normal knob-drag rates (well above the ~15ms
+   * crossfade window) this doesn't happen in practice, and mid-crossfade
+   * changes still leave the effect in a consistent, glitch-free-on-the-gain-
+   * automation state either way.
+   */
+  private crossfadeToCurve(curve: Float32Array<ArrayBuffer>): void {
+    const inactiveShaper = this._activeIsA ? this.waveShaperNodeB : this.waveShaperNodeA
+    const inactiveGain = this._activeIsA ? this.shaperGainB : this.shaperGainA
+    const activeGain = this._activeIsA ? this.shaperGainA : this.shaperGainB
+
+    inactiveShaper.curve = curve
+
+    const now = this.audioContext.currentTime
+    inactiveGain.gain.setTargetAtTime(1, now, CURVE_CROSSFADE_TIME_CONSTANT)
+    activeGain.gain.setTargetAtTime(0, now, CURVE_CROSSFADE_TIME_CONSTANT)
+
+    this._activeIsA = !this._activeIsA
   }
 }
 

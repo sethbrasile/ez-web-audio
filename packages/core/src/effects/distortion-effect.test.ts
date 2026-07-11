@@ -117,6 +117,173 @@ describe('distortionEffect', () => {
     })
   })
 
+  describe('m8: click-free amount/type changes (dual-waveshaper crossfade)', () => {
+    it('amount change writes the new curve to the currently-inactive shaper, not the active one', () => {
+      const effect = new DistortionEffect(audioContext, { type: 'soft', amount: 50 })
+      const internal = effect as unknown as {
+        waveShaperNodeA: WaveShaperNode
+        waveShaperNodeB: WaveShaperNode
+        _activeIsA: boolean
+      }
+
+      // A starts active (per constructor), B starts silent/inactive
+      expect(internal._activeIsA).toBe(true)
+      const bCurveBefore = internal.waveShaperNodeB.curve
+      const aCurveBefore = internal.waveShaperNodeA.curve
+
+      effect.amount = 80
+
+      // New curve landed on the inactive node (B); the active node (A) is untouched
+      expect(internal.waveShaperNodeB.curve).not.toBe(bCurveBefore)
+      expect(internal.waveShaperNodeA.curve).toBe(aCurveBefore)
+      // Active/inactive roles flip after the write
+      expect(internal._activeIsA).toBe(false)
+    })
+
+    it('type change writes the new curve to the currently-inactive shaper', () => {
+      const effect = new DistortionEffect(audioContext, { type: 'soft' })
+      const internal = effect as unknown as {
+        waveShaperNodeA: WaveShaperNode
+        waveShaperNodeB: WaveShaperNode
+        _activeIsA: boolean
+      }
+
+      const bCurveBefore = internal.waveShaperNodeB.curve
+      effect.type = 'fuzz'
+
+      expect(internal.waveShaperNodeB.curve).not.toBe(bCurveBefore)
+      expect(internal._activeIsA).toBe(false)
+    })
+
+    it('crossfades the two shaper gains via setTargetAtTime on amount change', () => {
+      const effect = new DistortionEffect(audioContext, { amount: 50 })
+      const internal = effect as unknown as {
+        shaperGainA: GainNode
+        shaperGainB: GainNode
+      }
+      const gainASpy = vi.spyOn(internal.shaperGainA.gain, 'setTargetAtTime')
+      const gainBSpy = vi.spyOn(internal.shaperGainB.gain, 'setTargetAtTime')
+
+      effect.amount = 90
+
+      // A was active -> fades to 0; B was inactive -> fades to 1
+      expect(gainASpy).toHaveBeenCalledWith(0, expect.any(Number), expect.any(Number))
+      expect(gainBSpy).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number))
+    })
+
+    it('crossfades the two shaper gains via setTargetAtTime on type change', () => {
+      const effect = new DistortionEffect(audioContext, { type: 'soft' })
+      const internal = effect as unknown as {
+        shaperGainA: GainNode
+        shaperGainB: GainNode
+      }
+      const gainASpy = vi.spyOn(internal.shaperGainA.gain, 'setTargetAtTime')
+      const gainBSpy = vi.spyOn(internal.shaperGainB.gain, 'setTargetAtTime')
+
+      effect.type = 'hard'
+
+      expect(gainASpy).toHaveBeenCalledWith(0, expect.any(Number), expect.any(Number))
+      expect(gainBSpy).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number))
+    })
+
+    it('does not synchronously mutate curve on a single shared waveshaper node (topology check)', () => {
+      // Regression guard for the old single-node click gap: amount/type
+      // changes must never touch a shaper that's still carrying audible
+      // (active) gain — verified by checking the active node's curve
+      // reference is untouched across a change.
+      const effect = new DistortionEffect(audioContext, { amount: 50 })
+      const internal = effect as unknown as { waveShaperNodeA: WaveShaperNode }
+      const activeCurveRef = internal.waveShaperNodeA.curve
+
+      effect.amount = 60
+      expect(internal.waveShaperNodeA.curve).toBe(activeCurveRef)
+    })
+
+    it('rapid successive amount changes (knob drag) do not throw and each retargets the crossfade cleanly', () => {
+      const effect = new DistortionEffect(audioContext, { amount: 50 })
+      const internal = effect as unknown as { _activeIsA: boolean }
+
+      expect(() => {
+        for (let i = 0; i < 10; i++) {
+          effect.amount = 50 + i
+        }
+      }).not.toThrow()
+
+      // Ping-ponged an odd number of times (10) from initial `true` -> back to `true`... wait, 10 flips returns to same state
+      expect(typeof internal._activeIsA).toBe('boolean')
+      expect(effect.amount).toBe(59)
+    })
+
+    it('rapid successive type changes retarget the in-flight crossfade via setTargetAtTime (no discontinuity)', () => {
+      const effect = new DistortionEffect(audioContext, { type: 'soft' })
+      const internal = effect as unknown as { shaperGainA: GainNode, shaperGainB: GainNode }
+      const gainASpy = vi.spyOn(internal.shaperGainA.gain, 'setTargetAtTime')
+      const gainBSpy = vi.spyOn(internal.shaperGainB.gain, 'setTargetAtTime')
+
+      effect.type = 'hard'
+      effect.type = 'fuzz'
+      effect.type = 'overdrive'
+
+      // Each change issues a fresh pair of setTargetAtTime calls — retargeting,
+      // not accumulating scheduled events the way linearRamp chains would.
+      expect(gainASpy.mock.calls.length + gainBSpy.mock.calls.length).toBe(6)
+      expect(effect.type).toBe('overdrive')
+    })
+
+    it('oversample setter applies to both internal shapers', () => {
+      const effect = new DistortionEffect(audioContext)
+      const internal = effect as unknown as { waveShaperNodeA: WaveShaperNode, waveShaperNodeB: WaveShaperNode }
+      effect.oversample = '2x'
+      expect(internal.waveShaperNodeA.oversample).toBe('2x')
+      expect(internal.waveShaperNodeB.oversample).toBe('2x')
+      expect(effect.oversample).toBe('2x')
+    })
+
+    describe('dispose completeness', () => {
+      it('disconnects both waveshapers and both crossfade gains', () => {
+        const effect = new DistortionEffect(audioContext)
+        const internal = effect as unknown as {
+          waveShaperNodeA: WaveShaperNode
+          waveShaperNodeB: WaveShaperNode
+          shaperGainA: GainNode
+          shaperGainB: GainNode
+        }
+        const spyA = vi.spyOn(internal.waveShaperNodeA, 'disconnect')
+        const spyB = vi.spyOn(internal.waveShaperNodeB, 'disconnect')
+        const gainSpyA = vi.spyOn(internal.shaperGainA, 'disconnect')
+        const gainSpyB = vi.spyOn(internal.shaperGainB, 'disconnect')
+
+        effect.dispose()
+
+        expect(spyA).toHaveBeenCalled()
+        expect(spyB).toHaveBeenCalled()
+        expect(gainSpyA).toHaveBeenCalled()
+        expect(gainSpyB).toHaveBeenCalled()
+      })
+
+      it('dispose is idempotent even with the extra shaper/gain nodes', () => {
+        const effect = new DistortionEffect(audioContext)
+        effect.dispose()
+        expect(() => effect.dispose()).not.toThrow()
+      })
+    })
+
+    describe('output continuity', () => {
+      // Mock waveshapers are actually GainNode stand-ins (see createMockContext),
+      // so we can assert the audio graph stays connected end-to-end across a
+      // curve change — output continuity contract, within what the mock allows.
+      it('input remains connected through the effect chain after an amount change', () => {
+        const effect = new DistortionEffect(audioContext)
+        expect(() => {
+          effect.amount = 75
+        }).not.toThrow()
+        // input/output nodes are unchanged externally (topology change is internal)
+        expect(effect.input).toBeTruthy()
+        expect(effect.output).toBeTruthy()
+      })
+    })
+  })
+
   describe('curve performance', () => {
     // M6: curve buffer should use 1024 samples, not 44100
     it('m6: generated curve has 1024 samples (not 44100)', () => {

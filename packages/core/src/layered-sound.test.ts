@@ -620,6 +620,22 @@ describe('layeredSound', () => {
       expect(result).toBe(false)
       expect(handler).not.toHaveBeenCalled()
     })
+
+    // Same class of gap as base-sound.ts H20: dispose() previously only
+    // disconnected effect.output and dropped the effects array, never
+    // calling effect.dispose() — leaking each attached effect's own
+    // internal node graph + listeners.
+    it('disposes each attached effect (same class as H20)', () => {
+      const buffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate)
+      const sound = new Sound(audioContext, buffer)
+      const layered = new LayeredSound(audioContext, [sound])
+      const effect = createMockEffect(audioContext)
+      layered.addEffect(effect)
+
+      layered.dispose()
+
+      expect(effect.dispose).toHaveBeenCalled()
+    })
   })
 
   describe('effects', () => {
