@@ -26,12 +26,12 @@ max_rounds: 3
 
 | Unit | Name | Status | Findings (blocking) |
 |------|------|--------|---------------------|
-| G1 | Oscillator release-handoff + stopAt | pending | C1, H1 |
+| G1 | Oscillator release-handoff + stopAt | DONE 175d917 | C1, H1 |
 | G2 | Transport + Sequence scheduling | DONE 5ba9b3c | C2, H2, M1, L-blk |
 | G3 | BeatTrack timers + pattern length | DONE 4ff83d7 | H3, H4, M2 |
 | G4 | PolySynth stopAll + LFO lifecycle | pending | H5, H6, M3, M4, M5 |
 | G5 | GrainPlayer + Sprite | DONE 54f72ec | H7, H8, M6, M7 |
-| G6 | Effects family structural | pending | H9, H10, H11, H12, M8, M9, M10 |
+| G6 | Effects family structural | DONE bfe00ea (M8 skipped→tech debt, documented w/ workaround) | H9, H10, H11, H12, M8, M9, M10 |
 | G7 | Track + crossfade | DONE 4b16b8d | H13, H14, H15, M11 |
 | G8 | Musical identity + controllers | pending | H16, H17, H18, H19 |
 | G9 | Disposal cascade structural | pending | H20 (+nb) |
