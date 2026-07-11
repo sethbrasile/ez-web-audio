@@ -30,6 +30,12 @@ let audioContext: AudioContext | null = null
 let bassNoteOscs: Oscillator[] = []
 let leadNoteOscs: Oscillator[][] = []
 
+// Bumped on every applyPreset() call; lets an in-flight call detect that a
+// newer call has superseded it (rapid preset clicks) so it can dispose its
+// own freshly-built oscillators instead of overwriting/leaking them, and so
+// its scheduled sequence callbacks can no-op instead of firing stale audio.
+let presetGeneration = 0
+
 type DrumKey = 'kick' | 'snare' | 'hihat'
 type TrackKey = DrumKey | 'bass' | 'lead'
 
@@ -207,8 +213,17 @@ async function applyPreset(preset: TransportPreset) {
   drumSteps.snare = [...preset.snare.steps]
   drumSteps.hihat = [...preset.hihat.steps]
 
-  if (!transport.value || !audioContext)
+  // Oscillators are only built once both sequences exist to schedule them
+  // against — otherwise (the ensureLoaded window where transport/audioContext
+  // are set but bassSeq/leadSeq aren't yet) they'd be allocated and never
+  // scheduled. ensureLoaded() re-applies the active preset once sequences
+  // are loaded, so nothing is lost by bailing out here.
+  if (!transport.value || !audioContext || !bassSeq.value || !leadSeq.value)
     return
+
+  const gen = ++presetGeneration
+  const bassSeqInstance = bassSeq.value
+  const leadSeqInstance = leadSeq.value
 
   transport.value.bpm = preset.bpm
   transport.value.swing = preset.swing
@@ -217,21 +232,47 @@ async function applyPreset(preset: TransportPreset) {
   snareTrack.value?.setPattern(drumSteps.snare)
   hihatTrack.value?.setPattern(drumSteps.hihat)
 
-  bassSeq.value?.clear()
-  leadSeq.value?.clear()
+  bassSeqInstance.clear()
+  leadSeqInstance.clear()
 
   disposeVoiceOscs()
   const ctx = audioContext
-  bassNoteOscs = await buildVoiceOscillators(ctx, preset.bass.voice, preset.bass.notes.map(n => n.note))
-  leadNoteOscs = await Promise.all(
+
+  const newBassNoteOscs = await buildVoiceOscillators(ctx, preset.bass.voice, preset.bass.notes.map(n => n.note))
+  if (gen !== presetGeneration) {
+    // A newer applyPreset() call won the race — this call's oscillators
+    // were never stored/scheduled, so dispose them here to avoid a leak.
+    for (const osc of newBassNoteOscs) { void osc.stop(); osc.dispose() }
+    return
+  }
+
+  const newLeadNoteOscs = await Promise.all(
     preset.lead.notes.map(chord => buildVoiceOscillators(ctx, preset.lead.voice, chord.notes)),
   )
+  if (gen !== presetGeneration) {
+    for (const osc of newBassNoteOscs) { void osc.stop(); osc.dispose() }
+    for (const chordOscs of newLeadNoteOscs) {
+      for (const osc of chordOscs) { void osc.stop(); osc.dispose() }
+    }
+    return
+  }
 
+  // Only this generation's arrays feed stop()/dispose() from here on.
+  bassNoteOscs = newBassNoteOscs
+  leadNoteOscs = newLeadNoteOscs
+
+  // Callbacks close over this generation's local oscillator arrays (not the
+  // module-level ones) so a stale callback from a superseded generation
+  // references its own (disposed) oscillators rather than whatever preset
+  // is current — the generation guard then makes it a no-op instead of
+  // playing a disposed node.
   preset.bass.notes.forEach((noteEvt, i) => {
-    bassSeq.value?.at(noteEvt.time, (t: number) => {
+    bassSeqInstance.at(noteEvt.time, (t: number) => {
+      if (gen !== presetGeneration)
+        return
       if (!shouldPlay('bass'))
         return
-      const osc = bassNoteOscs[i]
+      const osc = newBassNoteOscs[i]
       if (!osc || !audioContext)
         return
       osc.playIn(Math.max(0, t - audioContext.currentTime))
@@ -239,12 +280,14 @@ async function applyPreset(preset: TransportPreset) {
   })
 
   preset.lead.notes.forEach((chord, i) => {
-    leadSeq.value?.at(chord.time, (t: number) => {
+    leadSeqInstance.at(chord.time, (t: number) => {
+      if (gen !== presetGeneration)
+        return
       if (!shouldPlay('lead'))
         return
       if (!audioContext)
         return
-      const oscs = leadNoteOscs[i]
+      const oscs = newLeadNoteOscs[i]
       if (!oscs)
         return
       const offset = Math.max(0, t - audioContext.currentTime)
