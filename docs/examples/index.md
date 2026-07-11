@@ -149,13 +149,13 @@ Build a drum machine with vanilla TypeScript using DOM events and manual state m
 
 ### [React Integration](/examples/react-integration)
 
-Integrate ez-web-audio into React applications using hooks patterns with useRef, useEffect, and custom hooks.
+Integrate ez-web-audio into React applications with the official `@ez-web-audio/react` hooks package.
 
 **You'll learn:**
-- Using `useRef` for audio instance management
-- `useEffect` cleanup for audio disposal
-- Custom hooks for reusable audio logic
-- Position tracking with `requestAnimationFrame`
+- The uniform hook shape (`instance`, `loading`, `error`, `load`) shared with the Vue package
+- `useCleanup` for automatic disposal on unmount
+- SSR/Next.js safety (`'use client'`, no audio until interaction)
+- BeatTrack UI updates in React (rAF polling or the `beat` event)
 
 ## Effects & Routing
 
