@@ -221,6 +221,21 @@ describe('playInIfActive()', () => {
   })
 })
 
+it('passes velocity to parent playIn callback', () => {
+  const parent = new MockParentClass()
+  const playIn = vi.fn(parent.playIn.bind(parent))
+  const beat = createBeat({
+    play: parent.play.bind(parent),
+    playIn,
+  })
+
+  beat.velocity = 0.6
+  beat.active = true
+  beat.playInIfActive(0.1)
+
+  expect(playIn).toHaveBeenCalledWith(0.1, 0.6)
+})
+
 describe('pendingTimerIds self-cleaning', () => {
   it('removes completed timer IDs from pendingTimerIds so the array does not grow unbounded', async () => {
     // Use a controllable mock: capture callbacks so we can fire them manually

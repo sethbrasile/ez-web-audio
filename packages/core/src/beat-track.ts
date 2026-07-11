@@ -184,14 +184,19 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   }
 
   /**
-   * Set beat active states from a pattern array.
+   * Set beat active states (and velocities) from a pattern array.
    *
    * Each element maps to a beat: truthy values (1, true) set the beat active,
    * falsy values (0, false) set it inactive. If the array is shorter than
    * the number of beats, remaining beats are set inactive. If longer, extra
    * values are ignored.
    *
-   * @param pattern - Array of 0/1 or boolean values representing the beat pattern
+   * Numeric values greater than 0 also set the beat's `velocity` — a gain
+   * multiplier for that hit (clamped to a max of 1). Booleans, and numbers
+   * that are 0 or negative, leave `velocity` at its current/default value
+   * of 1, matching prior boolean-only behavior.
+   *
+   * @param pattern - Array of numbers (0-1 velocity, or any non-zero value as "on") or booleans representing the beat pattern
    * @returns this for chaining
    *
    * @example
@@ -200,6 +205,9 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    *
    * // 4-on-the-floor pattern
    * kick.setPattern([1, 0, 1, 0, 1, 0, 1, 0])
+   *
+   * // Ghost notes via velocity — 0.6 = quieter hit
+   * kick.setPattern([1, 0, 0.6, 0])
    *
    * // Shorter array — remaining beats inactive
    * kick.setPattern([1, 0, 1]) // beats 3-7 become inactive
@@ -211,7 +219,11 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
   public setPattern(pattern: (number | boolean)[]): this {
     const beats = this.beats
     for (let i = 0; i < beats.length; i++) {
-      beats[i].active = i < pattern.length ? !!pattern[i] : false
+      const value = i < pattern.length ? pattern[i] : 0
+      beats[i].active = !!value
+      beats[i].velocity = typeof value === 'number' && value > 0
+        ? Math.min(1, value)
+        : 1
     }
     return this
   }

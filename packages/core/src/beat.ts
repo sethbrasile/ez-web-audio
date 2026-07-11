@@ -24,8 +24,8 @@ import audioContextAwareTimeout from './utils/timeout'
  */
 export interface BeatOptions {
   duration?: number
-  playIn: (time: number) => void
-  play: () => void
+  playIn: (time: number, velocity?: number) => void
+  play: (velocity?: number) => void
   setTimeout?: (fn: () => void, delayMillis: number) => number
   clearTimeout?: (id: number) => void
 }
@@ -47,8 +47,8 @@ export class Beat {
     }
   }
 
-  private parentPlayIn: ((time: number) => void)
-  private parentPlay: (() => void)
+  private parentPlayIn: ((time: number, velocity?: number) => void)
+  private parentPlay: ((velocity?: number) => void)
   private setTimeout: (fn: () => void, delayMillis: number) => number
   private clearTimeoutFn: (id: number) => void
   private pendingTimerIds: number[] = []
@@ -84,6 +84,14 @@ export class Beat {
   public duration: number
 
   /**
+   * Playback velocity (0–1) applied as a gain multiplier when this beat plays.
+   * 1 = full volume, lower values are quieter hits (e.g. ghost notes at 0.4).
+   * Set directly or via BeatTrack.setPattern numeric values.
+   * @default 1
+   */
+  public velocity = 1
+
+  /**
    * Play this beat after a delay.
    *
    * Sets `isPlaying` and `currentTimeIsPlaying` to true after the offset elapses,
@@ -99,7 +107,7 @@ export class Beat {
   public playIn(offset = 0): void {
     const msOffset = offset * 1000
 
-    this.parentPlayIn(offset)
+    this.parentPlayIn(offset, this.velocity)
 
     this.trackedTimeout(() => {
       this.isPlaying = true
@@ -124,7 +132,7 @@ export class Beat {
     const msOffset = offset * 1000
 
     if (this.active) {
-      this.parentPlayIn(offset)
+      this.parentPlayIn(offset, this.velocity)
       this.trackedTimeout(() => this.markPlaying(), msOffset)
     }
 
@@ -143,7 +151,7 @@ export class Beat {
    * ```
    */
   public play(): void {
-    this.parentPlay()
+    this.parentPlay(this.velocity)
     this.markPlaying()
     this.markCurrentTimePlaying()
   }
@@ -156,7 +164,7 @@ export class Beat {
    */
   public playIfActive(): void {
     if (this.active) {
-      this.parentPlay()
+      this.parentPlay(this.velocity)
       this.markPlaying()
     }
 

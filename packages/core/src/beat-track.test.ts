@@ -803,6 +803,38 @@ describe('setPattern()', () => {
   })
 })
 
+describe('velocity', () => {
+  it('defaults every beat velocity to 1', () => {
+    const track = createBeatTrack()
+    expect(track.beats.map(b => b.velocity)).toEqual([1, 1, 1, 1])
+  })
+
+  it('setPattern with numeric values sets active and velocity', () => {
+    const track = createBeatTrack()
+    track.setPattern([1, 0, 0.6, 0])
+    expect(track.beats.map(b => b.active)).toEqual([true, false, true, false])
+    expect(track.beats[0].velocity).toBe(1)
+    expect(track.beats[2].velocity).toBe(0.6)
+    // rests keep default velocity
+    expect(track.beats[1].velocity).toBe(1)
+  })
+
+  it('setPattern clamps velocity to 0..1', () => {
+    const track = createBeatTrack()
+    track.numBeats = 2
+    track.setPattern([1.5, 1])
+    expect(track.beats[0].velocity).toBe(1)
+  })
+
+  it('setPattern with booleans keeps velocity 1 (backward compat)', () => {
+    const track = createBeatTrack()
+    track.numBeats = 2
+    track.setPattern([true, false])
+    expect(track.beats[0].active).toBe(true)
+    expect(track.beats[0].velocity).toBe(1)
+  })
+})
+
 describe('dispose() (SAFE-03)', () => {
   it('clears beats array after dispose', () => {
     const track = createBeatTrack()

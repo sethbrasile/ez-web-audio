@@ -73,44 +73,50 @@ export class Sampler {
   /**
    * Play the next sound in the rotation immediately.
    *
+   * @param velocity - Gain multiplier (0–1) applied on top of the sampler's `gain`. Defaults to 1 (no attenuation).
+   *
    * @example
    * ```typescript
    * sampler.play() // plays sound 1
    * sampler.play() // plays sound 2
-   * sampler.play() // plays sound 3 (then wraps to 1)
+   * sampler.play(0.4) // plays sound 3 at 40% of the sampler's gain (then wraps to 1)
    * ```
    */
-  public play(): void {
-    void Promise.resolve(this.getNextSound().play()).catch(() => {})
+  public play(velocity = 1): void {
+    void Promise.resolve(this.getNextSound(velocity).play()).catch(() => {})
   }
 
   /**
    * Play the next sound in the rotation after a delay.
    *
    * @param seconds - Number of seconds from now to play the sound
+   * @param velocity - Gain multiplier (0–1) applied on top of the sampler's `gain`. Defaults to 1 (no attenuation).
    *
    * @example
    * ```typescript
    * sampler.playIn(0.5) // plays next sound in 0.5 seconds
+   * sampler.playIn(0.5, 0.6) // plays next sound in 0.5 seconds at 60% gain
    * ```
    */
-  public playIn(seconds: number): void {
-    this.getNextSound().playIn(seconds)
+  public playIn(seconds: number, velocity = 1): void {
+    this.getNextSound(velocity).playIn(seconds)
   }
 
   /**
    * Play the next sound at a specific AudioContext time.
    *
    * @param time - The AudioContext.currentTime value when to play
+   * @param velocity - Gain multiplier (0–1) applied on top of the sampler's `gain`. Defaults to 1 (no attenuation).
    *
    * @example
    * ```typescript
    * const startTime = audioContext.currentTime + 1
    * sampler.playAt(startTime) // plays next sound at exactly startTime
+   * sampler.playAt(startTime, 0.8) // plays next sound at exactly startTime at 80% gain
    * ```
    */
-  public playAt(time: number): void {
-    void Promise.resolve(this.getNextSound().playAt(time)).catch(() => {})
+  public playAt(time: number, velocity = 1): void {
+    void Promise.resolve(this.getNextSound(velocity).playAt(time)).catch(() => {})
   }
 
   /**
@@ -137,7 +143,7 @@ export class Sampler {
    * When the iterator reaches the end, it automatically restarts.
    * @internal
    */
-  private getNextSound(): Playable & Connectable {
+  private getNextSound(velocity = 1): Playable & Connectable {
     if (this.sounds.size === 0) {
       throw new Error('Sampler has no sounds. Add sounds before calling play().')
     }
@@ -154,7 +160,7 @@ export class Sampler {
 
     this.soundIterator = soundIterator
 
-    return this.setGainAndPan(nextSound.value)
+    return this.setGainAndPan(nextSound.value, velocity)
   }
 
   /**
@@ -167,8 +173,8 @@ export class Sampler {
    * using `play()`.
    * @internal
    */
-  private setGainAndPan(sound: Playable & Connectable): Playable & Connectable {
-    sound.changeGainTo(this.gain)
+  private setGainAndPan(sound: Playable & Connectable, velocity = 1): Playable & Connectable {
+    sound.changeGainTo(this.gain * velocity)
     sound.changePanTo(this.pan)
 
     return sound

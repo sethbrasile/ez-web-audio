@@ -294,6 +294,40 @@ describe('sampler', () => {
     })
   })
 
+  describe('velocity control', () => {
+    it('play() scales sound gain by velocity', () => {
+      const sound = createMockSound()
+      const sampler = new Sampler([sound])
+      sampler.gain = 0.8
+      sampler.play(0.5)
+      expect(sound.changeGainTo).toHaveBeenCalledWith(0.4)
+    })
+
+    it('playIn() scales sound gain by velocity', () => {
+      const sound = createMockSound()
+      const sampler = new Sampler([sound])
+      sampler.gain = 0.8
+      sampler.playIn(0.5, 0.5)
+      expect(sound.changeGainTo).toHaveBeenCalledWith(0.4)
+    })
+
+    it('playAt() scales sound gain by velocity', () => {
+      const sound = createMockSound()
+      const sampler = new Sampler([sound])
+      sampler.gain = 0.8
+      sampler.playAt(1.0, 0.5)
+      expect(sound.changeGainTo).toHaveBeenCalledWith(0.4)
+    })
+
+    it('velocity defaults to 1 when omitted (backward compat)', () => {
+      const sound = createMockSound()
+      const sampler = new Sampler([sound])
+      sampler.gain = 0.7
+      sampler.play()
+      expect(sound.changeGainTo).toHaveBeenCalledWith(0.7)
+    })
+  })
+
   describe('edge cases', () => {
     it('throws descriptive error when play() called with empty sounds', () => {
       const sampler = new Sampler([])
