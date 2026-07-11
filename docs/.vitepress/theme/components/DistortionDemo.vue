@@ -2,7 +2,11 @@
 import type { EffectWrapper } from 'ez-web-audio'
 import { useAudioContext, useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { wrapEffect } from 'ez-web-audio'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
 
 const error = ref('')
 const playing = ref(false)
@@ -118,12 +122,28 @@ function updateBypass() {
     return
   effect.bypass = bypassed.value
 }
+
+function formatAmount(v: number) {
+  return String(Math.round(v))
+}
+
+function formatMix(v: number) {
+  return `${Math.round(v * 100)}%`
+}
+
+// Recompute the WaveShaper curve / mix reactively as the sliders move
+// (mirrors the previous @input-on-native-range wiring, now driven by
+// ParameterSlider's v-model).
+watch(distortionAmount, updateDistortionCurve)
+watch(wetDryMix, updateMix)
 </script>
 
 <template>
-  <div class="distortion-demo">
+  <DemoFrame class="distortion-demo" :error="error" takeaway="Effects wrap and route automatically.">
+    <VolumeWarning />
+
     <!-- Signal Chain Visualization -->
-    <div class="signal-chain">
+    <div class="signal-chain" role="img" aria-label="Signal chain: Oscillator → Distortion → Gain → Pan → Destination">
       <div class="chain-node">
         <div class="node-label">
           Source
@@ -180,79 +200,60 @@ function updateBypass() {
 
     <!-- Controls -->
     <div class="controls">
-      <div class="button-group">
-        <button class="demo-btn" :class="{ active: playing }" @click="togglePlayback">
-          {{ playing ? 'Stop' : 'Play' }} Oscillator
-        </button>
+      <div class="row row-top">
+        <PlayButton
+          class="play-button"
+          :playing="playing"
+          label="Play Oscillator"
+          playing-label="Stop Oscillator"
+          @click="togglePlayback"
+        />
         <button
-          :disabled="!playing"
-          class="demo-btn"
+          type="button"
+          class="distortion-toggle-btn"
           :class="{ active: distortionEnabled }"
+          :disabled="!playing"
           @click="toggleDistortion"
         >
-          {{ distortionEnabled ? 'Remove' : 'Add' }} Distortion
+          {{ distortionEnabled ? 'Remove Distortion' : 'Add Distortion' }}
         </button>
       </div>
 
       <div v-if="distortionEnabled" class="effect-controls">
-        <label class="slider-control" for="distortion-amount">
-          <span class="control-label">Distortion Amount:</span>
-          <input
-            id="distortion-amount"
-            v-model.number="distortionAmount"
-            type="range"
-            min="50"
-            max="1000"
-            step="50"
-            :aria-label="`Distortion amount: ${distortionAmount}`"
-            @input="updateDistortionCurve"
-          >
-          <span class="control-value">{{ distortionAmount }}</span>
-        </label>
+        <ParameterSlider
+          id="distortion-amount"
+          v-model="distortionAmount"
+          label="Distortion Amount"
+          :min="50"
+          :max="1000"
+          :step="50"
+          :format="formatAmount"
+        />
 
-        <label class="slider-control" for="wet-dry-mix">
-          <span class="control-label">Wet/Dry Mix:</span>
-          <input
-            id="wet-dry-mix"
-            v-model.number="wetDryMix"
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            :aria-label="`Wet/Dry mix: ${Math.round(wetDryMix * 100)}%`"
-            @input="updateMix"
-          >
-          <span class="control-value">{{ Math.round(wetDryMix * 100) }}%</span>
-        </label>
+        <ParameterSlider
+          id="wet-dry-mix"
+          v-model="wetDryMix"
+          label="Wet/Dry Mix"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          :format="formatMix"
+        />
 
-        <label class="checkbox-control">
+        <label class="bypass-row">
           <input v-model="bypassed" type="checkbox" @change="updateBypass">
-          <span>Bypass Effect</span>
+          Bypass Effect
         </label>
       </div>
     </div>
 
-    <div class="hint">
+    <p class="hint">
       <strong>Tip:</strong> Try different distortion amounts and mix levels. The bypass toggle lets you A/B compare the processed vs unprocessed signal.
-    </div>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+    </p>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.distortion-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 /* Signal Chain */
 .signal-chain {
   display: flex;
@@ -260,10 +261,10 @@ function updateBypass() {
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 1.5rem;
-  background: var(--vp-c-bg);
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: var(--ewa-well);
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .chain-node {
@@ -274,50 +275,47 @@ function updateBypass() {
 }
 
 .node-label {
-  font-size: 0.75rem;
-  color: var(--vp-c-text-3);
+  font-size: 0.7rem;
+  color: var(--ewa-text-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .node-box {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  border: 2px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-soft);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--vp-c-text-2);
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--ewa-line-2);
+  background: var(--ewa-panel);
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ewa-text);
   min-width: 80px;
   text-align: center;
-  transition: all 0.3s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.node-box.source {
-  border-color: var(--vp-c-brand-light);
-  color: var(--vp-c-brand);
-}
-
+.node-box.source,
 .node-box.output {
-  border-color: var(--vp-c-brand-light);
-  color: var(--vp-c-brand);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-accent-ink);
 }
 
 .node-box.effect.active {
-  border-color: var(--vp-c-brand);
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand);
-  box-shadow: 0 0 10px var(--vp-c-brand-soft);
+  border-color: var(--ewa-accent);
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-accent-ink);
+  box-shadow: 0 0 0 3px var(--ewa-accent-soft);
 }
 
 .node-box.effect.bypassed {
-  opacity: 0.4;
+  opacity: 0.5;
   border-style: dashed;
 }
 
 .chain-arrow {
-  font-size: 1.5rem;
-  color: var(--vp-c-text-3);
+  font-size: 1.25rem;
+  color: var(--ewa-text-3);
   font-weight: 300;
 }
 
@@ -325,128 +323,96 @@ function updateBypass() {
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 20px;
 }
 
-.button-group {
+.row-top {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 16px;
 }
 
-.demo-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: 2px solid var(--vp-c-brand);
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-brand);
+.distortion-toggle-btn {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: 1.5px solid var(--ewa-accent);
+  background: transparent;
+  color: var(--ewa-accent-ink);
   font-weight: 600;
+  font-size: 14px;
+  font-family: var(--vp-font-family-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.18s, color 0.18s;
 }
 
-.demo-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand);
-  color: white;
+.distortion-toggle-btn:hover:not(:disabled) {
+  background: var(--ewa-accent-soft);
 }
 
-.demo-btn.active {
-  background: var(--vp-c-brand);
-  color: white;
+.distortion-toggle-btn.active {
+  background: var(--ewa-accent);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-on-accent);
 }
 
-.demo-btn:disabled {
-  opacity: 0.4;
+.distortion-toggle-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
-  border-color: var(--vp-c-divider);
-  color: var(--vp-c-text-3);
+  border-color: var(--ewa-line);
+  color: var(--ewa-text-3);
 }
 
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+.distortion-toggle-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
 }
 
 .effect-controls {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--vp-c-bg);
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
+  gap: 20px;
+  padding: 16px;
+  background: var(--ewa-well);
+  border-radius: 8px;
 }
 
-.slider-control {
+.bypass-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  font-size: 0.9rem;
-}
-
-.control-label {
-  min-width: 150px;
-  color: var(--vp-c-text-2);
-  font-weight: 500;
-}
-
-.slider-control input[type="range"] {
-  flex: 1;
-  min-width: 120px;
-}
-
-.control-value {
-  min-width: 50px;
-  text-align: right;
-  font-weight: 600;
-  color: var(--vp-c-brand);
-}
-
-.checkbox-control {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
+  gap: 8px;
+  font-size: 0.9em;
+  color: var(--ewa-text-2);
   cursor: pointer;
 }
 
-.checkbox-control input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
+.bypass-row input[type='checkbox'] {
+  accent-color: var(--ewa-accent);
+  width: 16px;
+  height: 16px;
 }
 
 /* Hint */
 .hint {
-  margin-top: 1rem;
+  margin: 0;
   padding: 0.75rem;
-  background: var(--vp-c-bg);
-  border-left: 3px solid var(--vp-c-brand);
-  border-radius: 4px;
+  background: var(--ewa-well);
+  border-left: 3px solid var(--ewa-accent);
+  border-radius: 6px;
   font-size: 0.9rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
 }
 
 .hint strong {
-  color: var(--vp-c-brand);
+  color: var(--ewa-accent-ink);
 }
 
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  border-radius: 6px;
-  font-size: 0.9rem;
+@media (max-width: 640px) {
+  .row-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>

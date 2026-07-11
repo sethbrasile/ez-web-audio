@@ -3,9 +3,23 @@ title: Audio Routing and Effects Chain - Custom Signal Processing
 description: Route audio through custom effect chains with gain, filters, and distortion. Visualize the signal path from source through effects to output.
 ---
 
+<script setup>
+import SignalFlow from '../.vitepress/theme/components/kit/SignalFlow.vue'
+</script>
+
 # Audio Routing & Custom Effects
 
 Learn how to integrate custom Web Audio effects into your signal chain using the adapter pattern.
+
+<SignalFlow :nodes="[
+  { label: 'SRC', color: 'var(--ewa-accent)' },
+  { label: 'FILTERS' },
+  { label: 'GAIN' },
+  { label: 'PAN' },
+  { label: 'OUT' },
+]" />
+
+*The chain every sound flows through, from source to speakers.*
 
 <llm-exclude>
 <DistortionDemo />
