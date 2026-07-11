@@ -475,6 +475,70 @@ describe('sequence', () => {
     })
   })
 
+  describe('swing', () => {
+    it('swings sequence events on odd subdivisions, leaves off-grid events alone', () => {
+      // bpm 750, swing 1, subdivision 1/16 (default)
+      // subdivisionSeconds = 240*(1/16)/750 = 0.02; delay = 1 * 0.02/3 = 0.006666...
+      transport.bpm = 750
+      transport.swing = 1
+
+      const timesOdd: number[] = []
+      const timesOffGrid: number[] = []
+      const seq = new Sequence(transport, { length: '4m' })
+      seq.at(0.25, time => timesOdd.push(time)) // beat 0.25 = first odd 16th -> swung
+      seq.at(0.30, time => timesOffGrid.push(time)) // off-grid -> never swung
+
+      seq._onTransportStart(0)
+      seq._scheduleEventsInWindow(0, 1, 750, [4, 4], 4)
+
+      const beatsPerSecond = 750 / 60
+      const subdivisionSeconds = (240 * (1 / 16)) / 750
+      const delay = 1 * subdivisionSeconds / 3
+
+      expect(timesOdd).toHaveLength(1)
+      expect(timesOdd[0]).toBeCloseTo(0.25 / beatsPerSecond + delay, 6)
+
+      expect(timesOffGrid).toHaveLength(1)
+      expect(timesOffGrid[0]).toBeCloseTo(0.30 / beatsPerSecond, 6)
+
+      seq.dispose()
+    })
+
+    it('leaves even-subdivision events on-grid', () => {
+      transport.bpm = 750
+      transport.swing = 1
+
+      const times: number[] = []
+      const seq = new Sequence(transport, { length: '4m' })
+      seq.at(0.5, time => times.push(time)) // beat 0.5 = second (even) 16th -> unswung
+
+      seq._onTransportStart(0)
+      seq._scheduleEventsInWindow(0, 1, 750, [4, 4], 4)
+
+      const beatsPerSecond = 750 / 60
+      expect(times).toHaveLength(1)
+      expect(times[0]).toBeCloseTo(0.5 / beatsPerSecond, 6)
+
+      seq.dispose()
+    })
+
+    it('swing=0 leaves sequence event timing byte-identical (backward compat)', () => {
+      // transport.swing left at its default of 0
+      const times: number[] = []
+      const seq = new Sequence(transport, { length: '4m' })
+      seq.at(0.25, time => times.push(time))
+
+      seq._onTransportStart(0)
+      seq._scheduleEventsInWindow(0, 1, 120, [4, 4], 4)
+
+      const beatsPerSecond = 120 / 60
+      expect(times).toHaveLength(1)
+      expect(times[0]).toBeCloseTo(0.25 / beatsPerSecond, 6)
+
+      seq.dispose()
+    })
+  })
+
   describe('.dispose()', () => {
     it('unregisters from Transport', () => {
       const seq = new Sequence(transport, { length: '1m' })

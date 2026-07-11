@@ -188,7 +188,9 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
    *
    * Called by Transport.schedulerTick() on each timer tick. Converts event
    * beat positions to absolute AudioContext times using the current BPM,
-   * enabling live BPM changes without re-scheduling.
+   * enabling live BPM changes without re-scheduling. Applies the Transport's
+   * swing offset (see {@link Transport.swing}) to events landing exactly on
+   * an odd swing subdivision; off-grid events are unaffected.
    *
    * @param currentTime - Current AudioContext time
    * @param lookahead - Lookahead window in seconds
@@ -258,7 +260,7 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
         // Calculate the exact AudioContext time for this event
         const beatOffset = eventBeat - currentSeqBeat
         const timeOffset = beatOffset / beatsPerSecond
-        const eventTime = currentTime + timeOffset
+        const eventTime = currentTime + timeOffset + this.transport._swingDelayFor(eventBeat)
 
         // Build position (QC-1-10 fix: use loopIteration directly, not loopIteration - 1)
         const totalBeats = this.loopIteration * this.lengthInBeats + eventBeat

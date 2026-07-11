@@ -413,6 +413,146 @@ describe('transport', () => {
     })
   })
 
+  describe('swing', () => {
+    it('defaults to 0 and subdivision 1/16', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      expect(transport.swing).toBe(0)
+      expect(transport.swingSubdivision).toBe(1 / 16)
+      transport.dispose()
+    })
+
+    it('throws on swing outside 0..1 and invalid subdivision', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      expect(() => {
+        transport.swing = -0.1
+      }).toThrow()
+      expect(() => {
+        transport.swing = 1.1
+      }).toThrow()
+      expect(() => {
+        transport.swingSubdivision = 1 / 4
+      }).toThrow()
+      transport.dispose()
+    })
+
+    it('swing setter accepts boundary values 0 and 1', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      expect(() => {
+        transport.swing = 0
+      }).not.toThrow()
+      expect(() => {
+        transport.swing = 1
+      }).not.toThrow()
+      transport.dispose()
+    })
+
+    it('swingSubdivision accepts 1/8 and 1/16', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.swingSubdivision = 1 / 8
+      expect(transport.swingSubdivision).toBe(1 / 8)
+      transport.swingSubdivision = 1 / 16
+      expect(transport.swingSubdivision).toBe(1 / 16)
+      transport.dispose()
+    })
+
+    it('_swingDelayFor returns 0 for off-grid positions and even subdivisions, and correct delay on odd subdivisions', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.swing = 1
+      expect(transport._swingDelayFor(0.30)).toBe(0) // not on a 0.25-beat boundary
+      expect(transport._swingDelayFor(0.25)).toBeCloseTo((240 * (1 / 16)) / 120 / 3, 6)
+      expect(transport._swingDelayFor(0.5)).toBe(0) // even subdivision
+      transport.dispose()
+    })
+
+    it('_swingDelayFor returns 0 when swing is 0', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      expect(transport._swingDelayFor(0.25)).toBe(0)
+      transport.dispose()
+    })
+
+    it('_swingDelayFor honors 1/8 subdivision', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.swing = 1
+      transport.swingSubdivision = 1 / 8
+      // subdivisionBeats = 4 * 1/8 = 0.5 beats
+      // beat 0.5 is the first odd 1/8 -> swung
+      const subdivisionSeconds = (240 * (1 / 8)) / 120
+      expect(transport._swingDelayFor(0.5)).toBeCloseTo(subdivisionSeconds / 3, 6)
+      // beat 1.0 is the second (even) 1/8 -> unswung
+      expect(transport._swingDelayFor(1.0)).toBe(0)
+      transport.dispose()
+    })
+
+    it('delays odd 16th track beats by swing * subdivision / 3, leaves even beats on-grid', () => {
+      // bpm 750, noteType 1/16 -> beatDuration = 240*(1/16)/750 = 0.02s
+      // scheduleAheadTime is a fixed 0.1s lookahead, and the mock AudioContext's
+      // currentTime never advances (DeLorean stays at position 0 without an explicit
+      // travel() call), so a single scheduler tick schedules every step whose
+      // nextBeatTime falls under 0.1s -- steps 0..4 (5 steps) at this bpm/noteType.
+      const transport = new Transport(audioContext as any, { bpm: 750 })
+      transport.swing = 0.5
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 8 }, () => ({ active: false })),
+        _syncNoteType: 1 / 16,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(scheduleSpy.mock.calls.length).toBeGreaterThanOrEqual(5)
+
+      const beatDuration = 0.02
+      const subdivisionSeconds = 0.02
+      const delay = 0.5 * subdivisionSeconds / 3
+
+      // beat index 0 (even 16th): unswung, at grid time 0
+      expect(scheduleSpy.mock.calls[0][0]).toBe(0)
+      expect(scheduleSpy.mock.calls[0][1]).toBeCloseTo(0 * beatDuration, 6)
+
+      // beat index 1 (odd 16th): swung, grid time + delay
+      expect(scheduleSpy.mock.calls[1][0]).toBe(1)
+      expect(scheduleSpy.mock.calls[1][1]).toBeCloseTo(1 * beatDuration + delay, 6)
+
+      // beat index 2 (even 16th): unswung
+      expect(scheduleSpy.mock.calls[2][0]).toBe(2)
+      expect(scheduleSpy.mock.calls[2][1]).toBeCloseTo(2 * beatDuration, 6)
+
+      // beat index 3 (odd 16th): swung
+      expect(scheduleSpy.mock.calls[3][0]).toBe(3)
+      expect(scheduleSpy.mock.calls[3][1]).toBeCloseTo(3 * beatDuration + delay, 6)
+
+      transport.dispose()
+    })
+
+    it('swing=0 keeps synced track timing byte-identical to the unswung grid (backward compat)', () => {
+      const transport = new Transport(audioContext as any, { bpm: 750 })
+      // swing left at its default of 0
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 8 }, () => ({ active: false })),
+        _syncNoteType: 1 / 16,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      const beatDuration = 0.02
+      for (let i = 0; i < 5; i++) {
+        expect(scheduleSpy.mock.calls[i][0]).toBe(i)
+        expect(scheduleSpy.mock.calls[i][1]).toBeCloseTo(i * beatDuration, 6)
+      }
+
+      transport.dispose()
+    })
+  })
+
   describe('formatPosition', () => {
     it('formats position as bar:beat:tick', () => {
       expect(formatPosition({ bar: 1, beat: 1, tick: 0, seconds: 0 })).toBe('1:1:0')

@@ -51,6 +51,8 @@ interface SyncedTrackState {
   track: SyncableBeatTrack
   nextBeatTime: number
   currentBeatIndex: number
+  /** Absolute steps scheduled for this track since Transport start. Never wraps. */
+  stepCount: number
 }
 
 /**
@@ -107,6 +109,10 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   private _playing = false
   private _paused = false
   private _disposed = false
+
+  // Swing
+  private _swing = 0
+  private _swingSubdivision = 1 / 16
 
   // Scheduler state
   private scheduleAheadTime = 0.1 // 100ms lookahead
@@ -189,6 +195,58 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     return this._tracksCache
   }
 
+  /**
+   * Swing amount (0–1). 0 = straight; 1 = full triplet feel — every other
+   * swing subdivision is delayed to the triplet position. Applies to synced
+   * BeatTrack beats and Sequence events that land exactly on an odd
+   * subdivision; position/tick events are unaffected. Live-changeable —
+   * safe to set while the Transport is playing.
+   *
+   * For synced Sequences, event positions are sequence-relative rather than
+   * transport-absolute. Swing parity is only guaranteed correct when the
+   * Sequence starts on a bar boundary and its length is a whole, even
+   * number of subdivisions — true for all `Nm` (measure) lengths.
+   *
+   * Default: 0
+   *
+   * @example
+   * ```typescript
+   * transport.swing = 0.55 // MPC-style swing feel
+   * ```
+   */
+  get swing(): number {
+    return this._swing
+  }
+
+  set swing(value: number) {
+    if (value < 0 || value > 1) {
+      throw new Error(`swing must be between 0 and 1. Received: ${value}`)
+    }
+    this._swing = value
+  }
+
+  /**
+   * The subdivision swing applies to: `1/8` (eighth notes) or `1/16`
+   * (sixteenth notes, MPC-style).
+   *
+   * Default: 1/16
+   *
+   * @example
+   * ```typescript
+   * transport.swingSubdivision = 1 / 8
+   * ```
+   */
+  get swingSubdivision(): number {
+    return this._swingSubdivision
+  }
+
+  set swingSubdivision(value: number) {
+    if (value !== 1 / 8 && value !== 1 / 16) {
+      throw new Error(`swingSubdivision must be 1/8 or 1/16. Received: ${value}`)
+    }
+    this._swingSubdivision = value
+  }
+
   // ─── Lifecycle ────────────────────────────────────────────────────
 
   /**
@@ -245,6 +303,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
           track,
           nextBeatTime: this.audioContext.currentTime,
           currentBeatIndex: 0,
+          stepCount: 0,
         })
       }
     }
@@ -300,6 +359,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     for (const state of this.trackStates.values()) {
       state.currentBeatIndex = 0
       state.nextBeatTime = 0
+      state.stepCount = 0
     }
 
     // Reset all sequences to beginning
@@ -364,6 +424,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
         track,
         nextBeatTime,
         currentBeatIndex: 0,
+        stepCount: 0,
       })
     }
   }
@@ -408,6 +469,31 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   // ─── Scheduler ────────────────────────────────────────────────────
 
   /**
+   * Swing delay in seconds for an event at the given musical position (in
+   * beats from transport start/loop origin). An event whose position lands
+   * exactly (±1e-6) on an odd multiple of {@link swingSubdivision} is
+   * delayed by `swing * subdivisionSeconds / 3` — at `swing = 1`, off-grid
+   * subdivisions land on the triplet position. Off-grid positions and even
+   * subdivisions are never delayed. Used by the scheduler and by synced
+   * Sequences; position/tick events never call this — the playhead stays
+   * on-grid.
+   * @internal
+   */
+  _swingDelayFor(positionBeats: number): number {
+    if (this._swing === 0)
+      return 0
+    const subdivisionBeats = 4 * this._swingSubdivision // 1/16 -> 0.25 beats
+    const index = positionBeats / subdivisionBeats
+    const nearest = Math.round(index)
+    if (Math.abs(index - nearest) > 1e-6)
+      return 0 // off-grid: never swung
+    if (nearest % 2 === 0)
+      return 0
+    const subdivisionSeconds = (240 * this._swingSubdivision) / this._bpm
+    return this._swing * subdivisionSeconds / 3
+  }
+
+  /**
    * Lookahead scheduler tick. Called by WorkerTimer at regular intervals.
    * Schedules Transport ticks and synced track beats within the lookahead window.
    * @internal
@@ -425,9 +511,13 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     for (const state of this.trackStates.values()) {
       const noteType = state.track._syncNoteType
       const beatDuration = (240 * noteType) / this._bpm
+      const noteTypeBeats = 4 * noteType // musical beats per step
       while (state.nextBeatTime < currentTime + this.scheduleAheadTime) {
-        state.track._scheduleBeatFromTransport(state.currentBeatIndex, state.nextBeatTime)
+        const positionBeats = state.stepCount * noteTypeBeats
+        const swingDelay = this._swingDelayFor(positionBeats)
+        state.track._scheduleBeatFromTransport(state.currentBeatIndex, state.nextBeatTime + swingDelay)
         state.nextBeatTime += beatDuration
+        state.stepCount++
         state.currentBeatIndex = (state.currentBeatIndex + 1) % state.track.beats.length
       }
     }
