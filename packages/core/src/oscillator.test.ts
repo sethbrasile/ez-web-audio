@@ -719,3 +719,100 @@ describe('stop cancels scheduled-but-unstarted playback', () => {
     expect(osc.isPlaying).toBe(false)
   })
 })
+
+// gate-2 ez-audio-a30: screech investigation. TransportSequencerDemo retriggers
+// a single Oscillator instance every loop pass via playIn(), managing its own
+// per-note gain envelope directly on getGainNode() (setValueAtTime + a short
+// linearRampToValueAtTime fade) instead of calling stop(). Root-cause finding:
+// Oscillator.setup() unconditionally hard-stopped and disconnected the
+// previous source node the instant a new play() began, even when that node
+// was still audibly playing (mid-fade, well before its own scheduled fade
+// completed) — an abrupt, non-zero-crossing cutoff that clicks/screeches.
+// Sound.setup() already solves the identical problem (see sound.test.ts
+// "replaying while playing routes the old source through a release gain") by
+// routing a still-playing old node through a short independent release gain
+// instead of a hard stop. Oscillator had no equivalent guard.
+describe('retrigger while still playing avoids hard-cut click (ez-audio-a30)', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('replaying while playing routes the old source through a release gain, not a hard stop', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440, type: 'triangle' })
+    await osc.play()
+    const oldNode = osc.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+    const stopSpy = vi.spyOn(oldNode, 'stop')
+
+    await osc.play() // retrigger while still playing — no stop() in between
+
+    expect(osc.audioSourceNode).not.toBe(oldNode)
+    // Old node must be re-routed through a release gain (audible fade-out),
+    // not just dropped — mirrors Sound.setup()'s established fix for the
+    // same class of click.
+    expect(connectSpy).toHaveBeenCalled()
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  it('a still-playing old node is stopped after a short fade, not at the exact retrigger instant', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    const oldNode = osc.audioSourceNode
+    const stopSpy = vi.spyOn(oldNode, 'stop')
+
+    const now = audioContext.currentTime
+    await osc.play() // retrigger while still playing
+
+    expect(stopSpy).toHaveBeenCalled()
+    const stopTime = stopSpy.mock.calls[0]?.[0] as number | undefined
+    // An immediate/undefined stop time is the hard-cut that produces the
+    // click — the fix must schedule the stop slightly in the future so the
+    // release-gain fade has time to reach silence first.
+    expect(stopTime).toBeGreaterThan(now)
+  })
+
+  it('retriggering after an explicit stop() (tail already told to end) is unaffected by the fix', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 },
+    })
+    await osc.play()
+    await osc.stop() // _isPlaying flips false immediately; release tail still ringing
+    const oldNode = osc.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+
+    await osc.play() // reuse before the tail finished
+
+    // stop() already told this node to end — it is not "still playing" from
+    // the library's perspective. The pre-existing immediate-neutralize
+    // behavior (no release-gain route) must be preserved here, otherwise the
+    // old node would ride the new note's envelope through the shared gain
+    // node (the exact bug the original comment in setup() describes).
+    expect(connectSpy).not.toHaveBeenCalled()
+  })
+
+  it('external gain automation on getGainNode() does not survive a retrigger (hypothesis 1: refuted — cancelScheduledValues already runs)', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 220, gain: 0.5 })
+    osc.playIn(0.05)
+    await Promise.resolve()
+
+    const gain = osc.getGainNode().gain
+    const cancelSpy = vi.spyOn(gain, 'cancelScheduledValues')
+    // Externally schedule a fade-out, mirroring TransportSequencerDemo's
+    // manual gain.setValueAtTime/linearRampToValueAtTime calls on
+    // getGainNode() (lines ~331-333 of TransportSequencerDemo.vue).
+    const now = audioContext.currentTime
+    gain.setValueAtTime(0.5, now + 0.1)
+    gain.linearRampToValueAtTime(0, now + 0.12)
+
+    // Retrigger before the external ramp completes.
+    osc.playIn(0.02)
+
+    expect(cancelSpy).toHaveBeenCalled()
+    // Gain is restored to the resolved target immediately, not left mid-ramp
+    // toward 0 — stale external automation cannot bleed into the new note.
+    expect(gain.value).toBeCloseTo(0.5)
+  })
+})

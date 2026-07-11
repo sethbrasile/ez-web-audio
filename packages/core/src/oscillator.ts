@@ -299,25 +299,61 @@ export class Oscillator extends BaseSound {
    * @protected
    */
   protected setup(): void {
-    // Neutralize the previous source node before replacing it. A prior stop()
-    // may have scheduled a delayed node.stop() (envelope release / anti-click
-    // fade) that hasn't landed yet — without this, the old node keeps sounding
-    // through the shared gain node (riding the new note's envelope) and then
-    // hard-stops at nonzero amplitude (audible pop).
+    // Neutralize the previous source node before replacing it.
     const oldNode = this.audioSourceNode
     if (oldNode) {
       oldNode.onended = null
-      try {
-        oldNode.stop()
+
+      if (this._isPlaying) {
+        // Still audibly playing — this is a retrigger with no stop() in
+        // between (e.g. a caller driving its own gain envelope directly via
+        // getGainNode(), like TransportSequencerDemo's per-note fades).
+        // Hard-cutting the node here stops the waveform at a non-zero,
+        // non-zero-crossing amplitude — an audible click/screech (gate-2
+        // ez-audio-a30). Route it through a short independent release gain
+        // instead, decoupled from the shared gainNode so it can never
+        // collide with the new note's gain automation. Mirrors
+        // Sound.setup()'s identical fix for AudioBufferSourceNode retriggers.
+        const now = this.audioContext.currentTime
+        const releaseGain = this.audioContext.createGain()
+        releaseGain.gain.setValueAtTime(1, now)
+        releaseGain.gain.linearRampToValueAtTime(0, now + 0.05)
+        try {
+          oldNode.disconnect()
+        }
+        catch {
+          // Already disconnected
+        }
+        oldNode.connect(releaseGain)
+        releaseGain.connect(this.effectChainInput)
+        try {
+          oldNode.stop(now + 0.06)
+        }
+        catch {
+          // Never started — nothing to stop
+        }
       }
-      catch {
-        // Never started (constructor placeholder) — nothing to stop
-      }
-      try {
-        oldNode.disconnect()
-      }
-      catch {
-        // Already disconnected
+      else {
+        // Not "playing" from the library's perspective — either never
+        // started, or an explicit stop() already told this node to end. A
+        // prior stop() may have scheduled a delayed node.stop() (envelope
+        // release / anti-click fade) that hasn't landed yet — without
+        // neutralizing immediately, the old node keeps sounding through the
+        // shared gain node (riding the new note's envelope) and then
+        // hard-stops at nonzero amplitude (audible pop). Since stop() was
+        // already requested, cutting the tail short here is expected.
+        try {
+          oldNode.stop()
+        }
+        catch {
+          // Never started (constructor placeholder) — nothing to stop
+        }
+        try {
+          oldNode.disconnect()
+        }
+        catch {
+          // Already disconnected
+        }
       }
     }
 
