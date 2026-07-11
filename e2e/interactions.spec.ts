@@ -696,12 +696,12 @@ test.describe('TransportSequencer page interactions', () => {
     const playBtn = page.locator('.transport-buttons .play-btn')
     expect(await playBtn.isVisible()).toBe(true)
 
-    // Click Play — button should change to show Pause is available
-    // Uses 30s timeout: piano.js soundfont (1.4MB) must load before transport starts
+    // Click Play — label flips to "Pause" once drum samples + melody
+    // oscillators finish loading and the transport actually starts.
+    // Uses 30s timeout to account for sample-loading time.
     await playBtn.click()
     await page.waitForFunction(
-      () => document.querySelector('.transport-buttons .pause-btn') !== null
-        || document.querySelector('.transport-buttons .play-btn')?.textContent?.includes('Pause'),
+      () => document.querySelector('.transport-buttons .play-btn')?.textContent?.includes('Pause'),
       { timeout: 30000 },
     )
 
@@ -752,7 +752,7 @@ test.describe('TransportSequencer page interactions', () => {
     expect(errors, 'mute/solo should have no page errors').toHaveLength(0)
   })
 
-  test('Step grid renders 5 track rows with 32 step cells each', async ({ page }) => {
+  test('Step grid renders 5 track rows, 32 step cells each, and 5 presets', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
 
@@ -768,14 +768,23 @@ test.describe('TransportSequencer page interactions', () => {
     const stepCells = page.locator('.step-cell')
     expect(await stepCells.count()).toBe(160)
 
-    // Preset buttons — 3 presets (using .preset-btn class)
+    // Preset buttons — 5 presets, in TRANSPORT_PRESETS order
     const presetBtns = page.locator('.preset-row .preset-btn')
-    expect(await presetBtns.count()).toBe(3)
+    expect(await presetBtns.count()).toBe(5)
+    await expect(presetBtns.nth(0)).toHaveText('Rock')
+    await expect(presetBtns.nth(1)).toHaveText('Funk')
+    await expect(presetBtns.nth(2)).toHaveText('Disco')
+    await expect(presetBtns.nth(3)).toHaveText('Bossa')
+    await expect(presetBtns.nth(4)).toHaveText('Shuffle')
 
-    // Switch presets — should not error
-    await presetBtns.nth(1).click() // Funk Groove
-    await presetBtns.nth(2).click() // Triplet Feel
-    await presetBtns.nth(0).click() // Back to Straight Rock
+    // Switch presets — should not error, and aria-pressed should track selection
+    await presetBtns.nth(1).click() // Funk
+    await expect(presetBtns.nth(1)).toHaveAttribute('aria-pressed', 'true')
+    await presetBtns.nth(3).click() // Bossa
+    await expect(presetBtns.nth(3)).toHaveAttribute('aria-pressed', 'true')
+    await expect(presetBtns.nth(1)).toHaveAttribute('aria-pressed', 'false')
+    await presetBtns.nth(0).click() // back to Rock
+    await expect(presetBtns.nth(0)).toHaveAttribute('aria-pressed', 'true')
 
     expect(errors, 'step grid and presets should have no page errors').toHaveLength(0)
   })
@@ -794,22 +803,32 @@ test.describe('TransportSequencer page interactions', () => {
     // Click Play
     await page.locator('.transport-buttons .play-btn').click()
 
-    // Wait for playhead to appear — transport starts after all audio loads (piano.js = 1.4MB)
-    // Uses 30s timeout to account for soundfont loading time
+    // Wait for playhead to appear — transport starts after drum samples +
+    // melody oscillators finish loading. Uses 30s timeout to account for
+    // sample-loading time.
     await page.waitForFunction(
       () => document.querySelectorAll('.step-cell.playhead').length > 0,
       { timeout: 30000 },
     )
     expect(await page.locator('.step-cell.playhead').count()).toBeGreaterThan(0)
 
-    // Wait briefly and verify playhead has moved to a different column
     const firstStep = await page.evaluate(
       () => Array.from(document.querySelectorAll('.track-row')[0].querySelectorAll('.step-cell'))
         .findIndex(el => el.classList.contains('playhead')),
     )
 
-    // Give it 600ms to advance (at 120 BPM, ~125ms per 16th note)
-    await page.waitForTimeout(600)
+    // Poll (no bare timeout) until the playhead advances to a different
+    // column — deterministic and immune to CPU contention under parallel
+    // workers, unlike a fixed-duration wait.
+    await page.waitForFunction(
+      (initial) => {
+        const step = Array.from(document.querySelectorAll('.track-row')[0].querySelectorAll('.step-cell'))
+          .findIndex(el => el.classList.contains('playhead'))
+        return step !== -1 && step !== initial
+      },
+      firstStep,
+      { timeout: 10000 },
+    )
 
     const laterStep = await page.evaluate(
       () => Array.from(document.querySelectorAll('.track-row')[0].querySelectorAll('.step-cell'))
@@ -823,6 +842,74 @@ test.describe('TransportSequencer page interactions', () => {
     await page.locator('.transport-buttons .stop-btn').click()
 
     expect(errors, 'playhead should advance without page errors').toHaveLength(0)
+  })
+
+  test('drum cell click cycles rest -> normal -> accent -> rest', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Kick step 2 (index 1) is a rest in the default Rock preset — safe to cycle
+    const cell = page.locator('.track-row', { hasText: 'Kick' }).locator('.step-cell').nth(1)
+    await expect(cell).not.toHaveClass(/active/)
+
+    await cell.click()
+    await expect(cell).toHaveClass(/active/)
+    await expect(cell).not.toHaveClass(/accent/)
+
+    await cell.click()
+    await expect(cell).toHaveClass(/active/)
+    await expect(cell).toHaveClass(/accent/)
+
+    await cell.click()
+    await expect(cell).not.toHaveClass(/active/)
+    await expect(cell).not.toHaveClass(/accent/)
+
+    expect(errors, 'drum cell cycling should have no page errors').toHaveLength(0)
+  })
+
+  test('swing knob present and preset switch updates it', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    // Knob renders with its "Swing" aria-label
+    await expect(page.locator('[aria-label="Swing"]')).toBeVisible()
+
+    // Shuffle preset sets swing to 55%
+    await page.getByRole('button', { name: 'Load preset: Shuffle' }).click()
+    await expect(page.getByText(/55\s*%/)).toBeVisible()
+
+    expect(errors, 'swing knob should have no page errors').toHaveLength(0)
+  })
+
+  test('position display wraps at the 2-bar loop boundary while playing', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', err => errors.push(err.message))
+
+    await page.goto('examples/transport-sequencer')
+    await page.waitForSelector('.transport-sequencer-demo', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+
+    await page.locator('.transport-buttons .play-btn').click()
+
+    const display = page.locator('.transport-sequencer-demo').getByLabel(/Transport position/)
+
+    // Rock preset runs at 112 BPM — 2 bars is ~4.3s. Poll (no bare timeout)
+    // until the display reaches bar 2, then wraps back around to bar 1 —
+    // proving the transport loops rather than running past the 2-bar end.
+    await expect(display).toContainText('2:', { timeout: 15000 })
+    await expect(display).toContainText('1:', { timeout: 15000 })
+
+    await page.locator('.transport-buttons .stop-btn').click()
+
+    expect(errors, 'position display should have no page errors').toHaveLength(0)
   })
 })
 
