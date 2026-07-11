@@ -2,6 +2,9 @@
 import type { LayeredSound, Oscillator, Sound } from 'ez-web-audio'
 import { createFilterEffect, createLayeredSound, createOscillator, createWhiteNoise } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import TriggerPad from './kit/TriggerPad.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
 
 const initialized = ref(false)
 const loading = ref(false)
@@ -242,247 +245,139 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="synth-drum-kit">
-    <div class="pads-container">
-      <button
-        class="drum-pad kick"
-        :class="{ playing: lastPlayed === 'kick' }"
-        :disabled="loading"
-        aria-label="Play kick drum"
-        @mousedown="playKick"
-        @touchstart.prevent="playKick"
-      >
-        KICK
-      </button>
-      <button
-        class="drum-pad snare"
-        :class="{ playing: lastPlayed === 'snare' }"
-        :disabled="loading"
-        aria-label="Play snare drum"
-        @mousedown="playSnare"
-        @touchstart.prevent="playSnare"
-      >
-        SNARE
-      </button>
-      <button
-        class="drum-pad hihat"
-        :class="{ playing: lastPlayed === 'hihat' }"
-        :disabled="loading"
-        aria-label="Play hi-hat"
-        @mousedown="playHiHat"
-        @touchstart.prevent="playHiHat"
-      >
-        HI-HAT
-      </button>
+  <DemoFrame class="synth-drum-kit" :error="error" takeaway="Drums from pure synthesis — layered sounds.">
+    <VolumeWarning />
+
+    <div class="pad-group">
+      <span class="pad-group__label">Drum Pads</span>
+      <div class="pads-container">
+        <TriggerPad
+          label="KICK"
+          color="var(--ewa-kick)"
+          :disabled="loading"
+          :active="lastPlayed === 'kick'"
+          aria-label="Play kick drum"
+          @trigger="playKick"
+        />
+        <TriggerPad
+          label="SNARE"
+          color="var(--ewa-snare)"
+          :disabled="loading"
+          :active="lastPlayed === 'snare'"
+          aria-label="Play snare drum"
+          @trigger="playSnare"
+        />
+        <TriggerPad
+          label="HI-HAT"
+          color="var(--ewa-hat)"
+          :disabled="loading"
+          :active="lastPlayed === 'hihat'"
+          aria-label="Play hi-hat"
+          @trigger="playHiHat"
+        />
+      </div>
     </div>
 
-    <button
-      class="bass-drop-btn"
+    <TriggerPad
+      class="bass-drop-pad"
+      label="BASS DROP"
+      color="var(--ewa-bass)"
       :disabled="loading"
       aria-label="Play bass drop effect"
-      @click="playBassDrop"
-    >
-      BASS DROP
-    </button>
+      @trigger="playBassDrop"
+    />
 
-    <div class="breakdown-section">
-      <h4>Snare Breakdown</h4>
+    <div class="pad-group breakdown-group">
+      <span class="pad-group__label">Snare Breakdown</span>
       <div class="breakdown-buttons">
-        <button class="breakdown-btn" :disabled="loading" aria-label="Play snare meat layer only" @click="playSnareMeat">
-          Meat Only
-        </button>
-        <button class="breakdown-btn" :disabled="loading" aria-label="Play snare crack layer only" @click="playSnareCrack">
-          Crack Only
-        </button>
-        <button class="breakdown-btn" :disabled="loading" aria-label="Play full snare (both layers)" @click="playSnare">
-          Full Snare
-        </button>
+        <TriggerPad
+          label="Meat Only"
+          sublabel="Tone"
+          color="var(--ewa-snare)"
+          :disabled="loading"
+          aria-label="Play snare meat layer only"
+          @trigger="playSnareMeat"
+        />
+        <TriggerPad
+          label="Crack Only"
+          sublabel="Noise"
+          color="var(--ewa-snare)"
+          :disabled="loading"
+          aria-label="Play snare crack layer only"
+          @trigger="playSnareCrack"
+        />
+        <TriggerPad
+          label="Full Snare"
+          sublabel="Both"
+          color="var(--ewa-snare)"
+          :disabled="loading"
+          aria-label="Play full snare (both layers)"
+          @trigger="playSnare"
+        />
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="loading" class="loading">
+    <template #status>
+      <p v-if="loading" class="loading-text">
         Loading synth...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.synth-drum-kit {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
+.pad-group {
+  margin-bottom: 20px;
 }
 
-.loading {
-  padding: 1rem;
-  text-align: center;
-  color: var(--vp-c-text-2);
-  font-style: italic;
+.pad-group__label {
+  display: block;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ewa-text-3);
+  margin-bottom: 10px;
 }
 
 .pads-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 12px;
 }
 
-.drum-pad {
-  min-width: 120px;
-  height: 120px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  color: white;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
+.pads-container :deep(.ewa-trigger-pad) {
+  min-height: 96px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
 }
 
-.drum-pad:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.drum-pad:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.drum-pad.playing {
-  transform: scale(0.95);
-  filter: brightness(1.3);
-}
-
-.drum-pad.kick {
-  background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
-}
-
-.drum-pad.kick:hover:not(:active) {
-  background: linear-gradient(135deg, #5aafff 0%, #4589cd 100%);
-}
-
-.drum-pad.snare {
-  background: linear-gradient(135deg, #ff7b4a 0%, #d65a2e 100%);
-}
-
-.drum-pad.snare:hover:not(:active) {
-  background: linear-gradient(135deg, #ff8b5a 0%, #e66a3e 100%);
-}
-
-.drum-pad.hihat {
-  background: linear-gradient(135deg, #ffd54f 0%, #d6a82e 100%);
-}
-
-.drum-pad.hihat:hover:not(:active) {
-  background: linear-gradient(135deg, #ffe55f 0%, #e6b83e 100%);
-}
-
-.bass-drop-btn {
+.bass-drop-pad {
   width: 100%;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border: 2px solid var(--vp-c-brand);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--vp-c-brand);
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.bass-drop-btn:hover {
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-.bass-drop-btn:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.bass-drop-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.breakdown-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--vp-c-divider);
-}
-
-.breakdown-section h4 {
-  margin: 0 0 1rem 0;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--vp-c-text-2);
+  min-height: 60px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  letter-spacing: 0.08em;
 }
 
 .breakdown-buttons {
   display: flex;
-  gap: 0.75rem;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
-.breakdown-btn {
+.breakdown-buttons :deep(.ewa-trigger-pad) {
   flex: 1;
   min-width: 100px;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+}
+
+.loading-text {
+  margin: 0;
+  text-align: center;
+  color: var(--ewa-text-2);
+  font-style: italic;
   font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.breakdown-btn:hover {
-  background: var(--vp-c-bg-alt);
-  border-color: var(--vp-c-brand);
-}
-
-.breakdown-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.breakdown-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  border: 1px solid var(--vp-c-danger);
-  border-radius: 4px;
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
 }
 
 @media (max-width: 640px) {
@@ -490,16 +385,8 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .drum-pad {
-    min-width: 100%;
-  }
-
   .breakdown-buttons {
     flex-direction: column;
-  }
-
-  .breakdown-btn {
-    width: 100%;
   }
 }
 </style>

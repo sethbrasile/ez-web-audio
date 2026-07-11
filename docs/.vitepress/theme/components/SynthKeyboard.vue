@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { Oscillator } from 'ez-web-audio'
 import { createOscillator, frequencyMap } from 'ez-web-audio'
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PresetSelector from './kit/PresetSelector.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
@@ -35,11 +40,27 @@ const presets: Record<string, EnvelopeConfig> = {
   lead: { attack: 0.05, decay: 0.1, sustain: 0.7, release: 0.2 },
 }
 
+const presetOptions = [
+  { label: 'Piano', value: 'piano' },
+  { label: 'Pad', value: 'pad' },
+  { label: 'Pluck', value: 'pluck' },
+  { label: 'Lead', value: 'lead' },
+]
+
+// Presentational only — tracks which preset button reads as selected. Does
+// not feed back into audio; applyPreset() below is unchanged from before.
+const selectedPreset = ref('')
+
 function applyPreset(presetName: string) {
   const preset = presets[presetName]
   if (preset) {
     envelope.value = { ...preset }
   }
+}
+
+function selectPreset(presetName: string) {
+  selectedPreset.value = presetName
+  applyPreset(presetName)
 }
 
 async function handleNoteOn(note: string) {
@@ -110,68 +131,122 @@ onUnmounted(() => {
   oscillators.clear()
   activeNotes.value.clear()
 })
+
+function formatSeconds(v: number) {
+  return `${v.toFixed(2)}s`
+}
+
+function formatRatio(v: number) {
+  return v.toFixed(2)
+}
+
+function formatGain(v: number) {
+  return `${Math.round(v * 100)}%`
+}
+
+// --- ADSR mini-curve — pure presentational SVG path derived from envelope
+// state above. Attack/decay/release each get a proportional slot of the
+// drawable width (scaled by their own slider range); sustain gets a fixed
+// "hold" plateau since it has no duration, just a level.
+const CURVE_PAD_X = 6
+const CURVE_BASE_Y = 56
+const CURVE_PEAK_Y = 8
+const CURVE_DRAW_W = 220 - CURVE_PAD_X * 2
+const ATTACK_SLOT = CURVE_DRAW_W * 0.22
+const DECAY_SLOT = CURVE_DRAW_W * 0.18
+const HOLD_SLOT = CURVE_DRAW_W * 0.24
+const RELEASE_SLOT = CURVE_DRAW_W * 0.36
+const ATTACK_MAX = 2
+const DECAY_MAX = 2
+const RELEASE_MAX = 3
+
+const envelopeCurve = computed(() => {
+  const { attack, decay, sustain, release } = envelope.value
+  const x0 = CURVE_PAD_X
+  const x1 = x0 + ATTACK_SLOT * Math.min(1, attack / ATTACK_MAX)
+  const x2 = x1 + DECAY_SLOT * Math.min(1, decay / DECAY_MAX)
+  const x3 = x2 + HOLD_SLOT
+  const x4 = x3 + RELEASE_SLOT * Math.min(1, release / RELEASE_MAX)
+  const sustainY = CURVE_BASE_Y - sustain * (CURVE_BASE_Y - CURVE_PEAK_Y)
+
+  const line = `M ${x0} ${CURVE_BASE_Y} L ${x1} ${CURVE_PEAK_Y} L ${x2} ${sustainY} L ${x3} ${sustainY} L ${x4} ${CURVE_BASE_Y}`
+  const area = `${line} L ${x0} ${CURVE_BASE_Y} Z`
+  return { line, area }
+})
 </script>
 
 <template>
-  <div class="synth-keyboard">
-    <div class="volume-warning">
+  <DemoFrame class="synth-keyboard" :error="error" takeaway="ADSR envelopes shape a note's character.">
+    <VolumeWarning>
       <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
-    </div>
+    </VolumeWarning>
 
     <div class="controls-section">
       <div class="control-row">
-        <label>
-          Waveform:
-          <select v-model="waveType">
-            <option value="sine">Sine</option>
-            <option value="triangle">Triangle</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-          </select>
-        </label>
-
-        <label>
-          Volume: {{ Math.round(masterGain * 100) }}%
-          <input v-model.number="masterGain" type="range" min="0" max="1" step="0.01" aria-label="Master volume">
-        </label>
+        <WaveformSelector v-model="waveType" />
+        <ParameterSlider
+          id="synth-keyboard-volume"
+          v-model="masterGain"
+          label="Volume"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          :format="formatGain"
+        />
       </div>
 
-      <div class="preset-row">
-        <span class="preset-label">ADSR Presets:</span>
-        <button class="preset-btn" aria-label="Apply piano preset" @click="applyPreset('piano')">
-          Piano
-        </button>
-        <button class="preset-btn" aria-label="Apply pad preset" @click="applyPreset('pad')">
-          Pad
-        </button>
-        <button class="preset-btn" aria-label="Apply pluck preset" @click="applyPreset('pluck')">
-          Pluck
-        </button>
-        <button class="preset-btn" aria-label="Apply lead preset" @click="applyPreset('lead')">
-          Lead
-        </button>
-      </div>
+      <PresetSelector
+        label="ADSR Presets"
+        :model-value="selectedPreset"
+        :options="presetOptions"
+        @update:model-value="selectPreset"
+      />
 
-      <div class="adsr-row">
-        <label>
-          Attack: {{ envelope.attack.toFixed(2) }}s
-          <input v-model.number="envelope.attack" type="range" min="0" max="2" step="0.01">
-        </label>
+      <div class="envelope-section">
+        <div class="adsr-row">
+          <ParameterSlider
+            id="synth-keyboard-attack"
+            v-model="envelope.attack"
+            label="Attack"
+            :min="0"
+            :max="2"
+            :step="0.01"
+            :format="formatSeconds"
+          />
+          <ParameterSlider
+            id="synth-keyboard-decay"
+            v-model="envelope.decay"
+            label="Decay"
+            :min="0"
+            :max="2"
+            :step="0.01"
+            :format="formatSeconds"
+          />
+          <ParameterSlider
+            id="synth-keyboard-sustain"
+            v-model="envelope.sustain"
+            label="Sustain"
+            :min="0"
+            :max="1"
+            :step="0.01"
+            :format="formatRatio"
+          />
+          <ParameterSlider
+            id="synth-keyboard-release"
+            v-model="envelope.release"
+            label="Release"
+            :min="0"
+            :max="3"
+            :step="0.01"
+            :format="formatSeconds"
+          />
+        </div>
 
-        <label>
-          Decay: {{ envelope.decay.toFixed(2) }}s
-          <input v-model.number="envelope.decay" type="range" min="0" max="2" step="0.01">
-        </label>
-
-        <label>
-          Sustain: {{ envelope.sustain.toFixed(2) }}
-          <input v-model.number="envelope.sustain" type="range" min="0" max="1" step="0.01">
-        </label>
-
-        <label>
-          Release: {{ envelope.release.toFixed(2) }}s
-          <input v-model.number="envelope.release" type="range" min="0" max="3" step="0.01">
-        </label>
+        <svg class="adsr-curve" width="220" height="64" viewBox="0 0 220 64" aria-hidden="true">
+          <line class="adsr-curve__baseline" x1="6" y1="56" x2="214" y2="56" />
+          <path class="adsr-curve__area" :d="envelopeCurve.area" />
+          <path class="adsr-curve__line" :d="envelopeCurve.line" />
+        </svg>
       </div>
     </div>
 
@@ -180,133 +255,77 @@ onUnmounted(() => {
       @note-on="handleNoteOn"
       @note-off="handleNoteOff"
     />
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.synth-keyboard {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger);
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.volume-warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border: 1px solid var(--vp-c-warning);
-  border-radius: 4px;
-  color: var(--vp-c-warning-text);
-  font-size: 0.85rem;
-}
-
 .controls-section {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .control-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 24px;
+  align-items: center;
 }
 
-.control-row label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
+.control-row :deep(.ewa-slider) {
+  min-width: 200px;
+  flex: 1;
 }
 
-.control-row select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-}
-
-.control-row input[type="range"] {
-  width: 150px;
-}
-
-.preset-row {
+.envelope-section {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.preset-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-right: 0.5rem;
-}
-
-.preset-btn {
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.preset-btn:hover {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-}
-
-.preset-btn:active {
-  transform: translateY(1px);
+  gap: 20px;
+  align-items: flex-start;
 }
 
 .adsr-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
+  gap: 16px;
+  flex: 1;
+  min-width: 260px;
 }
 
-.adsr-row label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
+.adsr-curve {
+  flex-shrink: 0;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
+  border-radius: 8px;
+  padding: 4px;
 }
 
-.adsr-row input[type="range"] {
-  width: 100%;
+.adsr-curve__baseline {
+  stroke: var(--ewa-line-2);
+  stroke-width: 1;
 }
 
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
+.adsr-curve__area {
+  fill: var(--ewa-accent-soft);
+  stroke: none;
+}
+
+.adsr-curve__line {
+  fill: none;
+  stroke: var(--ewa-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 480px) {
+  .adsr-row {
+    grid-template-columns: 1fr;
+  }
+
+  .adsr-curve {
+    width: 100%;
+  }
 }
 </style>

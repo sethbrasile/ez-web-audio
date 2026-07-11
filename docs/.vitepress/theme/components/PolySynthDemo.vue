@@ -3,6 +3,10 @@ import type { StealStrategy, VoiceHandle } from 'ez-web-audio'
 import { useCleanup, usePolySynth } from '@ez-web-audio/vue'
 import { frequencyMap } from 'ez-web-audio'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 import PianoKeyboard from './PianoKeyboard.vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
@@ -201,19 +205,20 @@ onUnmounted(() => {
   activeNotes.value.clear()
 })
 
-function fillPercent() {
-  if (maxVoices.value === 0)
-    return 0
-  return Math.min(100, (voiceCount.value / maxVoices.value) * 100)
+function formatSeconds(v: number) {
+  return `${v.toFixed(2)}s`
+}
+
+function formatRatio(v: number) {
+  return v.toFixed(2)
 }
 </script>
 
 <template>
-  <div class="polysynth-demo">
-    <!-- Volume warning — matches SynthKeyboard.vue style (L1) -->
-    <div class="volume-warning">
+  <DemoFrame class="polysynth-demo" :error="error" takeaway="Polyphony with visible voice allocation — watch voices get stolen.">
+    <VolumeWarning>
       <strong>Volume Warning:</strong> Oscillators can be loud. Start with low system volume.
-    </div>
+    </VolumeWarning>
 
     <!-- Voice Management Cluster -->
     <div class="voice-management">
@@ -221,11 +226,12 @@ function fillPercent() {
         <div class="voice-badge">
           <span class="voice-label">Voices:</span>
           <span class="voice-numbers">{{ voiceCount }} / {{ maxVoices }}</span>
-          <div class="fill-bar">
-            <div
-              class="fill-bar-inner"
-              :style="{ width: `${fillPercent()}%` }"
-              :class="{ full: voiceCount >= maxVoices }"
+          <div class="fill-bar" role="img" :aria-label="`${voiceCount} of ${maxVoices} voices active`">
+            <span
+              v-for="i in maxVoices"
+              :key="i"
+              class="voice-pill"
+              :class="{ 'voice-pill--filled': i <= voiceCount }"
             />
           </div>
         </div>
@@ -240,7 +246,7 @@ function fillPercent() {
       <div class="voice-controls">
         <label class="control-inline">
           Strategy:
-          <select v-model="stealStrategy" aria-label="Steal strategy">
+          <select v-model="stealStrategy" class="strategy-select" aria-label="Steal strategy">
             <option
               v-for="opt in strategyOptions"
               :key="opt.value"
@@ -251,17 +257,14 @@ function fillPercent() {
           </select>
         </label>
 
-        <label class="control-inline">
-          Max Voices: {{ maxVoices }}
-          <input
-            v-model.number="maxVoices"
-            type="range"
-            min="1"
-            max="8"
-            step="1"
-            aria-label="Maximum voices"
-          >
-        </label>
+        <ParameterSlider
+          id="polysynth-max-voices"
+          v-model="maxVoices"
+          label="Max Voices"
+          :min="1"
+          :max="8"
+          :step="1"
+        />
       </div>
     </div>
 
@@ -275,15 +278,7 @@ function fillPercent() {
     <!-- ADSR + Waveform Controls -->
     <div class="sound-controls">
       <div class="control-row">
-        <label>
-          Waveform:
-          <select v-model="waveType" aria-label="Waveform type">
-            <option value="sine">Sine</option>
-            <option value="triangle">Triangle</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-          </select>
-        </label>
+        <WaveformSelector v-model="waveType" />
       </div>
 
       <!-- ADSR preset buttons with active state (L2) -->
@@ -304,23 +299,42 @@ function fillPercent() {
 
       <!-- ADSR grid — responsive: 4-col on wide, 2-col on medium, 1-col on narrow (M4) -->
       <div class="adsr-row">
-        <label>
-          Attack: {{ envelope.attack.toFixed(2) }}s
-          <input v-model.number="envelope.attack" type="range" min="0" max="2" step="0.01">
-        </label>
-        <label>
-          Decay: {{ envelope.decay.toFixed(2) }}s
-          <input v-model.number="envelope.decay" type="range" min="0" max="2" step="0.01">
-        </label>
-        <label>
-          Sustain: {{ envelope.sustain.toFixed(2) }}
-          <input v-model.number="envelope.sustain" type="range" min="0" max="1" step="0.01">
-        </label>
-        <label>
-          Release: {{ envelope.release.toFixed(2) }}s
-          <!-- Release max raised to 8s for pads (L4) -->
-          <input v-model.number="envelope.release" type="range" min="0" max="8" step="0.05">
-        </label>
+        <ParameterSlider
+          id="polysynth-attack"
+          v-model="envelope.attack"
+          label="Attack"
+          :min="0"
+          :max="2"
+          :step="0.01"
+          :format="formatSeconds"
+        />
+        <ParameterSlider
+          id="polysynth-decay"
+          v-model="envelope.decay"
+          label="Decay"
+          :min="0"
+          :max="2"
+          :step="0.01"
+          :format="formatSeconds"
+        />
+        <ParameterSlider
+          id="polysynth-sustain"
+          v-model="envelope.sustain"
+          label="Sustain"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          :format="formatRatio"
+        />
+        <ParameterSlider
+          id="polysynth-release"
+          v-model="envelope.release"
+          label="Release"
+          :min="0"
+          :max="8"
+          :step="0.05"
+          :format="formatSeconds"
+        />
       </div>
     </div>
 
@@ -330,42 +344,17 @@ function fillPercent() {
       @note-on="handleNoteOn"
       @note-off="handleNoteOff"
     />
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.polysynth-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-/* Volume warning style matches SynthKeyboard.vue (L1) */
-.volume-warning {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-warning-soft);
-  border: 1px solid var(--vp-c-warning);
-  border-radius: 4px;
-  color: var(--vp-c-warning-text);
-  font-size: 0.85rem;
-}
-
 /* Voice Management Cluster */
 .voice-management {
-  margin-bottom: 1.25rem;
-  padding: 1rem;
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
+  border-radius: 10px;
 }
 
 .voice-header {
@@ -373,51 +362,52 @@ function fillPercent() {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .voice-badge {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .voice-label {
   font-weight: 600;
   font-size: 0.9rem;
+  color: var(--ewa-text-2);
 }
 
 .voice-numbers {
-  font-family: monospace;
+  font-family: var(--vp-font-family-mono);
   font-size: 0.95rem;
   font-weight: 600;
-  min-width: 3rem;
+  color: var(--ewa-text);
+  min-width: 3.5rem;
 }
 
 .fill-bar {
-  width: 100px;
-  height: 8px;
-  background: var(--vp-c-bg-soft);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--vp-c-divider);
+  display: flex;
+  gap: 3px;
 }
 
-.fill-bar-inner {
-  height: 100%;
-  background: var(--vp-c-brand);
-  border-radius: 4px;
-  transition: width 0.15s ease-out;
+.voice-pill {
+  width: 12px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line-2);
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.fill-bar-inner.full {
-  background: var(--vp-c-warning);
+.voice-pill--filled {
+  background: var(--ewa-bass);
+  border-color: var(--ewa-bass);
 }
 
 .steal-notification {
   font-size: 0.85rem;
-  color: var(--vp-c-warning);
+  color: var(--ewa-warn);
   font-weight: 500;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -430,38 +420,48 @@ function fillPercent() {
 .voice-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  align-items: center;
+  gap: 24px;
+  align-items: flex-end;
 }
 
 .control-inline {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
+  gap: 6px;
+  font-size: 0.85rem;
   font-weight: 500;
+  color: var(--ewa-text-2);
 }
 
-.control-inline select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
+.strategy-select {
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-bg);
+  color: var(--ewa-text);
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  cursor: pointer;
 }
 
-.control-inline input[type="range"] {
-  width: 120px;
+.strategy-select:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
+}
+
+.voice-controls :deep(.ewa-slider) {
+  min-width: 160px;
 }
 
 /* Recreate notice (M5) */
 .recreate-notice {
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-tip-soft);
-  border: 1px solid var(--vp-c-tip);
-  border-radius: 4px;
-  color: var(--vp-c-tip-text);
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  background: var(--ewa-accent-soft);
+  border: 1px solid var(--ewa-accent);
+  border-radius: 8px;
+  color: var(--ewa-accent-ink);
   font-size: 0.85rem;
 }
 
@@ -477,119 +477,78 @@ function fillPercent() {
 
 /* Sound Controls (ADSR + Waveform) */
 .sound-controls {
-  margin-bottom: 1.5rem;
-}
-
-.control-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.control-row label {
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
-}
-
-.control-row select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+  gap: 16px;
 }
 
 .preset-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 1rem;
 }
 
 .preset-label {
   font-size: 0.9rem;
   font-weight: 600;
-  margin-right: 0.5rem;
+  color: var(--ewa-text-2);
+  margin-right: 4px;
 }
 
 .preset-btn {
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-size: 0.85rem;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--vp-font-family-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.preset-btn:hover {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
+.preset-btn:hover:not(.active) {
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-text);
+  border-color: var(--ewa-accent);
 }
 
-/* Active preset button shows which preset is selected (L2) */
 .preset-btn.active {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
+  background: var(--ewa-accent);
+  color: var(--ewa-on-accent);
+  border-color: var(--ewa-accent);
+  box-shadow: var(--ewa-shadow);
 }
 
 .preset-btn:active {
   transform: translateY(1px);
 }
 
+.preset-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
+}
+
 /* ADSR grid — 4-col on wide, 2-col on medium, 1-col on narrow (M4) */
 .adsr-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.adsr-row label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-}
-
-.adsr-row input[type="range"] {
-  width: 100%;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger);
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
+  gap: 16px;
 }
 
 /* Responsive ADSR grid (M4) */
 @media (max-width: 640px) {
   .voice-controls {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
-  .control-inline input[type="range"] {
-    width: 100%;
+  .voice-controls :deep(.ewa-slider) {
+    min-width: 0;
   }
 
   /* 2-col on narrow to avoid 3+1 asymmetry */
