@@ -314,6 +314,11 @@ export class Oscillator extends BaseSound {
         // instead, decoupled from the shared gainNode so it can never
         // collide with the new note's gain automation. Mirrors
         // Sound.setup()'s identical fix for AudioBufferSourceNode retriggers.
+        // Trade-off: this release path connects straight to effectChainInput,
+        // bypassing this.filters — a filtered oscillator's ~50ms release tail
+        // plays unfiltered. Accepted: inaudible at this length, and routing
+        // through the shared filter chain would re-couple the old node to
+        // state the new note is about to mutate.
         const now = this.audioContext.currentTime
         const releaseGain = this.audioContext.createGain()
         releaseGain.gain.setValueAtTime(1, now)
