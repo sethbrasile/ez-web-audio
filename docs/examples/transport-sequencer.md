@@ -5,7 +5,7 @@ description: Interactive demo of BPM-synced transport with multi-track sequencin
 
 # Transport + Sequencer
 
-Control a BPM-synced transport driving 5 tracks -- 3 drum tracks and 2 melody tracks. Switch presets to hear musical time notation in action (straight 8ths, funk syncopation, triplets).
+Control a BPM-synced transport driving 5 tracks -- 3 drum tracks and 2 melody tracks. Switch presets to hear five book-derived grooves (Rock, Funk, Disco, Bossa, Shuffle), then click any drum cell to edit the pattern live.
 
 <script setup>
 import TransportSequencerDemo from '../.vitepress/theme/components/TransportSequencerDemo.vue'
@@ -17,51 +17,63 @@ import TransportSequencerDemo from '../.vitepress/theme/components/TransportSequ
 
 <llm-only>
 
-Interactive multi-track sequencer demo with Transport clock control. Five tracks: Kick, Snare, Hi-hat (drum BeatTracks), Synth bass (Sequence + Oscillator), Piano (Sequence + soundfont). Controls include Play/Pause/Stop, BPM slider (60-180), mute (M) and solo (S) buttons per track, and three preset buttons (Straight Rock, Funk Groove, Triplet Feel). A 32-step visual grid shows each track's beat pattern with a moving playhead column indicating the current step. Position display shows current bar and beat.
+Interactive multi-track sequencer demo with Transport clock control. Five tracks: Kick, Snare, Hi-hat (drum BeatTracks), Synth bass (Sequence + Oscillator), Lead (Sequence + Oscillator chords). Controls include Play/Pause/Stop, BPM slider, swing knob, mute (M) and solo (S) buttons per track, and five preset buttons (Rock, Funk, Disco, Bossa, Shuffle) adapted from a public-domain drum machine pattern book. Each drum lane's 32-step grid is directly editable — clicking a cell cycles it rest → normal → accent. A moving playhead column indicates the current step; position display shows current bar and beat.
 
 </llm-only>
 
 ## How It Works
 
-The Transport clock is the heartbeat of the whole demo. It fires a `tick` event at every 16th note, which the UI uses to advance the step-grid playhead column in sync with playback.
+The Transport clock is the heartbeat of the whole demo: a Worker-backed musical clock that every track locks to instead of running its own timer. It fires a `tick` event at every 16th note, which the UI uses to advance the step-grid playhead column in sync with playback, and it drives a 2-bar loop (`transport.loop = true`, `transport.loopEnd = '2m'`) so all 5 tracks restart together on every pass.
 
 ### Drum Tracks via BeatTrack
 
-Each drum track (Kick, Snare, Hi-hat) is a `BeatTrack` that loads three sample variations and uses round-robin playback for a natural feel. Calling `syncTo(transport)` locks the beat track to the transport clock:
+Each drum track (Kick, Snare, Hi-hat) is a `BeatTrack` that loads three sample variations and uses round-robin playback for a natural feel. Calling `syncTo(transport)` locks the beat track to the transport clock at whatever resolution it's given — this demo syncs all three drum lanes at 16th notes, while the melody tracks below run on their own musical-time `Sequence`, giving the whole rig multi-resolution sync from one shared clock:
 
 ```typescript
 import { createBeatTrack, createTransport } from 'ez-web-audio'
 
-const transport = await createTransport({ bpm: 120, timeSignature: [4, 4], ticksPerBeat: 4 })
+const transport = await createTransport({ bpm: 96, timeSignature: [4, 4], ticksPerBeat: 4 })
 const kick = await createBeatTrack(['/kick1.wav', '/kick2.wav', '/kick3.wav'], { numBeats: 32 })
 
-kick.setPattern([1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]) // first 12 of the 32-step pattern
+// Numbers set velocity (0-1) as well as active/inactive -- 1 = accent, 0.6 = ghost note
+kick.setPattern([1, 0, 0, 0, 0, 0, 0.6, 0, 1, 0, 0, 0]) // first 12 of the 32-step pattern
 kick.syncTo(transport, { noteType: 1 / 16 }) // lock to transport grid
 ```
 
-### Melody Tracks via Sequence
+### Swing: One Knob vs. Hand-Placed Shuffle
 
-The Synth and Piano tracks use `createSequence()` to schedule notes at precise musical time positions. `Sequence` supports bar:beat:tick notation, note names (`'4n'`, `'8t'`), and raw beat numbers -- making it easy to express straight 8ths, syncopation, or triplets in the same API:
+The **Shuffle** preset is the pedagogical hook of this demo. Its drum and bass patterns are written in perfectly straight 8th/16th notes -- there is no shuffle baked into the pattern data at all. The groove comes entirely from a single Transport property:
 
 ```typescript
-import { createFont, createOscillator, createSequence, createTransport, getAudioContext } from 'ez-web-audio'
+transport.swing = 0.55 // MPC-style shuffle -- 0 = straight, 1 = full triplet feel
+transport.swingSubdivision = 1 / 8 // shuffle the 8th-note grid (default is 1/16)
+```
 
-const transport = await createTransport({ bpm: 120, timeSignature: [4, 4] })
+Turn the swing knob down to `0` while Shuffle is playing and the groove flattens back to a straight, mechanical feel instantly -- the pattern didn't change, only the delay applied to every other subdivision did. That's the difference between hand-placing offbeat notes at shuffled positions and letting `swing` do the work: one knob re-shapes the whole track's feel live, without touching a single step.
 
-// Bass oscillator sequence
-const bass = await createOscillator({ frequency: 82.4, type: 'sawtooth' })
-const seq = createSequence(transport, { length: '2m', loop: true }) // SYNC -- no await
+### Melody Tracks via Sequence
 
-seq.at('1:1:0', (time) => { bass.frequency = 82.4; bass.playFor(0.4) }) // E2
-seq.at('2n', (time) => { bass.frequency = 110; bass.playFor(0.4) }) // A2 at beat 2
+The Bass and Lead tracks use `createSequence()` to schedule notes at precise musical time positions, rather than syncing to a fixed grid like the drum lanes. `Sequence` events are addressed by raw beat number here (`0`, `1.5`, `2.5`...) but also support bar:beat:tick notation and note names (`'4n'`, `'8t'`) -- the same API expresses a bass line or a chord stab equally well. Because each preset supplies its own `length: '2m', loop: true`, matching the Transport's own `loopEnd = '2m'`, both the drum lanes and the melody sequences wrap back to the top of the pattern together:
 
-// Triplet feel uses fractional beat values
-seq.at(1 / 3, (time) => { bass.frequency = 49; bass.playFor(0.3) }) // G1 -- 8th triplet
+```typescript
+import { createOscillator, createSequence, createTransport } from 'ez-web-audio'
 
-// Piano soundfont sequence
-const piano = await createFont('/audio/piano.js')
-const audioContext = await getAudioContext()
-seq.at('1:2:0', time => piano.getNote('E4')?.playIn(time - audioContext.currentTime))
+const transport = await createTransport({ bpm: 96, timeSignature: [4, 4] })
+transport.loop = true
+transport.loopEnd = '2m'
+
+// Bass: one Oscillator retriggered at each note event
+const bass = await createOscillator({ type: 'triangle' })
+const bassSeq = createSequence(transport, { length: '2m', loop: true }) // SYNC -- no await
+
+bassSeq.at(0, (time) => { bass.frequency = 82.4; bass.playFor(0.4) }) // E2
+bassSeq.at(1.5, (time) => { bass.frequency = 98; bass.playFor(0.4) }) // G2
+
+// Lead: a chord stab is just several Oscillators triggered at the same event
+const chordTones = await Promise.all(['E4', 'G4', 'B4'].map(note => createOscillator({ note, type: 'sawtooth' })))
+const leadSeq = createSequence(transport, { length: '2m', loop: true })
+
+leadSeq.at(1.5, time => chordTones.forEach(osc => osc.playFor(0.3))) // Em chord stab
 
 transport.start()
 ```
@@ -71,7 +83,7 @@ transport.start()
 Drum tracks use `BeatTrack.muted` and `BeatTrack.solo` properties directly -- the library handles solo stacking natively. Melody tracks are guarded by a callback check: if any track is soloed, only soloed melody tracks fire their events:
 
 ```typescript
-function shouldPlay(name: 'bass' | 'piano'): boolean {
+function shouldPlay(name: 'bass' | 'lead'): boolean {
   const anySoloed = Object.values(trackState).some(t => t.soloed)
   if (anySoloed)
     return trackState[name].soloed
@@ -92,9 +104,27 @@ transport.on('tick', (e) => {
 })
 ```
 
+### Editable Drum Lanes
+
+Every drum-lane cell is clickable. A click cycles that step's value rest → normal → accent → rest and immediately calls `setPattern()` on the underlying `BeatTrack` -- there's no separate "commit" step, so edits are audible on the next pass through the loop:
+
+```typescript
+// Cycle a step's velocity: rest -> normal -> accent -> rest.
+function cycleStep(v: number): number {
+  if (v <= 0)
+    return NORMAL // NORMAL = 0.7
+  if (v < ACCENT)
+    return ACCENT // ACCENT = 1
+  return 0
+}
+
+drumSteps[key][index] = cycleStep(drumSteps[key][index])
+drumTrackInstance(key)?.setPattern(drumSteps[key])
+```
+
 ### Preset Switching
 
-Switching presets calls `beatTrack.setPattern()` for all drum tracks and `seq.clear()` followed by re-registration for the melody sequences. Both operations are safe during live playback -- changes take effect on the next loop iteration.
+Switching presets updates BPM, swing, and all three drum patterns via `setPattern()`, then calls `seq.clear()` followed by re-registration for the bass and lead sequences. All of it is safe during live playback -- changes take effect on the next loop iteration, so a preset swap never clicks or glitches mid-bar.
 
 ## Demo Controls
 
@@ -102,10 +132,11 @@ Switching presets calls `beatTrack.setPattern()` for all drum tracks and `seq.cl
 |---------|-------------|
 | Play / Pause / Stop | Controls transport clock |
 | BPM slider | Changes tempo immediately during playback |
+| Swing knob | Sets `transport.swing` (0-1) live -- try it on the Shuffle preset |
 | M button | Mutes / unmutes individual track |
 | S button | Solos track (multiple solos stack) |
-| Preset buttons | Switches all 5 track patterns simultaneously |
-| Step grid | Shows beat pattern and current playhead position |
+| Preset buttons | Switches all 5 track patterns, BPM, and swing simultaneously |
+| Step grid | Click a drum cell to cycle rest → normal → accent; shows the current playhead position |
 
 ## Further Reading
 

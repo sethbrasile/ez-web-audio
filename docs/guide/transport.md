@@ -68,6 +68,45 @@ BPM can be changed at any time -- all synced tracks and sequences adjust automat
 transport.bpm = 140 // Immediate tempo change
 ```
 
+## Swing
+
+Add a shuffle feel without hand-placing offbeat notes. `swing` (0–1, default `0`) delays every other subdivision toward the triplet position; `swingSubdivision` picks whether that grid is eighth or sixteenth notes:
+
+```typescript
+transport.swing = 0.55 // 0 = straight, 1 = full triplet shuffle
+transport.swingSubdivision = 1 / 8 // or 1/16 (default)
+```
+
+Swing only touches synced-track beats and Sequence events that land exactly on an odd subdivision — the playhead (`tick` events) always stays on-grid, and events that don't land on the subdivision (fills, syncopated hits) are never swung. Both properties throw if set outside their valid range, and both are live-changeable, including mid-playback: writing a pattern in straight 8ths and dialing `swing` from `0.55` down to `0` flattens it back to a straight feel, because the shuffle lives in the swing amount, not in the pattern data.
+
+## Loop Region
+
+Loop a section of the timeline in place, without calling `stop()`/`start()`:
+
+```typescript
+transport.loopStart = '1m' // musical notation ('1m', '2:1:0') or a numeric beat count
+transport.loopEnd = '2m'
+transport.loop = true // default: false
+
+transport.on('loop', (e) => {
+  console.log(`loop ${e.detail.iteration} at ${e.detail.time}`)
+})
+```
+
+`loopStart`/`loopEnd` accept musical notation or a raw beat count when set, and always read back as beats. Synced BeatTracks wrap their pattern index at `loopEnd` automatically. Sequences are **not** remapped into the loop region — a `Sequence` loops at its own `length`, so give it the same length as the loop region (e.g. `loopEnd - loopStart`) to keep it in lockstep with the transport's loop.
+
+An invalid region (`loopEnd <= loopStart`) throws when `loop` is enabled and the transport starts or resumes; toggling `loop` on live with an already-invalid region is silently ignored instead of throwing.
+
+## Velocity
+
+`BeatTrack.setPattern()` accepts numbers instead of booleans — any value `> 0` both activates the beat and sets its `velocity` (a 0–1 gain multiplier applied on play), so ghost notes and accents live in the pattern data itself:
+
+```typescript
+kick.setPattern([1, 0, 0.6, 0]) // 1 = full hit, 0.6 = ghost note, 0 = rest
+```
+
+`0`/`false` still means rest and `1`/`true` still means a full-velocity hit, so existing boolean patterns keep working unchanged. `Beat.velocity` can also be set directly (`kick.beats[2].velocity = 0.6`), and `Sampler.play()`/`playIn()`/`playAt()` all take an optional `velocity` argument for the same effect outside of BeatTrack patterns.
+
 ## Mute & Solo
 
 Control which synced tracks are audible:
