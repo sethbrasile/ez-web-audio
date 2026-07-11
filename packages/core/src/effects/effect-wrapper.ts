@@ -57,6 +57,7 @@ export class EffectWrapper implements Effect {
 
   private _bypass = false
   private _mix = 1
+  private _disposed = false
 
   constructor(audioContext: AudioContext, externalEffect: ExternalEffect) {
     this._effect = externalEffect
@@ -174,6 +175,43 @@ export class EffectWrapper implements Effect {
       this._bypass,
       smooth ? this.audioContext.currentTime : undefined,
     )
+  }
+
+  /**
+   * Disconnect all internal audio nodes (input/output/dry/wet) and, if the
+   * wrapped external effect exposes a `disconnect()` method, disconnect it
+   * too. Idempotent — safe to call multiple times.
+   */
+  public dispose(): void {
+    if (this._disposed)
+      return
+
+    try {
+      this.inputNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.outputNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.dryGain.disconnect()
+    }
+    catch { /* already disconnected */ }
+    try {
+      this.wetGain.disconnect()
+    }
+    catch { /* already disconnected */ }
+
+    const disconnectable = this._effect as { disconnect?: () => void }
+    if (typeof disconnectable.disconnect === 'function') {
+      try {
+        disconnectable.disconnect()
+      }
+      catch { /* already disconnected, or not actually AudioNode-compatible */ }
+    }
+
+    this._disposed = true
   }
 }
 

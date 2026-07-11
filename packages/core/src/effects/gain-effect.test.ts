@@ -1,6 +1,6 @@
 import type { Effect } from './index'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGainEffect, GainEffect } from './gain-effect'
 
 function createMockContext() {
@@ -190,6 +190,28 @@ describe('gainEffect', () => {
       effect.bypass = true
       effect.mix = 0.5
       expect((effect.input as GainNode).gain.value).toBe(1.0) // still bypassed
+    })
+  })
+
+  describe('dispose() (G9 — disposal cascade)', () => {
+    it('disconnects the internal GainNode', () => {
+      const effect = new GainEffect(audioContext, 0.5)
+      const spy = vi.spyOn(effect.input as GainNode, 'disconnect')
+
+      effect.dispose()
+
+      expect(spy).toHaveBeenCalled()
+    })
+
+    it('does not throw', () => {
+      const effect = new GainEffect(audioContext)
+      expect(() => effect.dispose()).not.toThrow()
+    })
+
+    it('is idempotent — calling dispose() twice does not throw', () => {
+      const effect = new GainEffect(audioContext)
+      effect.dispose()
+      expect(() => effect.dispose()).not.toThrow()
     })
   })
 })

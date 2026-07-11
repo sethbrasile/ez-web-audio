@@ -25,6 +25,14 @@
  */
 export class TypedEventEmitter<TMap extends { [K in keyof TMap]: CustomEvent<unknown> }> extends EventTarget {
   /**
+   * Backs {@link _clearListeners}. Every listener registered through this
+   * class's `addEventListener()` (directly, or via `on()`/`once()`) is
+   * silently tied to this controller's signal, so aborting it removes every
+   * listener at once without needing a native `removeAllListeners()`.
+   */
+  private _listenerAbortController = new AbortController()
+
+  /**
    * Add a typed event listener for known event types.
    * Overloaded to provide type safety for known event types while remaining
    * compatible with the native `EventTarget` API.
@@ -45,7 +53,9 @@ export class TypedEventEmitter<TMap extends { [K in keyof TMap]: CustomEvent<unk
   ): void
   // Implementation signature uses `any` to accept all typed overload listener variants
   addEventListener(type: string, listener: any, options?: boolean | AddEventListenerOptions): void {
-    super.addEventListener(type, listener as EventListener, options)
+    const normalized: AddEventListenerOptions = typeof options === 'boolean' ? { capture: options } : { ...options }
+    normalized.signal = this._listenerAbortController.signal
+    super.addEventListener(type, listener as EventListener, normalized)
   }
 
   /**
@@ -160,5 +170,27 @@ export class TypedEventEmitter<TMap extends { [K in keyof TMap]: CustomEvent<unk
   ): this {
     this.removeEventListener(type, listener)
     return this
+  }
+
+  /**
+   * Remove every listener registered through this emitter (via
+   * `addEventListener()`, `on()`, or `once()`), regardless of how many or
+   * what event type they're bound to.
+   *
+   * Native `EventTarget` has no `removeAllListeners()`. This works around
+   * that by aborting a shared `AbortSignal` threaded through every
+   * `addEventListener()` call this class makes, then swapping in a fresh
+   * `AbortController` so the instance can keep accepting new listeners
+   * afterward (e.g. if it's reused before being garbage collected).
+   *
+   * Subclasses call this from their `dispose()` alongside neutering
+   * `dispatchEvent` — the neuter stops future emits, this stops stale
+   * listener closures from being retained/invoked at all.
+   *
+   * @protected
+   */
+  protected _clearListeners(): void {
+    this._listenerAbortController.abort()
+    this._listenerAbortController = new AbortController()
   }
 }

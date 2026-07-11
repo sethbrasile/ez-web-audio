@@ -499,6 +499,9 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
     this._tracksCache = null
     this._disposed = true
+
+    // Release every registered listener now that the Transport is unusable
+    this._clearListeners()
   }
 
   // ─── Track Management (package-internal) ──────────────────────────

@@ -53,7 +53,7 @@ import {
   wrapEffect,
 } from './effects'
 import { Envelope } from './envelope'
-import { AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
+import { AggregateAudioLoadError, AudioContextError, AudioError, AudioLoadError, InvalidNoteError } from './errors'
 import { Font } from './font'
 import { GrainPlayer } from './grain-player'
 import { LayeredSound } from './layered-sound'
@@ -1442,6 +1442,7 @@ export async function useInteractionMethods(key: HTMLElement, player: Interactio
 }
 
 export {
+  AggregateAudioLoadError,
   Analyzer,
   audioContextAwareTimeout,
   AudioContextError,

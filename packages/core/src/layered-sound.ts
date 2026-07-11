@@ -334,7 +334,8 @@ export class LayeredSound extends TypedEventEmitter<LayeredSoundEventMap> {
     // Emit dispose BEFORE silencing (matches BaseSound pattern)
     this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
 
-    // Silence future events
+    // Release every registered listener, then silence future events
+    this._clearListeners()
     this.dispatchEvent = () => false
 
     this._disposed = true

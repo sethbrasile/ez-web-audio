@@ -431,5 +431,8 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
 
     this.transport._removeSequence(this)
     this.events = []
+
+    // Release every registered listener now that the Sequence is unusable
+    this._clearListeners()
   }
 }

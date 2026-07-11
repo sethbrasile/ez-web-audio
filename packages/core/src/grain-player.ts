@@ -623,7 +623,8 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     this._disposed = true
     this.emit('dispose', { source: this })
 
-    // Silence future events
+    // Release every registered listener, then silence future events
+    this._clearListeners()
     this.dispatchEvent = () => false
   }
 }

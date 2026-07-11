@@ -141,4 +141,60 @@ describe('createFactoryComposable', () => {
     expect(factory).toHaveBeenCalledTimes(2)
     expect(second).toEqual({ id: 'second' })
   })
+
+  describe('reset() disposes the outgoing instance (R17#1)', () => {
+    it('calls stop() then dispose() on the outgoing instance', async () => {
+      const stop = vi.fn()
+      const dispose = vi.fn()
+      const factory = vi.fn(async () => ({ stop, dispose }))
+      const useFactory = createFactoryComposable(factory)
+      const { result } = mount(() => useFactory())
+
+      await result.load()
+      result.reset()
+
+      expect(stop).toHaveBeenCalledTimes(1)
+      expect(dispose).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not throw when the outgoing instance has no stop()/dispose()', async () => {
+      const factory = vi.fn(async () => ({ id: 'plain' }))
+      const useFactory = createFactoryComposable(factory)
+      const { result } = mount(() => useFactory())
+
+      await result.load()
+
+      expect(() => result.reset()).not.toThrow()
+    })
+
+    it('does not throw when reset() runs before any load() (nothing to dispose)', () => {
+      const factory = vi.fn(async () => ({ id: 'x' }))
+      const useFactory = createFactoryComposable(factory)
+      const { result } = mount(() => useFactory())
+
+      expect(() => result.reset()).not.toThrow()
+    })
+
+    it('warns but does not throw when stop() or dispose() itself throws', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const stop = vi.fn(() => {
+        throw new Error('stop failed')
+      })
+      const dispose = vi.fn(() => {
+        throw new Error('dispose failed')
+      })
+      const factory = vi.fn(async () => ({ stop, dispose }))
+      const useFactory = createFactoryComposable(factory)
+      const { result } = mount(() => useFactory())
+
+      await result.load()
+
+      expect(() => result.reset()).not.toThrow()
+      expect(stop).toHaveBeenCalledTimes(1)
+      expect(dispose).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledTimes(2)
+
+      warnSpy.mockRestore()
+    })
+  })
 })

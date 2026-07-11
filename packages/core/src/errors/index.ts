@@ -28,4 +28,4 @@
 export { AudioError } from './audio-error'
 export { AudioContextError } from './context-error'
 export { InvalidNoteError } from './invalid-note-error'
-export { AudioLoadError } from './load-error'
+export { AggregateAudioLoadError, AudioLoadError } from './load-error'

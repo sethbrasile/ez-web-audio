@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+/** Minimal shape reset() probes for on the outgoing instance before discarding it. */
+interface MaybeDisposable {
+  stop?: () => void
+  dispose?: () => void
+}
+
 export interface UseFactoryReturn<T, A extends unknown[]> {
   instance: T | null
   loading: boolean
@@ -56,6 +62,27 @@ export function createFactoryHook<T, A extends unknown[]>(
     }, [])
 
     const reset = useCallback((): void => {
+      // R17#1: reset() previously just nulled the ref, orphaning whatever
+      // live Worker/timer/node graph the outgoing instance held (Transport,
+      // GrainPlayer, LFO, PolySynth, Sequence, Sprite, ...). Mirrors
+      // useCleanup()'s disposeAll() — stop() then dispose(), each wrapped so
+      // a misbehaving instance can't stop reset() from completing.
+      const outgoing = created.current as unknown as MaybeDisposable | null
+      if (outgoing) {
+        try {
+          outgoing.stop?.()
+        }
+        catch (e) {
+          console.warn('[ez-web-audio/react] stop() failed during reset():', e)
+        }
+        try {
+          outgoing.dispose?.()
+        }
+        catch (e) {
+          console.warn('[ez-web-audio/react] dispose() failed during reset():', e)
+        }
+      }
+
       created.current = null
       if (mounted.current) {
         setInstance(null)

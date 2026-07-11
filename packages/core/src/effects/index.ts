@@ -30,6 +30,14 @@ export interface Effect {
   bypass: boolean
   /** Wet/dry mix: 0 = fully dry (no effect), 1 = fully wet (full effect) */
   mix: number
+  /**
+   * Disconnect all internal audio nodes and release resources.
+   *
+   * "You create it, you dispose it" — every class that OWNS an Effect
+   * (BaseSound.dispose(), etc.) calls this for each attached effect.
+   * Implementations MUST be idempotent (safe to call more than once).
+   */
+  dispose: () => void
 }
 
 // Base class

@@ -77,4 +77,30 @@ export class Font {
     }
     note.play()
   }
+
+  /**
+   * Dispose every SampledNote owned by this Font, releasing their audio
+   * nodes/listeners. A Font can hold dozens of notes (a full soundfont) —
+   * without this, loading a Font and discarding it leaks every note's
+   * underlying AudioBufferSourceNode/gain/panner graph.
+   *
+   * Mirrors {@link BeatTrack.dispose}'s owned-sounds cascade: the Font
+   * created (or was handed) these notes, so the Font disposes them.
+   *
+   * After disposal, the Font should not be used. Create a new instance
+   * (e.g., via `createFont()`) instead.
+   *
+   * @example
+   * ```typescript
+   * const piano = await createFont('piano.js')
+   * piano.play('C4')
+   * // When done:
+   * piano.dispose()
+   * ```
+   */
+  dispose(): void {
+    for (const note of this.notes) {
+      note.dispose()
+    }
+  }
 }

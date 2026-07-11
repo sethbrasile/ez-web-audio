@@ -25,6 +25,7 @@ export class GainEffect implements Effect {
   private _bypass = false
   private _mix = 1
   private _value: number
+  private _disposed = false
 
   constructor(audioContext: AudioContext, initialValue = 1.0) {
     this.audioContext = audioContext
@@ -102,6 +103,21 @@ export class GainEffect implements Effect {
     const wetGain = Math.sin(this._mix * Math.PI / 2)
     const effectiveGain = dryGain * 1 + wetGain * this._value
     smoothParamSet(this.gainNode.gain, effectiveGain, this.audioContext.currentTime)
+  }
+
+  /**
+   * Disconnect the internal GainNode. Idempotent — safe to call multiple times.
+   */
+  public dispose(): void {
+    if (this._disposed)
+      return
+
+    try {
+      this.gainNode.disconnect()
+    }
+    catch { /* already disconnected */ }
+
+    this._disposed = true
   }
 }
 

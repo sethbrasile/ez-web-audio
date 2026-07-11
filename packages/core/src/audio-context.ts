@@ -68,6 +68,16 @@ export function getOrCreateAudioContext(): AudioContext {
 }
 
 /**
+ * In-flight unlock state, keyed by AudioContext instance. Shared across
+ * calls so that multiple pre-gesture factory calls (e.g. several
+ * `createSound()`s fired before the user has interacted yet) register the
+ * gesture listeners exactly once and await the same promise, instead of each
+ * call independently registering + orphaning its own set of 4 body
+ * listeners. @internal
+ */
+const _pendingUnlocks = new WeakMap<AudioContext, Promise<void>>()
+
+/**
  * Unlock an AudioContext that is in the 'suspended' state.
  *
  * Safari and iOS start the AudioContext in 'suspended' state as a security
@@ -84,6 +94,10 @@ export function getOrCreateAudioContext(): AudioContext {
  * listeners are cleaned up automatically. If the context is already running,
  * the function returns immediately.
  *
+ * Concurrent calls for the same AudioContext share one listener registration
+ * and one promise — calling this from several pre-gesture factory functions
+ * in a row does not multiply the number of body listeners registered.
+ *
  * @param audioContext - The AudioContext to unlock
  * @internal
  */
@@ -91,20 +105,27 @@ export async function unlockAudioContext(audioContext: AudioContext): Promise<vo
   if (audioContext.state !== 'suspended')
     return
 
+  const existing = _pendingUnlocks.get(audioContext)
+  if (existing)
+    return existing
+
   const b = document.body
   const events = ['touchstart', 'touchend', 'mousedown', 'keydown']
+
+  function clean(): void {
+    events.forEach(e => b.removeEventListener(e, unlock))
+    _pendingUnlocks.delete(audioContext)
+  }
 
   async function unlock(): Promise<void> {
     await audioContext.resume().then(clean)
   }
 
-  function clean(): void {
-    events.forEach(e => b.removeEventListener(e, unlock))
-  }
-
   events.forEach(e => b.addEventListener(e, unlock, false))
 
-  await audioContext.resume()
+  const unlockPromise = audioContext.resume()
+  _pendingUnlocks.set(audioContext, unlockPromise)
+  return unlockPromise
 }
 
 export const iosWorkaround = { performed: false }

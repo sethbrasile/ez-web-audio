@@ -292,6 +292,8 @@ export abstract class BaseEffect extends TypedEventEmitter<BaseEffectEventMap> i
 
     // Emit dispose BEFORE silencing (matches BaseSound pattern)
     this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
+    // Release every registered listener, then silence future events
+    this._clearListeners()
     this.dispatchEvent = () => false
     this._disposed = true
   }

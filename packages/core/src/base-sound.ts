@@ -1303,9 +1303,12 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
     this.safeDisconnect(this.gainNode)
     this.safeDisconnect(this.pannerNode)
 
-    // Restore and clear effects
+    // Restore and clear effects — dispose() releases each effect's own
+    // internal node graph + listeners (H20: previously only restoreBypass()
+    // ran, leaking every attached effect's nodes per sound disposal).
     for (const e of this.effects) {
       this.restoreBypass(e)
+      e.dispose?.()
     }
     this.effects = []
 
@@ -1316,8 +1319,10 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
     // This enables event-based cleanup patterns (e.g., LFO listening for target disposal).
     this.dispatchEvent(new CustomEvent('dispose', { detail: { source: this } }))
 
-    // Silence future event dispatch so listeners cannot fire on a disposed instance.
-    // EventTarget has no removeAllListeners(), so we override dispatchEvent instead.
+    // Release every listener registered through this emitter, then silence
+    // future event dispatch as a second line of defense so listeners cannot
+    // fire on a disposed instance even if dispatchEvent were somehow restored.
+    this._clearListeners()
     this.dispatchEvent = () => false
 
     this._disposed = true

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AggregateAudioLoadError, AudioLoadError } from './errors'
 import { clearPreloadCache, evictIfNeeded, getCacheSize, getFromCache, hasInCache, isPreloaded, preload, setInCache, setPreloadCacheLimit } from './preload'
 
 describe('preload', () => {
@@ -115,6 +116,52 @@ describe('preload', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(mockFetch).toHaveBeenCalledWith('/audio/new.mp3')
+    })
+
+    it('dedupes duplicate URLs within a single call (R14#7)', async () => {
+      const mockResponse = createMockResponse()
+      mockFetch.mockResolvedValueOnce(mockResponse)
+
+      await preload(['/audio/dup.mp3', '/audio/dup.mp3', '/audio/dup.mp3'])
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(hasInCache('/audio/dup.mp3')).toBe(true)
+    })
+
+    it('throws an AggregateAudioLoadError (instanceof AudioError) carrying per-URL AudioLoadError failures (R14#8)', async () => {
+      const mockResponse = createMockResponse()
+      const failedResponse = createMockResponse(false, 404)
+      mockFetch
+        .mockResolvedValueOnce(mockResponse)
+        .mockResolvedValueOnce(failedResponse)
+
+      const caught = await preload(['/audio/good.mp3', '/audio/bad.mp3']).catch(e => e)
+
+      expect(caught).toBeInstanceOf(AggregateAudioLoadError)
+      expect(caught).toBeInstanceOf(Error)
+      expect(caught.errors).toHaveLength(1)
+      expect(caught.errors[0]).toBeInstanceOf(AudioLoadError)
+      expect(caught.errors[0].url).toBe('/audio/bad.mp3')
+    })
+
+    it('wraps a raw network-error rejection in a structured AudioLoadError carrying the failing URL', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+
+      const caught = await preload('/audio/network-fail.mp3').catch(e => e)
+
+      expect(caught).toBeInstanceOf(AggregateAudioLoadError)
+      expect(caught.errors[0]).toBeInstanceOf(AudioLoadError)
+      expect(caught.errors[0].url).toBe('/audio/network-fail.mp3')
+    })
+
+    it('passes an AbortSignal through to fetch when provided (R14#9)', async () => {
+      const mockResponse = createMockResponse()
+      mockFetch.mockResolvedValueOnce(mockResponse)
+      const controller = new AbortController()
+
+      await preload('/audio/abortable.mp3', controller.signal)
+
+      expect(mockFetch).toHaveBeenCalledWith('/audio/abortable.mp3', { signal: controller.signal })
     })
   })
 

@@ -22,6 +22,7 @@ function createMockEffect(audioContext: AudioContext): Effect {
     output: gainNode,
     bypass: false,
     mix: 1,
+    dispose: vi.fn(),
   }
 }
 
@@ -290,6 +291,46 @@ describe('effect System Integration', () => {
       oscillator.play()
       await settle(() => oscillator.isPlaying)
       expect(oscillator.isPlaying).toBe(true)
+    })
+  })
+
+  describe('dispose() effect cascade (H20/G9)', () => {
+    it('calls dispose() on every attached effect', () => {
+      const effect1 = createMockEffect(audioContext)
+      const effect2 = createMockEffect(audioContext)
+      sound.addEffect(effect1).addEffect(effect2)
+
+      sound.dispose()
+
+      expect(effect1.dispose).toHaveBeenCalledTimes(1)
+      expect(effect2.dispose).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the effects array after disposal', () => {
+      const effect = createMockEffect(audioContext)
+      sound.addEffect(effect)
+
+      sound.dispose()
+
+      expect(sound.getEffects()).toHaveLength(0)
+    })
+
+    it('does not throw when an effect has no dispose method', () => {
+      const gainNode = audioContext.createGain()
+      const bareEffect: Effect = {
+        input: gainNode,
+        output: gainNode,
+        bypass: false,
+        mix: 1,
+        dispose: undefined as unknown as () => void,
+      }
+      sound.addEffect(bareEffect)
+
+      expect(() => sound.dispose()).not.toThrow()
+    })
+
+    it('does not throw when dispose() is called with no effects attached', () => {
+      expect(() => sound.dispose()).not.toThrow()
     })
   })
 })

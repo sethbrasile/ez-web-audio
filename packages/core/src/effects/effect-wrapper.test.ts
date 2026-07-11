@@ -270,4 +270,50 @@ describe('effectWrapper', () => {
       expect(externalEffect.connectCalled).toBe(true)
     })
   })
+
+  describe('dispose() (G9 — disposal cascade)', () => {
+    it('disconnects input/output/dry/wet nodes', () => {
+      const externalEffect = createMockExternalEffect()
+      const wrapper = new EffectWrapper(audioContext, externalEffect)
+
+      const inputSpy = vi.spyOn(wrapper.input, 'disconnect')
+      const outputSpy = vi.spyOn(wrapper.output, 'disconnect')
+      const dryGainSpy = vi.spyOn((wrapper as any).dryGain as GainNode, 'disconnect')
+      const wetGainSpy = vi.spyOn((wrapper as any).wetGain as GainNode, 'disconnect')
+
+      wrapper.dispose()
+
+      expect(inputSpy).toHaveBeenCalled()
+      expect(outputSpy).toHaveBeenCalled()
+      expect(dryGainSpy).toHaveBeenCalled()
+      expect(wetGainSpy).toHaveBeenCalled()
+    })
+
+    it('disconnects the wrapped external effect when it exposes disconnect()', () => {
+      // Branch 2/3 wiring: a native-AudioNode-shaped external effect
+      const node = audioContext.createGain()
+      const wrapper = new EffectWrapper(audioContext, node as unknown as ExternalEffect)
+      const disconnectSpy = vi.spyOn(node, 'disconnect')
+
+      wrapper.dispose()
+
+      expect(disconnectSpy).toHaveBeenCalled()
+    })
+
+    it('does not throw when the wrapped external effect has no disconnect()', () => {
+      const externalEffect = createMockExternalEffect()
+      const wrapper = new EffectWrapper(audioContext, externalEffect)
+
+      expect(() => wrapper.dispose()).not.toThrow()
+    })
+
+    it('is idempotent — calling dispose() twice does not throw', () => {
+      const externalEffect = createMockExternalEffect()
+      const wrapper = new EffectWrapper(audioContext, externalEffect)
+
+      wrapper.dispose()
+
+      expect(() => wrapper.dispose()).not.toThrow()
+    })
+  })
 })

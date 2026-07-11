@@ -1,4 +1,4 @@
-import { AudioLoadError } from './errors'
+import { AggregateAudioLoadError, AudioLoadError } from './errors'
 
 /**
  * Maximum number of cached responses. Oldest entries are evicted when exceeded.
@@ -54,14 +54,23 @@ export function setPreloadCacheLimit(limit: number): void {
 /**
  * Preload audio URLs into cache for faster Sound/Track creation.
  * @param urls - Single URL or array of URLs to preload
+ * @param signal - Optional AbortSignal to cancel in-flight fetches
  * @returns Promise that resolves when all URLs are cached
- * @throws Error if any URL fails to load (after attempting all)
+ * @throws {AggregateAudioLoadError} If any URL fails to load (after attempting all).
+ *   `instanceof AudioError` still matches; `.errors` carries the per-URL
+ *   {@link AudioLoadError} failures for callers that need to know which
+ *   URLs failed and why.
  */
-export async function preload(urls: string | string[]): Promise<void> {
+export async function preload(urls: string | string[], signal?: AbortSignal): Promise<void> {
   const urlArray = Array.isArray(urls) ? urls : [urls]
 
+  // Dedup URLs within this call — without this, passing the same URL twice
+  // (e.g. from two independently-built lists) fires two parallel fetches for
+  // it, and whichever settles last silently wins the cache entry.
+  const dedupedUrls = [...new Set(urlArray)]
+
   // Filter out already-cached URLs
-  const uncachedUrls = urlArray.filter(url => !responseCache.has(url))
+  const uncachedUrls = dedupedUrls.filter(url => !responseCache.has(url))
 
   if (uncachedUrls.length === 0) {
     return
@@ -70,16 +79,24 @@ export async function preload(urls: string | string[]): Promise<void> {
   // Fetch all uncached URLs in parallel
   const results = await Promise.allSettled(
     uncachedUrls.map(async (url) => {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new AudioLoadError(`Failed to preload audio: HTTP ${response.status}. URL: ${url}`, url)
+      try {
+        const response = signal ? await fetch(url, { signal }) : await fetch(url)
+        if (!response.ok) {
+          throw new AudioLoadError(`Failed to preload audio: HTTP ${response.status}. URL: ${url}`, url)
+        }
+        return { url, response }
       }
-      return { url, response }
+      catch (err) {
+        if (err instanceof AudioLoadError)
+          throw err
+        const message = err instanceof Error ? err.message : String(err)
+        throw new AudioLoadError(`Failed to preload audio: ${message}. URL: ${url}`, url)
+      }
     }),
   )
 
   // Collect errors and successes
-  const errors: string[] = []
+  const errors: AudioLoadError[] = []
 
   for (const result of results) {
     if (result.status === 'fulfilled') {
@@ -88,16 +105,19 @@ export async function preload(urls: string | string[]): Promise<void> {
       responseCache.set(result.value.url, result.value.response.clone())
     }
     else {
-      errors.push(result.reason.message)
+      errors.push(result.reason as AudioLoadError)
     }
   }
 
   evictIfNeeded()
 
-  // Throw aggregate error if any failed
+  // Throw a structured aggregate error if any failed — preserves the
+  // individual per-URL AudioLoadError instances (previously discarded in
+  // favor of a plain Error with a flattened message string).
   if (errors.length > 0) {
-    throw new Error(
-      `Failed to preload ${errors.length} of ${urlArray.length} URLs: ${errors.join('; ')}`,
+    throw new AggregateAudioLoadError(
+      `Failed to preload ${errors.length} of ${uncachedUrls.length} URLs: ${errors.map(e => e.message).join('; ')}`,
+      errors,
     )
   }
 }

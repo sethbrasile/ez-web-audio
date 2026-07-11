@@ -7,6 +7,7 @@ function createMockNote(identifier: string): SampledNote {
   return {
     identifier,
     play: vi.fn(),
+    dispose: vi.fn(),
   } as unknown as SampledNote
 }
 
@@ -143,6 +144,24 @@ describe('font', () => {
       const font = new Font([])
       expect(font.notes).toEqual([])
       expect(font.notes).toHaveLength(0)
+    })
+  })
+
+  describe('dispose (G9 — disposal cascade)', () => {
+    it('calls dispose() on every note', () => {
+      const noteA4 = createMockNote('A4')
+      const noteC4 = createMockNote('C4')
+      const font = new Font([noteA4, noteC4])
+
+      font.dispose()
+
+      expect(noteA4.dispose).toHaveBeenCalledTimes(1)
+      expect(noteC4.dispose).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not throw when the font is empty', () => {
+      const font = new Font([])
+      expect(() => font.dispose()).not.toThrow()
     })
   })
 })
