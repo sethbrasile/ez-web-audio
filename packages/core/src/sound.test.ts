@@ -1094,6 +1094,41 @@ describe('retrigger release (gate-2 ez-audio-8de)', () => {
     expect(stopSpy).toHaveBeenCalled()
   })
 
+  it('disconnects the release-gain route once the tail has landed (R4: no orphaned nodes)', async () => {
+    // Queue-based mock (not a single slot) — a play() cycle schedules more
+    // than one timeout (the release-gain disconnect AND the duration-based
+    // auto-stop), so a single captured callback would silently pick up the
+    // wrong one.
+    const pending: Array<() => void> = []
+    const audioBuffer = audioContext.createBuffer(1, 44100, 44100)
+    const sound = new Sound(audioContext, audioBuffer, {
+      setTimeout: (fn: () => void) => {
+        pending.push(fn)
+        return pending.length
+      },
+      clearTimeout: () => {},
+    })
+    await sound.play()
+    const oldNode = sound.audioSourceNode
+    const disconnectSpy = vi.spyOn(oldNode, 'disconnect')
+
+    await sound.play() // retrigger while still playing — schedules the release-gain route
+
+    // setup()'s initial detach already disconnected the old node once.
+    expect(disconnectSpy).toHaveBeenCalledTimes(1)
+
+    // Fire every timeout scheduled so far (release-gain disconnect + any
+    // duration-based auto-stop) — regardless of order, the release path
+    // must end up explicitly torn down.
+    const callbacks = pending.splice(0)
+    callbacks.forEach(cb => cb())
+
+    // Once the tail has actually landed, the release path must be
+    // explicitly torn down instead of relying on GC (previously never
+    // disconnected — one orphan per retrigger under arpeggio traffic).
+    expect(disconnectSpy).toHaveBeenCalledTimes(2)
+  })
+
   it('replaying after stop does not create a release path', async () => {
     const sound = createSound(audioContext, 4)
     await sound.play()
@@ -1111,5 +1146,34 @@ describe('retrigger release (gate-2 ez-audio-8de)', () => {
     const cancelSpy = vi.spyOn(sound.getGainNode().gain, 'cancelScheduledValues')
     await sound.play()
     expect(cancelSpy).toHaveBeenCalled()
+  })
+})
+
+// gate-2 deep-review R4 low: fadeOut() anchored its ramp with setValueAtTime
+// but never cancelled prior scheduled automation first — a still-pending
+// ramp/envelope from earlier in the play cycle could compete with the new
+// fade-out curve.
+describe('fadeOut()', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  it('cancels in-flight gain automation before scheduling its ramp', async () => {
+    const sound = createSound(audioContext, 4)
+    await sound.play()
+    const gain = sound.getGainNode().gain
+    const cancelSpy = vi.spyOn(gain, 'cancelScheduledValues')
+    const setSpy = vi.spyOn(gain, 'setValueAtTime')
+
+    void sound.fadeOut(0.5)
+
+    expect(cancelSpy).toHaveBeenCalledWith(audioContext.currentTime)
+    // cancelScheduledValues must run before the anchoring setValueAtTime,
+    // otherwise it would wipe out the anchor it just wrote.
+    const cancelOrder = cancelSpy.mock.invocationCallOrder[0]
+    const setOrder = setSpy.mock.invocationCallOrder[0]
+    expect(cancelOrder).toBeLessThan(setOrder)
   })
 })

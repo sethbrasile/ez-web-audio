@@ -1231,6 +1231,11 @@ export abstract class BaseSound<TMap extends BaseSoundEventMap & { [K in keyof T
       return Promise.resolve()
 
     const now = this.audioContext.currentTime
+    // Cancel any in-flight automation (envelope release, a prior ramp, etc.)
+    // before anchoring the fade — otherwise the new ramp is laid on top of
+    // still-scheduled events and can produce a competing/discontinuous curve
+    // (R4 low).
+    this.gainNode.gain.cancelScheduledValues(now)
     this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now)
     this.gainNode.gain.linearRampToValueAtTime(0, now + duration)
 

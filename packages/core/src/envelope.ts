@@ -82,6 +82,15 @@ export class Envelope {
   /** The absolute peak the attack ramps to (the sound's target gain) */
   private _peak: number = 1
 
+  /** The time when the current release phase started (set by triggerRelease) */
+  private _releaseStartTime: number = 0
+
+  /** The value the release ramp started from (for mid-release retriggering) */
+  private _releaseStartValue: number = 0
+
+  /** Whether a release ramp is currently the active phase (vs attack/decay/sustain) */
+  private _isReleasing: boolean = false
+
   /**
    * Creates a new Envelope with the specified ADSR parameters.
    *
@@ -113,6 +122,26 @@ export class Envelope {
   estimateCurrentValue(currentTime: number): number {
     if (!this._isActive) {
       return 0
+    }
+
+    if (this._isReleasing) {
+      const releaseElapsed = currentTime - this._releaseStartTime
+
+      // Queried before the release actually started — shouldn't normally
+      // happen, but hold at the release's starting value rather than
+      // extrapolating backwards.
+      if (releaseElapsed < 0) {
+        return this._releaseStartValue
+      }
+
+      if (this.release < 0.001 || releaseElapsed >= this.release) {
+        return 0
+      }
+
+      const releaseProgress = releaseElapsed / this.release
+      // Linear interpolation from the release's starting value to zero,
+      // matching the linearRampToValueAtTime(0, ...) scheduled by triggerRelease.
+      return this._releaseStartValue * (1 - releaseProgress)
     }
 
     const timeSinceStart = currentTime - this._attackStartTime
@@ -190,8 +219,10 @@ export class Envelope {
     // Set starting value
     gainParam.setValueAtTime(startValue, startTime)
 
-    // Update state
+    // Update state — a fresh attack/decay/sustain cycle begins here, so any
+    // in-flight release phase this retrigger picked up from is now superseded.
     this._isActive = true
+    this._isReleasing = false
     this._attackStartTime = startTime
     this._attackStartValue = startValue
     this._peak = peak
@@ -226,26 +257,40 @@ export class Envelope {
     // would have computed at startTime — unlike cancelScheduledValues which
     // reverts to the last explicitly set value (causing clicks).
     const paramWithCancelAndHold = gainParam as AudioParamWithCancelAndHold
+    let currentValue: number
     if (typeof paramWithCancelAndHold.cancelAndHoldAtTime === 'function') {
       paramWithCancelAndHold.cancelAndHoldAtTime(startTime)
+      currentValue = this.estimateCurrentValue(startTime)
     }
     else {
       // Fallback: estimate current value and anchor manually
-      const currentValue = this.estimateCurrentValue(startTime)
+      currentValue = this.estimateCurrentValue(startTime)
       gainParam.cancelScheduledValues(startTime)
       gainParam.setValueAtTime(currentValue, startTime)
     }
 
+    // Track release-phase state so a retrigger (applyTo) called before this
+    // ramp has actually rendered picks up the correct decaying value instead
+    // of jumping straight to 0. _isActive is intentionally NOT cleared
+    // synchronously below (except for the instant-release case, which really
+    // is done immediately) — clearing it here regardless of real elapsed time
+    // previously let applyTo() treat an in-flight release as "fresh," writing
+    // a competing setValueAtTime(0, ...) on top of the still-rendering ramp
+    // and producing an audible click on stop-then-retrigger (C1).
+    this._releaseStartTime = startTime
+    this._releaseStartValue = currentValue
+    this._isReleasing = true
+
     if (this.release < 0.001) {
-      // Instant release — snap to zero
+      // Instant release — snaps to zero immediately, so it's genuinely
+      // finished now; safe to mark inactive right away.
       gainParam.setValueAtTime(0, startTime)
+      this._isActive = false
+      this._isReleasing = false
     }
     else {
       // Linear ramp guarantees reaching exactly zero
       gainParam.linearRampToValueAtTime(0, startTime + this.release)
     }
-
-    // Mark envelope as inactive
-    this._isActive = false
   }
 }

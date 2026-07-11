@@ -154,6 +154,26 @@ export class Oscillator extends BaseSound {
   private envelope?: Envelope
 
   /**
+   * AudioContext time by which any release/fade tail scheduled by stop() or
+   * stopAt() is guaranteed to have fully landed (silence). Compared against
+   * `audioContext.currentTime` in setup()'s node-neutralization branch to
+   * decide whether the outgoing node might still be audible (C1) — if so it
+   * gets the same release-gain handoff as a live retrigger instead of a hard
+   * cut. Defaults to -Infinity so no stop has ever been scheduled yet.
+   * @private
+   */
+  private _releaseTailEndsAt: number = -Infinity
+
+  /**
+   * Tracked ids for JS-side state-flip timeouts scheduled by stopAt()/stopIn()
+   * when stopping at a future time (H1). Cancelled at the top of setup() so a
+   * retrigger before the scheduled stop time can't have its fresh `_isPlaying`
+   * state clobbered by a stale flip-to-false from the superseded stop.
+   * @private
+   */
+  private _pendingStopTimeoutIds: number[] = []
+
+  /**
    * Create an Oscillator instance.
    *
    * Note: Use {@link createOscillator} factory function instead of calling this directly.
@@ -299,54 +319,36 @@ export class Oscillator extends BaseSound {
    * @protected
    */
   protected setup(): void {
+    // Cancel any stale future-stop state-flip timeout from a superseded
+    // stopAt()/stopIn() call — without this, a retrigger before the
+    // scheduled stop time could have its fresh `_isPlaying = true` clobbered
+    // back to false when the old timeout eventually fires (H1).
+    this._cancelPendingStopTimeouts()
+
     // Neutralize the previous source node before replacing it.
     const oldNode = this.audioSourceNode
     if (oldNode) {
       oldNode.onended = null
 
-      if (this._isPlaying) {
-        // Still audibly playing — this is a retrigger with no stop() in
-        // between (e.g. a caller driving its own gain envelope directly via
-        // getGainNode(), like TransportSequencerDemo's per-note fades).
-        // Hard-cutting the node here stops the waveform at a non-zero,
-        // non-zero-crossing amplitude — an audible click/screech (gate-2
-        // ez-audio-a30). Route it through a short independent release gain
-        // instead, decoupled from the shared gainNode so it can never
-        // collide with the new note's gain automation. Mirrors
-        // Sound.setup()'s identical fix for AudioBufferSourceNode retriggers.
-        // Trade-off: this release path connects straight to effectChainInput,
-        // bypassing this.filters — a filtered oscillator's ~50ms release tail
-        // plays unfiltered. Accepted: inaudible at this length, and routing
-        // through the shared filter chain would re-couple the old node to
-        // state the new note is about to mutate.
-        const now = this.audioContext.currentTime
-        const releaseGain = this.audioContext.createGain()
-        releaseGain.gain.setValueAtTime(1, now)
-        releaseGain.gain.linearRampToValueAtTime(0, now + 0.05)
-        try {
-          oldNode.disconnect()
-        }
-        catch {
-          // Already disconnected
-        }
-        oldNode.connect(releaseGain)
-        releaseGain.connect(this.effectChainInput)
-        try {
-          oldNode.stop(now + 0.06)
-        }
-        catch {
-          // Never started — nothing to stop
-        }
+      const now = this.audioContext.currentTime
+      // Still audibly playing (no stop() in between — e.g. a caller driving
+      // its own gain envelope directly via getGainNode()), OR a prior
+      // stop()/stopAt() scheduled a release/fade tail that hasn't finished
+      // rendering yet. Either way the node may still be producing sound —
+      // hard-cutting it here stops the waveform at a non-zero, non-zero-
+      // crossing amplitude, an audible click/screech (C1, gate-2 ez-audio-a30
+      // and its stop-then-retrigger variant). PolySynth's retriggerVoice and
+      // voice-steal paths (stopAt(now) immediately followed by play() in the
+      // same tick) funnel through here too — _releaseTailEndsAt is set by
+      // stopAt()'s immediate branch, so this check catches them as well.
+      const stillAudible = this._isPlaying || now < this._releaseTailEndsAt
+      if (stillAudible) {
+        this._routeThroughReleaseGain(oldNode, now)
       }
       else {
-        // Not "playing" from the library's perspective — either never
-        // started, or an explicit stop() already told this node to end. A
-        // prior stop() may have scheduled a delayed node.stop() (envelope
-        // release / anti-click fade) that hasn't landed yet — without
-        // neutralizing immediately, the old node keeps sounding through the
-        // shared gain node (riding the new note's envelope) and then
-        // hard-stops at nonzero amplitude (audible pop). Since stop() was
-        // already requested, cutting the tail short here is expected.
+        // Not audible from the library's perspective — either never
+        // started, or a prior stop()'s release/fade tail has already fully
+        // landed. Safe to cut immediately.
         try {
           oldNode.stop()
         }
@@ -371,7 +373,7 @@ export class Oscillator extends BaseSound {
     // Cancel any scheduled values on the existing gain node instead of replacing it.
     // Restore _targetGain (user's intended gain) rather than gainNode.gain.value which
     // may be 0 after an anti-click fade-out from a previous stop().
-    this.gainNode.gain.cancelScheduledValues(0)
+    this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime)
     this.gainNode.gain.setValueAtTime(this._targetGain, this.audioContext.currentTime)
 
     // give the controller the new oscillator node (gain node is stable)
@@ -386,6 +388,82 @@ export class Oscillator extends BaseSound {
     // wire everything up (connects source to effect chain)
     this.wireConnections()
     this.controller.setValuesAtTimes()
+  }
+
+  /**
+   * Route a still-audible outgoing OscillatorNode through a short independent
+   * release gain instead of hard-cutting it, decoupled from the shared
+   * gainNode so it can never collide with the new note's gain automation.
+   * Mirrors Sound.setup()'s identical fix for AudioBufferSourceNode retriggers.
+   *
+   * Trade-off: this release path connects straight to effectChainInput,
+   * bypassing this.filters — a filtered oscillator's ~50ms release tail plays
+   * unfiltered. Accepted: inaudible at this length, and routing through the
+   * shared filter chain would re-couple the old node to state the new note
+   * is about to mutate.
+   * @private
+   */
+  private _routeThroughReleaseGain(oldNode: OscillatorNode, now: number): void {
+    const releaseGain = this.audioContext.createGain()
+    releaseGain.gain.setValueAtTime(1, now)
+    releaseGain.gain.linearRampToValueAtTime(0, now + 0.05)
+    try {
+      oldNode.disconnect()
+    }
+    catch {
+      // Already disconnected
+    }
+    oldNode.connect(releaseGain)
+    releaseGain.connect(this.effectChainInput)
+    try {
+      oldNode.stop(now + 0.06)
+    }
+    catch {
+      // Never started — nothing to stop
+    }
+    // Explicit disconnect once the release tail has actually rendered,
+    // rather than relying on GC to eventually reclaim the orphaned nodes
+    // (R4 low: releaseGain temp nodes were never explicitly disconnected).
+    // Both nodes are captured by closure, so this is inherently node-local —
+    // no currency guard against `this.audioSourceNode` needed, since it
+    // never touches instance state.
+    this.setTimeout(() => {
+      try {
+        oldNode.disconnect()
+      }
+      catch {
+        // Already disconnected
+      }
+      try {
+        releaseGain.disconnect()
+      }
+      catch {
+        // Already disconnected
+      }
+    }, 70)
+  }
+
+  /**
+   * Wrap setTimeout to track the id for cancellation by setup() (H1).
+   * @private
+   */
+  private _trackedStopTimeout(fn: () => void, delayMillis: number): void {
+    const id = this.setTimeout(() => {
+      this._pendingStopTimeoutIds = this._pendingStopTimeoutIds.filter(pending => pending !== id)
+      fn()
+    }, delayMillis)
+    this._pendingStopTimeoutIds.push(id)
+  }
+
+  /**
+   * Cancel all pending future-stop state-flip timeouts.
+   * @private
+   */
+  private _cancelPendingStopTimeouts(): void {
+    for (const id of this._pendingStopTimeoutIds) {
+      this.clearTimeout(id)
+    }
+    this._pendingStopTimeoutIds = []
   }
 
   /**
@@ -499,6 +577,10 @@ export class Oscillator extends BaseSound {
    * artifacts from abrupt waveform cutoff. If an ADSR envelope is active,
    * the fade-out is skipped since the envelope's release handles it.
    *
+   * For a future `time`, `isPlaying` stays `true` and the `'stop'` event
+   * fires at the actual stop time rather than immediately — mirroring
+   * {@link BaseSound.stopAt}'s future/immediate split (H1).
+   *
    * @param time - The AudioContext time when playback should stop
    */
   public async stopAt(time: number): Promise<void> {
@@ -509,6 +591,7 @@ export class Oscillator extends BaseSound {
 
     const now = this.audioContext.currentTime
     const fadeTime = 0.01 // 10ms anti-click ramp
+    const isImmediate = time <= now
     const fadeEnd = Math.max(time, now) + fadeTime
 
     // Cancel any in-progress gain automation (envelope release, etc.)
@@ -521,9 +604,28 @@ export class Oscillator extends BaseSound {
     this.audioSourceNode.stop(fadeEnd)
     this.emitEndWhenNodeEnds(this.audioSourceNode)
 
-    // Mark as stopped immediately — the fade is an implementation detail
-    this._isPlaying = false
-    this.emit('stop', { time: now, source: this })
+    // Track the tail so setup()'s hard-cut guard (C1) can detect it hasn't
+    // landed yet — covers PolySynth's retriggerVoice/steal paths, which call
+    // stopAt(now) immediately followed by play() in the same tick.
+    this._releaseTailEndsAt = fadeEnd
+
+    if (isImmediate) {
+      // Mark as stopped immediately — the fade is an implementation detail
+      this._isPlaying = false
+      this.emit('stop', { time: now, source: this })
+    }
+    else {
+      // Future stop (H1): audio keeps playing until `time`, so isPlaying and
+      // 'stop' must not flip/emit early. Schedule the state flip for the
+      // actual stop time, same split as BaseSound.stopAt.
+      this._trackedStopTimeout(() => {
+        if (this.disposed) {
+          return
+        }
+        this._isPlaying = false
+        this.emit('stop', { time: this.audioContext.currentTime, source: this })
+      }, (time - now) * 1000)
+    }
   }
 
   /**
@@ -572,8 +674,13 @@ export class Oscillator extends BaseSound {
       // at zero by releaseEnd; the extra 10ms is a safety margin to ensure
       // the zero-gain state has been rendered before the node is killed.
       const padding = release < 0.001 ? 0 : 0.01
-      this.audioSourceNode.stop(now + release + padding)
+      const stopTime = now + release + padding
+      this.audioSourceNode.stop(stopTime)
       this.emitEndWhenNodeEnds(this.audioSourceNode)
+
+      // Track the tail so setup()'s hard-cut guard (C1) can detect the
+      // release ramp hasn't landed yet if a retrigger happens before then.
+      this._releaseTailEndsAt = stopTime
 
       this._isPlaying = false
       this.emit('stop', { time: now, source: this })

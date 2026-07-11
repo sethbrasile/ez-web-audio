@@ -647,5 +647,48 @@ describe('polySynth', () => {
       expect(h2.active).toBe(true)
       expect(synth.activeVoices).toBe(1)
     })
+
+    // gate-2 deep-review C1/R7#1: retriggerVoice() and the voice-steal path
+    // both call oscillator.stopAt(now) immediately followed by play() in the
+    // same tick. Before the fix, this hit Oscillator.setup()'s "not playing"
+    // hard-cut branch (stopAt's immediate flip made _isPlaying already
+    // false by the time play() ran setup()) — clicking/screeching on every
+    // same-frequency retrigger and every steal of a sounding voice. The fix
+    // lives entirely in Oscillator (setup()/stopAt() tracking
+    // _releaseTailEndsAt); these are regression tests confirming PolySynth's
+    // call sites benefit without any poly-synth.ts changes.
+    it('retriggerVoice routes the outgoing oscillator through a release gain, not a hard cut', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 4 })
+      synth.play({ frequency: 440 })
+      await Promise.resolve()
+
+      const oldNode = oscillators[0].audioSourceNode
+      const connectSpy = vi.spyOn(oldNode, 'connect')
+      const stopSpy = vi.spyOn(oldNode, 'stop')
+
+      synth.play({ frequency: 440 }) // retriggerVoice: stopAt(now) + play(), same tick
+      await Promise.resolve()
+
+      expect(connectSpy).toHaveBeenCalled()
+      const stopCall = stopSpy.mock.calls[0]?.[0] as number | undefined
+      expect(stopCall).toBeGreaterThan(audioContext.currentTime)
+    })
+
+    it('voice-steal routes the stolen oscillator through a release gain, not a hard cut', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 1 })
+      synth.play({ frequency: 440 })
+      await Promise.resolve()
+
+      const oldNode = oscillators[0].audioSourceNode
+      const connectSpy = vi.spyOn(oldNode, 'connect')
+      const stopSpy = vi.spyOn(oldNode, 'stop')
+
+      synth.play({ frequency: 660 }) // pool full — steals the actively-sounding voice
+      await Promise.resolve()
+
+      expect(connectSpy).toHaveBeenCalled()
+      const stopCall = stopSpy.mock.calls[0]?.[0] as number | undefined
+      expect(stopCall).toBeGreaterThan(audioContext.currentTime)
+    })
   })
 })

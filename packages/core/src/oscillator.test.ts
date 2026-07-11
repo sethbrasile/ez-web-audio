@@ -784,24 +784,67 @@ describe('retrigger while still playing avoids hard-cut click (ez-audio-a30)', (
     expect(stopTime).toBeGreaterThan(now)
   })
 
-  it('retriggering after an explicit stop() (tail already told to end) is unaffected by the fix', async () => {
+  // gate-2 deep-review C1: setup()'s "not playing" branch hard-cut a node
+  // whenever `_isPlaying` was already false — but stop()/stopAt() flip
+  // `_isPlaying` false SYNCHRONOUSLY while the actual release/anti-click
+  // fade is still scheduled to render for tens to hundreds of ms afterward.
+  // A retrigger inside that window (e.g. PolySynth's retriggerVoice/steal,
+  // which does stopAt(now) + play() in the same tick) hit the hard-cut path
+  // and produced the exact screech class ez-audio-a30 fixed for the
+  // still-_isPlaying case only. This block previously asserted the buggy
+  // behavior ("is unaffected by the fix") — now asserts the fixed behavior.
+  it('retriggering after an explicit stop(), before the release tail has landed, routes through a release gain (C1)', async () => {
     const osc = new Oscillator(audioContext, {
       frequency: 440,
       envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 },
     })
     await osc.play()
-    await osc.stop() // _isPlaying flips false immediately; release tail still ringing
+    await osc.stop() // _isPlaying flips false immediately; release tail (0.5s) still ringing
+    const oldNode = osc.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+    const stopSpy = vi.spyOn(oldNode, 'stop')
+
+    await osc.play() // reuse before the tail finished rendering
+
+    // The outgoing node must be routed through the same release-gain handoff
+    // as a live retrigger, not hard-cut — a hard cut here stops the waveform
+    // at a non-zero amplitude while competing with the still-ramping release
+    // automation on the shared gain node (audible click/screech).
+    expect(connectSpy).toHaveBeenCalled()
+    const stopCall = stopSpy.mock.calls[0]?.[0] as number | undefined
+    expect(stopCall).toBeGreaterThan(audioContext.currentTime)
+  })
+
+  it('retriggering long after the release tail has fully landed still hard-cuts (no unnecessary release-gain route)', async () => {
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0 }, // instant release
+    })
+    await osc.play()
+    await osc.stop() // release completes immediately (release < 0.001 branch)
     const oldNode = osc.audioSourceNode
     const connectSpy = vi.spyOn(oldNode, 'connect')
 
-    await osc.play() // reuse before the tail finished
+    await osc.play()
 
-    // stop() already told this node to end — it is not "still playing" from
-    // the library's perspective. The pre-existing immediate-neutralize
-    // behavior (no release-gain route) must be preserved here, otherwise the
-    // old node would ride the new note's envelope through the shared gain
-    // node (the exact bug the original comment in setup() describes).
+    // The release tail already landed by the time of retrigger — nothing to
+    // protect, so the cheaper immediate neutralize path is still correct.
     expect(connectSpy).not.toHaveBeenCalled()
+  })
+
+  it('polySynth-style stopAt(now) immediately followed by play() in the same tick routes through a release gain, not a hard cut', async () => {
+    // Mirrors poly-synth.ts retriggerVoice()/voice-steal: entry.oscillator.stopAt(now)
+    // then void entry.oscillator.play() synchronously, no envelope involved.
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    const oldNode = osc.audioSourceNode
+    const connectSpy = vi.spyOn(oldNode, 'connect')
+
+    const now = audioContext.currentTime
+    await osc.stopAt(now)
+    await osc.play()
+
+    expect(connectSpy).toHaveBeenCalled()
   })
 
   it('external gain automation on getGainNode() does not survive a retrigger (hypothesis 1: refuted — cancelScheduledValues already runs)', async () => {
@@ -825,5 +868,113 @@ describe('retrigger while still playing avoids hard-cut click (ez-audio-a30)', (
     // Gain is restored to the resolved target immediately, not left mid-ramp
     // toward 0 — stale external automation cannot bleed into the new note.
     expect(gain.value).toBeCloseTo(0.5)
+  })
+})
+
+// gate-2 deep-review H1: stopAt(future) flipped `_isPlaying` and emitted
+// 'stop' immediately while the audio itself kept playing until the
+// requested time. BaseSound.stopAt already splits future/immediate
+// correctly (base-sound.ts:1041-1091); Oscillator's override didn't —
+// stopIn(5) lied about isPlaying/'stop' for the full 5 seconds.
+describe('stopAt/stopIn future-time state flip (H1)', () => {
+  let audioContext: AudioContext
+
+  beforeEach(() => {
+    audioContext = createMockContext()
+  })
+
+  // Fully controllable setTimeout/clearTimeout so the future-stop flip can
+  // be fired deterministically instead of racing real timers.
+  function createManualTimers() {
+    let nextId = 1
+    const pending = new Map<number, () => void>()
+    const setTimeoutMock = vi.fn((fn: () => void) => {
+      const id = nextId++
+      pending.set(id, fn)
+      return id
+    })
+    const clearTimeoutMock = vi.fn((id: number) => {
+      pending.delete(id)
+    })
+    const fireAll = (): void => {
+      const callbacks = Array.from(pending.values())
+      pending.clear()
+      callbacks.forEach(cb => cb())
+    }
+    return { setTimeoutMock, clearTimeoutMock, fireAll, pending }
+  }
+
+  it('stopAt(future) keeps isPlaying true and does not emit \'stop\' until the actual stop time', async () => {
+    const { setTimeoutMock, clearTimeoutMock, fireAll } = createManualTimers()
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      setTimeout: setTimeoutMock,
+      clearTimeout: clearTimeoutMock,
+    })
+    await osc.play()
+    const stopHandler = vi.fn()
+    osc.on('stop', stopHandler)
+
+    await osc.stopAt(audioContext.currentTime + 5)
+
+    // Audio hasn't reached the stop time yet — isPlaying must still read
+    // true and 'stop' must not have fired.
+    expect(osc.isPlaying).toBe(true)
+    expect(stopHandler).not.toHaveBeenCalled()
+
+    fireAll() // simulate the scheduled stop time arriving
+
+    expect(osc.isPlaying).toBe(false)
+    expect(stopHandler).toHaveBeenCalledTimes(1)
+  })
+
+  it('stopIn(seconds) mirrors stopAt(future) — isPlaying stays true until the delay elapses', async () => {
+    const { setTimeoutMock, clearTimeoutMock, fireAll } = createManualTimers()
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      setTimeout: setTimeoutMock,
+      clearTimeout: clearTimeoutMock,
+    })
+    await osc.play()
+    await osc.stopIn(5)
+
+    expect(osc.isPlaying).toBe(true)
+
+    fireAll()
+
+    expect(osc.isPlaying).toBe(false)
+  })
+
+  it('stopAt(now) (immediate) still flips isPlaying and emits \'stop\' synchronously', async () => {
+    const osc = new Oscillator(audioContext, { frequency: 440 })
+    await osc.play()
+    const stopHandler = vi.fn()
+    osc.on('stop', stopHandler)
+
+    await osc.stopAt(audioContext.currentTime)
+
+    expect(osc.isPlaying).toBe(false)
+    expect(stopHandler).toHaveBeenCalledTimes(1)
+  })
+
+  it('a retrigger before a scheduled future stop lands cancels the stale flip (isPlaying stays true)', async () => {
+    const { setTimeoutMock, clearTimeoutMock, fireAll, pending } = createManualTimers()
+    const osc = new Oscillator(audioContext, {
+      frequency: 440,
+      setTimeout: setTimeoutMock,
+      clearTimeout: clearTimeoutMock,
+    })
+    await osc.play()
+    await osc.stopIn(5) // schedules a future flip-to-false
+    expect(pending.size).toBeGreaterThan(0)
+
+    await osc.play() // retrigger before that timeout fires — setup() must cancel it
+
+    expect(clearTimeoutMock).toHaveBeenCalled()
+    expect(osc.isPlaying).toBe(true)
+
+    // Firing whatever remains must not clobber the fresh play() state.
+    fireAll()
+    expect(osc.isPlaying).toBe(true)
   })
 })

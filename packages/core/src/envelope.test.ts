@@ -335,8 +335,20 @@ describe('envelope', () => {
         expect(envelope.isActive).toBe(true)
       })
 
-      it('isActive becomes false after release', () => {
-        const envelope = new Envelope()
+      it('isActive remains true immediately after triggerRelease (release ramp still rendering)', () => {
+        // C1 regression: the release ramp doesn't finish rendering until
+        // startTime + release. Clearing isActive synchronously here (the old
+        // behavior) let a retrigger before that point treat the envelope as
+        // freshly triggered, writing a competing setValueAtTime(0, ...) on
+        // top of the still-playing ramp — an audible click.
+        const envelope = new Envelope({ release: 0.3 })
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.triggerRelease(gainNode.gain, 1)
+        expect(envelope.isActive).toBe(true)
+      })
+
+      it('isActive becomes false immediately for an instant release (release < 0.001)', () => {
+        const envelope = new Envelope({ release: 0 })
         envelope.applyTo(gainNode.gain, 0)
         envelope.triggerRelease(gainNode.gain, 1)
         expect(envelope.isActive).toBe(false)
@@ -416,6 +428,36 @@ describe('envelope', () => {
         const calls = spy.mock.calls
         expect(calls.length).toBeGreaterThan(0)
         expect(calls[0][0]).toBeCloseTo(0.7, 5)
+      })
+    })
+
+    describe('retrigger during release phase (C1)', () => {
+      it('retrigger mid-release picks up the decaying value instead of jumping to 0', () => {
+        const envelope = new Envelope({ attack: 0.01, decay: 0.01, sustain: 0.5, release: 0.4 })
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.triggerRelease(gainNode.gain, 1) // release: t=1 -> t=1.4, starts from sustain 0.5
+        const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+        envelope.applyTo(gainNode.gain, 1.2) // halfway through the release ramp
+        const calls = spy.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        expect(calls[0][0]).toBeGreaterThan(0)
+        expect(calls[0][0]).toBeCloseTo(0.25, 2)
+      })
+
+      it('estimateCurrentValue mid-release interpolates linearly toward 0', () => {
+        const envelope = new Envelope({ attack: 0, decay: 0, sustain: 1, release: 1 })
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.triggerRelease(gainNode.gain, 1) // release starts from 1.0 at t=1, ends t=2
+        expect(envelope.estimateCurrentValue(1.5)).toBeCloseTo(0.5, 5)
+      })
+
+      it('retrigger after the release has fully elapsed starts fresh from 0', () => {
+        const envelope = new Envelope({ attack: 0.01, decay: 0.01, sustain: 0.5, release: 0.1 })
+        envelope.applyTo(gainNode.gain, 0)
+        envelope.triggerRelease(gainNode.gain, 1) // release ends at t=1.1
+        const spy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+        envelope.applyTo(gainNode.gain, 5) // long after the release has completed
+        expect(spy).toHaveBeenCalledWith(0, 5)
       })
     })
 

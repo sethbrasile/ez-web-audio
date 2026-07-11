@@ -118,6 +118,27 @@ export class Sound<TMap extends BaseSoundEventMap & { [K in keyof TMap]: CustomE
           oldNode.connect(releaseGain)
           releaseGain.connect(this.effectChainInput)
           oldNode.stop(now + 0.06)
+          // Explicit disconnect once the release tail has actually rendered,
+          // rather than relying on GC to eventually reclaim the orphaned
+          // nodes (R4 low: releaseGain temp nodes were never explicitly
+          // disconnected). Both nodes are captured by closure, so this is
+          // inherently node-local — no currency guard against
+          // `this.audioSourceNode` needed, since it never touches instance
+          // state.
+          this.setTimeout(() => {
+            try {
+              oldNode.disconnect()
+            }
+            catch {
+              // Already disconnected
+            }
+            try {
+              releaseGain.disconnect()
+            }
+            catch {
+              // Already disconnected
+            }
+          }, 70)
         }
       }
       catch {
