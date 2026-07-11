@@ -325,6 +325,9 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
     if (this._paused) {
       // Resume from paused state
+      if (this._loop && this._loopEndBeats <= this._loopStartBeats) {
+        throw new Error('loopEnd must be greater than loopStart when loop is enabled')
+      }
       this.currentTickIndex = this.pausedTickIndex
       this.startTime = this.audioContext.currentTime - this.pausedElapsed
       this._paused = false
@@ -626,7 +629,7 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     this.nextTickTime += tickDuration
     this.currentTickIndex++
 
-    if (this._loop) {
+    if (this._loop && this._loopEndBeats > this._loopStartBeats) {
       const loopStartTick = Math.round(this._loopStartBeats * this._ticksPerBeat)
       const loopEndTick = Math.round(this._loopEndBeats * this._ticksPerBeat)
       if (this.currentTickIndex >= loopEndTick) {

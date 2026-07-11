@@ -643,6 +643,37 @@ describe('transport', () => {
       expect(transport.position.bar).toBe(2)
       transport.dispose()
     })
+
+    it('ignores loop wrap when region invalid (loop toggled live with loopEnd unset)', () => {
+      // Same bpm/ticksPerBeat as 'loop=false behavior unchanged'. loop is
+      // toggled true mid-playback with loopStart/loopEnd left at their
+      // defaults (0/0) -- an invalid, zero-length region. The wrap guard
+      // must require loopEnd > loopStart, otherwise every tick satisfies
+      // currentTickIndex >= loopEndTick(0) and position freezes at tick 0
+      // while spamming 'loop' events.
+      const transport = new Transport(audioContext as any, { bpm: 3000 })
+      const loopListener = vi.fn()
+      transport.on('loop', loopListener)
+
+      transport.start()
+      transport.loop = true // loopStart/loopEnd left unset (0/0) -- invalid region
+
+      vi.advanceTimersByTime(20)
+
+      expect(transport.position.bar).toBe(2)
+      expect(loopListener).not.toHaveBeenCalled()
+      transport.dispose()
+    })
+
+    it('throws on resume when loop region invalid', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.start()
+      transport.pause()
+      transport.loop = true // loopStart/loopEnd left unset (0/0) -- invalid region
+
+      expect(() => transport.start()).toThrow()
+      transport.dispose()
+    })
   })
 
   describe('formatPosition', () => {
