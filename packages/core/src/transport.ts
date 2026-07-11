@@ -332,6 +332,16 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
       this.startTime = this.audioContext.currentTime - this.pausedElapsed
       this._paused = false
 
+      // Reset nextBeatTime for already-synced tracks to current time: their
+      // pre-pause nextBeatTime is now in the past, and restoring it would
+      // make schedulerTick()'s while-loop fire every beat missed during the
+      // pause in a single burst. Mirrors BeatTrack.resume()'s identical fix
+      // for the standalone (non-Transport) scheduling path. stepCount is
+      // left untouched — pattern position resumes where it paused.
+      for (const state of this.trackStates.values()) {
+        state.nextBeatTime = this.audioContext.currentTime
+      }
+
       this.emit('resume', {
         time: this.audioContext.currentTime,
         source: this,

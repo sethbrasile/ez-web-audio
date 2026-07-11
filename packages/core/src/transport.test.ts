@@ -1,3 +1,4 @@
+import type { TransportLoopDetail } from './index'
 import { AudioContext } from 'standardized-audio-context-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatPosition, Transport } from './transport'
@@ -243,6 +244,52 @@ describe('transport', () => {
       // start should not fire again, resume should fire
       expect(startListener).toHaveBeenCalledTimes(1)
       expect(resumeListener).toHaveBeenCalledTimes(1)
+      transport.dispose()
+    })
+
+    it('resets nextBeatTime on resume to prevent scheduler catch-up burst', () => {
+      // bpm 750, noteType 1/16 -> beatDuration = 240*(1/16)/750 = 0.02s (same
+      // math as the swing describe block above). The track is synced, plays a
+      // handful of steps, then the transport is paused. While paused, substantial
+      // wall-clock time passes (simulated here by overriding the mock
+      // AudioContext's currentTime) -- exactly the scenario the standalone
+      // BeatTrack.resume() fix (beat-track.ts ~L356) already guards against.
+      // Without resetting nextBeatTime on resume, schedulerTick()'s while-loop
+      // would fire every beat missed during the pause in a single burst.
+      const transport = new Transport(audioContext as any, { bpm: 750 })
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 16 }, () => ({ active: false })),
+        _syncNoteType: 1 / 16,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20) // initial tick schedules a handful of steps at currentTime 0
+
+      expect(scheduleSpy.mock.calls.length).toBeGreaterThan(0)
+
+      transport.pause()
+      scheduleSpy.mockClear()
+
+      // Simulate 5 seconds of real wall-clock time elapsing while paused.
+      Object.defineProperty(audioContext, 'currentTime', { get: () => 5, configurable: true })
+
+      transport.start() // resume
+      vi.advanceTimersByTime(20)
+
+      // beatDuration is 0.02s; the scheduler's fixed 100ms lookahead can only
+      // admit ~5 steps from the resume point (5s) forward. A stale nextBeatTime
+      // left over from before the pause (~0.1s) would instead spam roughly the
+      // 250 steps between the old position and the new currentTime.
+      expect(scheduleSpy.mock.calls.length).toBeLessThanOrEqual(6)
+
+      for (const call of scheduleSpy.mock.calls) {
+        expect(call[1]).toBeGreaterThanOrEqual(5)
+      }
+
       transport.dispose()
     })
   })
@@ -672,6 +719,21 @@ describe('transport', () => {
       transport.loop = true // loopStart/loopEnd left unset (0/0) -- invalid region
 
       expect(() => transport.start()).toThrow()
+      transport.dispose()
+    })
+
+    it('transportLoopDetail type is importable from the package entrypoint', () => {
+      const transport = new Transport(audioContext as any, { bpm: 3000 })
+      transport.loop = true
+      transport.loopEnd = '1m'
+
+      const details: TransportLoopDetail[] = []
+      transport.on('loop', e => details.push(e.detail))
+
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(details[0].iteration).toBe(1)
       transport.dispose()
     })
   })

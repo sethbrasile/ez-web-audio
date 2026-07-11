@@ -236,6 +236,41 @@ it('passes velocity to parent playIn callback', () => {
   expect(playIn).toHaveBeenCalledWith(0.1, 0.6)
 })
 
+describe('velocity clamping', () => {
+  it('clamps a direct assignment above 1 down to 1', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+    })
+
+    beat.velocity = 5
+    expect(beat.velocity).toBe(1)
+  })
+
+  it('clamps a direct assignment below 0 up to 0', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+    })
+
+    beat.velocity = -0.5
+    expect(beat.velocity).toBe(0)
+  })
+
+  it('passes an in-range assignment through unchanged', () => {
+    const parent = new MockParentClass()
+    const beat = createBeat({
+      play: parent.play.bind(parent),
+      playIn: parent.playIn.bind(parent),
+    })
+
+    beat.velocity = 0.6
+    expect(beat.velocity).toBe(0.6)
+  })
+})
+
 describe('pendingTimerIds self-cleaning', () => {
   it('removes completed timer IDs from pendingTimerIds so the array does not grow unbounded', async () => {
     // Use a controllable mock: capture callbacks so we can fire them manually

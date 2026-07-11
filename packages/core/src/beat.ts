@@ -83,13 +83,25 @@ export class Beat {
    */
   public duration: number
 
+  private _velocity = 1
+
   /**
    * Playback velocity (0–1) applied as a gain multiplier when this beat plays.
    * 1 = full volume, lower values are quieter hits (e.g. ghost notes at 0.4).
    * Set directly or via BeatTrack.setPattern numeric values.
-   * @default 1
+   *
+   * Assignments are silently clamped to [0, 1] rather than throwing —
+   * matching BeatTrack.setPattern's clamping posture, so out-of-range values
+   * (e.g. a velocity of 5) can never produce a gain spike.
+   * Default: 1
    */
-  public velocity = 1
+  public get velocity(): number {
+    return this._velocity
+  }
+
+  public set velocity(value: number) {
+    this._velocity = Math.min(1, Math.max(0, value))
+  }
 
   /**
    * Play this beat after a delay.

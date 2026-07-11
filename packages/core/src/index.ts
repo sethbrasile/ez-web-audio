@@ -1530,6 +1530,7 @@ export type {
   TrackEventMap,
   TransportEventMap,
   TransportLifecycleDetail,
+  TransportLoopDetail,
   TransportTickDetail,
   VoiceStolenEventDetail,
   WarningEventDetail,
