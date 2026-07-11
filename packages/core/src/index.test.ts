@@ -867,14 +867,27 @@ describe('factory functions', () => {
         expect(cs5.octave).toBe('5')
       })
 
-      it('leaves identity fields at defaults for non-standard keys', async () => {
+      it('leaves identity fields at defaults for non-standard keys whose frequency matches no known note', async () => {
         const { createNotes } = await import('./index')
-        // Use a numeric key that cannot be parsed as a note name
-        const notes = createNotes({ CUSTOM: 999.9 })
+        // Use a numeric key that cannot be parsed as a note name, with a frequency
+        // far outside the piano range (and thus far outside the frequency setter's
+        // cents-tolerance nearest-note matching — see H16).
+        const notes = createNotes({ CUSTOM: 999999 })
         // letter/accidental/octave remain at constructor defaults (frequency not in built-in map)
         expect(notes[0].letter).toBe('A')
         expect(notes[0].accidental).toBe('')
         expect(notes[0].octave).toBe('0')
+      })
+
+      it('resolves identity fields from the nearest note when a non-standard key\'s frequency is close to a known note (H16)', async () => {
+        const { createNotes } = await import('./index')
+        // 999.9 Hz is ~21 cents from B5 (987.77 Hz) — within the frequency
+        // setter's tolerance, so identity now resolves instead of silently
+        // no-op'ing as it did before H16 was fixed.
+        const notes = createNotes({ CUSTOM: 999.9 })
+        expect(notes[0].letter).toBe('B')
+        expect(notes[0].accidental).toBe('')
+        expect(notes[0].octave).toBe('5')
       })
 
       it('parses notes from default frequency map', async () => {

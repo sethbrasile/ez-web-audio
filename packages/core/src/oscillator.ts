@@ -49,7 +49,7 @@ export interface OscillatorOptions extends BaseSoundOptions {
   /**
    * Note name (e.g., 'A4', 'C3', 'Eb5'). Looked up in the frequency map.
    * Takes precedence over `frequency` if both provided.
-   * Use flat notation (Db, Eb, Gb, Ab, Bb) not sharp notation.
+   * Both flat (Db, Eb, Gb, Ab, Bb) and sharp (C#, D#, F#, G#, A#) notation are supported as enharmonic equivalents.
    *
    * @example
    * ```typescript
@@ -189,8 +189,8 @@ export class Oscillator extends BaseSound {
       const freq = (frequencyMap as Record<string, number>)[options.note]
       if (freq === undefined) {
         throw new InvalidNoteError(
-          `Unknown note "${options.note}". Valid notes: C0-B8 with accidentals (e.g., A4, Db3, Eb5). `
-          + `Use flat notation (Db, Eb, Gb, Ab, Bb) not sharp notation.`,
+          `Unknown note "${options.note}". Valid notes: C0-B8 with accidentals (e.g., A4, Db3, Eb5, C#3). `
+          + `Both flat and sharp notation are supported as enharmonic equivalents.`,
           options.note,
         )
       }
