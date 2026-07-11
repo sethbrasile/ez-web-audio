@@ -66,10 +66,13 @@ transport.loopEnd = '2m'
 const ctx = await getAudioContext()
 
 // sustain: 0 -- each note fades out on its own after decay, so it never
-// needs to be stopped or retriggered
+// needs to be stopped or retriggered.
+// Note: an envelope's attack currently ramps to full gain (1.0), so a
+// `gain` option passed alongside `envelope` is ignored during the attack --
+// shape overall level with a GainNode or `onPlaySet('gain')` instead.
 const envelope = { attack: 0.005, decay: 0.25, sustain: 0, release: 0.05 }
-const e2 = await createOscillator(ctx, { note: 'E2', type: 'triangle', gain: 0.5, envelope })
-const g2 = await createOscillator(ctx, { note: 'G2', type: 'triangle', gain: 0.5, envelope })
+const e2 = await createOscillator(ctx, { note: 'E2', type: 'triangle', envelope })
+const g2 = await createOscillator(ctx, { note: 'G2', type: 'triangle', envelope })
 
 const bassSeq = createSequence(transport, { length: '2m', loop: true }) // SYNC -- no await
 bassSeq.at(0, t => e2.playIn(Math.max(0, t - ctx.currentTime))) // E2
