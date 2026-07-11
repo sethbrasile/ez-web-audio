@@ -1,0 +1,25 @@
+{
+  "name": "react-basic-example",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal Vite + React + TypeScript example demonstrating @ez-web-audio/react hooks",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ez-web-audio/react": "^0.2.0",
+    "ez-web-audio": "^0.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
