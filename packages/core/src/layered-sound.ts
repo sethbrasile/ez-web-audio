@@ -23,6 +23,11 @@ export interface LayeredSoundOptions {
  * All layers start at exactly the same audioContext.currentTime for precise sync.
  * Layers end independently - LayeredSound emits 'end' when the last layer finishes.
  *
+ * **Layers are constructor-only.** There is no `addLayer()`/`removeLayer()` — the
+ * layer set passed to the constructor is fixed for the lifetime of the instance.
+ * To change layers at runtime, dispose this instance and construct a new
+ * LayeredSound with the desired layer array.
+ *
  * @example
  * ```typescript
  * const bass = await createSound('bass.mp3')

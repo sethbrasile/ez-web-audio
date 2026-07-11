@@ -227,19 +227,78 @@ describe('crossfade', () => {
     expect(pauseSpy).toHaveBeenCalled()
   })
 
-  it('resets source gain to 1.0 after stop', async () => {
+  it('restores source gain to its default (1.0) target volume after pause', async () => {
     await fromTrack.play()
 
-    const fromGain = fromTrack.gainNode.gain
-    const setValueAtTimeSpy = vi.spyOn(fromGain, 'setValueAtTime')
+    const changeGainSpy = vi.spyOn(fromTrack, 'changeGainTo')
 
     await crossfade(fromTrack, toTrack, 0.01)
 
-    // Gain should be reset to 1.0 for future playback
-    // Check that setValueAtTime was called with 1.0 after the fade
-    const setValueAtTimeCalls = setValueAtTimeSpy.mock.calls
-    const lastCall = setValueAtTimeCalls[setValueAtTimeCalls.length - 1]
-    expect(lastCall[0]).toBe(1.0)
+    // Default track volume is 1.0, so the captured-volume restore (M11)
+    // and the old hardcoded-1.0 behavior coincide here — see the
+    // non-default-volume case below for the behavior that actually
+    // distinguishes them.
+    expect(changeGainSpy).toHaveBeenCalledWith(1.0)
+  })
+
+  // ─── H14 / M11: curve scaled from actual value to actual target, not a fixed 1.0/0.0 ──────
+
+  it('does not snap source gain to a fixed 1.0 when fading out from a custom current value (H14)', async () => {
+    await fromTrack.play()
+
+    const fromGain = fromTrack.gainNode.gain
+    // Mock AudioParam doesn't persist .value assignments, so spy on the
+    // getter to simulate the live gain sitting at 0.6 (e.g. mid-ramp),
+    // matching the FADE-04 test's pattern.
+    vi.spyOn(fromGain, 'value', 'get').mockReturnValue(0.6)
+    const setValueCurveAtTimeSpy = vi.spyOn(fromGain, 'setValueCurveAtTime')
+
+    await crossfade(fromTrack, toTrack, 0.01)
+
+    const curve = setValueCurveAtTimeSpy.mock.calls[0][0] as Float32Array
+    // The curve's own first sample must equal the ACTUAL current gain (0.6),
+    // not the cached curve's fixed 1.0 starting point. Per the Web Audio
+    // spec, when setValueAtTime(current) and setValueCurveAtTime(curve) are
+    // both scheduled at the identical startTime, the curve wins — so if the
+    // curve still assumed a fixed 1.0 start, gain would audibly snap from
+    // 0.6 up to 1.0 at the instant the fade begins.
+    expect(curve[0]).toBeCloseTo(0.6, 2)
+    expect(curve[curve.length - 1]).toBeCloseTo(0, 2)
+  })
+
+  it('fades a fresh-start destination in toward its own captured target volume, not hardcoded 1.0 (M11)', async () => {
+    toTrack.changeGainTo(0.6)
+    await fromTrack.play()
+
+    const toGain = toTrack.gainNode.gain
+    const setValueCurveAtTimeSpy = vi.spyOn(toGain, 'setValueCurveAtTime')
+
+    await crossfade(fromTrack, toTrack, 0.01)
+
+    const curve = setValueCurveAtTimeSpy.mock.calls[0][0] as Float32Array
+    expect(curve[0]).toBeCloseTo(0, 2)
+    // Endpoint must be the destination's own target volume (0.6), not a
+    // hardcoded 1.0 that would silently normalize custom-volume tracks.
+    expect(curve[curve.length - 1]).toBeCloseTo(0.6, 2)
+  })
+
+  it('fades an already-playing destination toward its captured target volume, not hardcoded 1.0 (M11)', async () => {
+    await fromTrack.play()
+    await toTrack.play()
+    toTrack.changeGainTo(0.6)
+
+    const toGain = toTrack.gainNode.gain
+    // Mock AudioParam doesn't persist .value assignments, so spy on the getter
+    // to simulate the live gain (0.2) differing from the target volume (0.6)
+    // captured for the fade's endpoint.
+    vi.spyOn(toGain, 'value', 'get').mockReturnValue(0.2)
+    const setValueCurveAtTimeSpy = vi.spyOn(toGain, 'setValueCurveAtTime')
+
+    await crossfade(fromTrack, toTrack, 0.01)
+
+    const curve = setValueCurveAtTimeSpy.mock.calls[0][0] as Float32Array
+    expect(curve[0]).toBeCloseTo(0.2, 2)
+    expect(curve[curve.length - 1]).toBeCloseTo(0.6, 2)
   })
 
   it('works with different fade durations', async () => {
@@ -333,6 +392,21 @@ describe('crossfade', () => {
     expect(changeGainSpy).toHaveBeenCalledWith(1.0)
   })
 
+  it('afterFade:stop restores the source to its own captured target volume, not hardcoded 1.0 (M11)', async () => {
+    fromTrack.changeGainTo(0.6)
+    await fromTrack.play()
+
+    const stopSpy = vi.spyOn(fromTrack, 'stop')
+    const changeGainSpy = vi.spyOn(fromTrack, 'changeGainTo')
+
+    await crossfade(fromTrack, toTrack, 0.01, { afterFade: 'stop' })
+
+    expect(stopSpy).toHaveBeenCalled()
+    // Must restore the volume captured when the crossfade started (0.6),
+    // not silently normalize it back up to 1.0.
+    expect(changeGainSpy).toHaveBeenCalledWith(0.6)
+  })
+
   it('afterFade:stop does not produce unhandled rejection if stop() rejects (QC-1-19)', async () => {
     await fromTrack.play()
 
@@ -374,5 +448,61 @@ describe('crossfade', () => {
     expect(pauseSpy).toHaveBeenCalled()
     // changeGainTo syncs _targetGain (not raw AudioParam)
     expect(changeGainSpy).toHaveBeenCalledWith(1.0)
+  })
+
+  it('afterFade:pause restores the source to its own captured target volume, not hardcoded 1.0 (M11)', async () => {
+    fromTrack.changeGainTo(0.6)
+    await fromTrack.play()
+
+    const changeGainSpy = vi.spyOn(fromTrack, 'changeGainTo')
+    const pauseSpy = vi.spyOn(fromTrack, 'pause')
+
+    await crossfade(fromTrack, toTrack, 0.01, { afterFade: 'pause' })
+
+    expect(pauseSpy).toHaveBeenCalled()
+    expect(changeGainSpy).toHaveBeenCalledWith(0.6)
+  })
+
+  // ─── H15: stale afterFade timeout must not act on a track a NEWER crossfade now owns ──────
+
+  it('a stale afterFade timeout does not pause/reset a track a newer crossfade is now fading it into', async () => {
+    const trackX = new Track(audioContext, buffer)
+    const trackB = new Track(audioContext, buffer)
+    const trackC = new Track(audioContext, buffer)
+
+    await trackX.play()
+
+    // Crossfade 1: X -> B. Default afterFade ('pause') would pause+reset X
+    // once its timeout fires, UNLESS a newer crossfade has since claimed X.
+    const fade1 = crossfade(trackX, trackB, 0.05)
+
+    // Before fade1 completes, a second, newer crossfade starts fading
+    // trackC INTO trackX — trackX becomes the destination of a still-active
+    // crossfade that fade1 knows nothing about.
+    const pauseSpy = vi.spyOn(trackX, 'pause')
+    const fade2 = crossfade(trackC, trackX, 0.05)
+
+    await Promise.all([fade1, fade2])
+
+    // fade1's stale timeout must be a no-op now that fade2 has claimed
+    // trackX — it must never pause/reset a track a newer crossfade is
+    // actively driving.
+    expect(pauseSpy).not.toHaveBeenCalled()
+  })
+
+  it('an interrupted crossfade still resolves its promise even though its stale timeout no-ops', async () => {
+    const trackX = new Track(audioContext, buffer)
+    const trackB = new Track(audioContext, buffer)
+    const trackC = new Track(audioContext, buffer)
+
+    await trackX.play()
+
+    let fade1Resolved = false
+    const fade1 = crossfade(trackX, trackB, 0.05).then(() => { fade1Resolved = true })
+    const fade2 = crossfade(trackC, trackX, 0.05)
+
+    await Promise.all([fade1, fade2])
+
+    expect(fade1Resolved).toBe(true)
   })
 })

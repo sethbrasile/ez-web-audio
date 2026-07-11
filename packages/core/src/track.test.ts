@@ -108,6 +108,70 @@ describe('track', () => {
       track.startOffset = 5 // 50% of 10 seconds
       expect(track.percentPlayed).toBeCloseTo(50, 0)
     })
+
+    it('position never reports past the track duration, even if startOffset drifts past it (R12#6)', () => {
+      const track = createTrack(audioContext, 10)
+      // Simulate the RAF loop's last-frame overshoot past durationRaw.
+      track.startOffset = 10.4
+      expect(track.position.raw).toBeLessThanOrEqual(track.durationRaw)
+      expect(track.position.raw).toBe(10)
+    })
+  })
+
+  describe('play() while already playing (H13)', () => {
+    it('trackPlayPosition() cancels a previous position-tracking loop before starting a new one', () => {
+      // White-box: trackPlayPosition() is the method _onPlaybackStarted() invokes
+      // (via later()) on every play(), including a double-click play() while
+      // already playing. Without the H13 fix, a second call stacks a second
+      // independent RAF loop instead of cancelling the first, so startOffset
+      // gets advanced twice per real animation frame (2x/Nx position speed).
+      const track = createTrack(audioContext, 60)
+      ;(track as any)._isPlaying = true
+
+      const cafSpy = vi.spyOn(globalThis, 'cancelAnimationFrame')
+
+      ;(track as any).trackPlayPosition()
+      const firstRafId = (track as any).rafId
+      expect(firstRafId).not.toBeNull()
+      expect(cafSpy).not.toHaveBeenCalled()
+
+      // Simulate the second _onPlaybackStarted() call from a double play().
+      ;(track as any).trackPlayPosition()
+      const secondRafId = (track as any).rafId
+
+      // The stale loop must be cancelled by its own id before the new one starts.
+      expect(cafSpy).toHaveBeenCalledWith(firstRafId)
+      expect(secondRafId).not.toBeNull()
+      expect(secondRafId).not.toBe(firstRafId)
+    })
+
+    it('play() called again while already playing triggers a loop cancellation, not just a fresh loop', async () => {
+      // Integration-level companion to the white-box test above, through the
+      // public play() API. happy-dom's requestAnimationFrame ticks fast
+      // (effectively next-tick), so exact rafId/call-count assertions here
+      // would be timing-flaky — the white-box test above is the precise
+      // regression guard; this just confirms play() actually reaches
+      // trackPlayPosition()'s cancel-guard on a double play.
+      const track = createTrack(audioContext, 60)
+
+      await track.play()
+      // Drive the shared audioContext-aware scheduler's due check so the
+      // later()-scheduled trackPlayPosition() call actually runs (see
+      // beat-track.test.ts/transport.test.ts for this established pattern —
+      // the mock AudioContext's currentTime never advances on its own).
+      ;(audioContext as any)._deLorean._position = 0.01
+      await settle(() => true, 30)
+
+      const cafSpy = vi.spyOn(globalThis, 'cancelAnimationFrame')
+
+      // Double-click play while already playing — _onPlaybackStarted() re-fires.
+      await track.play()
+      ;(audioContext as any)._deLorean._position = 0.02
+      await settle(() => true, 30)
+
+      expect(cafSpy).toHaveBeenCalled()
+      expect((track as any).rafId).not.toBeNull()
+    })
   })
 
   describe('pause', () => {

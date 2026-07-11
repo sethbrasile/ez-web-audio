@@ -70,7 +70,11 @@ export class Track extends Sound<TrackEventMap> {
    * ```
    */
   public get position(): TimeObject {
-    const offset = this.startOffset
+    // R12#6: the RAF loop's last frame before natural completion can push
+    // startOffset transiently past durationRaw — clamp so position never
+    // reports >100% played.
+    const duration = this.durationRaw
+    const offset = duration > 0 ? Math.min(this.startOffset, duration) : this.startOffset
     const min = Math.floor(offset / 60)
     const sec = offset - min * 60
     return createTimeObject(offset, min, sec)
@@ -222,7 +226,10 @@ export class Track extends Sound<TrackEventMap> {
    */
   public resume(): void {
     // Use _isPaused flag instead of startOffset > 0 to support resuming at position 0 (H-4)
-    if (!this._isPlaying && this._isPaused) {
+    // R12#5: guard disposed — without it, a disposed-but-still-referenced Track would
+    // emit 'resume' and then have its play() rejection silently swallowed, producing a
+    // 'resume' event describing playback that never happened.
+    if (!this._isPlaying && this._isPaused && !this.disposed) {
       this._isPaused = false
 
       // Emit resume event before starting
@@ -275,6 +282,16 @@ export class Track extends Sound<TrackEventMap> {
    * @private
    */
   private trackPlayPosition(): void {
+    // Cancel any existing loop before starting a new one — play() while
+    // already playing (e.g. double-click) re-invokes _onPlaybackStarted(),
+    // which would otherwise stack a second RAF loop and double the position
+    // advance rate (H13). Guards already exist in pause/stop/seek; mirror
+    // them here at the loop's entry point.
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
+
     const animate = (): void => {
       // Exit early if stopped (defensive check)
       if (!this._isPlaying) {
