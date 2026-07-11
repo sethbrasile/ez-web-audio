@@ -31,6 +31,14 @@ export interface SamplerOptions {
  * ```
  */
 export class Sampler {
+  /**
+   * @param sounds - Sound instances to cycle through. Stored internally as a
+   *   `Set`, so duplicate references silently collapse: `[kick1, kick1, kick2]`
+   *   becomes a 2-item rotation (kick1, kick2), not the 3-hit weighting a
+   *   caller passing the same instance twice would expect (R7 low). Pass
+   *   distinct instances — e.g. separately-loaded copies of the same sample —
+   *   if you want one sound to play more often than others in the rotation.
+   */
   constructor(sounds: (Playable & Connectable)[], opts?: SamplerOptions) {
     this.sounds = new Set<Playable & Connectable>(sounds)
     this.soundIterator = sounds.values()
@@ -83,7 +91,11 @@ export class Sampler {
    * ```
    */
   public play(velocity = 1): void {
-    void Promise.resolve(this.getNextSound(velocity).play()).catch(() => {})
+    void Promise.resolve(this.getNextSound(velocity).play()).catch((error: unknown) => {
+      // R7 low: rejections (e.g. audioContext closed mid-playback) were
+      // swallowed with no signal at all — log rather than silently drop.
+      console.warn('[ez-web-audio] Sampler.play(): underlying sound.play() rejected:', error)
+    })
   }
 
   /**
@@ -116,7 +128,10 @@ export class Sampler {
    * ```
    */
   public playAt(time: number, velocity = 1): void {
-    void Promise.resolve(this.getNextSound(velocity).playAt(time)).catch(() => {})
+    void Promise.resolve(this.getNextSound(velocity).playAt(time)).catch((error: unknown) => {
+      // R7 low: same swallowed-rejection fix as play() above.
+      console.warn('[ez-web-audio] Sampler.playAt(): underlying sound.playAt() rejected:', error)
+    })
   }
 
   /**

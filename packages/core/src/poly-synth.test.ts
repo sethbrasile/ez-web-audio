@@ -691,4 +691,92 @@ describe('polySynth', () => {
       expect(stopCall).toBeGreaterThan(audioContext.currentTime)
     })
   })
+
+  // ─── H5: stopAll must also silence released (mid-release) voices ──
+
+  describe('stopAll — H5 released-voice panic', () => {
+    const envelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 }
+
+    function createTrackedSynth(options: ConstructorParameters<typeof PolySynth>[1] = {}) {
+      const oscillators: Oscillator[] = []
+      const synth = new PolySynth(audioContext, {
+        ...options,
+        createVoice: (ctx: AudioContext) => {
+          const osc = new Oscillator(ctx, { envelope })
+          oscillators.push(osc)
+          return osc
+        },
+      })
+      return { synth, oscillators }
+    }
+
+    it('force-stops a released voice\'s ringing tail instead of leaving it to ring out', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 2 })
+      const h1 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+      await h1.stop() // release scheduled ~0.5s out — voice becomes 'released'
+
+      const releasingNode = oscillators[0].audioSourceNode
+      const stopSpy = vi.spyOn(releasingNode, 'stop')
+
+      synth.stopAll()
+
+      // Before the fix, stopAll() only iterated 'active' voices — a
+      // released voice's node was never touched a second time, so its
+      // original ~0.5s release tail kept ringing straight through panic.
+      expect(stopSpy).toHaveBeenCalled()
+      const rescheduledStopTime = stopSpy.mock.calls[0]?.[0] as number
+      expect(rescheduledStopTime).toBeLessThan(audioContext.currentTime + envelope.release)
+    })
+
+    it('frees the released voice\'s slot once the forced-early stop actually renders', async () => {
+      const { synth, oscillators } = createTrackedSynth({ maxVoices: 1 })
+      const h1 = synth.play({ frequency: 440 })
+      await Promise.resolve()
+      await h1.stop()
+
+      synth.stopAll()
+
+      // Simulate the forced-early stop's onended actually firing
+      oscillators[0].audioSourceNode.onended?.({} as Event)
+
+      synth.play({ frequency: 550 })
+      await Promise.resolve()
+
+      // Recycled the same pooled voice — no new voice was needed to
+      // satisfy the play() because the panic-killed slot became available.
+      expect(oscillators.length).toBe(1)
+    })
+
+    it('stopAll on an already-active voice still reaches 0 activeVoices synchronously (no regression)', () => {
+      const synth = new PolySynth(audioContext, { maxVoices: 4 })
+      synth.play({ frequency: 440 })
+      synth.play({ frequency: 550 })
+      expect(synth.activeVoices).toBe(2)
+
+      synth.stopAll()
+
+      expect(synth.activeVoices).toBe(0)
+    })
+  })
+
+  // ─── R7 low: maxVoices validation ──────────────────────────────
+
+  describe('maxVoices validation', () => {
+    it('throws a descriptive error for maxVoices: 0', () => {
+      expect(() => new PolySynth(audioContext, { maxVoices: 0 })).toThrow(/maxVoices/)
+    })
+
+    it('throws a descriptive error for negative maxVoices', () => {
+      expect(() => new PolySynth(audioContext, { maxVoices: -2 })).toThrow(/maxVoices/)
+    })
+
+    it('throws for non-finite maxVoices', () => {
+      expect(() => new PolySynth(audioContext, { maxVoices: Number.NaN })).toThrow(/maxVoices/)
+    })
+
+    it('accepts maxVoices: 1', () => {
+      expect(() => new PolySynth(audioContext, { maxVoices: 1 })).not.toThrow()
+    })
+  })
 })

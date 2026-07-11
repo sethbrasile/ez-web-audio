@@ -1,8 +1,9 @@
 import type { BaseSound } from './base-sound'
 import type { BaseEffect } from './effects/base-effect'
-import type { GrainPlayer } from './grain-player'
 import type { Oscillator } from './oscillator'
-import type { PolySynth } from './poly-synth'
+import { smoothParamSet } from '@utils/param-smoothing'
+import { GrainPlayer } from './grain-player'
+import { PolySynth } from './poly-synth'
 
 /**
  * Waveform types supported by the LFO.
@@ -27,9 +28,22 @@ export interface LFOOptions {
  * Options for connecting an LFO to a target parameter.
  */
 export interface LFOConnectOptions {
-  /** Sync LFO start/stop with sound play/stop events (default: false) */
+  /**
+   * Sync LFO start/stop with sound play/stop events (default: false).
+   *
+   * **Requires** the target to actually emit 'play'/'stop' (BaseSound
+   * subclasses, GrainPlayer). PolySynth does not — connecting with
+   * `syncLifecycle: true` against a PolySynth logs a console.warn and the
+   * option is a no-op; call `lfo.start()`/`lfo.stop()` manually instead.
+   */
   syncLifecycle?: boolean
-  /** Reset LFO phase on sound play event (default: false) */
+  /**
+   * Reset LFO phase on sound play event (default: false).
+   *
+   * Same event-contract requirement as {@link syncLifecycle} — a target
+   * that never emits 'play' (PolySynth) logs a console.warn instead of
+   * silently doing nothing.
+   */
   retrigger?: boolean
   /**
    * Depth unit: 'ratio' (most params), 'cents' (frequency), or 'absolute'.
@@ -39,6 +53,15 @@ export interface LFOConnectOptions {
    * later (e.g., gain is adjusted), the modulation depth will NOT automatically
    * update. Use 'absolute' for fixed depth, or call disconnect()/connect() to
    * recalculate.
+   *
+   * **Clamping:** for 'ratio', `depth` is clamped to [0, 1] (documented range).
+   * For 'cents', negative depth is clamped to 0 (a negative value would only
+   * flip the LFO's phase). In both cases, if the target parameter's current
+   * value is at (or near) 0 — e.g. pan centered — depth is used directly as
+   * an absolute swing instead of a ratio of zero. 'absolute' is NOT clamped —
+   * it's the fixed-depth escape hatch and has no natural range to clamp
+   * against; a too-large absolute depth can still push a non-negative param
+   * (gain, frequency) below zero at the trough.
    */
   depthUnit?: 'ratio' | 'cents' | 'absolute'
   /**
@@ -125,7 +148,10 @@ export class LFO {
         }
       }
       else {
-        (this._oscillatorNode as OscillatorNode).frequency.value = value
+        // Smoothed instead of a raw .value assignment (R8#5) — matches the
+        // depth setter's pop-prevention (M3) with the same asymmetry vs.
+        // rampFrequency()'s explicit setTargetAtTime.
+        smoothParamSet((this._oscillatorNode as OscillatorNode).frequency, value, this._audioContext!.currentTime)
       }
     }
   }
@@ -197,6 +223,15 @@ export class LFO {
       throw new Error('LFO connect(): "syncLifecycle" and "retrigger" are mutually exclusive — use one or the other.')
     }
 
+    // M5: connecting the same target+param twice used to silently double the
+    // modulation (two depthGains summing into the same AudioParam). Replace
+    // rather than stack — disconnect the existing connection first so a
+    // caller re-connecting with new options gets one active connection.
+    const existing = this._connections.find(c => c.target === target && c.paramName === paramName)
+    if (existing) {
+      this.disconnect(target, paramName)
+    }
+
     // Extract AudioContext from target
     if (!this._audioContext) {
       this._audioContext = this._extractAudioContext(target)
@@ -231,40 +266,67 @@ export class LFO {
       options: opts,
     }
 
-    // Set up lifecycle sync
+    // Set up lifecycle sync (H6: gated on the target's REAL event contract —
+    // PolySynth emits only 'voicestolen'/'dispose', GrainPlayer has
+    // 'play'/'stop' but no 'end'. The old `_isBaseSound` duck-type check
+    // matched all three via getGainNode/getPannerNode alone, so syncLifecycle
+    // on a PolySynth silently registered listeners for events that never
+    // fire — the LFO never auto-started/stopped, with no signal to the
+    // caller that anything was wrong.)
     if (opts.syncLifecycle) {
-      record.playListener = (() => {
-        if (!this._isRunning) {
-          this.start()
+      if (this._supportsPlayStopEvents(target)) {
+        const playListener = (() => {
+          if (!this._isRunning) {
+            this.start()
+          }
+        }) as EventListener
+
+        const stopListener = (() => {
+          // Disconnect only this target — not the entire LFO (QC-1-04)
+          this.disconnect(target)
+          // If no connections remain, stop the oscillator
+          if (this._connections.length === 0 && this._isRunning) {
+            this.stop()
+          }
+        }) as EventListener
+
+        record.playListener = playListener
+        record.stopListener = stopListener
+        target.addEventListener('play', playListener)
+        target.addEventListener('stop', stopListener)
+
+        if (this._supportsEndEvent(target)) {
+          record.endListener = stopListener
+          target.addEventListener('end', stopListener)
         }
-      }) as EventListener
-
-      record.stopListener = (() => {
-        // Disconnect only this target — not the entire LFO (QC-1-04)
-        this.disconnect(target)
-        // If no connections remain, stop the oscillator
-        if (this._connections.length === 0 && this._isRunning) {
-          this.stop()
-        }
-      }) as EventListener
-
-      record.endListener = record.stopListener
-
-      if (this._isBaseSound(target)) {
-        target.addEventListener('play', record.playListener)
-        target.addEventListener('stop', record.stopListener)
-        target.addEventListener('end', record.endListener)
+      }
+      else {
+        console.warn(
+          `[ez-web-audio] LFO connect(): "syncLifecycle" requires the target to emit `
+          + `'play'/'stop' events — "${this._targetName(target)}" does not. The LFO will `
+          + `NOT auto-start/stop with this target's playback; call lfo.start()/lfo.stop() `
+          + `manually instead, or omit syncLifecycle.`,
+        )
       }
     }
 
     // Set up retrigger
-    if (opts.retrigger && this._isBaseSound(target)) {
-      const retriggerListener = (() => {
-        this._restart()
-      }) as EventListener
+    if (opts.retrigger) {
+      if (this._supportsPlayStopEvents(target)) {
+        const retriggerListener = (() => {
+          this._restart()
+        }) as EventListener
 
-      record.playListener = retriggerListener
-      target.addEventListener('play', retriggerListener)
+        record.playListener = retriggerListener
+        target.addEventListener('play', retriggerListener)
+      }
+      else {
+        console.warn(
+          `[ez-web-audio] LFO connect(): "retrigger" requires the target to emit a 'play' `
+          + `event — "${this._targetName(target)}" does not. The LFO phase will NOT reset `
+          + `on this target's playback.`,
+        )
+      }
     }
 
     // Register dispose event listener for cleanup
@@ -477,6 +539,28 @@ export class LFO {
     return this._isBaseSound(target) && 'audioSourceNode' in target && 'freq' in target
   }
 
+  /**
+   * Whether `target` actually emits 'play'/'stop' — the events syncLifecycle
+   * and retrigger depend on (H6). `_isBaseSound` duck-types on
+   * getGainNode/getPannerNode alone, which PolySynth and GrainPlayer both
+   * satisfy despite having very different event contracts (see
+   * PolySynthEventMap/GrainPlayerEventMap in events/event-types.ts):
+   * PolySynth emits neither; GrainPlayer emits both but no 'end'.
+   */
+  private _supportsPlayStopEvents(target: LFOTarget): target is BaseSound | GrainPlayer {
+    return this._isBaseSound(target) && !(target instanceof PolySynth)
+  }
+
+  /** Whether `target` additionally emits 'end' (real BaseSound instances only — not GrainPlayer). */
+  private _supportsEndEvent(target: LFOTarget): target is BaseSound {
+    return this._supportsPlayStopEvents(target) && !(target instanceof GrainPlayer)
+  }
+
+  /** Best-effort human-readable name for a target, for warning messages. */
+  private _targetName(target: LFOTarget): string {
+    return target.constructor?.name ?? 'target'
+  }
+
   private _extractAudioContext(target: LFOTarget): AudioContext {
     if (this._isBaseSound(target)) {
       return target.audioContext
@@ -518,6 +602,21 @@ export class LFO {
     return param
   }
 
+  /**
+   * Compute the absolute modulation swing (depthGain.gain value) for a
+   * connection. `depth` documents as 0-1 for 'ratio' (LFOOptions.depth,
+   * LFOConnectOptions.depth); this is now enforced (M4) rather than merely
+   * documented — an un-clamped depth >1 (or negative) drove the modulated
+   * param negative at the LFO's trough ("phase inversion"), audible as a
+   * polarity flip on tremolo/vibrato.
+   *
+   * 'absolute' is deliberately left unclamped: it's the fixed-depth escape
+   * hatch for callers who want a specific swing regardless of the target's
+   * current value. A too-large absolute depth CAN still push a non-negative
+   * param (gain, frequency) below zero at the trough — that's the caller's
+   * responsibility, not validated here, since 'absolute' has no natural
+   * upper bound to clamp against.
+   */
   private _calculateDepth(
     audioParam: AudioParam,
     paramName: string,
@@ -531,16 +630,46 @@ export class LFO {
         return depth
       case 'cents': {
         const paramValue = audioParam.value
-        return paramValue * (2 ** (depth / 1200) - 1)
+        // Cents has no natural [0,1] range (vibrato commonly uses 50-1200+),
+        // so only the sign is guarded here — a negative cents depth just
+        // flips the LFO's phase, which M4 disallows for consistency with
+        // 'ratio'. The magnitude is bounded below via the shared
+        // non-negative-param clamp instead of an artificial cents ceiling.
+        const clampedDepth = Math.max(0, depth)
+        const absoluteDepth = paramValue * (2 ** (clampedDepth / 1200) - 1)
+        return this._clampDepthForNonNegativeParam(absoluteDepth, paramValue)
       }
       case 'ratio': {
         const paramValue = audioParam.value
+        const clampedDepth = Math.max(0, Math.min(1, depth))
         if (Math.abs(paramValue) < 0.001) {
-          return depth // Zero fallback — use depth as absolute
+          // Zero fallback: paramValue is (near) zero, so a ratio has nothing
+          // to multiply against — fall back to using depth directly as an
+          // absolute swing instead (R8#6, undocumented previously). Only
+          // reachable for bipolar params whose "centered" value is 0 (e.g.
+          // pan) — depth is still clamped to [0,1] for consistency with the
+          // documented ratio contract.
+          return clampedDepth
         }
-        return paramValue * depth
+        const absoluteDepth = paramValue * clampedDepth
+        return this._clampDepthForNonNegativeParam(absoluteDepth, paramValue)
       }
     }
+  }
+
+  /**
+   * Prevent a ratio/cents-derived modulation swing from driving a
+   * non-negative param (gain, frequency — whose value can never legitimately
+   * go below 0) negative at the LFO's trough (M4's "phase inversion" class).
+   * Bipolar params (pan, detune) are left untouched: their current value can
+   * legitimately be negative already, so a swing that goes negative there is
+   * normal, not a defect.
+   */
+  private _clampDepthForNonNegativeParam(absoluteDepth: number, paramValue: number): number {
+    if (paramValue >= 0 && absoluteDepth > paramValue) {
+      return paramValue
+    }
+    return absoluteDepth
   }
 
   private _initNodes(): void {
@@ -666,10 +795,13 @@ export class LFO {
   }
 
   private _updateAllDepthGains(): void {
+    const now = this._audioContext?.currentTime ?? 0
     for (const conn of this._connections) {
       const connectionDepth = conn.options.depth ?? this._depth
       const absoluteDepth = this._calculateDepth(conn.audioParam, conn.paramName, connectionDepth, conn.options.depthUnit)
-      conn.depthGain.gain.value = absoluteDepth
+      // Smoothed (M3) — matches rampDepth()'s setTargetAtTime instead of a
+      // raw .value write, which pops when the LFO is mid-cycle.
+      smoothParamSet(conn.depthGain.gain, absoluteDepth, now)
     }
   }
 }

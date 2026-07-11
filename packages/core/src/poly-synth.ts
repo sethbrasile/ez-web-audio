@@ -244,6 +244,13 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
   ) {
     super()
     this._maxVoices = options?.maxVoices ?? 8
+    // R7 low: maxVoices <= 0 previously failed late (and unhelpfully) inside
+    // play()'s steal path — findVoiceToSteal() returns null on an empty
+    // pool, hitting the generic "No voice available for allocation" throw
+    // with no indication the real problem is construction-time config.
+    if (!Number.isFinite(this._maxVoices) || this._maxVoices < 1) {
+      throw new Error(`PolySynth maxVoices must be a finite number >= 1. Received: ${this._maxVoices}`)
+    }
     this._stealStrategy = options?.stealStrategy ?? 'lru'
 
     // Build voice factory
@@ -649,7 +656,19 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
   // ─── Master Controls ─────────────────────────────────────────────
 
   /**
-   * Stop all active voices immediately. All handles become stale.
+   * Stop all active voices immediately, including voices already mid-release
+   * from an earlier stop() call. All handles become stale.
+   *
+   * State is updated synchronously here rather than deferred to the
+   * oscillator's own 'stop'/'end' events (as `setupVoiceListeners` does for
+   * a normal single-voice stop) — those events depend on Oscillator's own
+   * async play/stop machinery (e.g. an AudioContext.resume() still in
+   * flight), which panic can't afford to wait on. Recycling the slot
+   * immediately is click-safe: G1's `Oscillator.setup()` already detects a
+   * still-audible outgoing node (via `_isPlaying`/`_releaseTailEndsAt`) on
+   * the NEXT play() and routes it through a release-gain handoff instead of
+   * a hard cut, regardless of whether this method's synchronous bookkeeping
+   * or the oscillator's own async event fires first.
    *
    * @example
    * ```typescript
@@ -657,11 +676,16 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
    * ```
    */
   stopAll(): void {
+    const now = this.audioContext.currentTime
+    const fadeTime = 0.01 // 10ms anti-click ramp, matches Oscillator.stopAt()
+
     for (const voice of this.voices) {
       if (voice.state === 'active') {
         voice.handle?._invalidate()
         voice.handle = null
-        // Clean up listeners before stopping
+        // Clean up listeners before stopping — state is being driven
+        // synchronously below, so the async 'stop'/'end' this triggers must
+        // not also try to transition it (double-decrement / stale-entry risk).
         this.cleanupVoiceListeners(voice)
         try {
           void voice.oscillator.stop()
@@ -671,6 +695,28 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
         }
         voice.state = 'available'
         this._activeCount--
+      }
+      else if (voice.state === 'released') {
+        // H5: previously skipped entirely — a mid-release tail from an
+        // earlier stop() kept ringing for up to `release` seconds after
+        // panic. Oscillator has no public API to force an already-released
+        // voice silent early (its own stop()/stopAt() no-op once
+        // `_isPlaying` is already false), so hard-neutralize the node
+        // directly: cancel the in-flight release ramp and fade+stop it now.
+        voice.handle?._invalidate()
+        voice.handle = null
+        this.cleanupVoiceListeners(voice)
+        try {
+          const { gain } = voice.oscillator.getGainNode()
+          gain.cancelScheduledValues(now)
+          gain.setValueAtTime(gain.value, now)
+          gain.linearRampToValueAtTime(0, now + fadeTime)
+          voice.oscillator.audioSourceNode.stop(now + fadeTime)
+        }
+        catch {
+          // Already stopped/ended
+        }
+        voice.state = 'available'
       }
     }
   }
@@ -828,7 +874,8 @@ export class PolySynth extends TypedEventEmitter<PolySynthEventMap> {
     this._disposed = true
     this.emit('dispose', { source: this })
 
-    // Silence future events
+    // Release every registered listener, then silence future events
+    this._clearListeners()
     this.dispatchEvent = () => false
   }
 }

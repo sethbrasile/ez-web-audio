@@ -232,6 +232,42 @@ describe('lfo', () => {
       const lfo = new LFO()
       expect(() => lfo.connect(effect, 'nonexistent')).toThrow()
     })
+
+    // M5: connecting the same target+param twice used to stack a second
+    // depthGain -> audioParam edge, silently doubling the modulation swing.
+    it('connecting the same target+param twice replaces the connection instead of doubling it', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 0.3 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+      const firstDepthGain = gainNodes[gainNodes.length - 1]
+      const firstDisconnectSpy = vi.spyOn(firstDepthGain, 'disconnect')
+
+      lfo.connect(sound, 'gain') // same target + param — must replace, not stack
+      const secondDepthGain = gainNodes[gainNodes.length - 1]
+
+      // The first depthGain's edge into the AudioParam must have been torn
+      // down — otherwise both depthGains sum into gainNode.gain and the
+      // modulation depth doubles.
+      expect(firstDisconnectSpy).toHaveBeenCalled()
+      expect(secondDepthGain).not.toBe(firstDepthGain)
+
+      // A single disconnect() call fully clears the target+param — if a
+      // stale second connection were still stacked, disconnecting once
+      // would leave modulation still applied via the surviving duplicate.
+      lfo.disconnect(sound, 'gain')
+      const secondDisconnectSpy = vi.spyOn(secondDepthGain, 'disconnect')
+      lfo.disconnect(sound, 'gain') // already gone — must be a safe no-op
+      expect(secondDisconnectSpy).not.toHaveBeenCalled()
+    })
   })
 
   // ===== 4. Depth Calculation (MOD-02) =====
@@ -285,6 +321,118 @@ describe('lfo', () => {
       lfo.connect(sound, 'gain', { depth: 0.8 })
       lfo.start()
       expect(lfo.isRunning).toBe(true)
+    })
+
+    // M4: depth is documented as 0-1 for 'ratio' but was previously
+    // unclamped — a ratio depth >1 drove the modulated gain param negative
+    // at the LFO's trough ("phase inversion"). Depth is clamped to [0,1]
+    // now, so the resulting swing can never exceed the param's own value.
+    it('ratio depth > 1 is clamped so the trough cannot go negative', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      sound.getGainNode().gain.value = 1
+      const lfo = new LFO({ depth: 5 }) // grossly over the documented 0-1 range
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // Clamped to depth=1 -> absoluteDepth = 1 * 1.0 = 1.0, never more —
+      // trough (paramValue - absoluteDepth) bottoms out at exactly 0, not
+      // negative.
+      expect(depthGain.gain.value).toBeCloseTo(1, 5)
+    })
+
+    it('negative ratio depth is clamped to 0 (no phase flip)', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      sound.getGainNode().gain.value = 1
+      const lfo = new LFO({ depth: -2 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      expect(depthGain.gain.value).toBeCloseTo(0, 5)
+    })
+
+    it('cents depth large enough to overshoot the param is clamped so frequency cannot go negative', () => {
+      const osc = new Oscillator(ctx, { frequency: 440 })
+      // 2400 cents = 2 octaves -> unclamped absoluteDepth = 440*(2^2-1) = 1320,
+      // more than triple the base frequency; trough would be 440-1320 = -880.
+      const lfo = new LFO({ depth: 2400 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(osc, 'frequency')
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // Clamped to the param's own value — trough bottoms out at 0, not negative.
+      expect(depthGain.gain.value).toBeLessThanOrEqual(440)
+      expect(depthGain.gain.value).toBeCloseTo(440, 5)
+    })
+
+    it('depthUnit="absolute" is NOT clamped, even if it would drive the param negative', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      sound.getGainNode().gain.value = 1
+      const lfo = new LFO({ depth: 50 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain', { depthUnit: 'absolute' })
+
+      const depthGain = gainNodes[gainNodes.length - 1]
+      // Deliberately unclamped escape hatch — full 50 passes through.
+      expect(depthGain.gain.value).toBeCloseTo(50, 1)
+    })
+
+    // M3: depth setter must smooth through setTargetAtTime, not pop the
+    // depthGain directly — matches rampDepth()'s existing smoothing.
+    it('setting depth on a live connection smooths via setTargetAtTime, not a raw .value pop', () => {
+      const sound = new Sound(ctx, createMockAudioBuffer(ctx))
+      const lfo = new LFO({ depth: 0.3 })
+
+      const gainNodes: GainNode[] = []
+      const originalCreateGain = ctx.createGain.bind(ctx)
+      vi.spyOn(ctx, 'createGain').mockImplementation(() => {
+        const node = originalCreateGain()
+        gainNodes.push(node)
+        return node
+      })
+
+      lfo.connect(sound, 'gain')
+      const depthGain = gainNodes[gainNodes.length - 1]
+      const setTargetSpy = vi.spyOn(depthGain.gain, 'setTargetAtTime')
+      const rawValueSetter = vi.spyOn(depthGain.gain, 'value', 'set')
+
+      lfo.depth = 0.8
+
+      expect(setTargetSpy).toHaveBeenCalled()
+      expect(rawValueSetter).not.toHaveBeenCalled()
     })
   })
 
@@ -835,12 +983,33 @@ describe('lfo', () => {
       lfo.stop()
     })
 
-    it('supports syncLifecycle with GrainPlayer', () => {
+    it('supports syncLifecycle with GrainPlayer: play() actually starts the LFO', () => {
+      // H6: GrainPlayer genuinely emits 'play'/'stop' — syncLifecycle should
+      // wire real listeners, not just "not throw" while doing nothing.
       const buffer = createMockAudioBuffer(ctx)
       const gp = new GrainPlayer(ctx, buffer)
       const lfo = new LFO({ frequency: 5, depth: 0.3 })
 
-      expect(() => lfo.connect(gp, 'gain', { syncLifecycle: true })).not.toThrow()
+      lfo.connect(gp, 'gain', { syncLifecycle: true })
+      expect(lfo.isRunning).toBe(false)
+
+      gp.play()
+      expect(lfo.isRunning).toBe(true)
+
+      gp.stop()
+      expect(lfo.isRunning).toBe(false)
+    })
+
+    it('does not warn when syncLifecycle is used with GrainPlayer (event contract is satisfied)', () => {
+      const buffer = createMockAudioBuffer(ctx)
+      const gp = new GrainPlayer(ctx, buffer)
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      lfo.connect(gp, 'gain', { syncLifecycle: true })
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
     })
   })
 
@@ -877,6 +1046,39 @@ describe('lfo', () => {
 
       lfo.disconnect()
       lfo.stop()
+    })
+
+    // H6: PolySynth's event map is voicestolen/dispose only — it never
+    // emits 'play'/'stop'. Before the fix, `_isBaseSound`'s duck-typed
+    // getGainNode/getPannerNode check let syncLifecycle silently register
+    // listeners for events that could never fire, so the LFO simply never
+    // auto-started/stopped, with zero signal to the caller.
+    it('warns instead of silently no-oping when syncLifecycle is used with PolySynth', () => {
+      const ps = new PolySynth(ctx, { maxVoices: 4 })
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      lfo.connect(ps, 'gain', { syncLifecycle: true })
+
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('syncLifecycle'))
+      warnSpy.mockRestore()
+
+      // And, confirming the "silently does nothing" half of the bug: there
+      // really is no way for PolySynth playback to auto-start this LFO.
+      expect(lfo.isRunning).toBe(false)
+      ps.play({ frequency: 440 })
+      expect(lfo.isRunning).toBe(false)
+    })
+
+    it('warns instead of silently no-oping when retrigger is used with PolySynth', () => {
+      const ps = new PolySynth(ctx, { maxVoices: 4 })
+      const lfo = new LFO({ frequency: 5, depth: 0.3 })
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      lfo.connect(ps, 'gain', { retrigger: true })
+
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('retrigger'))
+      warnSpy.mockRestore()
     })
   })
 
