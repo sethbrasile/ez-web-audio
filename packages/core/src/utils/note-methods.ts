@@ -56,6 +56,12 @@ export function sortNotes<T extends IMusicallyAware>(notes: IMusicallyAware[]): 
 export function octaveShift(octaves: IMusicallyAware[][]): IMusicallyAware[][] {
   // Pull first octave from beginning of array
   const firstOctave = octaves.shift() || []
+  // Single-octave collections (e.g. small/percussion soundfonts) have nothing
+  // left to shift against after removing the first octave — return as-is
+  // instead of crashing on octaves[0] being undefined.
+  if (octaves.length === 0) {
+    return [firstOctave]
+  }
   // Get all the note names from the second octave for comparison
   const secondOctaveNames = octaves[0].map(note => note.name)
   // Get the note name of the last note in the first octave

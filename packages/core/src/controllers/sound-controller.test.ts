@@ -58,6 +58,16 @@ describe('soundController', () => {
       expect(oldSourceSpy).not.toHaveBeenCalled()
       expect(newSourceSpy).toHaveBeenCalled()
     })
+
+    it('carries an immediate update("detune") value over to the replacement source node (H18)', () => {
+      controller.update('detune').to(100).as('ratio')
+      expect(bufferSourceNode.detune.value).toBe(100)
+
+      const newSource = audioContext.createBufferSource()
+      controller.updateAudioSource(newSource)
+
+      expect(newSource.detune.value).toBe(100)
+    })
   })
 
   describe('setValuesAtTimes', () => {
@@ -104,6 +114,50 @@ describe('soundController', () => {
       const spy = vi.spyOn(pannerNode.pan, 'exponentialRampToValueAtTime')
       controller.setValuesAtTimes()
       expect(spy).toHaveBeenCalledWith(0.5, expect.any(Number))
+    })
+
+    it('documented fade-in idiom (.to(0).at(0) + .to(1).endingAt(1)) never pushes a raw 0 setValueAtTime ahead of an exponential ramp (H19)', () => {
+      controller.onPlaySet('gain').to(0).at(0)
+      controller.onPlaySet('gain').to(1).endingAt(1)
+      const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+      const rampSpy = vi.spyOn(gainNode.gain, 'exponentialRampToValueAtTime')
+      controller.setValuesAtTimes()
+
+      // The zero must be clamped to a near-zero value — a literal 0 previous
+      // event value makes exponentialRampToValueAtTime hold at 0 for the
+      // whole ramp then jump at the end (audible pop).
+      expect(setValueSpy).not.toHaveBeenCalledWith(0, expect.any(Number))
+      expect(setValueSpy).toHaveBeenCalledWith(expect.closeTo(0.00001, 5), expect.any(Number))
+      expect(rampSpy).toHaveBeenCalledWith(1, expect.any(Number))
+    })
+
+    it('a standalone .to(0) with no exponential ramp pending is left as exact 0 (no unnecessary clamp)', () => {
+      controller.onPlaySet('gain').to(0).at(0)
+      const setValueSpy = vi.spyOn(gainNode.gain, 'setValueAtTime')
+      controller.setValuesAtTimes()
+      expect(setValueSpy).toHaveBeenCalledWith(0, expect.any(Number))
+    })
+
+    it('a sign-crossing default-exponential pan ramp falls back to linear (R13#5)', () => {
+      pannerNode.pan.value = -1
+      controller.onPlaySet('pan').to(1).endingAt(1)
+      const expSpy = vi.spyOn(pannerNode.pan, 'exponentialRampToValueAtTime')
+      const linSpy = vi.spyOn(pannerNode.pan, 'linearRampToValueAtTime')
+      controller.setValuesAtTimes()
+
+      expect(expSpy).not.toHaveBeenCalled()
+      expect(linSpy).toHaveBeenCalledWith(1, expect.any(Number))
+    })
+
+    it('a same-sign exponential pan ramp still uses exponentialRampToValueAtTime', () => {
+      pannerNode.pan.value = 0.2
+      controller.onPlaySet('pan').to(0.9).endingAt(1)
+      const expSpy = vi.spyOn(pannerNode.pan, 'exponentialRampToValueAtTime')
+      const linSpy = vi.spyOn(pannerNode.pan, 'linearRampToValueAtTime')
+      controller.setValuesAtTimes()
+
+      expect(linSpy).not.toHaveBeenCalled()
+      expect(expSpy).toHaveBeenCalledWith(0.9, expect.any(Number))
     })
   })
 

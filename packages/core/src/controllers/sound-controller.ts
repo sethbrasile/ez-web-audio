@@ -17,6 +17,7 @@ export class SoundController extends BaseParamController implements ParamControl
    * @param source - The new AudioBufferSourceNode
    */
   public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
+    this.transferDetuneTo(source)
     this.bufferSourceNode = source as AudioBufferSourceNode
     this.audioSource = this.bufferSourceNode
   }
@@ -29,6 +30,7 @@ export class SoundController extends BaseParamController implements ParamControl
     const { bufferSourceNode } = this
     const currentTime = bufferSourceNode.context.currentTime
 
+    this.clampPendingZeroBeforeExponentialRamp()
     this.applyValues(this.startingValues, currentTime)
     this.applyValues(this.valuesAtTime, currentTime)
     this.applyRampValues(this.exponentialValues, currentTime, 'exponential')

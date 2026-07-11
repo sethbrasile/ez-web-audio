@@ -30,9 +30,9 @@ describe('frequency-map', () => {
     expect(frequencyMap.A5).toBe(880)
   })
 
-  it('has 100 entries (12 notes × 8 octaves + 4 notes in octave 8)', () => {
+  it('has 142 entries (12 notes × 8 octaves + 4 notes in octave 8, plus sharp aliases for each flat/natural pair)', () => {
     const keys = Object.keys(frequencyMap)
-    expect(keys.length).toBe(100)
+    expect(keys.length).toBe(142)
   })
 
   it('contains all natural notes from C0 to B7', () => {
@@ -62,10 +62,24 @@ describe('frequency-map', () => {
     expect(frequencyMap.Eb8).toBe(4978.03)
   })
 
-  it('does not include sharp notation (sharps are commented out)', () => {
-    expect(frequencyMap).not.toHaveProperty('C#4')
-    expect(frequencyMap).not.toHaveProperty('F#4')
-    expect(frequencyMap).not.toHaveProperty('G#4')
+  it('includes sharp notation as enharmonic aliases of the flat entries', () => {
+    expect(frequencyMap).toHaveProperty('C#4')
+    expect(frequencyMap).toHaveProperty('F#4')
+    expect(frequencyMap).toHaveProperty('G#4')
+    expect(frequencyMap['C#4']).toBe(frequencyMap.Db4)
+    expect(frequencyMap['F#4']).toBe(frequencyMap.Gb4)
+    expect(frequencyMap['G#4']).toBe(frequencyMap.Ab4)
+  })
+
+  it('sharp aliases exist for every flat entry, and vice versa', () => {
+    const flats = ['Db', 'Eb', 'Gb', 'Ab', 'Bb']
+    const sharps = ['C#', 'D#', 'F#', 'G#', 'A#']
+    for (let octave = 0; octave <= 7; octave++) {
+      for (let i = 0; i < flats.length; i++) {
+        expect(frequencyMap).toHaveProperty(`${flats[i]}${octave}`)
+        expect(frequencyMap).toHaveProperty(`${sharps[i]}${octave}`)
+      }
+    }
   })
 
   it('all frequencies are positive numbers', () => {

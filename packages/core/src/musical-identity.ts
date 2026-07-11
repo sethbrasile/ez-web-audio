@@ -46,7 +46,14 @@ export interface IMusicallyAware {
  * console.log(note.render())   // "A4"
  * ```
  */
-const { warn } = console
+/**
+ * Cents tolerance for matching a computed/non-tabled frequency to the nearest
+ * known note. Half a semitone (50 cents) is the widest match before the
+ * nearest table entry is unambiguously a different note.
+ * @internal
+ */
+const FREQUENCY_MATCH_TOLERANCE_CENTS = 50
+
 // eslint-disable-next-line ts/explicit-function-return-type
 export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
   return class MusicalIdentity extends Base implements IMusicallyAware {
@@ -54,6 +61,17 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
      * Constructor accepts any args to pass through to the mixin base class.
      * The last argument is treated as note identifier options (frequency, identifier, letter, accidental, octave).
      * The any[] type is required by TypeScript's mixin pattern — the mixin must accept all possible base class constructor signatures.
+     *
+     * @remarks
+     * If multiple, conflicting identifier options are provided (e.g. both
+     * `identifier` and `frequency`, or `identifier`/`frequency` alongside
+     * `letter`/`accidental`/`octave`), a console.warn is logged (this is
+     * probably a mistake) but construction proceeds. Precedence is
+     * last-property-wins in application order: `identifier`, then
+     * `frequency`, then `letter`, then `accidental`, then `octave` — each
+     * subsequent assignment can overwrite fields set by an earlier one
+     * (e.g. `octave` applied last always wins over the octave implied by
+     * `identifier` or `frequency`).
      */
     constructor(...args: any[]) {
       super(...args)
@@ -65,7 +83,7 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
         const { identifier, frequency, letter, accidental, octave } = opts
         // identifier and frequency don't make sense if others are provided
         if ((identifier && frequency) || ((identifier || frequency) && (letter || accidental || octave))) {
-          warn('ez-web-audio: upon instantiation, multiple note identifiers were provided which might be a mistake and ez-web-audio has no way to determine which should be preferred', opts, this)
+          console.warn('ez-web-audio: upon instantiation, multiple note identifiers were provided which might be a mistake and ez-web-audio has no way to determine which should be preferred', opts, this)
         }
         if (identifier)
           this.identifier = identifier
@@ -131,12 +149,46 @@ export function MusicallyAware<TBase extends Constructor>(Base: TBase) {
       return 0
     }
 
+    /**
+     * Setting frequency resolves to the nearest tabled note within
+     * {@link FREQUENCY_MATCH_TOLERANCE_CENTS} cents (a computed/synthesized
+     * frequency rarely lands on an exact table value). If nothing is close
+     * enough, a warning is logged and the identifier is left unchanged
+     * rather than silently going stale.
+     */
     set frequency(value) {
+      if (!(value > 0)) {
+        console.warn(`ez-web-audio: cannot set frequency to a non-positive value (${value}); identifier left unchanged`, value, this)
+        return
+      }
+
       let key: AcceptableNote
+      let nearestKey: AcceptableNote | undefined
+      let nearestCents = Infinity
+
       for (key in frequencyMap) {
-        if (value === get(frequencyMap, key)) {
+        const tableValue = get<number>(frequencyMap, key)
+        if (!tableValue)
+          continue
+        // Exact matches short-circuit so precision loss in the cents
+        // calculation can never cause an exact table value to resolve to a
+        // neighboring note (preserves prior exact-match behavior exactly).
+        if (value === tableValue) {
           this.identifier = key
+          return
         }
+        const cents = Math.abs(1200 * Math.log2(value / tableValue))
+        if (cents < nearestCents) {
+          nearestCents = cents
+          nearestKey = key
+        }
+      }
+
+      if (nearestKey && nearestCents <= FREQUENCY_MATCH_TOLERANCE_CENTS) {
+        this.identifier = nearestKey
+      }
+      else {
+        console.warn(`ez-web-audio: frequency ${value} does not match any known note within ${FREQUENCY_MATCH_TOLERANCE_CENTS} cents; identifier left unchanged`, value, this)
       }
     }
 

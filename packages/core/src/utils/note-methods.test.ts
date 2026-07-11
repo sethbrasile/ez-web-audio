@@ -74,6 +74,23 @@ it('octaveShift works', () => {
   assert.deepEqual(result, correctOctaves)
 })
 
+it('octaveShift does not crash on a single-octave note collection (H17)', () => {
+  const arr1 = [A0, Bb0, B0]
+  const octaves = [arr1]
+
+  expect(() => octaveShift(octaves)).not.toThrow()
+
+  const result = octaveShift([arr1])
+  assert.deepEqual(result, [arr1])
+})
+
+it('sortNotes does not crash on a single-octave note collection (H17 regression via createFont path)', () => {
+  expect(() => sortNotes([A0, Bb0, B0])).not.toThrow()
+
+  const result = sortNotes([A0, Bb0, B0])
+  assert.deepEqual(result, [A0, Bb0, B0])
+})
+
 it('octaveSort works', () => {
   const alphabeticalOctaves = [
     [A0, Bb0, B0],

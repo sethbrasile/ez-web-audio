@@ -44,6 +44,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
    * @param source - The new OscillatorNode
    */
   public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
+    this.transferDetuneTo(source)
     this.oscillator = source as OscillatorNode
     this.audioSource = this.oscillator
   }
@@ -72,6 +73,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
     }
 
     // Then apply other parameter automation
+    this.clampPendingZeroBeforeExponentialRamp()
     this.applyValues(this.startingValues, currentTime)
     this.applyValues(this.valuesAtTime, currentTime)
     this.applyRampValues(this.exponentialValues, currentTime, 'exponential')

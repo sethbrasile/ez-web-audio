@@ -210,6 +210,16 @@ describe('oscillatorController', () => {
       controller.update('frequency').to(880).as('ratio')
       expect(newOscillator.frequency.value).toBe(880)
     })
+
+    it('carries an immediate update("detune") value over to the replacement oscillator node (H18)', () => {
+      controller.update('detune').to(100).as('ratio')
+      expect(oscillatorNode.detune.value).toBe(100)
+
+      const newOscillator = audioContext.createOscillator()
+      controller.updateAudioSource(newOscillator)
+
+      expect(newOscillator.detune.value).toBe(100)
+    })
   })
 
   describe('envelope + other scheduling coexistence', () => {

@@ -150,6 +150,26 @@ export class BaseParamController {
     this.pannerNode = pannerNode
   }
 
+  /**
+   * Carry the current detune value over to a replacement audio source node.
+   *
+   * Unlike gain/pan (which live on the persistent gain/panner nodes and
+   * therefore survive node replacement automatically), detune lives on the
+   * audioSource itself — the single-use OscillatorNode/AudioBufferSourceNode
+   * that gets swapped out on every play(). Without this, `update('detune')`
+   * would silently revert to 0 the next time the source node is replaced.
+   * Mirrors the copy-before-swap pattern used by updateGainNode/updatePannerNode.
+   * Call this BEFORE reassigning `this.audioSource` to the new node.
+   *
+   * @param newSource - The replacement audio source node
+   * @protected
+   */
+  protected transferDetuneTo(newSource: AudioSource): void {
+    if (newSource.detune) {
+      newSource.detune.value = this.audioSource?.detune?.value ?? 0
+    }
+  }
+
   protected _update(type: ControlType, value: number): void {
     switch (type) {
       case 'pan':
@@ -202,6 +222,15 @@ export class BaseParamController {
    * Schedules set via onPlaySet() are consumed (cleared) after each
    * play() call by {@link clearScheduledValues}. Re-schedule before
    * each play() if you need repeated automation.
+   *
+   * Accumulate-vs-replace semantics differ by call shape: `.to(value)` alone
+   * (no `.at()`/`.endingAt()`) REPLACES any prior un-timed schedule for the
+   * same type — calling it twice before play() keeps only the latest value.
+   * `.at(time)` and `.endingAt(time)` ACCUMULATE instead — each call pushes
+   * a new timed/ramp event, so calling either twice before play() applies
+   * both the stale and the new event on the next play(). Call
+   * {@link onPlaySet} again per-type only once per play() cycle unless you
+   * intend to schedule multiple timed events for that type.
    *
    * @example
    * ```typescript
@@ -329,6 +358,40 @@ export class BaseParamController {
   }
 
   /**
+   * Clamp any zero-valued startingValues/valuesAtTime entries that share a
+   * control type with a pending exponential ramp, to SAFE_NEAR_ZERO.
+   *
+   * An exponentialRampToValueAtTime whose previous scheduled value is
+   * exactly 0 holds the param at 0 for the entire ramp duration and then
+   * jumps to the target right at the end — an audible pop. onPlayRamp()'s
+   * `.from()` already guards this (see SAFE_NEAR_ZERO above), but the
+   * documented two-call fade-in idiom —
+   * `onPlaySet('gain').to(0).at(0)` followed by
+   * `onPlaySet('gain').to(1).endingAt(1)` (default exponential) —
+   * pushes a raw, unclamped 0 via `.at()` and reproduces the same pop.
+   * Call this before applying startingValues/valuesAtTime so every path
+   * into an exponential ramp is protected consistently.
+   *
+   * @see onPlaySet
+   * @protected
+   */
+  protected clampPendingZeroBeforeExponentialRamp(): void {
+    const exponentialTypes = new Set(this.exponentialValues.map(v => v.type))
+    if (exponentialTypes.size === 0)
+      return
+
+    this.startingValues = this.startingValues.map(item =>
+      (item.value === 0 && exponentialTypes.has(item.type))
+        ? { ...item, value: SAFE_NEAR_ZERO }
+        : item)
+
+    this.valuesAtTime = this.valuesAtTime.map(item =>
+      (item.value === 0 && exponentialTypes.has(item.type))
+        ? { ...item, value: SAFE_NEAR_ZERO }
+        : item)
+  }
+
+  /**
    * Clear all scheduled parameter arrays after they have been applied.
    *
    * Called at the end of setValuesAtTimes() in each controller subclass to ensure
@@ -384,7 +447,19 @@ export class BaseParamController {
         // exponentialRampToValueAtTime throws RangeError if value is 0 (Web Audio API constraint).
         // Use a near-zero value to approximate silence without throwing.
         const safeValue = value === 0 ? SAFE_NEAR_ZERO : value
-        param.exponentialRampToValueAtTime(safeValue, time)
+        // exponentialRampToValueAtTime is undefined by spec when the ramp
+        // crosses zero (the previous value and the target have opposite
+        // sign) — e.g. a default-exponential pan ramp from -1 to 1. Fall
+        // back to a linear ramp so the transition stays well-defined instead
+        // of relying on unspecified engine behavior.
+        const currentValue = param.value
+        const crossesSign = currentValue !== 0 && safeValue !== 0 && Math.sign(currentValue) !== Math.sign(safeValue)
+        if (crossesSign) {
+          param.linearRampToValueAtTime(value, time)
+        }
+        else {
+          param.exponentialRampToValueAtTime(safeValue, time)
+        }
         break
       }
       case 'linear':
