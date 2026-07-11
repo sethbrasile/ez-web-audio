@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 export interface Disposable {
   dispose?: () => void
@@ -8,12 +8,12 @@ export interface Disposable {
 export function useCleanup(): { register: <T extends Disposable>(d: T) => T, disposeAll: () => void } {
   const disposables = useRef<Set<Disposable>>(new Set())
 
-  function register<T extends Disposable>(d: T): T {
+  const register = useCallback(<T extends Disposable>(d: T): T => {
     disposables.current.add(d)
     return d
-  }
+  }, [])
 
-  function disposeAll(): void {
+  const disposeAll = useCallback((): void => {
     for (const d of disposables.current) {
       try {
         d.stop?.()
@@ -29,7 +29,7 @@ export function useCleanup(): { register: <T extends Disposable>(d: T) => T, dis
       }
     }
     disposables.current.clear()
-  }
+  }, [])
 
   // Registrations live in a ref, not component state, so re-renders never
   // reset them. The teardown closure reads `disposables.current` at the

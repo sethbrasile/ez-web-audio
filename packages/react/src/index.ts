@@ -1,3 +1,20 @@
+export type {
+  AnalyzerOptions,
+  AudioInput,
+  BeatTrackOptions,
+  GrainPlayerOptions,
+  LayeredSoundOptions,
+  LFOOptions,
+  Oscillator,
+  OscillatorOptions,
+  PolySynthOptions,
+  SamplerOptions,
+  SequenceOptions,
+  Sound,
+  SpriteManifest,
+  Transport,
+  TransportOptions,
+} from 'ez-web-audio'
 export { createFactoryHook } from './create-factory-hook'
 export type { UseFactoryReturn } from './create-factory-hook'
 export {

@@ -7,14 +7,29 @@
   "license": "MIT",
   "homepage": "https://sethbrasile.github.io/ez-web-audio",
   "repository": { "type": "git", "url": "https://github.com/sethbrasile/ez-web-audio.git", "directory": "packages/vue" },
+  "bugs": {
+    "url": "https://github.com/sethbrasile/ez-web-audio/issues"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "composables",
+    "web-audio",
+    "audio",
+    "ez-web-audio"
+  ],
   "sideEffects": false,
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": ["LICENSE", "README.md", "dist"],
   "engines": { "node": ">=18" },
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "prepublishOnly": "pnpm typecheck && pnpm test --run && pnpm build"
   },
   "peerDependencies": { "ez-web-audio": "workspace:^", "vue": "^3.4.0" },
   "devDependencies": {

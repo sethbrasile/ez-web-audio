@@ -1,3 +1,21 @@
+export type {
+  AnalyzerOptions,
+  AudioInput,
+  Beat,
+  BeatTrackOptions,
+  GrainPlayerOptions,
+  LayeredSoundOptions,
+  LFOOptions,
+  Oscillator,
+  OscillatorOptions,
+  PolySynthOptions,
+  SamplerOptions,
+  SequenceOptions,
+  Sound,
+  SpriteManifest,
+  Transport,
+  TransportOptions,
+} from 'ez-web-audio'
 export {
   useAnalyzer,
   useBeatTrack,

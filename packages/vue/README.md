@@ -5,7 +5,7 @@ Vue 3 composables for [ez-web-audio](https://sethbrasile.github.io/ez-web-audio)
 Every core factory gets a composable with a uniform shape — `{ instance, loading, error, load }` — plus `useCleanup()` for automatic disposal on unmount and `useAudioContext()` for init state. Nothing touches an `AudioContext` until you call `load()`/`init()` from a user gesture, so components are SSR-safe by construction.
 
 ```
-npm install @ez-web-audio/vue   # coming in 0.2.0
+npm install @ez-web-audio/vue
 ```
 
 ## Usage
