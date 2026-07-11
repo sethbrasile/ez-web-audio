@@ -2,6 +2,9 @@
 import { useAudioContext, useCleanup } from '@ez-web-audio/vue'
 import { audioContextAwareTimeout, createOscillator, createSound } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import SegmentDisplay from './kit/SegmentDisplay.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const error = ref('')
 const countdownActive = ref(false)
@@ -153,14 +156,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="timing-demo">
+  <DemoFrame
+    class="timing-demo"
+    :error="error"
+    takeaway="Why audio scheduling needs the audio clock."
+  >
     <!-- Section 1: Play Now -->
     <section class="demo-section">
       <h3>1. Play Now</h3>
       <p>Immediate playback with <code>play()</code></p>
-      <button class="demo-btn" @click="playNow">
-        Play Click
-      </button>
+      <TriggerPad label="Play Click" @trigger="playNow" />
     </section>
 
     <hr class="section-divider">
@@ -169,13 +174,9 @@ onUnmounted(() => {
     <section class="demo-section">
       <h3>2. Play In 1 Second</h3>
       <p>Delayed playback with <code>playIn(seconds)</code></p>
-      <button :disabled="countdownActive" class="demo-btn" @click="playDelayed">
-        Play in 1 Second
-      </button>
+      <TriggerPad label="Play in 1 Second" :disabled="countdownActive" :active="countdownActive" @trigger="playDelayed" />
       <div v-if="countdownActive" class="countdown">
-        <div class="countdown-timer">
-          {{ countdownValue.toFixed(2) }}s
-        </div>
+        <SegmentDisplay :value="`${countdownValue.toFixed(2)}s`" caption="until playback" size="lg" timer />
         <div class="countdown-bar">
           <div class="countdown-progress" :style="{ width: `${countdownValue * 100}%` }" />
         </div>
@@ -188,19 +189,20 @@ onUnmounted(() => {
     <section class="demo-section">
       <h3>3. Schedule 3 Notes</h3>
       <p>Precise timing with <code>playAt(audioContext.currentTime + offset)</code></p>
-      <button :disabled="sequencePlaying" class="demo-btn" @click="playSequence">
-        Play Sequence
-      </button>
+      <TriggerPad label="Play Sequence" :disabled="sequencePlaying" :active="sequencePlaying" @trigger="playSequence" />
       <div class="timeline">
-        <div
-          v-for="(active, i) in timelineNotes"
-          :key="i"
-          class="timeline-marker"
-          :class="{ active }"
-        >
-          <div class="marker-circle" />
-          <div class="marker-label">
-            {{ i * 0.5 }}s
+        <span class="timeline-caption">audio clock (locked)</span>
+        <div class="timeline-row">
+          <div
+            v-for="(active, i) in timelineNotes"
+            :key="i"
+            class="timeline-marker"
+            :class="{ active }"
+          >
+            <div class="marker-circle" />
+            <div class="marker-label">
+              {{ i * 0.5 }}s
+            </div>
           </div>
         </div>
       </div>
@@ -212,9 +214,7 @@ onUnmounted(() => {
     <section class="demo-section">
       <h3>4. Perfect Sync</h3>
       <p>Multiple sounds starting at exact same time with <code>playAt()</code></p>
-      <button :disabled="chordPlaying" class="demo-btn" @click="playChord">
-        Play C Major Chord
-      </button>
+      <TriggerPad label="Play C Major Chord" :disabled="chordPlaying" :active="chordPlaying" @trigger="playChord" />
       <div v-if="chordPlaying" class="chord-visual">
         <div class="note-indicator">
           C
@@ -227,24 +227,10 @@ onUnmounted(() => {
         </div>
       </div>
     </section>
-
-    <div class="status-bar">
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.timing-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .demo-section {
   margin: 1rem 0;
 }
@@ -252,99 +238,84 @@ onUnmounted(() => {
 .demo-section h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
-  color: var(--vp-c-text-1);
+  color: var(--ewa-text);
 }
 
 .demo-section p {
   margin: 0 0 1rem 0;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-size: 0.95rem;
 }
 
 .demo-section p code {
-  background: var(--vp-c-bg);
+  background: var(--ewa-well);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-size: 0.9em;
 }
 
-.demo-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  background: var(--vp-c-brand);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.demo-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.demo-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
 .section-divider {
   border: none;
-  border-top: 1px solid var(--vp-c-divider);
+  border-top: 1px solid var(--ewa-line);
   margin: 1.5rem 0;
 }
 
 /* Countdown visual */
 .countdown {
   margin-top: 1rem;
-}
-
-.countdown-timer {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--vp-c-brand);
-  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .countdown-bar {
   width: 100%;
   height: 8px;
-  background: var(--vp-c-bg);
+  background: var(--ewa-well);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .countdown-progress {
   height: 100%;
-  background: var(--vp-c-brand);
+  background: var(--ewa-accent);
   transition: width 0.05s linear;
 }
 
 /* Timeline visual */
 .timeline {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--ewa-well);
+  border-radius: 6px;
+}
+
+.timeline-caption {
+  display: block;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ewa-text-3);
+  margin-bottom: 0.75rem;
+}
+
+.timeline-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--vp-c-bg);
-  border-radius: 6px;
   position: relative;
 }
 
-.timeline::before {
+.timeline-row::before {
   content: '';
   position: absolute;
   top: 50%;
-  left: 1rem;
-  right: 1rem;
+  left: 0;
+  right: 0;
   height: 2px;
-  background: var(--vp-c-divider);
+  background: var(--ewa-line);
   z-index: 0;
 }
 
@@ -360,20 +331,20 @@ button:focus-visible {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-soft);
+  border: 2px solid var(--ewa-line);
+  background: var(--ewa-panel);
   transition: all 0.3s;
 }
 
 .timeline-marker.active .marker-circle {
-  background: var(--vp-c-brand);
-  border-color: var(--vp-c-brand);
-  box-shadow: 0 0 10px var(--vp-c-brand);
+  background: var(--ewa-accent);
+  border-color: var(--ewa-accent);
+  box-shadow: 0 0 10px var(--ewa-accent);
 }
 
 .marker-label {
   font-size: 0.85rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-weight: 600;
 }
 
@@ -389,8 +360,8 @@ button:focus-visible {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: var(--vp-c-brand);
-  color: white;
+  background: var(--ewa-accent);
+  color: var(--ewa-on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -402,18 +373,5 @@ button:focus-visible {
 @keyframes pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.1); opacity: 0.8; }
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  border-radius: 6px;
-  font-size: 0.9rem;
 }
 </style>

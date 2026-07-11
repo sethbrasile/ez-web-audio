@@ -3,6 +3,9 @@ import type { Oscillator } from 'ez-web-audio'
 import { useAudioContext, useBeatTrack, useCleanup, useFont, useSequence, useTransport } from '@ez-web-audio/vue'
 import { createOscillator } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import PlayButton from './kit/PlayButton.vue'
+import SegmentDisplay from './kit/SegmentDisplay.vue'
 
 // Audio state — composable-managed, single instance per component lifetime.
 // Created once in ensureLoaded(); disposed automatically by useCleanup() on unmount.
@@ -482,25 +485,24 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 </script>
 
 <template>
-  <div class="transport-sequencer-demo">
-    <!-- Error display -->
-    <div v-if="error" class="error-bar">
-      {{ error }}
-    </div>
-
+  <DemoFrame
+    class="transport-sequencer-demo"
+    :error="error"
+    takeaway="A BPM-synced timeline with musical time notation."
+  >
     <!-- Transport controls bar -->
     <div class="transport-bar">
       <div class="transport-buttons">
-        <!-- Single play/pause/resume button with fixed width to prevent layout shift -->
-        <button
-          class="transport-btn play-btn"
+        <!-- Single play/pause/resume control with fixed label states to prevent layout shift -->
+        <PlayButton
+          :playing="playing && !paused"
+          :label="paused ? 'Resume' : 'Play'"
+          playing-label="Pause"
           :aria-label="playing && !paused ? 'Pause' : paused ? 'Resume' : 'Play'"
           @click="playing && !paused ? pause() : paused ? resume() : play()"
-        >
-          {{ playing && !paused ? 'Pause' : paused ? 'Resume' : 'Play' }}
-        </button>
+        />
         <button
-          class="transport-btn stop-btn"
+          class="stop-btn"
           aria-label="Stop"
           @click="stop()"
         >
@@ -508,12 +510,11 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
         </button>
       </div>
 
-      <div class="position-wrap">
-        <span class="position-label">Bar:Beat</span>
-        <div class="position-display" aria-label="Transport position (bar:beat)">
-          {{ positionDisplay }}
-        </div>
-      </div>
+      <SegmentDisplay
+        :value="positionDisplay"
+        caption="Bar:Beat"
+        aria-label="Transport position (bar:beat)"
+      />
 
       <div class="bpm-controls">
         <span class="bpm-label">BPM</span>
@@ -642,30 +643,10 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
         </div>
       </div>
     </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.transport-sequencer-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.25rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-  font-family: sans-serif;
-}
-
-/* Error bar */
-.error-bar {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--vp-c-danger-soft);
-  border: 1px solid var(--vp-c-danger);
-  border-radius: 4px;
-  color: var(--vp-c-danger);
-  font-size: 0.85rem;
-}
-
 /* Transport bar */
 .transport-bar {
   display: flex;
@@ -678,68 +659,26 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .transport-buttons {
   display: flex;
   gap: 0.4rem;
-}
-
-.transport-btn {
-  padding: 0.45rem 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.15s;
-  /* Fixed min-width prevents layout shift when text changes Play/Pause/Resume */
-  min-width: 72px;
-  text-align: center;
-}
-
-.transport-btn:hover {
-  background: var(--vp-c-bg-mute);
-  border-color: var(--vp-c-brand);
-}
-
-.play-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-dark);
+  align-items: center;
 }
 
 .stop-btn {
-  background: var(--vp-c-bg);
-  border-color: var(--vp-c-divider);
-}
-
-/* Position display */
-.position-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.position-label {
-  font-size: 0.75rem;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--vp-c-text-2);
-  white-space: nowrap;
+  font-family: var(--vp-font-family-base);
+  transition: border-color 0.18s, color 0.18s;
 }
 
-.position-display {
-  font-family: monospace;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--vp-c-text-1);
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
-  padding: 0.3rem 0.75rem;
-  min-width: 60px;
-  text-align: center;
+.stop-btn:hover {
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
 .bpm-controls {
@@ -751,20 +690,21 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .bpm-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
 }
 
 .bpm-slider {
   width: 120px;
+  accent-color: var(--ewa-accent);
 }
 
 .bpm-number {
   width: 56px;
   padding: 0.25rem 0.4rem;
-  border: 1px solid var(--vp-c-divider);
+  border: 1px solid var(--ewa-line);
   border-radius: 4px;
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+  background: var(--ewa-well);
+  color: var(--ewa-text);
   font-size: 0.85rem;
   text-align: center;
 }
@@ -781,37 +721,36 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .preset-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
 }
 
 .preset-btn {
-  padding: 0.3rem 0.75rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+  padding: 0.35rem 0.85rem;
+  border-radius: 7px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
   cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.15s;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .preset-btn:hover {
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
 }
 
 .preset-btn.active {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
-  font-weight: 600;
+  background: var(--ewa-accent);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-on-accent);
 }
 
 /* Read-only note */
 .grid-read-only-note {
   font-size: 0.75rem;
-  color: var(--vp-c-text-3);
+  color: var(--ewa-text-3);
   margin: 0 0 0.5rem;
   font-style: italic;
 }
@@ -841,14 +780,14 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   position: sticky;
   left: 0;
   z-index: 2;
-  background: var(--vp-c-bg-soft);
+  background: var(--ewa-panel);
 }
 
 .sticky-label {
   position: sticky;
   left: 60px; /* width of sticky-col (52px) + gap (8px) */
   z-index: 2;
-  background: var(--vp-c-bg-soft);
+  background: var(--ewa-panel);
 }
 
 .header-controls-spacer {
@@ -878,7 +817,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 .bar-label {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 2px;
@@ -895,7 +834,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   min-width: 13px;
   height: 16px;
   font-size: 0.68rem;
-  color: var(--vp-c-text-3);
+  color: var(--ewa-text-3);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -903,9 +842,9 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .step-header-cell.beat-start {
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-weight: 600;
-  border-left: 1px solid var(--vp-c-divider);
+  border-left: 1px solid var(--ewa-line);
 }
 
 /* Track rows */
@@ -934,9 +873,9 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   /* Minimum 36px height for comfortable touch targets */
   padding: 6px 8px;
   border-radius: 3px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-2);
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
   cursor: pointer;
   font-size: 0.7rem;
   font-weight: 700;
@@ -946,26 +885,26 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 }
 
 .ms-btn:hover {
-  border-color: var(--vp-c-brand);
+  border-color: var(--ewa-accent);
 }
 
 .mute-btn.muted {
-  background: var(--vp-c-yellow-soft, #fef3c7);
-  border-color: var(--vp-c-yellow, #f59e0b);
-  color: var(--vp-c-yellow-darker, #78350f);
+  background: var(--ewa-warn-soft);
+  border-color: var(--ewa-warn);
+  color: var(--ewa-warn);
 }
 
 .solo-btn.soloed {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  background: var(--ewa-accent-soft);
+  border-color: var(--ewa-accent);
+  color: var(--ewa-accent);
 }
 
 /* Track label — sticky left after controls */
 .track-label {
   min-width: 84px;
   font-size: 0.74rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-weight: 500;
   text-align: right;
   padding-right: 8px;
@@ -988,43 +927,45 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
   flex: 1 1 0;
   min-width: 13px;
   height: 28px;
-  border: 1px solid var(--vp-c-divider);
+  border: 1px solid var(--ewa-line);
   border-right: none;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.55rem;
-  font-family: monospace;
+  font-family: var(--vp-font-family-mono);
   cursor: default;
   transition: background 0.1s;
-  background: var(--vp-c-bg);
+  background: var(--ewa-bg);
   position: relative;
 }
 
 .step-cell:last-child {
-  border-right: 1px solid var(--vp-c-divider);
+  border-right: 1px solid var(--ewa-line);
 }
 
 /* Bar divider — left border on step 17 (index 16) */
 .step-cell.bar-divider {
-  border-left: 2px solid var(--vp-c-brand);
+  border-left: 2px solid var(--ewa-accent);
 }
 
-/* Drum cells */
+/* Active cells — single accent tone for both drum and melody lanes (this
+   read-only grid has no per-instrument color data plumbed to the template,
+   so it follows the kit's own default active-cell treatment, e.g. StepGrid's
+   `lane.color ?? 'var(--ewa-accent)'` fallback) */
 .step-cell.drum-cell.active {
-  background: #555;
+  background: var(--ewa-accent);
   color: transparent;
 }
 
-/* Melody cells */
 .step-cell.melody-cell.active {
-  background: #3a5a8a;
-  color: #fff;
+  background: var(--ewa-accent);
+  color: var(--ewa-on-accent);
 }
 
-/* Playhead — yellow background column indicator */
+/* Playhead — accent-warn outline column indicator */
 .step-cell.playhead {
-  outline: 2px solid #f90;
+  outline: 2px solid var(--ewa-warn);
   outline-offset: -2px;
   z-index: 1;
 }
@@ -1039,7 +980,7 @@ const presetNames = ['Straight Rock', 'Funk Groove', 'Triplet Feel']
 
 /* Buttons focus */
 button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
 }
 
