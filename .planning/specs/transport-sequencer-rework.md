@@ -31,7 +31,8 @@ Gate-2 listening feedback: transport/sequencer demo fundamentally off. Diagnosis
 
 ### Loop region
 - `transport.loop: boolean` (default false), `transport.loopStart` / `transport.loopEnd` (MusicalTimeNotation, e.g. `'2m'`).
-- When enabled: tick index wraps at loop end; position display wraps; synced-track beat indices and Sequence elapsed-beats computed modulo loop length.
+- When enabled: tick index wraps at loop end; position display wraps; synced-track pattern indices computed from loop-wrapped musical position. Transport emits a `loop` event on each wrap.
+- Sequences are NOT remapped — they already loop at their own length. For lockstep, set sequence length equal to the loop length (the demo uses `'2m'` for both). Documented on `loop`.
 - Pattern length vs loop length mismatch is allowed (polymeter remains possible with loop off).
 
 ### Velocity / accent
