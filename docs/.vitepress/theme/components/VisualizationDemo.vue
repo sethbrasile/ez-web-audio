@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { useAnalyzer, useCleanup, useOscillator } from '@ez-web-audio/vue'
 import { onMounted, onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import PresetSelector from './kit/PresetSelector.vue'
+import WaveformSelector from './kit/WaveformSelector.vue'
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle'
 
@@ -12,6 +17,7 @@ const isPlaying = ref(false)
 const waveType = ref<OscillatorType>('sine')
 const frequency = ref(440)
 const fftSize = ref(1024)
+const fftSizeOptions = ['256', '512', '1024', '2048']
 
 // Canvas refs
 const frequencyCanvas = ref<HTMLCanvasElement | null>(null)
@@ -139,6 +145,10 @@ function animate() {
   animationFrameId = requestAnimationFrame(animate)
 }
 
+// Colors are read from --ewa-* tokens via getComputedStyle at draw time (not
+// hardcoded hex) so the canvases track light/dark theme automatically. This
+// runs every rAF frame while playing, so a theme flip mid-playback is picked
+// up on the very next frame.
 function drawFrequencySpectrum() {
   if (!analyzer.value || !frequencyCanvas.value)
     return
@@ -153,21 +163,26 @@ function drawFrequencySpectrum() {
   const height = Number(canvas.dataset.logicalHeight) || canvas.height
   const barWidth = width / frequencyData.length
 
+  const style = getComputedStyle(document.documentElement)
+  const wellColor = style.getPropertyValue('--ewa-well').trim() || '#1e1e1e'
+  const accentColor = style.getPropertyValue('--ewa-accent').trim() || '#0e9268'
+
   // Clear canvas
-  ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
+  ctx.fillStyle = wellColor
   ctx.fillRect(0, 0, width, height)
 
-  // Draw bars
+  // Draw bars — single accent hue; opacity tracks amplitude for depth
+  ctx.fillStyle = accentColor
   for (let i = 0; i < frequencyData.length; i++) {
-    const barHeight = (frequencyData[i] / 255) * height
+    const amplitude = frequencyData[i] / 255
+    const barHeight = amplitude * height
     const x = i * barWidth
     const y = height - barHeight
 
-    // Color based on frequency (low = blue, high = red)
-    const hue = (i / frequencyData.length) * 240
-    ctx.fillStyle = `hsl(${240 - hue}, 70%, 50%)`
+    ctx.globalAlpha = 0.35 + amplitude * 0.65
     ctx.fillRect(x, y, barWidth - 1, barHeight)
   }
+  ctx.globalAlpha = 1
 }
 
 function drawWaveform() {
@@ -183,13 +198,17 @@ function drawWaveform() {
   const width = Number(canvas.dataset.logicalWidth) || canvas.width
   const height = Number(canvas.dataset.logicalHeight) || canvas.height
 
+  const style = getComputedStyle(document.documentElement)
+  const wellColor = style.getPropertyValue('--ewa-well').trim() || '#1e1e1e'
+  const accentColor = style.getPropertyValue('--ewa-accent').trim() || '#0e9268'
+
   // Clear canvas
-  ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
+  ctx.fillStyle = wellColor
   ctx.fillRect(0, 0, width, height)
 
   // Draw waveform line
   ctx.lineWidth = 2
-  ctx.strokeStyle = '#3dd68c'
+  ctx.strokeStyle = accentColor
   ctx.beginPath()
 
   const sliceWidth = width / waveformData.length
@@ -221,7 +240,8 @@ function clearCanvas(canvas: HTMLCanvasElement | null) {
 
   const width = Number(canvas.dataset.logicalWidth) || canvas.width
   const height = Number(canvas.dataset.logicalHeight) || canvas.height
-  ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--vp-c-bg').trim() || '#1e1e1e'
+  const wellColor = getComputedStyle(document.documentElement).getPropertyValue('--ewa-well').trim() || '#1e1e1e'
+  ctx.fillStyle = wellColor
   ctx.fillRect(0, 0, width, height)
 }
 
@@ -258,6 +278,29 @@ function updateFFTSize() {
   }
 }
 
+// Kit controls emit the new value directly rather than exposing the native
+// input/select event — these thin wrappers write the ref (what v-model used
+// to do) and then call the same update* function the old inline
+// `@input`/`@change` handlers called, in the same order.
+function onWaveTypeSelect(wave: string) {
+  waveType.value = wave as OscillatorType
+  updateWaveform()
+}
+
+function onFrequencyInput(v: number) {
+  frequency.value = v
+  updateFrequency()
+}
+
+function onFftSizeSelect(v: string) {
+  fftSize.value = Number(v)
+  updateFFTSize()
+}
+
+function formatFrequency(v: number): string {
+  return `${Math.round(v)} Hz`
+}
+
 onUnmounted(() => {
   stopVisualization()
   window.removeEventListener('resize', setupCanvases)
@@ -265,50 +308,46 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="visualization-demo">
-    <div class="controls-section">
-      <div class="control-row">
-        <button
-          class="play-btn"
-          :class="{ active: isPlaying }"
-          :aria-label="isPlaying ? 'Stop visualization' : 'Start visualization'"
-          @click="togglePlayback"
-        >
-          {{ isPlaying ? 'Stop' : 'Play' }}
-        </button>
+  <DemoFrame
+    class="visualization-demo"
+    :error="error"
+    takeaway="Analyzer data is one call away."
+  >
+    <div class="control-row">
+      <PlayButton
+        :playing="isPlaying"
+        :loading="loading"
+        :aria-label="isPlaying ? 'Stop visualization' : 'Start visualization'"
+        @click="togglePlayback"
+      />
 
-        <label>
-          Waveform:
-          <select v-model="waveType" @change="updateWaveform">
-            <option value="sine">Sine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-            <option value="triangle">Triangle</option>
-          </select>
-        </label>
+      <WaveformSelector
+        :model-value="waveType"
+        small
+        @update:model-value="onWaveTypeSelect"
+      />
+    </div>
 
-        <label>
-          Frequency: {{ frequency }} Hz
-          <input
-            v-model.number="frequency"
-            type="range"
-            min="100"
-            max="2000"
-            step="10"
-            aria-label="Oscillator frequency"
-            @input="updateFrequency"
-          >
-        </label>
+    <div class="control-row control-row--params">
+      <ParameterSlider
+        class="frequency-slider"
+        label="Frequency"
+        :model-value="frequency"
+        :min="100"
+        :max="2000"
+        :step="10"
+        :format="formatFrequency"
+        @update:model-value="onFrequencyInput"
+      />
 
-        <label>
-          FFT Size:
-          <select v-model.number="fftSize" @change="updateFFTSize">
-            <option :value="256">256</option>
-            <option :value="512">512</option>
-            <option :value="1024">1024</option>
-            <option :value="2048">2048</option>
-          </select>
-        </label>
+      <div class="fft-size-control">
+        <span class="fft-size-label">FFT Size</span>
+        <PresetSelector
+          label="FFT Size"
+          :options="fftSizeOptions"
+          :model-value="String(fftSize)"
+          @update:model-value="onFftSizeSelect"
+        />
       </div>
     </div>
 
@@ -329,139 +368,73 @@ onUnmounted(() => {
         </p>
       </div>
     </div>
-
-    <div class="status-bar">
-      <div v-if="loading" class="loading">
-        Initializing audio...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.visualization-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger);
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.controls-section {
-  margin-bottom: 1.5rem;
-}
-
 .control-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
   align-items: center;
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.control-row label {
+.control-row--params {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ewa-line);
+}
+
+.frequency-slider {
+  flex: 1;
+  min-width: 200px;
+}
+
+.fft-size-control {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
+  gap: 6px;
 }
 
-.control-row select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-}
-
-.control-row input[type="range"] {
-  width: 150px;
-}
-
-.play-btn {
-  padding: 0.75rem 2rem;
-  border-radius: 6px;
-  border: 2px solid var(--vp-c-brand);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-brand);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-light);
-}
-
-.play-btn.active {
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-select:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
+.fft-size-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ewa-text-2);
 }
 
 .visualizations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .viz-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .viz-container h3 {
   margin: 0;
   font-size: 1rem;
-  color: var(--vp-c-text-1);
+  color: var(--ewa-text);
 }
 
 .viz-canvas {
   width: 100%;
   height: 200px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg);
+  border-radius: 10px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
+  display: block;
 }
 
 .viz-info {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-style: italic;
-}
-
-.loading {
-  text-align: center;
-  color: var(--vp-c-text-2);
-  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

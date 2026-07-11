@@ -3,6 +3,10 @@ import type { FilterEffect, LFO, VoiceHandle } from 'ez-web-audio'
 import { useCleanup, usePolySynth, useWhiteNoise } from '@ez-web-audio/vue'
 import { createFilterEffect, createLFO, createReverb } from 'ez-web-audio'
 import { onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
 
 const error = ref('')
 const loading = ref(false)
@@ -251,6 +255,39 @@ function updateShimmerFrequency() {
   })
 }
 
+// ParameterSlider emits the new value on 'update:model-value' rather than
+// exposing the native input event — these thin wrappers write the ref (what
+// v-model used to do) and then call the same update*/toggle* function the
+// old inline `@input`/`@change` handlers called, in the same order.
+function onMasterVolumeInput(v: number) {
+  masterVolume.value = v
+  updateMasterVolume()
+}
+
+function onDroneFrequencyInput(v: number) {
+  droneFrequency.value = v
+  updateDroneFrequency()
+}
+
+function onTextureFilterInput(v: number) {
+  textureFilterCutoff.value = v
+  updateTextureFilter()
+}
+
+function onShimmerFrequencyInput(v: number) {
+  shimmerFrequency.value = v
+  updateShimmerFrequency()
+}
+
+// Presentation-only formatters for the ParameterSlider value readouts.
+function formatMasterVolume(v: number): string {
+  return `${Math.round(v * 100)}%`
+}
+
+function formatHz(v: number): string {
+  return `${Math.round(v)} Hz`
+}
+
 onUnmounted(() => {
   stopAll()
   if (stopFadeTimeout) {
@@ -261,258 +298,282 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ambient-generator">
-    <div class="controls-section">
-      <div class="control-header">
-        <button
-          class="play-btn"
-          :class="{ active: isPlaying }"
-          :aria-label="isPlaying ? 'Stop ambient playback' : 'Start ambient playback'"
-          @click="togglePlayback"
-        >
-          {{ isPlaying ? 'Stop' : 'Start' }}
-        </button>
+  <DemoFrame
+    class="ambient-generator"
+    :error="error"
+    takeaway="The library composes, not just plays."
+  >
+    <VolumeWarning>
+      <strong>Headphone check.</strong> This demo layers three continuous sound sources — start with your volume low.
+    </VolumeWarning>
 
-        <label class="master-volume">
-          Master Volume: {{ Math.round(masterVolume * 100) }}%
-          <input
-            v-model.number="masterVolume"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            aria-label="Master volume"
-            @input="updateMasterVolume"
-          >
-        </label>
+    <!--
+      Generative bloom — pure-CSS visual driven entirely by the existing
+      `isPlaying` ref (no new script state). Rings are `.ewa-bloom-ring` so
+      the global `[class*='ewa-']` reduced-motion rule in custom.css kills
+      the breathing animation for users who ask for it.
+    -->
+    <div class="bloom-well" :class="{ 'bloom-well--active': isPlaying }" aria-hidden="true">
+      <span class="ewa-bloom-ring ewa-bloom-ring--1" />
+      <span class="ewa-bloom-ring ewa-bloom-ring--2" />
+      <span class="ewa-bloom-ring ewa-bloom-ring--3" />
+      <span class="ewa-bloom-dot" />
+    </div>
+
+    <div class="control-header">
+      <PlayButton
+        label="Start"
+        playing-label="Stop"
+        :playing="isPlaying"
+        :loading="loading"
+        :aria-label="isPlaying ? 'Stop ambient playback' : 'Start ambient playback'"
+        @click="togglePlayback"
+      />
+
+      <ParameterSlider
+        class="master-volume"
+        label="Master Volume"
+        :model-value="masterVolume"
+        :min="0"
+        :max="1"
+        :step="0.01"
+        :format="formatMasterVolume"
+        @update:model-value="onMasterVolumeInput"
+      />
+    </div>
+
+    <div class="layers">
+      <div class="layer" :class="{ disabled: !droneEnabled }">
+        <div class="layer-header">
+          <label class="layer-toggle">
+            <input v-model="droneEnabled" type="checkbox" @change="toggleDrone">
+            <span class="layer-name">Pad</span>
+          </label>
+          <span class="layer-desc">Detuned chord stack — root, fifth, octave</span>
+        </div>
+        <ParameterSlider
+          label="Root"
+          :model-value="droneFrequency"
+          :min="55"
+          :max="110"
+          :step="1"
+          :disabled="!droneEnabled"
+          :format="formatHz"
+          @update:model-value="onDroneFrequencyInput"
+        />
       </div>
 
-      <div class="layers">
-        <div class="layer" :class="{ disabled: !droneEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input v-model="droneEnabled" type="checkbox" @change="toggleDrone">
-              <span class="layer-name">Pad</span>
-            </label>
-            <span class="layer-desc">Detuned chord stack — root, fifth, octave</span>
-          </div>
-          <label class="layer-control">
-            Root: {{ droneFrequency }} Hz
-            <input
-              v-model.number="droneFrequency"
-              type="range"
-              min="55"
-              max="110"
-              step="1"
-              aria-label="Pad root frequency"
-              :disabled="!droneEnabled"
-              @input="updateDroneFrequency"
-            >
+      <div class="layer" :class="{ disabled: !textureEnabled }">
+        <div class="layer-header">
+          <label class="layer-toggle">
+            <input v-model="textureEnabled" type="checkbox" @change="toggleTexture">
+            <span class="layer-name">Texture</span>
           </label>
+          <span class="layer-desc">White noise through a slowly breathing filter</span>
         </div>
+        <ParameterSlider
+          label="Filter Cutoff"
+          :model-value="textureFilterCutoff"
+          :min="200"
+          :max="4000"
+          :step="50"
+          :disabled="!textureEnabled"
+          :format="formatHz"
+          @update:model-value="onTextureFilterInput"
+        />
+      </div>
 
-        <div class="layer" :class="{ disabled: !textureEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input v-model="textureEnabled" type="checkbox" @change="toggleTexture">
-              <span class="layer-name">Texture</span>
-            </label>
-            <span class="layer-desc">White noise through a slowly breathing filter</span>
-          </div>
-          <label class="layer-control">
-            Filter Cutoff: {{ textureFilterCutoff }} Hz
-            <input
-              v-model.number="textureFilterCutoff"
-              type="range"
-              min="200"
-              max="4000"
-              step="50"
-              aria-label="Texture filter cutoff"
-              :disabled="!textureEnabled"
-              @input="updateTextureFilter"
-            >
+      <div class="layer" :class="{ disabled: !shimmerEnabled }">
+        <div class="layer-header">
+          <label class="layer-toggle">
+            <input v-model="shimmerEnabled" type="checkbox" @change="toggleShimmer">
+            <span class="layer-name">Shimmer</span>
           </label>
+          <span class="layer-desc">Airy detuned highs in long reverb</span>
         </div>
-
-        <div class="layer" :class="{ disabled: !shimmerEnabled }">
-          <div class="layer-header">
-            <label class="layer-toggle">
-              <input v-model="shimmerEnabled" type="checkbox" @change="toggleShimmer">
-              <span class="layer-name">Shimmer</span>
-            </label>
-            <span class="layer-desc">Airy detuned highs in long reverb</span>
-          </div>
-          <label class="layer-control">
-            Frequency: {{ shimmerFrequency }} Hz
-            <input
-              v-model.number="shimmerFrequency"
-              type="range"
-              min="400"
-              max="800"
-              step="1"
-              aria-label="Shimmer frequency"
-              :disabled="!shimmerEnabled"
-              @input="updateShimmerFrequency"
-            >
-          </label>
-        </div>
+        <ParameterSlider
+          label="Frequency"
+          :model-value="shimmerFrequency"
+          :min="400"
+          :max="800"
+          :step="1"
+          :disabled="!shimmerEnabled"
+          :format="formatHz"
+          @update:model-value="onShimmerFrequencyInput"
+        />
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="loading" class="loading">
+    <template v-if="loading" #status>
+      <p class="loading">
         Initializing audio...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.ambient-generator {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.error {
-  padding: 0.75rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger);
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.controls-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 .control-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: 24px;
   align-items: center;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--vp-c-divider);
-}
-
-.play-btn {
-  padding: 0.75rem 2rem;
-  border-radius: 6px;
-  border: 2px solid var(--vp-c-brand);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-brand);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.play-btn:hover {
-  background: var(--vp-c-brand-light);
-}
-
-.play-btn.active {
-  background: var(--vp-c-brand);
-  color: white;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
+  margin-top: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ewa-line);
 }
 
 .master-volume {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
   flex: 1;
   min-width: 200px;
 }
 
-.master-volume input[type="range"] {
-  width: 100%;
+/* ── Generative bloom ──────────────────────────────────────────────────── */
+.bloom-well {
+  position: relative;
+  height: 90px;
+  margin: 16px 0 4px;
+  border-radius: 8px;
+  background: var(--ewa-well);
+  overflow: hidden;
 }
 
+.ewa-bloom-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 1.5px solid var(--ewa-accent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.6s ease;
+}
+
+.ewa-bloom-ring--1 {
+  width: 40px;
+  height: 40px;
+}
+
+.ewa-bloom-ring--2 {
+  width: 64px;
+  height: 64px;
+}
+
+.ewa-bloom-ring--3 {
+  width: 88px;
+  height: 88px;
+}
+
+.ewa-bloom-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ewa-accent);
+  box-shadow: 0 0 14px var(--ewa-accent);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.bloom-well--active .ewa-bloom-ring--1 {
+  opacity: 0.30;
+  animation: ewa-bloom-breathe 4s ease-in-out infinite alternate;
+}
+
+.bloom-well--active .ewa-bloom-ring--2 {
+  opacity: 0.23;
+  animation: ewa-bloom-breathe 4s ease-in-out infinite alternate;
+  animation-delay: 0.6s;
+}
+
+.bloom-well--active .ewa-bloom-ring--3 {
+  opacity: 0.16;
+  animation: ewa-bloom-breathe 4s ease-in-out infinite alternate;
+  animation-delay: 1.2s;
+}
+
+.bloom-well--active .ewa-bloom-dot {
+  opacity: 1;
+}
+
+@keyframes ewa-bloom-breathe {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+/* ── Layers ────────────────────────────────────────────────────────────── */
 .layers {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .layer {
-  padding: 1rem;
-  border-radius: 6px;
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
   transition: opacity 0.2s;
 }
 
 .layer.disabled {
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .layer-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .layer-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   cursor: pointer;
   font-weight: 600;
 }
 
-.layer-toggle input[type="checkbox"] {
+.layer-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ewa-accent);
   cursor: pointer;
 }
 
 .layer-name {
-  font-size: 1rem;
-  color: var(--vp-c-brand);
+  font-size: 0.95rem;
+  color: var(--ewa-text);
 }
 
 .layer-desc {
   font-size: 0.85rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-style: italic;
 }
 
-.layer-control {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-}
-
-.layer-control input[type="range"] {
-  width: 100%;
-}
-
-.layer-control input[type="range"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .loading {
+  margin: 0;
   text-align: center;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .control-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>
