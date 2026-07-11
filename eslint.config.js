@@ -5,6 +5,7 @@ export default antfu(
     ignores: [
       '.beads/**',
       '.claude/**',
+      '.superpowers/**',
       'packages/core/src/app/public',
       '.planning/**',
       'docs/assets/**',

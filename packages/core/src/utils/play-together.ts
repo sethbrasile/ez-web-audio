@@ -18,8 +18,7 @@ function hasAudioContext(p: unknown): p is WithAudioContext {
  * calling `play()` on each sound sequentially, which would introduce tiny
  * timing differences.
  *
- * @param playables - Array of Playable instances (Sound, Track, Oscillator, etc.)
- * @param audioContext - Optional BaseAudioContext to use for timing
+ * @param playables - Array of Playable instances (Sound, Track, Oscillator, etc.); an explicit BaseAudioContext may be passed as the first argument instead
  * @returns Promise that resolves when all sounds have started
  *
  * @example

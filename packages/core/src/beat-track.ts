@@ -406,7 +406,8 @@ export class BeatTrack extends Sampler implements SyncableBeatTrack {
    * throw an error while synced — use transport.start()/stop() instead.
    *
    * @param transport - The Transport to sync to
-   * @param opts - Sync options: noteType (rhythmic subdivision, e.g., 1/4, 1/16)
+   * @param opts - Sync options
+   * @param opts.noteType - Rhythmic subdivision (e.g., 1/4, 1/16)
    *
    * @example
    * ```typescript

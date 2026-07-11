@@ -36,7 +36,7 @@ export class OscillatorController extends BaseParamController implements ParamCo
   /**
    * Replace the oscillator node (called on each play() since OscillatorNode is single-use).
    *
-   * @param oscillator - The new OscillatorNode
+   * @param source - The new OscillatorNode
    */
   public updateAudioSource(source: OscillatorNode | AudioBufferSourceNode): void {
     this.oscillator = source as OscillatorNode

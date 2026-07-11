@@ -32,7 +32,9 @@ async function toggle(): Promise<void> {
   <button :disabled="loading" @click="toggle">
     {{ loading ? 'Starting…' : osc?.isPlaying ? 'Stop' : 'Play' }}
   </button>
-  <p v-if="error" role="alert">{{ error.message }}</p>
+  <p v-if="error" role="alert">
+    {{ error.message }}
+  </p>
 </template>
 ```
 
