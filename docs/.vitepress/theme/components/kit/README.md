@@ -27,8 +27,12 @@ Used by: every restyled demo.
 ### PlayButton
 Transport play/stop. Props: `playing`, `loading`, `disabled`, `label` ('Play'),
 `playingLabel` ('Stop'), `loadingLabel`. Emits `click`. Idle = accent fill +
-triangle; playing = danger fill + square + live dot. Carries legacy `.play-btn`
-class — E2E selectors depend on it; do not remove.
+triangle; playing = danger fill + square + live dot. Width is state-stable:
+hidden ghost layers reserve the widest label's width via `::before content:
+attr(data-label)` (kept out of textContent so E2E text assertions still see
+only the active label) and the live dot is absolutely positioned, so toggling
+play/loading never shifts layout. Carries legacy `.play-btn` class — E2E
+selectors depend on it; do not remove.
 Used by: all demos with a transport.
 
 ### ParameterSlider

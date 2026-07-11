@@ -107,18 +107,26 @@ onUnmounted(() => {
 
 <style scoped>
 .piano-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
 }
 
+/* Overlays the (disabled) keyboard instead of pushing it down — no layout shift. */
 .loading-shimmer {
-  width: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding: 0 16px;
+  background: color-mix(in srgb, var(--ewa-panel) 78%, transparent);
+  border-radius: 8px;
 }
 
 .ewa-shimmer-bar {

@@ -317,11 +317,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <template #status>
-      <p v-if="loading" class="loading-text">
-        Loading synth...
-      </p>
-    </template>
   </DemoFrame>
 </template>
 
@@ -370,14 +365,6 @@ onUnmounted(() => {
 .breakdown-buttons :deep(.ewa-trigger-pad) {
   flex: 1;
   min-width: 100px;
-}
-
-.loading-text {
-  margin: 0;
-  text-align: center;
-  color: var(--ewa-text-2);
-  font-style: italic;
-  font-size: 0.85rem;
 }
 
 @media (max-width: 640px) {

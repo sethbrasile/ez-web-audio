@@ -29,21 +29,30 @@ defineEmits<{
     :aria-pressed="playing"
     @click="$emit('click', $event)"
   >
-    <svg v-if="!playing" width="12" height="14" viewBox="0 0 12 14" aria-hidden="true">
-      <path d="M0 0 L12 7 L0 14 Z" fill="currentColor" />
-    </svg>
-    <template v-else>
-      <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
+    <span class="ewa-play-btn__icon" aria-hidden="true">
+      <svg v-if="!playing" width="12" height="14" viewBox="0 0 12 14">
+        <path d="M0 0 L12 7 L0 14 Z" fill="currentColor" />
+      </svg>
+      <svg v-else width="11" height="11" viewBox="0 0 11 11">
         <rect width="11" height="11" rx="2" fill="currentColor" />
       </svg>
-      <span class="ewa-live-dot" aria-hidden="true" />
-    </template>
-    <span class="ewa-play-btn__label">{{ loading ? loadingLabel : (playing ? playingLabel : label) }}</span>
+    </span>
+    <span v-if="playing" class="ewa-live-dot" aria-hidden="true" />
+    <!-- Ghost layers reserve the widest label's width via ::before content so
+         the button never resizes on state flips — pseudo-element text stays out
+         of textContent (E2E reads it) and the accessibility tree. -->
+    <span class="ewa-play-btn__label">
+      <span class="ewa-play-btn__layer">{{ loading ? loadingLabel : (playing ? playingLabel : label) }}</span>
+      <span class="ewa-play-btn__layer ewa-play-btn__ghost" aria-hidden="true" :data-label="label" />
+      <span class="ewa-play-btn__layer ewa-play-btn__ghost" aria-hidden="true" :data-label="playingLabel" />
+      <span class="ewa-play-btn__layer ewa-play-btn__ghost" aria-hidden="true" :data-label="loadingLabel" />
+    </span>
   </button>
 </template>
 
 <style scoped>
 .ewa-play-btn {
+  position: relative;
   height: 44px;
   padding: 0 20px;
   border-radius: 10px;
@@ -58,6 +67,33 @@ defineEmits<{
   transition: background 0.18s, transform 0.1s;
   background: var(--ewa-accent);
   color: var(--ewa-on-accent);
+}
+
+.ewa-play-btn__icon {
+  width: 12px;
+  height: 14px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ewa-play-btn__label {
+  display: inline-grid;
+}
+
+.ewa-play-btn__layer {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.ewa-play-btn__ghost {
+  visibility: hidden;
+}
+
+.ewa-play-btn__ghost::before {
+  content: attr(data-label);
 }
 
 .ewa-play-btn:hover:not(:disabled) {
@@ -93,6 +129,9 @@ defineEmits<{
 }
 
 .ewa-live-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
   width: 7px;
   height: 7px;
   border-radius: 50%;

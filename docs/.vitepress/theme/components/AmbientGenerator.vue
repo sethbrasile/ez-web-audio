@@ -404,11 +404,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <template v-if="loading" #status>
-      <p class="loading">
-        Initializing audio...
-      </p>
-    </template>
   </DemoFrame>
 </template>
 
@@ -561,13 +556,6 @@ onUnmounted(() => {
   font-size: 0.85rem;
   color: var(--ewa-text-2);
   font-style: italic;
-}
-
-.loading {
-  margin: 0;
-  text-align: center;
-  color: var(--ewa-text-2);
-  font-size: 0.9rem;
 }
 
 @media (max-width: 640px) {

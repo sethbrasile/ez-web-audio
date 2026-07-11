@@ -116,12 +116,6 @@ async function playPad(padName: string) {
     <p class="info-text">
       Each pad cycles through 3 sample variations (round-robin)
     </p>
-
-    <template #status>
-      <p v-if="loading" class="status-text">
-        Loading drum samples…
-      </p>
-    </template>
   </DemoFrame>
 </template>
 
@@ -144,11 +138,5 @@ async function playPad(padName: string) {
   color: var(--ewa-text-2);
   font-size: 0.9rem;
   margin: 16px 0 0;
-}
-
-.status-text {
-  font-size: 0.85rem;
-  color: var(--ewa-text-2);
-  margin: 0;
 }
 </style>
