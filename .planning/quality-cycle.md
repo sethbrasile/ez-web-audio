@@ -33,8 +33,8 @@ max_rounds: 3
 | G5 | GrainPlayer + Sprite | DONE 54f72ec | H7, H8, M6, M7 |
 | G6 | Effects family structural | DONE bfe00ea (M8 skipped→tech debt, documented w/ workaround) | H9, H10, H11, H12, M8, M9, M10 |
 | G7 | Track + crossfade | DONE 4b16b8d | H13, H14, H15, M11 |
-| G8 | Musical identity + controllers | pending | H16, H17, H18, H19 |
-| G9 | Disposal cascade structural | pending | H20 (+nb) |
+| G8 | Musical identity + controllers | DONE 7070d80+c191457 | H16, H17, H18, H19 |
+| G9 | Disposal cascade structural | DONE 831d6d5 (follow-up: layered-sound+poly-synth effects[] dispose gap flagged) | H20 (+nb) |
 | G10 | DX/API unification | pending | (nb, sanctioned) |
 | G11 | Demos cleanup sweep | pending | (nb) |
 | G12 | Packaging + bindings hygiene | DONE cf59ec7 | (nb) |
