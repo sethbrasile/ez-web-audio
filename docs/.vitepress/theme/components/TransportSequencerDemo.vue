@@ -196,9 +196,27 @@ function disposeVoiceOscs() {
 }
 
 async function buildVoiceOscillators(ctx: AudioContext, voice: VoiceSpec, notes: string[]): Promise<Oscillator[]> {
+  // Deliberately omit the `envelope` constructor option — Envelope.applyTo()
+  // always ramps the attack to an absolute peak of 1.0 regardless of the
+  // oscillator's configured gain (documented library gap; see EffectsChainDemo
+  // for the same workaround). With several simultaneous bass/lead voices plus
+  // drum hits, that peak stacked past the demo's safety limiter. The pluck
+  // shape is instead scheduled per-trigger via onPlaySet() in
+  // schedulePluckEnvelope(), which writes the raw gain values we choose so
+  // voice.gain is the true ceiling.
   return Promise.all(notes.map(note =>
-    createOscillator(ctx, { note, type: voice.type, gain: voice.gain, envelope: voice.envelope }),
+    createOscillator(ctx, { note, type: voice.type, gain: voice.gain }),
   ))
+}
+
+// Pluck-style gain envelope (attack ramp up to voice.gain, decay ramp back to
+// 0) applied fresh before every trigger — all presets use sustain: 0, so the
+// audible shape is fully described by attack+decay. See buildVoiceOscillators
+// for why this replaces the `envelope` constructor option.
+function schedulePluckEnvelope(osc: Oscillator, voice: VoiceSpec): void {
+  osc.onPlaySet('gain').to(0).at(0)
+  osc.onPlaySet('gain').to(voice.gain).endingAt(voice.envelope.attack, 'linear')
+  osc.onPlaySet('gain').to(0).endingAt(voice.envelope.attack + voice.envelope.decay, 'linear')
 }
 
 // Apply preset — update patterns and re-schedule melody.
@@ -275,6 +293,7 @@ async function applyPreset(preset: TransportPreset) {
       const osc = newBassNoteOscs[i]
       if (!osc || !audioContext)
         return
+      schedulePluckEnvelope(osc, preset.bass.voice)
       osc.playIn(Math.max(0, t - audioContext.currentTime))
     })
   })
@@ -291,7 +310,10 @@ async function applyPreset(preset: TransportPreset) {
       if (!oscs)
         return
       const offset = Math.max(0, t - audioContext.currentTime)
-      for (const osc of oscs) osc.playIn(offset)
+      for (const osc of oscs) {
+        schedulePluckEnvelope(osc, preset.lead.voice)
+        osc.playIn(offset)
+      }
     })
   })
 }
