@@ -2,6 +2,10 @@
 import type { CompressorEffect, DelayEffect, Effect, EQEffect, Oscillator, ReverbEffect, Track } from 'ez-web-audio'
 import { createCompressor, createDelay, createEQ, createOscillator, createReverb, createTrack } from 'ez-web-audio'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import VolumeWarning from './kit/VolumeWarning.vue'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,7 +42,6 @@ const initialized = ref(false)
 const playing = ref(false)
 const loading = ref(false)
 const error = ref('')
-const warningDismissed = ref(false)
 const statusMessage = ref('Click Play to start')
 
 // Which source feeds the chain — a plucked synth pattern (default), a held
@@ -198,6 +201,17 @@ interface Disposable {
   dispose?: () => void
 }
 
+// ── Design tokens ──────────────────────────────────────────────────────────────
+
+// Per-effect identity color (EWA sound palette), used as an accent on the
+// effect card's left edge and the matching signal-flow node border.
+const EFFECT_COLOR: Record<EffectId, string> = {
+  delay: 'var(--ewa-lead)',
+  reverb: 'var(--ewa-clap)',
+  compressor: 'var(--ewa-snare)',
+  eq: 'var(--ewa-bass)',
+}
+
 // ── Computed ───────────────────────────────────────────────────────────────────
 
 // Ordered list of slot objects in current chain order
@@ -231,6 +245,42 @@ function setStatus(msg: string) {
 
 function getEffect(id: EffectId): Effect | undefined {
   return effectRefs[id]
+}
+
+// Border/text color for an effect node in the signal-flow diagram — its
+// slot color when active, muted line color when bypassed.
+function flowNodeStyle(slot: EffectSlot): Record<string, string> {
+  if (slot.bypassed)
+    return {}
+  return { borderColor: EFFECT_COLOR[slot.id], color: 'var(--ewa-text)' }
+}
+
+function formatSeconds2(v: number): string {
+  return `${v.toFixed(2)}s`
+}
+
+function formatSeconds1(v: number): string {
+  return `${v.toFixed(1)}s`
+}
+
+function formatPercent(v: number): string {
+  return `${Math.round(v * 100)}%`
+}
+
+function formatDb(v: number): string {
+  return `${v}dB`
+}
+
+function formatRatio(v: number): string {
+  return `${v.toFixed(1)}:1`
+}
+
+function formatMs(v: number): string {
+  return `${(v * 1000).toFixed(0)}ms`
+}
+
+function formatSignedDb(v: number): string {
+  return `${v > 0 ? '+' : ''}${v.toFixed(1)}dB`
 }
 
 function applySlotToEffect(id: EffectId): void {
@@ -505,21 +555,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="effects-chain-demo">
-    <!-- Volume warning (L27: dismissible) -->
-    <div v-if="!warningDismissed" class="warning" role="alert">
-      <span><strong>Note:</strong> This demo uses a synthesizer oscillator which can be loud. Start with your volume low.</span>
-      <button class="warning-dismiss" aria-label="Dismiss warning" @click="warningDismissed = true">
-        ✕
-      </button>
-    </div>
+  <DemoFrame class="effects-chain-demo" :error="error" takeaway="Build, reorder, and hear an effects chain.">
+    <VolumeWarning />
 
     <!-- Transport row -->
     <div class="transport-row">
-      <div class="source-selector">
+      <div class="source-selector" role="group" aria-label="Source">
         <span class="source-selector-label">Source:</span>
         <button
-          class="ec-btn source-btn"
+          class="source-btn"
           :class="{ active: sourceType === 'pattern' }"
           aria-label="Source: pattern"
           @click="switchSource('pattern')"
@@ -527,7 +571,7 @@ onUnmounted(() => {
           Pattern
         </button>
         <button
-          class="ec-btn source-btn"
+          class="source-btn"
           :class="{ active: sourceType === 'oscillator' }"
           aria-label="Source: oscillator"
           @click="switchSource('oscillator')"
@@ -535,7 +579,7 @@ onUnmounted(() => {
           Oscillator
         </button>
         <button
-          class="ec-btn source-btn"
+          class="source-btn"
           :class="{ active: sourceType === 'file' }"
           aria-label="Source: file"
           @click="switchSource('file')"
@@ -543,14 +587,15 @@ onUnmounted(() => {
           Audio File
         </button>
       </div>
-      <button
-        class="ec-btn play-btn"
-        :class="{ active: playing }"
-        :disabled="loading"
+
+      <PlayButton
+        class="play-button"
+        :playing="playing"
+        :loading="loading"
+        loading-label="Starting…"
         @click="togglePlayback"
-      >
-        {{ loading ? 'Starting…' : playing ? 'Stop' : 'Play' }}
-      </button>
+      />
+
       <span class="transport-label">{{ transportLabel }}</span>
     </div>
 
@@ -560,7 +605,7 @@ onUnmounted(() => {
       The compressor works best LAST because it tames the output of all prior effects.
       Try reordering to hear how the same effects produce different results in different positions.
     -->
-    <div class="signal-flow" aria-label="Signal flow diagram">
+    <div class="signal-flow" role="img" aria-label="Signal flow diagram">
       <div class="flow-node source">
         <span class="flow-label">Source</span>
         <span class="flow-box">{{ sourceLabel }}</span>
@@ -572,7 +617,7 @@ onUnmounted(() => {
         </div>
         <div class="flow-node effect-node" :class="{ bypassed: slot.bypassed, active: playing && !slot.bypassed }">
           <span class="flow-label">Effect {{ idx + 1 }}</span>
-          <span class="flow-box">{{ slot.label }}</span>
+          <span class="flow-box" :style="flowNodeStyle(slot)">{{ slot.label }}</span>
         </div>
       </template>
 
@@ -592,6 +637,7 @@ onUnmounted(() => {
         :key="slot.id"
         class="effect-card"
         :class="{ bypassed: slot.bypassed }"
+        :style="slot.bypassed ? {} : { borderLeftColor: EFFECT_COLOR[slot.id] }"
       >
         <!-- Card header -->
         <div class="card-header">
@@ -600,27 +646,27 @@ onUnmounted(() => {
           <div class="card-actions">
             <!-- M12: Arrows for reorder affordance; H14: disabled before init -->
             <button
-              class="ec-btn icon-btn"
+              class="icon-btn"
               :disabled="idx === 0"
               :aria-label="`Move ${slot.label} earlier in chain`"
               :title="`Move ${slot.label} earlier`"
               @click="moveEffect(idx, -1)"
             >
-              ←
+              ▲
             </button>
             <button
-              class="ec-btn icon-btn"
+              class="icon-btn"
               :disabled="idx === orderedSlots.length - 1"
               :aria-label="`Move ${slot.label} later in chain`"
               :title="`Move ${slot.label} later`"
               @click="moveEffect(idx, 1)"
             >
-              →
+              ▼
             </button>
 
             <!-- M9: Clear bypass labeling — shows current state and what clicking will do -->
             <button
-              class="ec-btn bypass-btn"
+              class="bypass-btn"
               :class="{ 'bypass-active': slot.bypassed }"
               :aria-pressed="slot.bypassed"
               :aria-label="`${slot.bypassed ? 'Bypassed — click to enable' : 'Active — click to bypass'} ${slot.label}`"
@@ -635,291 +681,218 @@ onUnmounted(() => {
         <div class="card-params" :class="{ dimmed: slot.bypassed }">
           <!-- Delay parameters -->
           <template v-if="slot.id === 'delay'">
-            <label class="param-row">
-              <span class="param-label">Time</span>
-              <input
-                v-model.number="slot.delayTime"
-                type="range"
-                min="0.05"
-                max="1.0"
-                step="0.01"
-                :disabled="!playing"
-                :aria-label="`Delay time: ${slot.delayTime.toFixed(2)}s`"
-              >
-              <span class="param-value">{{ slot.delayTime.toFixed(2) }}s</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Feedback</span>
-              <input
-                v-model.number="slot.delayFeedback"
-                type="range"
-                min="0"
-                max="0.9"
-                step="0.01"
-                :disabled="!playing"
-                :aria-label="`Delay feedback: ${Math.round(slot.delayFeedback * 100)}%`"
-              >
-              <span class="param-value">{{ Math.round(slot.delayFeedback * 100) }}%</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Mix</span>
-              <input
-                v-model.number="slot.delayMix"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                :disabled="!playing"
-                :aria-label="`Delay mix: ${Math.round(slot.delayMix * 100)}%`"
-              >
-              <span class="param-value">{{ Math.round(slot.delayMix * 100) }}%</span>
-            </label>
+            <ParameterSlider
+              v-model="slot.delayTime"
+              label="Time"
+              :min="0.05"
+              :max="1.0"
+              :step="0.01"
+              :format="formatSeconds2"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.delayFeedback"
+              label="Feedback"
+              :min="0"
+              :max="0.9"
+              :step="0.01"
+              :format="formatPercent"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.delayMix"
+              label="Mix"
+              :min="0"
+              :max="1"
+              :step="0.01"
+              :format="formatPercent"
+              :disabled="!playing"
+            />
           </template>
 
           <!-- Reverb parameters -->
           <template v-else-if="slot.id === 'reverb'">
-            <label class="param-row">
-              <span class="param-label">Decay</span>
-              <input
-                v-model.number="slot.reverbDecay"
-                type="range"
-                min="0.1"
-                max="5"
-                step="0.1"
-                :disabled="!playing"
-                :aria-label="`Reverb decay: ${slot.reverbDecay.toFixed(1)}s`"
-              >
-              <span class="param-value">{{ slot.reverbDecay.toFixed(1) }}s</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Damping</span>
-              <input
-                v-model.number="slot.reverbDamping"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                :disabled="!playing"
-                :aria-label="`Reverb damping: ${Math.round(slot.reverbDamping * 100)}%`"
-              >
-              <span class="param-value">{{ Math.round(slot.reverbDamping * 100) }}%</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Mix</span>
-              <input
-                v-model.number="slot.reverbMix"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                :disabled="!playing"
-                :aria-label="`Reverb mix: ${Math.round(slot.reverbMix * 100)}%`"
-              >
-              <span class="param-value">{{ Math.round(slot.reverbMix * 100) }}%</span>
-            </label>
+            <ParameterSlider
+              v-model="slot.reverbDecay"
+              label="Decay"
+              :min="0.1"
+              :max="5"
+              :step="0.1"
+              :format="formatSeconds1"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.reverbDamping"
+              label="Damping"
+              :min="0"
+              :max="1"
+              :step="0.05"
+              :format="formatPercent"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.reverbMix"
+              label="Mix"
+              :min="0"
+              :max="1"
+              :step="0.01"
+              :format="formatPercent"
+              :disabled="!playing"
+            />
           </template>
 
           <!-- Compressor parameters (M22: includes attack + release) -->
           <template v-else-if="slot.id === 'compressor'">
-            <label class="param-row">
-              <span class="param-label">Threshold</span>
-              <input
-                v-model.number="slot.compThreshold"
-                type="range"
-                min="-60"
-                max="0"
-                step="1"
-                :disabled="!playing"
-                :aria-label="`Compressor threshold: ${slot.compThreshold}dB`"
-              >
-              <span class="param-value">{{ slot.compThreshold }}dB</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Ratio</span>
-              <input
-                v-model.number="slot.compRatio"
-                type="range"
-                min="1"
-                max="20"
-                step="0.5"
-                :disabled="!playing"
-                :aria-label="`Compressor ratio: ${slot.compRatio.toFixed(1)}:1`"
-              >
-              <span class="param-value">{{ slot.compRatio.toFixed(1) }}:1</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Knee</span>
-              <input
-                v-model.number="slot.compKnee"
-                type="range"
-                min="0"
-                max="40"
-                step="1"
-                :disabled="!playing"
-                :aria-label="`Compressor knee: ${slot.compKnee}dB`"
-              >
-              <span class="param-value">{{ slot.compKnee }}dB</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Attack</span>
-              <input
-                v-model.number="slot.compAttack"
-                type="range"
-                min="0"
-                max="1"
-                step="0.001"
-                :disabled="!playing"
-                :aria-label="`Compressor attack: ${(slot.compAttack * 1000).toFixed(0)}ms`"
-              >
-              <span class="param-value">{{ (slot.compAttack * 1000).toFixed(0) }}ms</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Release</span>
-              <input
-                v-model.number="slot.compRelease"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                :disabled="!playing"
-                :aria-label="`Compressor release: ${(slot.compRelease * 1000).toFixed(0)}ms`"
-              >
-              <span class="param-value">{{ (slot.compRelease * 1000).toFixed(0) }}ms</span>
-            </label>
+            <ParameterSlider
+              v-model="slot.compThreshold"
+              label="Threshold"
+              :min="-60"
+              :max="0"
+              :step="1"
+              :format="formatDb"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.compRatio"
+              label="Ratio"
+              :min="1"
+              :max="20"
+              :step="0.5"
+              :format="formatRatio"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.compKnee"
+              label="Knee"
+              :min="0"
+              :max="40"
+              :step="1"
+              :format="formatDb"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.compAttack"
+              label="Attack"
+              :min="0"
+              :max="1"
+              :step="0.001"
+              :format="formatMs"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.compRelease"
+              label="Release"
+              :min="0"
+              :max="1"
+              :step="0.01"
+              :format="formatMs"
+              :disabled="!playing"
+            />
           </template>
 
           <!-- EQ parameters (three-band: low, mid, high) -->
           <template v-else-if="slot.id === 'eq'">
-            <label class="param-row">
-              <span class="param-label">Low</span>
-              <input
-                v-model.number="slot.eqLow"
-                type="range"
-                min="-15"
-                max="15"
-                step="0.5"
-                :disabled="!playing"
-                :aria-label="`EQ low: ${slot.eqLow > 0 ? '+' : ''}${slot.eqLow.toFixed(1)}dB`"
-              >
-              <span class="param-value">{{ slot.eqLow > 0 ? '+' : '' }}{{ slot.eqLow.toFixed(1) }}dB</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">Mid</span>
-              <input
-                v-model.number="slot.eqMid"
-                type="range"
-                min="-15"
-                max="15"
-                step="0.5"
-                :disabled="!playing"
-                :aria-label="`EQ mid: ${slot.eqMid > 0 ? '+' : ''}${slot.eqMid.toFixed(1)}dB`"
-              >
-              <span class="param-value">{{ slot.eqMid > 0 ? '+' : '' }}{{ slot.eqMid.toFixed(1) }}dB</span>
-            </label>
-            <label class="param-row">
-              <span class="param-label">High</span>
-              <input
-                v-model.number="slot.eqHigh"
-                type="range"
-                min="-15"
-                max="15"
-                step="0.5"
-                :disabled="!playing"
-                :aria-label="`EQ high: ${slot.eqHigh > 0 ? '+' : ''}${slot.eqHigh.toFixed(1)}dB`"
-              >
-              <span class="param-value">{{ slot.eqHigh > 0 ? '+' : '' }}{{ slot.eqHigh.toFixed(1) }}dB</span>
-            </label>
+            <ParameterSlider
+              v-model="slot.eqLow"
+              label="Low"
+              :min="-15"
+              :max="15"
+              :step="0.5"
+              :format="formatSignedDb"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.eqMid"
+              label="Mid"
+              :min="-15"
+              :max="15"
+              :step="0.5"
+              :format="formatSignedDb"
+              :disabled="!playing"
+            />
+            <ParameterSlider
+              v-model="slot.eqHigh"
+              label="High"
+              :min="-15"
+              :max="15"
+              :step="0.5"
+              :format="formatSignedDb"
+              :disabled="!playing"
+            />
           </template>
         </div>
       </div>
     </div>
 
-    <!-- Status bar (L19: always shows something useful) -->
-    <div class="status-bar" role="status" aria-live="polite">
-      <span v-if="error" class="status-error">{{ error }}</span>
-      <span v-else class="status-idle">{{ statusMessage }}</span>
-    </div>
-  </div>
+    <template #status>
+      <span v-if="!error" class="status-idle" role="status" aria-live="polite">{{ statusMessage }}</span>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-/* ── Layout ──────────────────────────────────────────────────────────────────── */
-.effects-chain-demo {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  background: var(--vp-c-bg-soft);
-  border-radius: 8px;
-  border: 1px solid var(--vp-c-divider);
-  margin: 1.5rem 0;
-}
-
-/* ── Warning (dismissible) ───────────────────────────────────────────────────── */
-.warning {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--vp-c-warning-soft);
-  border-left: 3px solid var(--vp-c-warning);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-}
-
-.warning strong {
-  color: var(--vp-c-warning);
-}
-
-.warning-dismiss {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--vp-c-text-3);
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0 0.25rem;
-}
-
-.warning-dismiss:hover {
-  color: var(--vp-c-text-1);
-}
-
 /* ── Transport ───────────────────────────────────────────────────────────────── */
 .transport-row {
   display: flex;
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-bottom: 1.25rem;
 }
 
 .transport-label {
   font-size: 0.875rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
   flex: 1;
 }
 
-/* ── Source selector ─────────────────────────────────────────────────────────── */
+/* ── Source selector (segmented control, token-restyled — E2E aria-label
+     coupling on individual option buttons rules out kit PresetSelector) ──── */
 .source-selector {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--ewa-well);
+  border: 1px solid var(--ewa-line);
 }
 
 .source-selector-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
-  margin-right: 0.15rem;
+  color: var(--ewa-text-2);
+  padding: 0 6px 0 4px;
+}
+
+.source-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--ewa-text-2);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--vp-font-family-base);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.source-btn:hover:not(:disabled):not(.active) {
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-text);
 }
 
 .source-btn.active {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  background: var(--ewa-accent);
+  color: var(--ewa-on-accent);
+  box-shadow: var(--ewa-shadow);
+}
+
+.source-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
 /* ── Signal flow diagram (M10: responsive) ───────────────────────────────────── */
@@ -929,10 +902,11 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 0.4rem;
   padding: 1rem;
-  background: var(--vp-c-bg);
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
+  background: var(--ewa-well);
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
   overflow-x: auto;
+  margin-bottom: 1.25rem;
 }
 
 .flow-node {
@@ -947,42 +921,45 @@ onUnmounted(() => {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--vp-c-text-3);
+  color: var(--ewa-text-3);
 }
 
 .flow-box {
   padding: 0.4rem 0.75rem;
-  border-radius: 5px;
-  border: 2px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-soft);
+  border-radius: 8px;
+  border: 1.5px solid var(--ewa-line-2);
+  background: var(--ewa-panel);
+  font-family: var(--vp-font-family-mono);
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text);
   min-width: 72px;
   text-align: center;
-  transition: all 0.25s;
+  transition: border-color 0.25s, color 0.25s, opacity 0.25s;
 }
 
 .flow-node.source .flow-box,
 .flow-node.output .flow-box {
-  border-color: var(--vp-c-brand-light);
-  color: var(--vp-c-brand);
+  border-color: var(--ewa-line);
+  color: var(--ewa-text-2);
 }
 
-.flow-node.effect-node.active .flow-box {
-  border-color: var(--vp-c-brand);
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand);
+.flow-node.source .flow-box {
+  border-color: var(--ewa-accent);
+  background: var(--ewa-accent-soft);
+  color: var(--ewa-accent-ink);
 }
 
 .flow-node.effect-node.bypassed .flow-box {
-  opacity: 0.45;
+  opacity: 0.55;
   border-style: dashed;
+  border-color: var(--ewa-line-2);
+  color: var(--ewa-text-3);
 }
 
 .flow-arrow {
   font-size: 1.1rem;
-  color: var(--vp-c-text-3);
+  color: var(--ewa-text-3);
   flex-shrink: 0;
 }
 
@@ -991,6 +968,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .effect-card {
@@ -998,15 +976,16 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  background: var(--vp-c-bg);
-  border-radius: 6px;
-  border: 2px solid var(--vp-c-divider);
+  background: var(--ewa-bg);
+  border-radius: 12px;
+  border: 1px solid var(--ewa-line);
+  border-left-width: 3px;
   transition: border-color 0.2s, opacity 0.2s;
 }
 
 .effect-card.bypassed {
-  border-style: dashed;
-  opacity: 0.8;
+  border: 1px dashed var(--ewa-line-2);
+  opacity: 0.6;
 }
 
 /* ── Card header ─────────────────────────────────────────────────────────────── */
@@ -1021,7 +1000,11 @@ onUnmounted(() => {
 .card-title {
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--vp-c-text-1);
+  color: var(--ewa-text);
+}
+
+.effect-card.bypassed .card-title {
+  color: var(--ewa-text-3);
 }
 
 .card-actions {
@@ -1034,7 +1017,7 @@ onUnmounted(() => {
 .card-params {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   transition: opacity 0.2s;
 }
 
@@ -1044,131 +1027,72 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.param-row {
-  display: flex;
+/* ── Icon reorder buttons (M12) — ≥44px hit area ─────────────────────────────── */
+.icon-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.param-label {
-  min-width: 80px;
-  color: var(--vp-c-text-2);
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.param-row input[type="range"] {
-  flex: 1;
-  min-width: 80px;
-  accent-color: var(--vp-c-brand);
-}
-
-.param-value {
-  min-width: 52px;
-  text-align: right;
-  font-family: monospace;
-  font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-}
-
-/* ── Buttons — scoped selectors (L18) ───────────────────────────────────────── */
-.ec-btn {
-  padding: 0.4rem 0.75rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  font-size: 0.9rem;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.2;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.ec-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+.icon-btn:hover:not(:disabled) {
+  border-color: var(--ewa-accent);
+  color: var(--ewa-accent);
 }
 
-.ec-btn:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
+.icon-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
   outline-offset: 2px;
 }
 
-.ec-btn:disabled {
+.icon-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Play button */
-.play-btn {
-  padding: 0.5rem 1.25rem;
-  background: var(--vp-c-brand);
-  color: #fff;
-  border-color: var(--vp-c-brand);
-  font-weight: 700;
-  min-width: 80px;
-}
-
-.play-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-  border-color: var(--vp-c-brand-dark);
-  color: #fff;
-}
-
-.play-btn.active {
-  background: var(--vp-c-danger);
-  border-color: var(--vp-c-danger);
-}
-
-/* M12: Icon reorder buttons */
-.icon-btn {
-  padding: 0.3rem 0.5rem;
-  font-size: 1rem;
-  min-width: 32px;
-}
-
-/* M9: Bypass toggle — clear state indication */
+/* M9: Bypass toggle — chip style, clear state indication */
 .bypass-btn {
+  height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
   font-size: 0.78rem;
-  padding: 0.3rem 0.6rem;
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
+  font-weight: 600;
+  font-family: var(--vp-font-family-base);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  background: var(--ewa-accent-soft);
+  border: 1px solid var(--ewa-accent);
+  color: var(--ewa-accent-ink);
 }
 
 .bypass-btn.bypass-active {
-  background: var(--vp-c-bg-soft);
-  border-color: var(--vp-c-text-3);
-  color: var(--vp-c-text-3);
+  background: transparent;
+  border-color: var(--ewa-line-2);
+  color: var(--ewa-text-3);
 }
 
-/* ── Status bar ──────────────────────────────────────────────────────────────── */
-.status-bar {
-  min-height: 1.5rem;
-  font-size: 0.85rem;
+.bypass-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 2px;
 }
 
+/* ── Status ──────────────────────────────────────────────────────────────────── */
 .status-idle {
-  color: var(--vp-c-text-3);
-}
-
-.status-error {
-  padding: 0.4rem 0.75rem;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger-1);
-  border-radius: 4px;
-  display: block;
+  color: var(--ewa-text-3);
+  font-size: 0.85rem;
 }
 
 /* ── Responsive adjustments ──────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .effects-chain-demo {
-    padding: 1rem;
-  }
-
   /* M10: Signal flow scrolls horizontally on narrow screens */
   .signal-flow {
     flex-wrap: nowrap;
