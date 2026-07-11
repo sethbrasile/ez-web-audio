@@ -1,2 +1,2 @@
-// Placeholder entry point — hooks land in a follow-up phase.
-export {}
+export { createFactoryHook } from './create-factory-hook'
+export type { UseFactoryReturn } from './create-factory-hook'
