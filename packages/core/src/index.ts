@@ -1528,6 +1528,7 @@ export type {
   SoundEventType,
   StopEventDetail,
   TrackEventMap,
+  TransportErrorDetail,
   TransportEventMap,
   TransportLifecycleDetail,
   TransportLoopDetail,

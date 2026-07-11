@@ -294,6 +294,55 @@ describe('transport', () => {
     })
   })
 
+  describe('restart after stop', () => {
+    it('resets nextBeatTime on fresh restart to prevent scheduler catch-up burst', () => {
+      // Mirrors the resume burst-fix test above (C2 from the deep review):
+      // stop() resets trackStates entries' nextBeatTime to 0 but does NOT
+      // delete them. The fresh-start branch of start() only initializes
+      // tracks NOT already present in trackStates, so a track synced
+      // before the stop() kept its now-ancient nextBeatTime=0 across the
+      // restart. At a later currentTime, schedulerTick()'s while-loop
+      // would replay every step between 0 and "now" in a single burst
+      // (reviewer repro: 2505 calls in one tick at currentTime=50).
+      const transport = new Transport(audioContext as any, { bpm: 750 })
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 16 }, () => ({ active: false })),
+        _syncNoteType: 1 / 16,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(scheduleSpy.mock.calls.length).toBeGreaterThan(0)
+
+      transport.stop()
+      scheduleSpy.mockClear()
+
+      // Simulate substantial wall-clock time elapsing while stopped, then
+      // restart (fresh start, not resume) at that later currentTime.
+      Object.defineProperty(audioContext, 'currentTime', { get: () => 50, configurable: true })
+
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      // beatDuration is 0.02s; the scheduler's fixed 100ms lookahead can only
+      // admit ~5 steps from the restart point (50s) forward. A stale
+      // nextBeatTime left over from before the stop (0) would instead spam
+      // roughly 2500 steps between the old position and the new currentTime.
+      expect(scheduleSpy.mock.calls.length).toBeLessThanOrEqual(6)
+
+      for (const call of scheduleSpy.mock.calls) {
+        expect(call[1]).toBeGreaterThanOrEqual(50)
+      }
+
+      transport.dispose()
+    })
+  })
+
   describe('tick events', () => {
     it('emits tick events during playback', () => {
       const transport = new Transport(audioContext as any, { bpm: 120 })
@@ -329,6 +378,35 @@ describe('transport', () => {
       const pos2 = transport.position
       expect(pos1).not.toBe(pos2)
       expect(pos1).toEqual(pos2)
+      transport.dispose()
+    })
+  })
+
+  describe('scheduler tick error handling', () => {
+    it('catches a throwing synced-track callback, stops, and emits an error event instead of spamming forever', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      const errorListener = vi.fn()
+      transport.on('error', errorListener)
+
+      const boom = new Error('boom')
+      const mockTrack = {
+        beats: [{ active: false }],
+        _syncNoteType: 1 / 4,
+        _scheduleBeatFromTransport: vi.fn(() => {
+          throw boom
+        }),
+      } as any
+
+      transport._addTrack(mockTrack)
+      expect(() => {
+        transport.start()
+        vi.advanceTimersByTime(20)
+      }).not.toThrow()
+
+      expect(errorListener).toHaveBeenCalledTimes(1)
+      expect(errorListener.mock.calls[0][0].detail.error).toBe(boom)
+      expect(transport.playing).toBe(false)
+
       transport.dispose()
     })
   })
@@ -673,6 +751,37 @@ describe('transport', () => {
       expect(scheduleSpy.mock.calls.length).toBeGreaterThanOrEqual(8)
       const indices = scheduleSpy.mock.calls.slice(0, 8).map(call => call[0])
       expect(indices).toEqual([0, 1, 2, 3, 0, 1, 2, 3])
+
+      transport.dispose()
+    })
+
+    it('wraps the pattern index cleanly when loop length is not a multiple of the step duration (M1)', () => {
+      // bpm 6000, noteType 1/8 -> beatDuration = 240*(1/8)/6000 = 0.005s, so
+      // noteTypeBeats (musical beats/step) = 0.5. loopEnd is set to 2.6
+      // beats -- NOT a multiple of 0.5 -- which used to corrupt the pattern
+      // index: wrapping in beats space then rounding back to a step index
+      // (Math.round(positionBeats / noteTypeBeats)) produced a repeating
+      // skip (0,1,2,3,4,5,1,2,3,4,5,1,... — index 0 revisited only once).
+      // Wrapping in integer step-index space instead snaps the loop region
+      // to this track's own 5-step grid and cycles it cleanly.
+      const transport = new Transport(audioContext as any, { bpm: 6000 })
+      transport.loop = true
+      transport.loopEnd = 2.6 // numeric beats passthrough
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 8 }, () => ({ active: false })),
+        _syncNoteType: 1 / 8,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(scheduleSpy.mock.calls.length).toBeGreaterThanOrEqual(10)
+      const indices = scheduleSpy.mock.calls.slice(0, 10).map(call => call[0])
+      expect(indices).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3, 4])
 
       transport.dispose()
     })

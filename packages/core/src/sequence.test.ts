@@ -328,6 +328,47 @@ describe('sequence', () => {
       expect(cb).toHaveBeenCalledTimes(2)
       seq.dispose()
     })
+
+    it('schedules events near beat 0 with full lookahead margin across a loop wrap (H2)', () => {
+      // Deep-review H2: the loop wrap-around branch used to be an empty
+      // stub, so events sitting near the start of the sequence only got
+      // picked up on the tick AFTER the wrap actually happened -- by
+      // which point almost none of the lookahead window remained (near-0
+      // margin -> late/clicky scheduling under jank).
+      const cb = vi.fn()
+      const seq = new Sequence(transport, { length: 2 }) // 2 beats = 1s at 120bpm
+      seq.at(0.1, cb) // near the start of the (next) loop iteration
+
+      seq._onTransportStart(0)
+
+      // Establish realistic steady-state: fire the beat-0.1 event once in
+      // the first iteration (near t=0), which advances lastScheduledBeat
+      // past it so it's no longer "fresh" by the time we approach the wrap.
+      seq._scheduleEventsInWindow(0, 0.1, 120, [4, 4], 4)
+      expect(cb).toHaveBeenCalledTimes(1)
+      cb.mockClear()
+
+      // currentSeqBeat = 1.95 (0.975s), lookahead 0.1s = 0.2 beats ->
+      // windowEndBeat = 2.15, which crosses the loop boundary (length=2).
+      // The event at beat 0.1 falls inside the wrapped portion of the
+      // window and must fire NOW, with the same lookahead margin as any
+      // other event -- not be deferred to a later, near-zero-margin tick.
+      seq._scheduleEventsInWindow(0.975, 0.1, 120, [4, 4], 4)
+
+      expect(cb).toHaveBeenCalledTimes(1)
+      const [eventTime] = cb.mock.calls[0]
+      // Wrapped time math: (eventBeat + lengthInBeats - currentSeqBeat) / beatsPerSecond
+      // = (0.1 + 2 - 1.95) / 2 = 0.075s ahead of currentTime (0.975s) -- a
+      // healthy chunk of the 0.1s lookahead, not ~0.
+      expect(eventTime).toBeCloseTo(1.05, 5)
+
+      // The tick after the real wrap fires (currentSeqBeat now past 0)
+      // must NOT refire the same event a second time.
+      seq._scheduleEventsInWindow(1.05, 0.1, 120, [4, 4], 4)
+      expect(cb).toHaveBeenCalledTimes(1)
+
+      seq.dispose()
+    })
   })
 
   describe('one-shot (loop: false)', () => {
@@ -471,6 +512,40 @@ describe('sequence', () => {
 
       // Reset lastScheduledBeat for resume (since we're continuing, not at same position)
       // The resume adjusts transportStartTime so elapsed time is correct
+      seq.dispose()
+    })
+
+    it('sequence constructed while transport is paused gets a correct transportStartTime on resume (R5 #8)', () => {
+      // _addSequence() previously left a paused-at-construction Sequence to
+      // receive the same _onTransportResume treatment as sequences that
+      // were already running before the pause -- applying a pausedElapsed
+      // that predates the new Sequence's own existence and putting it
+      // mid-loop (wrong eventTime) the instant it actually starts.
+      transport.start() // startTime = currentTime = 0
+
+      // Simulate 3s of playback before pausing.
+      Object.defineProperty(audioContext, 'currentTime', { get: () => 3, configurable: true })
+      transport.pause() // pausedElapsed = 3 - 0 = 3
+
+      // 5 more seconds pass while paused; THEN the sequence is constructed
+      // (paused-add) — it has no history before this point.
+      Object.defineProperty(audioContext, 'currentTime', { get: () => 8, configurable: true })
+      const seq = new Sequence(transport, { length: '1m' }) // 4 beats
+      const cb = vi.fn()
+      seq.at(0, cb)
+
+      transport.start() // resume
+      vi.advanceTimersByTime(20)
+
+      expect(cb).toHaveBeenCalledTimes(1)
+      const [eventTime] = cb.mock.calls[0]
+      // Correct: fires right at the actual resume time (8s) since this
+      // sequence is starting fresh. The stale-pausedElapsed bug would
+      // instead compute transportStartTime = 8 - 3 = 5, making the
+      // sequence appear 2 beats (1s) into its loop and firing beat 0 a
+      // full second in the past (eventTime ~= 7).
+      expect(eventTime).toBeCloseTo(8, 5)
+
       seq.dispose()
     })
   })

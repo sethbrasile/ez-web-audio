@@ -261,6 +261,14 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
    * loop at their own length; give them the same length as the loop region
    * for lockstep. @default false
    *
+   * The [loopStart, loopEnd) region is only validated (loopEnd must be
+   * greater than loopStart) at the moment playback actually (re)starts —
+   * see {@link start}. Setting `loop`, `loopStart`, or `loopEnd` to an
+   * invalid combination while the Transport is already playing does NOT
+   * throw immediately: playback silently continues without looping (as if
+   * `loop` were false) until the next `start()`/resume, at which point an
+   * invalid region throws.
+   *
    * @example
    * ```typescript
    * transport.loopEnd = '2m'
@@ -277,7 +285,9 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
 
   /**
    * Loop region start. Set with musical notation (`'1m'`, `'2:1:0'`) or a
-   * numeric beat count; reads back as beats. @default 0
+   * numeric beat count; reads back as beats. Not validated against
+   * {@link loopEnd} until the next {@link start} call — see {@link loop}.
+   * @default 0
    *
    * @example
    * ```typescript
@@ -295,7 +305,9 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   /**
    * Loop region end. Set with musical notation (`'2m'`) or a numeric beat
    * count; reads back as beats. Must be greater than {@link loopStart} when
-   * {@link loop} is enabled — validated on {@link start}.
+   * {@link loop} is enabled — validated only at the next {@link start} call,
+   * not immediately on assignment; see {@link loop} for what happens to an
+   * invalid region set while already playing.
    *
    * @example
    * ```typescript
@@ -361,6 +373,19 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
       this.startTime = this.audioContext.currentTime
       this._position = { bar: 1, beat: 1, tick: 0, seconds: 0 }
       this.loopIteration = 0
+
+      // Unconditionally reset every existing trackStates entry. stop()
+      // zeroes nextBeatTime/stepCount but does not delete the map entries
+      // (so pause/resume can still find them); without this reset, a track
+      // synced before a prior stop() would keep its now-stale
+      // nextBeatTime=0 across this fresh start, and the shared init loop
+      // below (which only touches entries NOT already in the map) would
+      // skip it entirely. schedulerTick()'s while-loop would then replay
+      // every step between 0 and "now" in a single burst (C2).
+      for (const state of this.trackStates.values()) {
+        state.nextBeatTime = this.audioContext.currentTime
+        state.stepCount = 0
+      }
 
       this.emit('start', {
         time: this.audioContext.currentTime,
@@ -481,6 +506,16 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   /**
    * Register a BeatTrack as synced to this Transport.
    * Called by BeatTrack.syncTo().
+   *
+   * Known limitation (R5 #6): a track hot-added while the Transport is
+   * playing always starts its own `stepCount` at 0, aligned to its next
+   * beat boundary — it does NOT derive a loop-relative step index from the
+   * Transport's current position within an active loop region. If a loop
+   * is active when the track is added, the new track's pattern position
+   * will be out of phase with tracks that were synced before playback
+   * started (which do wrap relative to the loop region — see the
+   * scheduler's step-index wrap logic). Sync tracks before calling
+   * {@link start} when using a loop region for lockstep phase.
    * @internal
    */
   _addTrack(track: SyncableBeatTrack): void {
@@ -574,9 +609,24 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   /**
    * Lookahead scheduler tick. Called by WorkerTimer at regular intervals.
    * Schedules Transport ticks and synced track beats within the lookahead window.
+   * Any throw from user callbacks (track/sequence scheduling) is caught,
+   * stops the Transport (so the WorkerTimer interval doesn't keep firing
+   * against dead state forever), and is reported via an 'error' event
+   * instead of propagating out of the timer callback.
    * @internal
    */
   private schedulerTick(): void {
+    try {
+      this.schedulerTickBody()
+    }
+    catch (error) {
+      const time = this.audioContext.currentTime
+      this.stop()
+      this.emit('error', { error, time, source: this })
+    }
+  }
+
+  private schedulerTickBody(): void {
     const currentTime = this.audioContext.currentTime
 
     // Schedule Transport's own ticks (position tracking + tick events)
@@ -593,8 +643,23 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
       while (state.nextBeatTime < currentTime + this.scheduleAheadTime) {
         let positionBeats = state.stepCount * noteTypeBeats
         if (this._loop && this._loopEndBeats > this._loopStartBeats && positionBeats >= this._loopStartBeats) {
-          const loopLen = this._loopEndBeats - this._loopStartBeats
-          positionBeats = this._loopStartBeats + ((positionBeats - this._loopStartBeats) % loopLen)
+          // Wrap using integer step counts on THIS track's own step grid,
+          // not a beats-based modulo + Math.round round-trip (M1). When
+          // loopEnd-loopStart isn't an exact multiple of the track's step
+          // duration, the beats-based wrap lands positionBeats between
+          // step boundaries, and rounding back to a step index then
+          // repeats or skips steps (e.g. 0,1,2,3,1,2,3,0,...). Snapping
+          // the loop boundaries to this track's step grid and wrapping in
+          // step-index space keeps the pattern index exact. Tracks with
+          // different noteTypes may therefore loop at a slightly
+          // different musical instant near the boundary; each stays
+          // internally consistent with itself.
+          const loopStartStep = Math.round(this._loopStartBeats / noteTypeBeats)
+          const loopEndStep = Math.round(this._loopEndBeats / noteTypeBeats)
+          const loopLenSteps = Math.max(1, loopEndStep - loopStartStep)
+          const stepIndex = Math.round(positionBeats / noteTypeBeats)
+          const wrappedStep = loopStartStep + (((stepIndex - loopStartStep) % loopLenSteps) + loopLenSteps) % loopLenSteps
+          positionBeats = wrappedStep * noteTypeBeats
         }
         const patternIndex = Math.round(positionBeats / noteTypeBeats) % state.track.beats.length
         const swingDelay = this._swingDelayFor(positionBeats)

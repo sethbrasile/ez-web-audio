@@ -76,9 +76,24 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
   // Scheduling state
   private transportStartTime = 0
   private lastScheduledBeat = -1
+  /**
+   * Highest event beat pre-scheduled into the *next* loop iteration while
+   * the lookahead window straddles the loop boundary (see
+   * `_scheduleEventsInWindow`'s wrap branch). Folded into `lastScheduledBeat`
+   * when the real iteration boundary is crossed so those events don't refire.
+   */
+  private nextIterationScheduledBeat = -1
   private loopIteration = 0
   private _disposed = false
   private _started = false
+  /**
+   * Whether this sequence has ever received `_onTransportStart`. Distinct
+   * from `_started` (which also goes false across every pause) — used to
+   * detect a sequence constructed while the Transport was already paused,
+   * so its first resume is treated as a fresh start rather than applying a
+   * `pausedElapsed` that predates the sequence's own existence.
+   */
+  private _hasStartedOnce = false
 
   constructor(transport: Transport, options: SequenceOptions) {
     super()
@@ -239,8 +254,12 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
       if (currentIteration > this.loopIteration) {
         this.loopIteration = currentIteration
         this.emit('loop', { iteration: this.loopIteration, source: this })
-        // Reset lastScheduledBeat so events fire again in new loop
-        this.lastScheduledBeat = -1
+        // Reset lastScheduledBeat so events fire again in new loop — but
+        // carry forward anything the wrap branch below already
+        // pre-scheduled into this iteration (while the window straddled
+        // the boundary on an earlier tick), so those events don't refire.
+        this.lastScheduledBeat = this.nextIterationScheduledBeat
+        this.nextIterationScheduledBeat = -1
       }
     }
 
@@ -266,7 +285,10 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
         const totalBeats = this.loopIteration * this.lengthInBeats + eventBeat
         const bar = Math.floor(totalBeats / beatsPerBar) + 1
         const beatInBar = Math.floor(totalBeats % beatsPerBar) + 1
-        const tickInBeat = Math.round((totalBeats % 1) * ticksPerBeat)
+        // % ticksPerBeat guards against Math.round pushing totalBeats % 1
+        // (e.g. 0.9999...) up to exactly ticksPerBeat, which would put
+        // `tick` one past its documented 0..ticksPerBeat-1 range (R5 #7).
+        const tickInBeat = Math.round((totalBeats % 1) * ticksPerBeat) % ticksPerBeat
 
         const position: TransportPosition = {
           bar,
@@ -289,14 +311,48 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
         }
       }
 
-      // Handle events that wrap around in a looping sequence
-      if (this._loop && windowEndBeat >= this.lengthInBeats) {
-        const wrappedBeat = eventBeat
+      // Handle events near the start of the sequence whose full lookahead
+      // margin falls within THIS tick's window even though the real loop
+      // boundary hasn't been crossed yet (H2). Without this, such events
+      // are only picked up on the tick after the actual wrap, by which
+      // point little to no lookahead remains (near-immediate/late
+      // scheduling under jank). Time is computed relative to the wrap
+      // point (currentSeqBeat -> lengthInBeats -> eventBeat) rather than
+      // the current-iteration offset used by the main branch above.
+      // `else if`: mutually exclusive with the main branch above so a wide
+      // lookahead (window spanning more than one loop length) can't fire
+      // the same event twice in a single tick.
+      else if (this._loop && windowEndBeat >= this.lengthInBeats) {
         const wrappedWindowEnd = windowEndBeat - this.lengthInBeats
-        if (wrappedBeat < wrappedWindowEnd && wrappedBeat <= this.lastScheduledBeat) {
-          // This event wraps to the next loop iteration
-          // but we need to wait for the loop event to fire first
-          // It will be caught in the next scheduler tick after lastScheduledBeat is reset
+        if (eventBeat < wrappedWindowEnd && eventBeat > this.nextIterationScheduledBeat) {
+          const beatOffset = eventBeat + this.lengthInBeats - currentSeqBeat
+          const timeOffset = beatOffset / beatsPerSecond
+          const eventTime = currentTime + timeOffset + this.transport._swingDelayFor(eventBeat)
+
+          const nextIterationTotalBeats = (this.loopIteration + 1) * this.lengthInBeats + eventBeat
+          const bar = Math.floor(nextIterationTotalBeats / beatsPerBar) + 1
+          const beatInBar = Math.floor(nextIterationTotalBeats % beatsPerBar) + 1
+          const tickInBeat = Math.round((nextIterationTotalBeats % 1) * ticksPerBeat) % ticksPerBeat
+
+          const position: TransportPosition = {
+            bar,
+            beat: beatInBar,
+            tick: tickInBeat,
+            seconds: eventTime - this.transportStartTime,
+          }
+
+          event.callback(eventTime, position)
+
+          this.emit('event', {
+            time: eventTime,
+            position,
+            eventId: event.id,
+            source: this,
+          })
+
+          if (eventBeat > this.nextIterationScheduledBeat) {
+            this.nextIterationScheduledBeat = eventBeat
+          }
         }
       }
     }
@@ -312,16 +368,30 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
   _onTransportStart(startTime: number): void {
     this.transportStartTime = startTime
     this.lastScheduledBeat = -1
+    this.nextIterationScheduledBeat = -1
     this.loopIteration = 0
     this._started = true
+    this._hasStartedOnce = true
   }
 
   /**
    * Called by Transport when it resumes from pause.
    * Adjusts start time to account for paused duration.
+   *
+   * If this Sequence was constructed while the Transport was already
+   * paused, it never received `_onTransportStart` — `pausedElapsed` in
+   * that case describes time the *Transport* was playing before a pause
+   * that predates this Sequence's own existence. Applying it here would
+   * push `transportStartTime` into the past and make the Sequence appear
+   * mid-loop the instant it starts (R5 #8). Treat that case as a fresh
+   * start anchored to the actual resume time instead.
    * @internal
    */
   _onTransportResume(resumeTime: number, pausedElapsed: number): void {
+    if (!this._hasStartedOnce) {
+      this._onTransportStart(resumeTime)
+      return
+    }
     // Recalculate startTime so elapsed time picks up where it left off
     this.transportStartTime = resumeTime - pausedElapsed
     this._started = true
@@ -333,8 +403,10 @@ export class Sequence extends TypedEventEmitter<SequenceEventMap> {
    */
   _reset(): void {
     this.lastScheduledBeat = -1
+    this.nextIterationScheduledBeat = -1
     this.loopIteration = 0
     this._started = false
+    this._hasStartedOnce = false
   }
 
   /**

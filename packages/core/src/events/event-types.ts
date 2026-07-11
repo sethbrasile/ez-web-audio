@@ -264,6 +264,19 @@ export interface TransportLoopDetail {
 }
 
 /**
+ * Detail for Transport 'error' events, fired when the scheduler tick throws.
+ * The Transport is stopped before this event is emitted.
+ */
+export interface TransportErrorDetail {
+  /** The error thrown from the scheduler tick */
+  error: unknown
+  /** The audioContext.currentTime when the error occurred */
+  time: number
+  /** The Transport instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
  * Maps Transport event names to their corresponding CustomEvent types.
  */
 export interface TransportEventMap {
@@ -273,6 +286,7 @@ export interface TransportEventMap {
   resume: CustomEvent<TransportLifecycleDetail>
   tick: CustomEvent<TransportTickDetail>
   loop: CustomEvent<TransportLoopDetail>
+  error: CustomEvent<TransportErrorDetail>
 }
 
 // ─── Sequence Events ──────────────────────────────────────────────────
