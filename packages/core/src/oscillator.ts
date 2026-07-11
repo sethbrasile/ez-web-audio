@@ -377,9 +377,10 @@ export class Oscillator extends BaseSound {
     // give the controller the new oscillator node (gain node is stable)
     this.controller.updateAudioSource(oscillator)
 
-    // Pass envelope to controller if configured
+    // Pass envelope to controller if configured, scaled to the current target
+    // gain so the attack peaks at the configured 'gain' rather than absolute 1.0
     if (this.envelope) {
-      this.controller.setEnvelope(this.envelope)
+      this.controller.setEnvelope(this.envelope, this._targetGain)
     }
 
     // wire everything up (connects source to effect chain)

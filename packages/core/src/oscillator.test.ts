@@ -2,6 +2,7 @@ import frequencyMap from '@utils/frequency-map'
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Oscillator } from '@/oscillator'
+import { Envelope } from './envelope'
 import { InvalidNoteError } from './errors'
 
 function createMockContext() {
@@ -79,6 +80,16 @@ describe('oscillator with ADSR envelope', () => {
       })
       await osc.play()
       expect(osc.isPlaying).toBe(true)
+    })
+
+    it('passes configured gain to envelope as peak so attack does not overshoot', async () => {
+      const applySpy = vi.spyOn(Envelope.prototype, 'applyTo')
+      const osc = new Oscillator(audioContext, {
+        gain: 0.25,
+        envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 },
+      })
+      await osc.play()
+      expect(applySpy).toHaveBeenCalledWith(expect.anything(), expect.any(Number), 0.25)
     })
 
     it('plays without envelope (standard behavior)', async () => {

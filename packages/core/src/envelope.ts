@@ -32,7 +32,7 @@ type AudioParamWithCancelAndHold = AudioParam & {
  * ADSR Envelope class for managing amplitude envelope scheduling.
  *
  * The envelope controls how a sound's amplitude evolves over time:
- * - **Attack**: Ramp from 0 to peak (1.0)
+ * - **Attack**: Ramp from 0 to peak (the sound's target gain, 1.0 by default)
  * - **Decay**: Ramp from peak to sustain level
  * - **Sustain**: Hold at sustain level until release() called
  * - **Release**: Exponential decay to silence
@@ -79,6 +79,9 @@ export class Envelope {
   /** The value the attack started from (for retriggering) */
   private _attackStartValue: number = 0
 
+  /** The absolute peak the attack ramps to (the sound's target gain) */
+  private _peak: number = 1
+
   /**
    * Creates a new Envelope with the specified ADSR parameters.
    *
@@ -105,7 +108,7 @@ export class Envelope {
    * Returns 0 if envelope is not active.
    *
    * @param currentTime - The time to estimate the value at
-   * @returns The estimated envelope value (0-1)
+   * @returns The estimated absolute envelope value (0 to peak)
    */
   estimateCurrentValue(currentTime: number): number {
     if (!this._isActive) {
@@ -121,31 +124,33 @@ export class Envelope {
 
     const attackEndTime = this.attack
     const decayEndTime = attackEndTime + this.decay
+    const peak = this._peak
+    const sustainValue = this.sustain * peak
 
     // During attack phase
     if (timeSinceStart < attackEndTime) {
       if (this.attack === 0) {
-        return 1
+        return peak
       }
       const attackProgress = timeSinceStart / this.attack
-      // Linear interpolation from start value to peak (1)
+      // Linear interpolation from start value to peak
       return (
-        this._attackStartValue + (1 - this._attackStartValue) * attackProgress
+        this._attackStartValue + (peak - this._attackStartValue) * attackProgress
       )
     }
 
     // During decay phase
     if (timeSinceStart < decayEndTime) {
       if (this.decay === 0) {
-        return this.sustain
+        return sustainValue
       }
       const decayProgress = (timeSinceStart - attackEndTime) / this.decay
-      // Linear interpolation from peak (1) to sustain level
-      return 1 - (1 - this.sustain) * decayProgress
+      // Linear interpolation from peak to sustain level
+      return peak - (peak - sustainValue) * decayProgress
     }
 
     // Sustain phase
-    return this.sustain
+    return sustainValue
   }
 
   /**
@@ -153,16 +158,17 @@ export class Envelope {
    *
    * Schedules:
    * 1. setValueAtTime(startValue, startTime) - Start from current value (0 for first trigger)
-   * 2. linearRampToValueAtTime(1, startTime + attackTime) - Attack to peak
-   * 3. linearRampToValueAtTime(sustainLevel, startTime + attackTime + decayTime) - Decay to sustain
+   * 2. linearRampToValueAtTime(peak, startTime + attackTime) - Attack to peak
+   * 3. linearRampToValueAtTime(sustain * peak, startTime + attackTime + decayTime) - Decay to sustain
    *
    * If retriggering (envelope already active), cancels scheduled values and
    * starts the attack from the current estimated value to prevent clicks.
    *
    * @param gainParam - The AudioParam to schedule the envelope on (typically gainNode.gain)
    * @param startTime - The audio context time to start the envelope
+   * @param peak - Absolute amplitude the attack ramps to — the sound's target gain (default: 1)
    */
-  applyTo(gainParam: AudioParam, startTime: number): void {
+  applyTo(gainParam: AudioParam, startTime: number, peak: number = 1): void {
     let startValue = 0
 
     if (this._isActive) {
@@ -188,14 +194,15 @@ export class Envelope {
     this._isActive = true
     this._attackStartTime = startTime
     this._attackStartValue = startValue
+    this._peak = peak
 
-    // Attack: ramp to peak (1.0)
+    // Attack: ramp to peak
     const attackEndTime = startTime + this.attack
-    gainParam.linearRampToValueAtTime(1, attackEndTime)
+    gainParam.linearRampToValueAtTime(peak, attackEndTime)
 
-    // Decay: ramp to sustain level
+    // Decay: ramp to sustain level (scaled by peak)
     const decayEndTime = attackEndTime + this.decay
-    gainParam.linearRampToValueAtTime(this.sustain, decayEndTime)
+    gainParam.linearRampToValueAtTime(this.sustain * peak, decayEndTime)
 
     // Sustain: held at sustain level until triggerRelease() called
   }

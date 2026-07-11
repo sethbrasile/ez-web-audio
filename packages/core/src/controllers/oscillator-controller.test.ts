@@ -88,7 +88,7 @@ describe('oscillatorController', () => {
       const applyToSpy = vi.spyOn(envelope, 'applyTo')
       controller.setEnvelope(envelope)
       controller.setValuesAtTimes()
-      expect(applyToSpy).toHaveBeenCalledWith(gainNode.gain, audioContext.currentTime)
+      expect(applyToSpy).toHaveBeenCalledWith(gainNode.gain, audioContext.currentTime, 1)
     })
 
     it('triggerRelease calls envelope.triggerRelease', () => {
@@ -252,7 +252,7 @@ describe('oscillatorController', () => {
       controller.onPlaySet('frequency').to(880)
       controller.setValuesAtTimes()
       // Envelope applies to gain
-      expect(envelopeApplySpy).toHaveBeenCalledWith(gainNode.gain, expect.any(Number))
+      expect(envelopeApplySpy).toHaveBeenCalledWith(gainNode.gain, expect.any(Number), 1)
       // Frequency value also applied
       expect(freqSpy).toHaveBeenCalledWith(880, expect.any(Number))
     })

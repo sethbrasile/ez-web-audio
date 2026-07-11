@@ -11,6 +11,9 @@ import { BaseParamController } from './base-param-controller'
 export class OscillatorController extends BaseParamController implements ParamController {
   private envelope?: Envelope
 
+  /** Absolute peak the envelope attack ramps to (the oscillator's target gain) */
+  private envelopePeak: number = 1
+
   constructor(private oscillator: OscillatorNode, protected gainNode: GainNode, protected pannerNode: StereoPannerNode) {
     super(oscillator, gainNode, pannerNode)
   }
@@ -18,9 +21,11 @@ export class OscillatorController extends BaseParamController implements ParamCo
   /**
    * Sets the envelope to be applied during playback.
    * @param envelope - The Envelope instance to use for ADSR control
+   * @param peak - Absolute amplitude the attack ramps to — the sound's target gain (default: 1)
    */
-  public setEnvelope(envelope: Envelope): void {
+  public setEnvelope(envelope: Envelope, peak: number = 1): void {
     this.envelope = envelope
+    this.envelopePeak = peak
   }
 
   /**
@@ -60,9 +65,10 @@ export class OscillatorController extends BaseParamController implements ParamCo
   public setValuesAtTimes(): void {
     const { oscillator: { context: { currentTime } } } = this
 
-    // Apply envelope first (sets initial gain to 0, schedules attack-decay-sustain ramps)
+    // Apply envelope first (sets initial gain to 0, schedules attack-decay-sustain ramps
+    // scaled to the oscillator's target gain)
     if (this.envelope) {
-      this.envelope.applyTo(this.gainNode.gain, currentTime)
+      this.envelope.applyTo(this.gainNode.gain, currentTime, this.envelopePeak)
     }
 
     // Then apply other parameter automation

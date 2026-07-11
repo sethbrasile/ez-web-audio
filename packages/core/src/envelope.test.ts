@@ -151,6 +151,54 @@ describe('envelope', () => {
     })
   })
 
+  describe('applyTo with peak scaling', () => {
+    it('ramps attack to peak instead of 1 when peak provided', () => {
+      const envelope = new Envelope({ attack: 0.05 })
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+      envelope.applyTo(gainNode.gain, 1.0, 0.3)
+
+      expect(linearRampSpy).toHaveBeenCalledWith(0.3, 1.0 + 0.05)
+    })
+
+    it('ramps decay to sustain * peak', () => {
+      const envelope = new Envelope({ attack: 0.05, decay: 0.1, sustain: 0.6 })
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+      envelope.applyTo(gainNode.gain, 1.0, 0.3)
+
+      expect(linearRampSpy).toHaveBeenCalledWith(0.6 * 0.3, 1.0 + 0.05 + 0.1)
+    })
+
+    it('defaults peak to 1 when omitted (backward compatible)', () => {
+      const envelope = new Envelope({ attack: 0.05, decay: 0.1, sustain: 0.6 })
+      const linearRampSpy = vi.spyOn(gainNode.gain, 'linearRampToValueAtTime')
+
+      envelope.applyTo(gainNode.gain, 1.0)
+
+      expect(linearRampSpy).toHaveBeenCalledWith(1, 1.0 + 0.05)
+      expect(linearRampSpy).toHaveBeenCalledWith(0.6, 1.0 + 0.05 + 0.1)
+    })
+
+    it('estimateCurrentValue returns sustain * peak during sustain phase', () => {
+      const envelope = new Envelope({ attack: 0.01, decay: 0.1, sustain: 0.5 })
+
+      envelope.applyTo(gainNode.gain, 0, 0.4)
+
+      // Well past attack + decay
+      expect(envelope.estimateCurrentValue(5)).toBeCloseTo(0.5 * 0.4, 10)
+    })
+
+    it('estimateCurrentValue returns peak at end of attack phase with zero attack', () => {
+      const envelope = new Envelope({ attack: 0, decay: 0.1, sustain: 0.5 })
+
+      envelope.applyTo(gainNode.gain, 0, 0.4)
+
+      // During decay window, at its start the value is peak
+      expect(envelope.estimateCurrentValue(0)).toBeCloseTo(0.4, 10)
+    })
+  })
+
   describe('release', () => {
     it('schedules linear ramp to zero over release duration', () => {
       const envelope = new Envelope({ release: 0.3 })
