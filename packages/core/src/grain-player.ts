@@ -33,8 +33,8 @@ export interface GrainPlayerOptions {
  * Granular synthesis player that generates continuous texture/pad sounds from an audio buffer.
  *
  * GrainPlayer works by scheduling many overlapping short "grains" of audio from a source
- * buffer. Each grain gets a Hann window envelope (ramp up -> ramp down) to prevent clicks.
- * Grains are scheduled slightly ahead of real time using a WorkerTimer for glitch-free
+ * buffer. Each grain gets a triangular window envelope (linear ramp up -> linear ramp down)
+ * to prevent clicks. Grains are scheduled slightly ahead of real time using a WorkerTimer for glitch-free
  * playback even in background tabs.
  *
  * Provides independent control over:
@@ -179,7 +179,16 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
   }
 
   private getHopSize(): number {
-    return Math.max(0.001, this._grainSize - this._overlap)
+    // Floor the hop at grainSize/8 rather than a fixed 0.001s. `overlap` is
+    // clamped to [0, grainSize - 0.001], so a near-maximal overlap (e.g.
+    // grainSize=0.1, overlap=0.099) would otherwise produce a ~0.001s hop —
+    // roughly 50-100 full-amplitude grains piled up inside the lookahead
+    // window, summing well past 0 dBFS (M7). Bounding worst-case overlap to
+    // ~8 simultaneous grains keeps that from clipping while leaving default
+    // settings (hop = grainSize - overlap, typically >= grainSize/2)
+    // completely untouched.
+    const minHop = this._grainSize / 8
+    return Math.max(minHop, this._grainSize - this._overlap)
   }
 
   private scheduleLoop(): void {
@@ -202,7 +211,7 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
 
     const grainGain = this.audioContext.createGain()
 
-    // Hann window envelope
+    // Triangular window envelope (linear ramp up, linear ramp down)
     const halfGrain = this._grainSize / 2
     grainGain.gain.setValueAtTime(0.0001, when)
     grainGain.gain.linearRampToValueAtTime(1, when + halfGrain)
@@ -217,12 +226,20 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
       offset += (Math.random() * 2 - 1) * this._jitter * this.buffer.duration
     }
 
-    // Clamp to buffer bounds
-    const maxOffset = Math.max(0, this.buffer.duration - this._grainSize)
+    // Compensate grain duration for playback rate. Web Audio's
+    // start(when, offset, duration) takes `duration` in buffer-time; the
+    // audible length actually produced is duration / playbackRate. To keep
+    // the audible grain length at grainSize (independent of pitch), the
+    // buffer-time duration we pass in must be grainSize * playbackRate (H7 —
+    // this was previously inverted as grainSize / playbackRate, which made
+    // grains audibly shorter than requested at pitches above unity).
+    const compensatedDuration = this._grainSize * this._playbackRateValue
+
+    // Clamp to buffer bounds using the compensated (buffer-time) duration so
+    // offset + duration can never run past the end of the buffer.
+    const maxOffset = Math.max(0, this.buffer.duration - compensatedDuration)
     offset = Math.max(0, Math.min(offset, maxOffset))
 
-    // Compensate grain duration for playback rate
-    const compensatedDuration = this._grainSize / this._playbackRateValue
     source.start(when, offset, compensatedDuration)
 
     this._activeGrainCount++
@@ -255,7 +272,13 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     if (this._disposed) {
       throw new Error('Cannot play a disposed GrainPlayer. Create a new instance.')
     }
-    if (this._playing && !this._paused)
+    if (this._playing && this._paused) {
+      // Already playing but paused — delegate to resume() so the correct
+      // 'resume' event fires instead of a misleading second 'play' (R9).
+      this.resume()
+      return
+    }
+    if (this._playing)
       return
 
     this._playing = true
@@ -580,13 +603,13 @@ export class GrainPlayer extends TypedEventEmitter<GrainPlayerEventMap> {
     if (this._disposed)
       return
 
-    // Stop playback
-    if (this._playing) {
-      this.timer?.dispose()
-      this.timer = null
-      this._playing = false
-      this._paused = false
-    }
+    // Stop playback and always dispose the timer (M6 — previously this only
+    // ran when `_playing` was true, so a play() -> stop() -> dispose()
+    // sequence left the timer's Worker + Blob URL alive forever).
+    this._playing = false
+    this._paused = false
+    this.timer?.dispose()
+    this.timer = null
 
     // Disconnect shared bus
     this.safeDisconnect(this.sharedBusInput)

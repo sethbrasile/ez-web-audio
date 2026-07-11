@@ -1,6 +1,7 @@
 import type { AudiospriteManifest, HowlerSpriteManifest, SpriteManifest } from './sprite'
 import { AudioContext as MockAudioContext } from 'standardized-audio-context-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setMasterDestination } from './audio-context'
 import { AudioSprite, isHowlerManifest, normalizeManifest } from './sprite'
 
 describe('audioSprite', () => {
@@ -271,6 +272,31 @@ describe('audioSprite', () => {
       expect(mockPannerNode.connect).toHaveBeenCalledWith(audioContext.destination)
     })
 
+    it('honors a global master destination instead of hardcoding audioContext.destination (H8)', () => {
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+      const masterBus = audioContext.createGain()
+      setMasterDestination(masterBus as unknown as AudioNode)
+
+      try {
+        sprite.play('laser')
+
+        expect(mockSourceNode.connect).toHaveBeenCalledWith(masterBus)
+        expect(mockSourceNode.connect).not.toHaveBeenCalledWith(audioContext.destination)
+      }
+      finally {
+        setMasterDestination(null)
+      }
+    })
+
+    it('falls back to audioContext.destination when no master destination is set', () => {
+      setMasterDestination(null)
+      const sprite = new AudioSprite(audioContext, audioBuffer, testManifest)
+
+      sprite.play('laser')
+
+      expect(mockSourceNode.connect).toHaveBeenCalledWith(audioContext.destination)
+    })
+
     it('concurrent plays create separate source nodes', () => {
       // Reset mock to return new instances each call
       let callCount = 0
@@ -520,7 +546,7 @@ describe('audioSprite', () => {
       )
     })
 
-    it('sprite with end > buffer duration throws boundary error', () => {
+    it('sprite with end > buffer duration throws boundary error at construction time (R9-8)', () => {
       // Create a 1-second buffer specifically for this test
       const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
       const manifest: AudiospriteManifest = {
@@ -528,10 +554,9 @@ describe('audioSprite', () => {
           beyondBuffer: { start: 10, end: 12 }, // end exceeds 1-second buffer
         },
       }
-      const sprite = new AudioSprite(audioContext, shortBuffer, manifest)
 
-      // Now validation throws a descriptive error
-      expect(() => sprite.play('beyondBuffer')).toThrow(
+      // Fail-fast: validated at construction, not deferred to play()
+      expect(() => new AudioSprite(audioContext, shortBuffer, manifest)).toThrow(
         'Sprite "beyondBuffer" end time 12s exceeds buffer duration 1s',
       )
     })
@@ -576,7 +601,7 @@ describe('audioSprite', () => {
       expect(sprite.has('anything')).toBe(false)
     })
 
-    it('sprite with end beyond buffer throws boundary error', () => {
+    it('sprite with end beyond buffer throws boundary error at construction time (R9-8)', () => {
       // Create a 1-second buffer specifically for this test
       const shortBuffer = audioContext.createBuffer(1, 44100, 44100) // 1 second
       const manifest: AudiospriteManifest = {
@@ -584,10 +609,33 @@ describe('audioSprite', () => {
           long: { start: 0, end: 999999 }, // Very long — exceeds buffer
         },
       }
-      const sprite = new AudioSprite(audioContext, shortBuffer, manifest)
 
-      expect(sprite.getDuration('long')).toBe(999999)
-      expect(() => sprite.play('long')).toThrow('exceeds buffer duration')
+      expect(() => new AudioSprite(audioContext, shortBuffer, manifest)).toThrow('exceeds buffer duration')
+    })
+
+    it('zero-length loop sprite (start === end, loop: true) throws at construction time (R9-9)', () => {
+      const manifest: AudiospriteManifest = {
+        spritemap: {
+          brokenLoop: { start: 2, end: 2, loop: true },
+        },
+      }
+
+      // Per the Web Audio spec, loopEnd <= loopStart means "no loop bounds
+      // set" and the source loops the ENTIRE buffer — not nothing. Reject
+      // this configuration rather than silently defeating the sprite.
+      expect(() => new AudioSprite(audioContext, audioBuffer, manifest)).toThrow(
+        'has loop: true but zero length',
+      )
+    })
+
+    it('zero-length non-looping sprite is still allowed', () => {
+      const manifest: AudiospriteManifest = {
+        spritemap: {
+          instant: { start: 2, end: 2 },
+        },
+      }
+
+      expect(() => new AudioSprite(audioContext, audioBuffer, manifest)).not.toThrow()
     })
   })
 

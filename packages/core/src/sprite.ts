@@ -1,3 +1,5 @@
+import { getMasterDestination } from './audio-context'
+
 /**
  * Definition of a single sprite within the audio file.
  */
@@ -174,12 +176,28 @@ export class AudioSprite {
     this.audioBuffer = audioBuffer
     this.manifest = manifest
 
-    // Validate sprite definitions at construction time
+    // Validate sprite definitions at construction time (fail fast rather
+    // than deferring to the first play() call — R9 finding 8).
     for (const [name, def] of Object.entries(manifest.spritemap)) {
       if (def.end < def.start) {
         throw new Error(
           `Sprite "${name}" has end (${def.end}) before start (${def.start}). `
           + 'End time must be >= start time.',
+        )
+      }
+      if (def.end > audioBuffer.duration) {
+        throw new Error(
+          `Sprite "${name}" end time ${def.end}s exceeds buffer duration ${audioBuffer.duration}s`,
+        )
+      }
+      // A zero-length loop sprite (start === end with loop: true) would set
+      // loopEnd <= loopStart, which the Web Audio spec treats as "no loop
+      // bounds configured" — the source loops the ENTIRE buffer instead of
+      // nothing, silently defeating the sprite boundaries (R9 finding 9).
+      if (def.loop && def.end <= def.start) {
+        throw new Error(
+          `Sprite "${name}" has loop: true but zero length (start === end === ${def.start}s). `
+          + 'A zero-length loop would play the entire buffer instead of nothing, per the Web Audio spec.',
         )
       }
     }
@@ -269,14 +287,11 @@ export class AudioSprite {
       throw new Error(`Sprite "${name}" not found. Available: ${this.names.join(', ')}`)
     }
 
-    // Validate sprite boundaries against the audio buffer
+    // Validate sprite boundaries against the audio buffer. (end > duration
+    // and zero-length loops are already rejected at construction time —
+    // see the constructor — since the buffer never changes after that.)
     if (sprite.start < 0) {
       throw new Error(`Sprite "${name}" has invalid start time: ${sprite.start} (must be >= 0)`)
-    }
-    if (sprite.end > this.audioBuffer.duration) {
-      throw new Error(
-        `Sprite "${name}" end time ${sprite.end}s exceeds buffer duration ${this.audioBuffer.duration}s`,
-      )
     }
 
     const { gain = 1, pan = 0 } = options
@@ -305,8 +320,10 @@ export class AudioSprite {
       currentNode = pannerNode
     }
 
-    // Connect to destination
-    currentNode.connect(this.audioContext.destination)
+    // Connect to destination. Honor a global master bus if one is set (same
+    // pattern as base-sound.ts, layered-sound.ts, poly-synth.ts, and
+    // grain-player.ts) so sprites don't escape a shared limiter/mute (H8).
+    currentNode.connect(getMasterDestination() ?? this.audioContext.destination)
 
     // Calculate offset and duration
     const offset = sprite.start

@@ -1,6 +1,27 @@
 import { AudioContext as Mock } from 'standardized-audio-context-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GrainPlayer } from './grain-player'
+import { WorkerTimer } from './utils/worker-timer'
+
+/**
+ * Wraps audioContext.createBufferSource so every real source node it returns
+ * has its start() calls recorded (args + call order) without losing the
+ * mock library's normal node behavior.
+ */
+function spyOnGrainStarts(audioContext: AudioContext): { calls: any[][] } {
+  const record = { calls: [] as any[][] }
+  const original = audioContext.createBufferSource.bind(audioContext)
+  vi.spyOn(audioContext, 'createBufferSource').mockImplementation(() => {
+    const source = original()
+    const realStart = source.start.bind(source)
+    source.start = ((...args: any[]) => {
+      record.calls.push(args)
+      return realStart(...args)
+    }) as typeof source.start
+    return source
+  })
+  return record
+}
 
 function createMockContext() {
   return new Mock() as unknown as AudioContext
@@ -231,6 +252,25 @@ describe('grainPlayer', () => {
       gp.stop()
       expect(gp.paused).toBe(false)
       expect(gp.playing).toBe(false)
+    })
+
+    it('play() while paused delegates to resume() and emits resume, not play', () => {
+      const gp = new GrainPlayer(audioContext, buffer)
+      const playHandler = vi.fn()
+      const resumeHandler = vi.fn()
+      gp.on('play', playHandler)
+      gp.on('resume', resumeHandler)
+
+      gp.play()
+      gp.pause()
+      playHandler.mockClear()
+
+      gp.play()
+
+      expect(gp.paused).toBe(false)
+      expect(gp.playing).toBe(true)
+      expect(resumeHandler).toHaveBeenCalledOnce()
+      expect(playHandler).not.toHaveBeenCalled()
     })
   })
 
@@ -469,6 +509,69 @@ describe('grainPlayer', () => {
     })
   })
 
+  // ─── Grain Duration Compensation (H7) ───────────────────────────
+
+  describe('grain duration compensation (H7)', () => {
+    it('compensates grain duration for pitch shift: duration = grainSize * rate', () => {
+      const starts = spyOnGrainStarts(audioContext)
+      const gp = new GrainPlayer(audioContext, buffer, { pitch: 12, grainSize: 0.1, jitter: 0 })
+
+      gp.play()
+
+      expect(starts.calls.length).toBeGreaterThan(0)
+      const [, , duration] = starts.calls[0]
+      // +12 semitones => playbackRate = 2. Web Audio start(when, offset, duration)
+      // takes buffer-time; audible length = duration / playbackRate. To keep the
+      // audible grain length at grainSize, duration must be grainSize * rate.
+      expect(duration).toBeCloseTo(0.2, 5)
+    })
+
+    it('at unity pitch, compensated duration equals grainSize', () => {
+      const starts = spyOnGrainStarts(audioContext)
+      const gp = new GrainPlayer(audioContext, buffer, { pitch: 0, grainSize: 0.1, jitter: 0 })
+
+      gp.play()
+
+      const [, , duration] = starts.calls[0]
+      expect(duration).toBeCloseTo(0.1, 5)
+    })
+
+    it('offset clamp uses the compensated duration so offset + duration never exceeds buffer end', () => {
+      const starts = spyOnGrainStarts(audioContext)
+      // 1-second buffer, grains requested right at the end with pitch up an octave
+      const gp = new GrainPlayer(audioContext, buffer, {
+        pitch: 12,
+        grainSize: 0.1,
+        position: 1,
+        jitter: 0,
+      })
+
+      gp.play()
+
+      const [, offset, duration] = starts.calls[0]
+      expect(duration).toBeCloseTo(0.2, 5)
+      expect(offset + duration).toBeLessThanOrEqual(buffer.duration + 1e-9)
+      // maxOffset = buffer.duration - compensatedDuration = 1 - 0.2 = 0.8
+      expect(offset).toBeCloseTo(0.8, 5)
+    })
+  })
+
+  // ─── Overlap Normalization (M7) ──────────────────────────────────
+
+  describe('overlap normalization (M7)', () => {
+    it('extreme overlap does not cause runaway grain scheduling', () => {
+      const createBufferSourceSpy = vi.spyOn(audioContext, 'createBufferSource')
+      // grainSize=0.1, overlap clamped to grainSize-0.001=0.099 -> hop=0.001s.
+      // Without a hop floor, the 0.05s lookahead window would schedule ~50
+      // full-amplitude grains on a single play() call.
+      const gp = new GrainPlayer(audioContext, buffer, { grainSize: 0.1, overlap: 0.099, jitter: 0 })
+
+      gp.play()
+
+      expect(createBufferSourceSpy.mock.calls.length).toBeLessThan(15)
+    })
+  })
+
   // ─── Master Controls ───────────────────────────────────────────
 
   describe('master controls', () => {
@@ -664,6 +767,17 @@ describe('grainPlayer', () => {
       // dispatchEvent should return false after dispose
       const result = gp.dispatchEvent(new CustomEvent('test'))
       expect(result).toBe(false)
+    })
+
+    it('m6: disposes the timer even when play() was stopped before dispose (no Worker/Blob leak)', () => {
+      const disposeSpy = vi.spyOn(WorkerTimer.prototype, 'dispose')
+      const gp = new GrainPlayer(audioContext, buffer)
+
+      gp.play()
+      gp.stop()
+      gp.dispose()
+
+      expect(disposeSpy).toHaveBeenCalled()
     })
   })
 
