@@ -211,7 +211,9 @@ onUnmounted(() => {
 }
 
 .ewa-knob__track {
-  stroke: var(--ewa-well);
+  /* line-2 (not well): the well tone blends into panel backgrounds, making
+     the knob's range invisible when the value arc is at minimum */
+  stroke: var(--ewa-line-2);
 }
 
 .ewa-knob__value {

@@ -30,7 +30,9 @@ const emit = defineEmits<{
 
 const numSteps = computed(() => props.lanes[0]?.cells.length ?? 0)
 
-const gridTemplateColumns = computed(() => `84px repeat(${numSteps.value}, 44px)`)
+// Fluid columns: cells cap at 44px but shrink (to 24px) so a full 16-step
+// pattern fits the docs content width without horizontal scrolling
+const gridTemplateColumns = computed(() => `84px repeat(${numSteps.value}, minmax(24px, 44px))`)
 
 function stepHeaderLabel(index: number) {
   return index % props.stepsPerBeat === 0
@@ -125,7 +127,8 @@ function isCurrentStep(stepIndex: number) {
 .ewa-step-grid__inner {
   display: grid;
   gap: 4px;
-  width: max-content;
+  width: 100%;
+  min-width: 536px; /* 84px labels + 16×24px min cells + gaps — scroll below this */
 }
 
 .ewa-step-grid__header-spacer {
@@ -205,10 +208,12 @@ function isCurrentStep(stepIndex: number) {
 }
 
 .ewa-step-grid__cell {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  /* Fluid: sized by the grid column (24–44px), stays square */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border-radius: 6px;
   border: 1px solid var(--ewa-line);

@@ -372,7 +372,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
   height: 20px;
   font-family: var(--vp-font-family-mono);
   font-size: 11px;
@@ -434,16 +433,21 @@ onUnmounted(() => {
 
 .beat-grid {
   display: grid;
-  grid-template-columns: repeat(16, 44px);
+  /* Fluid: cells cap at 44px but shrink (to 24px) so the 16-step pattern
+     fits the docs content width without horizontal scrolling */
+  grid-template-columns: repeat(16, minmax(24px, 44px));
   gap: 4px;
-  width: max-content;
+  width: 100%;
+  min-width: 444px; /* 16×24px min cells + gaps — scroll below this */
 }
 
 .vanilla-beat-cell {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  /* Fluid: sized by the grid column (24–44px), stays square */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border-radius: 6px;
   border: 1px solid var(--ewa-line);

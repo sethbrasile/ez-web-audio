@@ -69,6 +69,7 @@ onBeforeUnmount(() => {
 .ewa-trigger-pad {
   min-width: 64px;
   min-height: 56px;
+  padding: 10px 16px; /* VitePress zeroes button padding — labels need breathing room */
   border-radius: 10px;
   border: none;
   cursor: pointer;

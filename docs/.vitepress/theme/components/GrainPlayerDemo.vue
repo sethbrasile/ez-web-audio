@@ -333,21 +333,25 @@ function getPositionFromEvent(clientX: number): number {
   return Math.max(0, Math.min(1, x / width))
 }
 
-function handleMouseDown(e: MouseEvent) {
-  isDragging.value = true
-  const newPos = getPositionFromEvent(e.clientX)
+function applyPointerPosition(newPos: number) {
   position.value = newPos
   if (grainPlayer.value)
     grainPlayer.value.position = newPos
+  // The RAF overlay loop only runs while playing — redraw here so the
+  // playhead follows clicks/drags while stopped too (next play starts there)
+  if (!playing.value)
+    drawOverlay()
+}
+
+function handleMouseDown(e: MouseEvent) {
+  isDragging.value = true
+  applyPointerPosition(getPositionFromEvent(e.clientX))
 }
 
 function handleMouseMove(e: MouseEvent) {
   if (!isDragging.value)
     return
-  const newPos = getPositionFromEvent(e.clientX)
-  position.value = newPos
-  if (grainPlayer.value)
-    grainPlayer.value.position = newPos
+  applyPointerPosition(getPositionFromEvent(e.clientX))
 }
 
 function handleMouseUp() {
@@ -356,19 +360,13 @@ function handleMouseUp() {
 
 function handleTouchStart(e: TouchEvent) {
   isDragging.value = true
-  const newPos = getPositionFromEvent(e.touches[0].clientX)
-  position.value = newPos
-  if (grainPlayer.value)
-    grainPlayer.value.position = newPos
+  applyPointerPosition(getPositionFromEvent(e.touches[0].clientX))
 }
 
 function handleTouchMove(e: TouchEvent) {
   if (!isDragging.value)
     return
-  const newPos = getPositionFromEvent(e.touches[0].clientX)
-  position.value = newPos
-  if (grainPlayer.value)
-    grainPlayer.value.position = newPos
+  applyPointerPosition(getPositionFromEvent(e.touches[0].clientX))
 }
 
 // H1: touchend/touchcancel handlers — prevent isDragging from staying stuck on mobile

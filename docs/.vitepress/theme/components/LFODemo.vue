@@ -152,7 +152,9 @@ async function playSound() {
 
     // Create oscillator at A4 (440 Hz) — standard musical reference
     const osc = cleanup.register(await loadOsc({ frequency: 440, type: 'sawtooth' }))
-    osc.update('gain').to(0.7).as('ratio')
+    // 0.4 keeps the continuous sawtooth at parity with other demos' loudness —
+    // tremolo depth is a ratio of this base, so peaks stay ≤ ~0.76 (was 1.33 at 0.7)
+    osc.update('gain').to(0.4).as('ratio')
 
     // Create filter for filter sweep tab — bandpass gives wah-pedal character
     filter = createFilterEffect('bandpass', { frequency: 2000, q: 6 })
