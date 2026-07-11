@@ -1,6 +1,8 @@
 import type { TransportEventMap } from './events/event-types'
 import type { Sequence } from './sequence'
+import type { MusicalTimeNotation } from './utils/musical-time'
 import { TypedEventEmitter } from './events/typed-event-emitter'
+import { musicalTimeToBeats } from './utils/musical-time'
 import { WorkerTimer } from './utils/worker-timer'
 
 /**
@@ -50,7 +52,6 @@ export interface TransportPosition {
 interface SyncedTrackState {
   track: SyncableBeatTrack
   nextBeatTime: number
-  currentBeatIndex: number
   /** Absolute steps scheduled for this track since Transport start. Never wraps. */
   stepCount: number
 }
@@ -113,6 +114,12 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
   // Swing
   private _swing = 0
   private _swingSubdivision = 1 / 16
+
+  // Loop region
+  private _loop = false
+  private _loopStartBeats = 0
+  private _loopEndBeats = 0 // 0 = unset
+  private loopIteration = 0
 
   // Scheduler state
   private scheduleAheadTime = 0.1 // 100ms lookahead
@@ -247,6 +254,62 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     this._swingSubdivision = value
   }
 
+  /**
+   * Whether the transport loops over the region [loopStart, loopEnd).
+   * When enabled, position and synced-track pattern indices wrap at loopEnd
+   * and a 'loop' event fires on each wrap. Sequences are not remapped — they
+   * loop at their own length; give them the same length as the loop region
+   * for lockstep. @default false
+   *
+   * @example
+   * ```typescript
+   * transport.loopEnd = '2m'
+   * transport.loop = true
+   * ```
+   */
+  get loop(): boolean {
+    return this._loop
+  }
+
+  set loop(value: boolean) {
+    this._loop = value
+  }
+
+  /**
+   * Loop region start. Set with musical notation (`'1m'`, `'2:1:0'`) or a
+   * numeric beat count; reads back as beats. @default 0
+   *
+   * @example
+   * ```typescript
+   * transport.loopStart = '1m' // 4 beats in 4/4
+   * ```
+   */
+  get loopStart(): number {
+    return this._loopStartBeats
+  }
+
+  set loopStart(value: MusicalTimeNotation) {
+    this._loopStartBeats = musicalTimeToBeats(value, this._timeSignature[0], this._ticksPerBeat)
+  }
+
+  /**
+   * Loop region end. Set with musical notation (`'2m'`) or a numeric beat
+   * count; reads back as beats. Must be greater than {@link loopStart} when
+   * {@link loop} is enabled — validated on {@link start}.
+   *
+   * @example
+   * ```typescript
+   * transport.loopEnd = '2m' // 8 beats in 4/4
+   * ```
+   */
+  get loopEnd(): number {
+    return this._loopEndBeats
+  }
+
+  set loopEnd(value: MusicalTimeNotation) {
+    this._loopEndBeats = musicalTimeToBeats(value, this._timeSignature[0], this._ticksPerBeat)
+  }
+
   // ─── Lifecycle ────────────────────────────────────────────────────
 
   /**
@@ -278,9 +341,13 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     }
     else {
       // Fresh start
+      if (this._loop && this._loopEndBeats <= this._loopStartBeats) {
+        throw new Error('loopEnd must be greater than loopStart when loop is enabled')
+      }
       this.currentTickIndex = 0
       this.startTime = this.audioContext.currentTime
       this._position = { bar: 1, beat: 1, tick: 0, seconds: 0 }
+      this.loopIteration = 0
 
       this.emit('start', {
         time: this.audioContext.currentTime,
@@ -302,7 +369,6 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
         this.trackStates.set(track, {
           track,
           nextBeatTime: this.audioContext.currentTime,
-          currentBeatIndex: 0,
           stepCount: 0,
         })
       }
@@ -353,11 +419,11 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     this.startTime = 0
     this.pausedTickIndex = 0
     this.pausedElapsed = 0
+    this.loopIteration = 0
     this._position = { bar: 1, beat: 1, tick: 0, seconds: 0 }
 
     // Reset all track states
     for (const state of this.trackStates.values()) {
-      state.currentBeatIndex = 0
       state.nextBeatTime = 0
       state.stepCount = 0
     }
@@ -423,7 +489,6 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
       this.trackStates.set(track, {
         track,
         nextBeatTime,
-        currentBeatIndex: 0,
         stepCount: 0,
       })
     }
@@ -513,12 +578,16 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
       const beatDuration = (240 * noteType) / this._bpm
       const noteTypeBeats = 4 * noteType // musical beats per step
       while (state.nextBeatTime < currentTime + this.scheduleAheadTime) {
-        const positionBeats = state.stepCount * noteTypeBeats
+        let positionBeats = state.stepCount * noteTypeBeats
+        if (this._loop && this._loopEndBeats > this._loopStartBeats && positionBeats >= this._loopStartBeats) {
+          const loopLen = this._loopEndBeats - this._loopStartBeats
+          positionBeats = this._loopStartBeats + ((positionBeats - this._loopStartBeats) % loopLen)
+        }
+        const patternIndex = Math.round(positionBeats / noteTypeBeats) % state.track.beats.length
         const swingDelay = this._swingDelayFor(positionBeats)
-        state.track._scheduleBeatFromTransport(state.currentBeatIndex, state.nextBeatTime + swingDelay)
+        state.track._scheduleBeatFromTransport(patternIndex, state.nextBeatTime + swingDelay)
         state.nextBeatTime += beatDuration
         state.stepCount++
-        state.currentBeatIndex = (state.currentBeatIndex + 1) % state.track.beats.length
       }
     }
 
@@ -556,6 +625,20 @@ export class Transport extends TypedEventEmitter<TransportEventMap> {
     const tickDuration = 60 / (this._bpm * this._ticksPerBeat)
     this.nextTickTime += tickDuration
     this.currentTickIndex++
+
+    if (this._loop) {
+      const loopStartTick = Math.round(this._loopStartBeats * this._ticksPerBeat)
+      const loopEndTick = Math.round(this._loopEndBeats * this._ticksPerBeat)
+      if (this.currentTickIndex >= loopEndTick) {
+        this.currentTickIndex = loopStartTick
+        this.loopIteration++
+        this.emit('loop', {
+          iteration: this.loopIteration,
+          time: this.nextTickTime,
+          source: this,
+        })
+      }
+    }
 
     // Derive bar/beat/tick from absolute tick count
     const beatsPerBar = this._timeSignature[0]

@@ -553,6 +553,98 @@ describe('transport', () => {
     })
   })
 
+  describe('loop region', () => {
+    it('defaults off, loopStart 0', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      expect(transport.loop).toBe(false)
+      expect(transport.loopStart).toBe(0)
+      transport.dispose()
+    })
+
+    it('accepts musical notation and stores beats', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.loopEnd = '2m' // 4/4 -> 8 beats
+      expect(transport.loopEnd).toBe(8)
+      transport.loopStart = '1m'
+      expect(transport.loopStart).toBe(4)
+      transport.dispose()
+    })
+
+    it('throws when loopEnd <= loopStart on start()', () => {
+      const transport = new Transport(audioContext as any, { bpm: 120 })
+      transport.loop = true
+      transport.loopStart = '2m'
+      transport.loopEnd = '1m'
+      expect(() => transport.start()).toThrow()
+      transport.dispose()
+    })
+
+    it('wraps position at loop end and emits loop event', () => {
+      // bpm 3000, ticksPerBeat 4 (default) -> tickDuration = 60/(3000*4) = 0.005s
+      // scheduleAheadTime is a fixed 0.1s lookahead, and the mock AudioContext's
+      // currentTime never advances (DeLorean stays at position 0), so a single
+      // scheduler tick advances position 20 times (0, 0.005, ..., 0.095 < 0.1).
+      // loopEnd '1m' (4/4) = 4 beats = 16 ticks. After 16 increments the tick
+      // index wraps back to 0 and keeps counting: 17th..20th increments land
+      // at ticks 1..4 -- bar stays 1 (would be bar 2 without the loop).
+      const transport = new Transport(audioContext as any, { bpm: 3000 })
+      transport.loop = true
+      transport.loopEnd = '1m'
+
+      const loopListener = vi.fn()
+      transport.on('loop', loopListener)
+
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(transport.position.bar).toBe(1)
+      expect(loopListener).toHaveBeenCalled()
+      expect(loopListener.mock.calls[0][0].detail.iteration).toBe(1)
+      transport.dispose()
+    })
+
+    it('wraps synced track pattern index at loop boundary', () => {
+      // bpm 6000, noteType 1/4 -> beatDuration = 240*(1/4)/6000 = 0.01s
+      // 10 steps fit within the fixed 0.1s lookahead window (currentTime frozen at 0).
+      // track numBeats 8, loopEnd '1m' (4/4) = 4 beats. Since noteType 1/4 = 1 beat/step,
+      // the pattern index must wrap every 4 steps: 0,1,2,3,0,1,2,3,... NOT 0..7 free-run.
+      const transport = new Transport(audioContext as any, { bpm: 6000 })
+      transport.loop = true
+      transport.loopEnd = '1m'
+
+      const scheduleSpy = vi.fn()
+      const mockTrack = {
+        beats: Array.from({ length: 8 }, () => ({ active: false })),
+        _syncNoteType: 1 / 4,
+        _scheduleBeatFromTransport: scheduleSpy,
+      } as any
+
+      transport._addTrack(mockTrack)
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(scheduleSpy.mock.calls.length).toBeGreaterThanOrEqual(8)
+      const indices = scheduleSpy.mock.calls.slice(0, 8).map(call => call[0])
+      expect(indices).toEqual([0, 1, 2, 3, 0, 1, 2, 3])
+
+      transport.dispose()
+    })
+
+    it('loop=false behavior unchanged (position runs past loopEnd)', () => {
+      // Same bpm/ticksPerBeat as the wrap test, but loop left off. loopEnd is
+      // still set to '1m' to prove it's inert when loop is false -- position
+      // free-runs past the would-be loop boundary and bar advances to 2.
+      const transport = new Transport(audioContext as any, { bpm: 3000 })
+      transport.loopEnd = '1m'
+
+      transport.start()
+      vi.advanceTimersByTime(20)
+
+      expect(transport.position.bar).toBe(2)
+      transport.dispose()
+    })
+  })
+
   describe('formatPosition', () => {
     it('formats position as bar:beat:tick', () => {
       expect(formatPosition({ bar: 1, beat: 1, tick: 0, seconds: 0 })).toBe('1:1:0')

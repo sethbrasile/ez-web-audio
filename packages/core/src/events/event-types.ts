@@ -252,6 +252,18 @@ export interface TransportLifecycleDetail {
 }
 
 /**
+ * Detail for Transport 'loop' events, fired each time the loop region wraps.
+ */
+export interface TransportLoopDetail {
+  /** Loop iteration count (1-indexed) */
+  iteration: number
+  /** AudioContext time of the wrap */
+  time: number
+  /** The Transport instance that emitted this event */
+  source: AudioEventSource
+}
+
+/**
  * Maps Transport event names to their corresponding CustomEvent types.
  */
 export interface TransportEventMap {
@@ -260,6 +272,7 @@ export interface TransportEventMap {
   pause: CustomEvent<TransportLifecycleDetail>
   resume: CustomEvent<TransportLifecycleDetail>
   tick: CustomEvent<TransportTickDetail>
+  loop: CustomEvent<TransportLoopDetail>
 }
 
 // ─── Sequence Events ──────────────────────────────────────────────────
