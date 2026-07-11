@@ -94,8 +94,10 @@
         "2026-03-19-deep-review-m7-demos.md",
         "2026-07-11-deep-review.md"
       ],
-      "status": "fix-in-progress",
-      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11."
+      "status": "resolved",
+      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11.",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     },
     "demo-audio-init-duplication": {
       "name": "Duplicated audio initialization pattern across demos",
@@ -104,8 +106,10 @@
         "2026-03-19-deep-review-m7-demos.md",
         "2026-07-11-deep-review.md"
       ],
-      "status": "fix-in-progress",
-      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11."
+      "status": "resolved",
+      "note": "Substantially addressed by @ez-web-audio/vue useCleanup + factory composables (21/27 demos); remaining call sites in QC 2026-07-11 grouping G11.",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     },
     "stale-scheduled-work": {
       "name": "Stale scheduled work survives state transitions",
@@ -113,7 +117,9 @@
       "reviews": [
         "2026-07-11-deep-review.md"
       ],
-      "status": "open"
+      "status": "resolved",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     },
     "ramp-setter-desync": {
       "name": "rampTo/setter dual-path desync",
@@ -121,7 +127,9 @@
       "reviews": [
         "2026-07-11-deep-review.md"
       ],
-      "status": "open"
+      "status": "resolved",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     },
     "ctor-setter-parity": {
       "name": "Constructor-vs-setter validation parity",
@@ -129,7 +137,9 @@
       "reviews": [
         "2026-07-11-deep-review.md"
       ],
-      "status": "open"
+      "status": "resolved",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     },
     "incomplete-disposal-cascade": {
       "name": "Incomplete disposal cascade",
@@ -137,7 +147,9 @@
       "reviews": [
         "2026-07-11-deep-review.md"
       ],
-      "status": "open"
+      "status": "resolved",
+      "resolvedBy": "QC cycle 2026-07-11 (units G1-G13 + close-out)",
+      "resolvedDate": "2026-07-11"
     }
   }
 }
