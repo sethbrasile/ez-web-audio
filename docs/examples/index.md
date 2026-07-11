@@ -75,7 +75,7 @@ Create drum sounds entirely from synthesis without any audio files. Learn how to
 
 ## Timing & Sequencing
 
-### [Timing Basics](/examples/timing)
+### [Why Timing Drifts](/examples/timing)
 
 Master the Web Audio timing model with examples of immediate playback, delayed playback, and precise scheduling for musical timing.
 

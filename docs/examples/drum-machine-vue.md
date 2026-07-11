@@ -249,4 +249,4 @@ watch(bpm, (val) => {
 
 - [Drum Machine Overview](/examples/drum-machine) — General drum machine concepts
 - [Vanilla TS Events](/examples/drum-machine-vanilla) — Event-based pattern for React/vanilla JS
-- [Timing Basics](/examples/timing) — Understanding Web Audio scheduling
+- [Why Timing Drifts](/examples/timing) — Understanding Web Audio scheduling

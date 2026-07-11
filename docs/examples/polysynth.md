@@ -83,4 +83,4 @@ synth.dispose() // Full cleanup -- releases all voices and disconnects effects
 
 - [PolySynth Guide](/guide/poly-synth) -- full API reference, voice handles, filters, and effects
 - [Synth Keyboard](/examples/synth-keyboard) -- manual polyphony with individual oscillators
-- [LFO Modulation](/examples/lfo-modulation) -- add tremolo or vibrato to synth voices
+- [LFO — One Knob, Three Effects](/examples/lfo-modulation) -- add tremolo or vibrato to synth voices

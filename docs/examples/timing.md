@@ -3,7 +3,7 @@ title: Audio Timing - Schedule Sounds with Web Audio API
 description: Learn precise audio scheduling with play(), playIn(), and playAt() methods. Interactive demo showing immediate, delayed, and scheduled sound playback.
 ---
 
-# Timing Basics
+# Why Timing Drifts
 
 Master Web Audio's scheduling system for precise, synchronized playback.
 

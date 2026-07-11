@@ -161,13 +161,13 @@ export default defineConfig({
         {
           text: 'Modulation',
           items: [
-            { text: 'LFO Modulation', link: '/examples/lfo-modulation' },
+            { text: 'LFO — One Knob, Three Effects', link: '/examples/lfo-modulation' },
           ],
         },
         {
           text: 'Timing & Sequencing',
           items: [
-            { text: 'Timing Basics', link: '/examples/timing' },
+            { text: 'Why Timing Drifts', link: '/examples/timing' },
             { text: 'Drum Machine', link: '/examples/drum-machine' },
             { text: 'Transport + Sequencer', link: '/examples/transport-sequencer' },
           ],

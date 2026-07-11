@@ -94,3 +94,17 @@ Resolving inventory findings #3/#4 into a concrete `packages/vue` hardening plan
 ## 2026-07-09 · 77 · React doc examples are illustrative, not real (Seth flagged)
 
 `docs/examples/react-integration.md` shows hand-rolled React (`useRef`/`useEffect` over raw `ez-web-audio`) as "how you'd implement this concept in React" — no package involved. After Phase 77 ships `@ez-web-audio/react`, these must be shored up to match the real hooks. React's paradigm differs from Vue's (refs not reactive state; `wrapWith`/BeatTrack reactivity handled very differently), so don't mirror the Vue guide 1:1. Noted directly in 77-01-PLAN.md Task 5 (also corrected the path there: file is under `docs/examples/`, plan said `docs/guide/`).
+
+## 2026-07-10 · 74-02 · IA advisory triage (packet 06) — adoptions + deferred items
+
+**Adopted (pure config, done in 74-02):** the two packet-explicit outcome-renames — sidebar + h1 + cross-link text: "Timing Basics" → "Why Timing Drifts", "LFO Modulation" → "LFO — One Knob, Three Effects". URLs unchanged. The cross-cutting conventions (one takeaway callout via DemoFrame, SignalFlow as shared routing language, danger-fill playing state + live dot, reduced-motion everywhere) shipped throughout the kit/demo work.
+
+**Deferred to Seth (structural — recommendation each):**
+- **B2 Fold 3 drum-machine pages into one tabbed page.** Deletes two URLs. Recommend ADOPT at Phase 78 docs pass (the demos are now visually identical, so the tab switcher tells the story better); needs redirects.
+- **B3 Groovebox first in Examples order + homepage hero embed.** Blocked on Phase 76. Recommend ADOPT when groovebox ships.
+- **A Demo-page template inversion (component first, then how, then code).** Content restructure across 20+ pages. Recommend ADOPT as a mechanical docs pass — takeaway line already ships on every demo, so pages half-follow it now.
+- **C1 Playable overview index (grid of live mini-triggers).** New interactive page. Recommend DEFER until after 76 (hero pattern reusable).
+- **C4 Volume notice once-per-session.** Session state = behavior; also disagree with hiding safety notice. Recommend SKIP — the single VolumeWarning pattern already de-noises it. 
+- **Remaining sidebar renames by outcome (B1 beyond the two explicit ones).** Copywriting judgment; packet gave no full list. Recommend Seth approves a batch during UAT gate.
+
+**Also logged from the implementation run:** TransportSequencer active cells are uniform accent (per-lane palette colors would need a script-side color map — frozen this phase). Candidate polish item if the listening/UAT gate wants more lane separation.

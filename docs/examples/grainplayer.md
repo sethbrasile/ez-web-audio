@@ -67,5 +67,5 @@ grain.dispose() // Stops all scheduled grains and releases the buffer reference
 ## Further Reading
 
 - [GrainPlayer Guide](/guide/grain-player) -- full API reference, effects, and parameter details
-- [LFO Modulation](/examples/lfo-modulation) -- modulate grain position or pitch with an LFO
+- [LFO — One Knob, Three Effects](/examples/lfo-modulation) -- modulate grain position or pitch with an LFO
 - [Effects Chain](/examples/effects-chain) -- add reverb, delay, or compression to grain output

@@ -240,4 +240,4 @@ sound.addEffect(chorusEffect)
 
 - [Sampled Drum Kit](/examples/sampled-drum-kit) — Multi-zone velocity-sensitive pads
 - [Synth Keyboard](/examples/synth-keyboard) — Oscillator playground with filter controls
-- [Timing Basics](/examples/timing) — Master Web Audio's scheduling system
+- [Why Timing Drifts](/examples/timing) — Master Web Audio's scheduling system

@@ -3,7 +3,7 @@ title: LFO Modulation - Web Audio Tremolo, Vibrato, and Filter Sweep
 description: Interactive demo of LFO tremolo, vibrato, and filter sweep effects
 ---
 
-# LFO Modulation
+# LFO — One Knob, Three Effects
 
 Explore Low Frequency Oscillator (LFO) modulation effects. An LFO generates a slow waveform that modulates an audio parameter -- creating effects like tremolo (volume wobble), vibrato (pitch wobble), and filter sweeps (tone color changes).
 

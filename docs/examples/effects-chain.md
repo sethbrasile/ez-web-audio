@@ -90,6 +90,6 @@ source.dispose() // Disconnects all effects and releases audio nodes
 
 ## Further Reading
 
-- [LFO Modulation](/examples/lfo-modulation) -- add tremolo or filter sweep to a signal in the chain
+- [LFO — One Knob, Three Effects](/examples/lfo-modulation) -- add tremolo or filter sweep to a signal in the chain
 - [Audio Routing](/examples/audio-routing) -- custom routing beyond the linear chain
 - [Effects](/examples/effects) -- individual effect deep-dives
