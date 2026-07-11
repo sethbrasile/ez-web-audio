@@ -2,7 +2,11 @@
 import type { Sound } from 'ez-web-audio'
 import { useCleanup, useLayeredSound } from '@ez-web-audio/vue'
 import { createSound } from 'ez-web-audio'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -14,6 +18,7 @@ const layerGains = ref([1.0, 0.8, 0.7])
 const layerPlaying = ref([false, false, false])
 
 const layerLabels = ['Kick', 'Snare', 'Hi-Hat']
+const layerColors = ['var(--ewa-kick)', 'var(--ewa-snare)', 'var(--ewa-hat)']
 const layerUrls = [
   '/ez-web-audio/audio/drum-samples/kick1.wav',
   '/ez-web-audio/audio/drum-samples/snare1.wav',
@@ -23,6 +28,18 @@ const layerUrls = [
 const cleanup = useCleanup()
 const { instance: layered, load: loadLayered } = useLayeredSound()
 let sounds: Sound[] = []
+
+const statusText = computed(() => {
+  if (loading.value)
+    return 'Loading sounds...'
+  if (isPlaying.value)
+    return 'All layers playing in sync'
+  return 'Ready'
+})
+
+function formatPercent(v: number) {
+  return `${Math.round(v * 100)}%`
+}
 
 async function ensureLoaded() {
   if (loaded.value)
@@ -124,31 +141,28 @@ function updateLayerGain(index: number, val: number) {
 </script>
 
 <template>
-  <div class="layered-demo">
+  <DemoFrame class="layered-demo" :error="error" takeaway="Stacked sounds, one play call.">
     <div class="controls">
-      <div class="master-controls">
-        <button
-          class="play-all-btn"
-          :disabled="loading"
+      <div class="main-controls">
+        <PlayButton
+          label="Play All Together"
+          loading-label="Loading..."
+          :loading="loading"
           @click="playAll"
-        >
-          {{ loading ? 'Loading...' : 'Play All Together' }}
-        </button>
-        <button class="stop-btn" @click="stopAll">
+        />
+        <button type="button" class="stop-btn" @click="stopAll">
           Stop
         </button>
-        <label class="gain-label">
-          Master: {{ Math.round(masterGain * 100) }}%
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            :value="masterGain"
-            :aria-label="`Master gain: ${Math.round(masterGain * 100)}%`"
-            @input="updateMasterGain(+($event.target as HTMLInputElement).value)"
-          >
-        </label>
+        <ParameterSlider
+          class="master-slider"
+          label="Master"
+          :model-value="masterGain"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          :format="formatPercent"
+          @update:model-value="updateMasterGain"
+        />
       </div>
 
       <div class="layers">
@@ -158,167 +172,112 @@ function updateLayerGain(index: number, val: number) {
           class="layer-row"
           :class="{ playing: layerPlaying[i] }"
         >
-          <button class="layer-btn" :disabled="loading" @click="playLayer(i)">
-            {{ loading && !loaded ? 'Loading...' : label }}
-          </button>
-          <div class="layer-indicator">
-            {{ layerPlaying[i] ? 'Playing' : 'Ready' }}
-          </div>
-          <label class="gain-label">
-            {{ Math.round(layerGains[i] * 100) }}%
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              :value="layerGains[i]"
-              :aria-label="`${label} gain: ${Math.round(layerGains[i] * 100)}%`"
-              @input="updateLayerGain(i, +($event.target as HTMLInputElement).value)"
-            >
-          </label>
+          <TriggerPad
+            :label="label"
+            :color="layerColors[i]"
+            :disabled="loading"
+            :active="layerPlaying[i]"
+            @trigger="playLayer(i)"
+          />
+          <ParameterSlider
+            :label="`${label} Gain`"
+            :model-value="layerGains[i]"
+            :min="0"
+            :max="1"
+            :step="0.05"
+            :format="formatPercent"
+            @update:model-value="(v) => updateLayerGain(i, v)"
+          />
         </div>
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="isPlaying" class="playing-indicator">
-        All layers playing in sync
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+    <template #status>
+      <p class="status-text">
+        {{ statusText }}
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.layered-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 20px;
 }
 
-.master-controls {
+.main-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
-.gain-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  white-space: nowrap;
+.master-slider {
+  width: 200px;
 }
 
-.gain-label input[type="range"] {
-  width: 100px;
+.stop-btn {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--vp-font-family-base);
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+}
+
+.stop-btn:hover {
+  border-color: var(--ewa-accent);
+  color: var(--ewa-text);
+}
+
+.stop-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 3px;
 }
 
 .layers {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .layer-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
+  gap: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-bg);
   flex-wrap: wrap;
   transition: border-color 0.2s;
 }
 
 .layer-row.playing {
-  border-color: var(--vp-c-brand);
-  background: var(--vp-c-brand-soft);
+  border-color: var(--ewa-accent);
 }
 
-.layer-indicator {
-  font-size: 0.8rem;
-  color: var(--vp-c-text-3);
-  min-width: 60px;
+.layer-row > :deep(.ewa-slider) {
+  flex: 1;
+  min-width: 160px;
 }
 
-.layer-row.playing .layer-indicator {
-  color: var(--vp-c-brand);
-  font-weight: 600;
-}
-
-.play-all-btn,
-.stop-btn,
-.layer-btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.play-all-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-weight: 600;
-}
-
-.play-all-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.play-all-btn:disabled,
-.layer-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.stop-btn:hover,
-.layer-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg-mute);
-  border-color: var(--vp-c-brand);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.75rem;
-}
-
-.playing-indicator {
+.status-text {
   font-size: 0.85rem;
-  color: var(--vp-c-brand);
-  font-weight: 500;
+  color: var(--ewa-text-2);
+  margin: 0;
 }
 
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+@media (max-width: 480px) {
+  .master-slider {
+    width: 100%;
+  }
 }
 </style>

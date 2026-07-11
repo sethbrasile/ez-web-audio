@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useCleanup, useSound, useSprite } from '@ez-web-audio/vue'
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import PlayButton from './kit/PlayButton.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -19,13 +22,14 @@ const playheadPosition = ref(0)
 let playheadFrame: number | null = null
 let playStartTime = 0
 
+// Palette colors cycle kick/snare/hat/clap/bass/lead — one per sprite segment.
 const segments = [
-  { name: 'beep', label: 'Beep', start: 0.0, end: 0.47, color: '#4CAF50' },
-  { name: 'cannon', label: 'Cannon', start: 0.67, end: 2.704, color: '#F44336' },
-  { name: 'whoosh', label: 'Whoosh', start: 2.904, end: 3.966, color: '#2196F3' },
-  { name: 'bling', label: 'Bling', start: 4.166, end: 6.49, color: '#FF9800' },
-  { name: 'punch', label: 'Punch', start: 6.69, end: 7.484, color: '#9C27B0' },
-  { name: 'fanfare', label: 'Fanfare', start: 7.684, end: 11.316, color: '#00BCD4' },
+  { name: 'beep', label: 'Beep', start: 0.0, end: 0.47, color: 'var(--ewa-kick)' },
+  { name: 'cannon', label: 'Cannon', start: 0.67, end: 2.704, color: 'var(--ewa-snare)' },
+  { name: 'whoosh', label: 'Whoosh', start: 2.904, end: 3.966, color: 'var(--ewa-hat)' },
+  { name: 'bling', label: 'Bling', start: 4.166, end: 6.49, color: 'var(--ewa-clap)' },
+  { name: 'punch', label: 'Punch', start: 6.69, end: 7.484, color: 'var(--ewa-bass)' },
+  { name: 'fanfare', label: 'Fanfare', start: 7.684, end: 11.316, color: 'var(--ewa-lead)' },
 ]
 
 const totalDuration = 11.316
@@ -42,6 +46,18 @@ const manifest = {
 }
 
 const manifestJson = JSON.stringify(manifest, null, 2)
+
+const statusText = computed(() => {
+  if (loading.value)
+    return 'Loading sounds...'
+  if (playingFull.value)
+    return 'Playing full file...'
+  if (playing.value) {
+    const seg = segments.find(s => s.name === playing.value)
+    return `Playing: ${seg?.label ?? playing.value}`
+  }
+  return 'Ready'
+})
 
 async function ensureLoaded() {
   if (loaded.value)
@@ -162,14 +178,6 @@ async function toggleFullPlayback() {
   }
 }
 
-function segmentLeft(seg: typeof segments[0]): string {
-  return `${(seg.start / totalDuration) * 100}%`
-}
-
-function segmentWidth(seg: typeof segments[0]): string {
-  return `${((seg.end - seg.start) / totalDuration) * 100}%`
-}
-
 onUnmounted(() => {
   if (playTimer)
     clearTimeout(playTimer)
@@ -180,39 +188,34 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="sprite-demo">
+  <DemoFrame class="sprite-demo" :error="error" takeaway="Many sounds, one file.">
     <div class="controls">
-      <div class="full-play-section">
-        <button
-          class="full-play-btn"
-          :class="{ active: playingFull }"
-          :disabled="loading"
+      <div class="full-play-row">
+        <PlayButton
+          label="Play Full File"
+          playing-label="Stop"
+          loading-label="Loading..."
+          :playing="playingFull"
+          :loading="loading"
           @click="toggleFullPlayback"
-        >
-          {{ loading ? 'Loading...' : playingFull ? 'Stop' : 'Play Full File' }}
-        </button>
+        />
         <span class="full-play-hint">Hear all 6 sounds played back-to-back from one file</span>
       </div>
 
       <div class="section-label">
-        Visual Timeline
+        Segment Timeline
       </div>
-      <div class="timeline-container">
-        <div class="timeline">
+      <div class="timeline-wrap">
+        <div class="timeline-bar">
           <div
             v-for="seg in segments"
             :key="seg.name"
-            class="timeline-segment"
+            class="timeline-slice"
             :class="{ active: playing === seg.name }"
-            :style="{
-              left: segmentLeft(seg),
-              width: segmentWidth(seg),
-              backgroundColor: seg.color,
-            }"
+            :style="{ 'flex': `${seg.end - seg.start} 1 0%`, '--slice-color': seg.color }"
             :title="`${seg.label}: ${seg.start}s - ${seg.end}s`"
-            @click="playSegment(seg.name)"
           >
-            <span class="segment-label">{{ seg.label }}</span>
+            <span class="slice-label">{{ seg.label }}</span>
           </div>
           <div
             v-if="playingFull"
@@ -220,28 +223,21 @@ onUnmounted(() => {
             :style="{ left: `${playheadPosition}%` }"
           />
         </div>
-        <div class="timeline-axis">
-          <span>0s</span>
-          <span>{{ (totalDuration / 2).toFixed(1) }}s</span>
-          <span>{{ totalDuration.toFixed(1) }}s</span>
-        </div>
       </div>
 
       <div class="section-label">
         Play Individual Sounds
       </div>
-      <div class="sprite-buttons">
-        <button
+      <div class="pads">
+        <TriggerPad
           v-for="seg in segments"
           :key="seg.name"
-          class="sprite-btn"
-          :class="{ active: playing === seg.name }"
-          :style="{ '--seg-color': seg.color }"
+          :label="seg.label"
+          :color="seg.color"
           :disabled="loading"
-          @click="playSegment(seg.name)"
-        >
-          {{ loading && !loaded ? 'Loading...' : seg.label }}
-        </button>
+          :active="playing === seg.name"
+          @trigger="playSegment(seg.name)"
+        />
       </div>
 
       <div class="section-label">
@@ -252,86 +248,82 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="error" class="error">
-      {{ error }}
-    </div>
-  </div>
+    <template #status>
+      <p class="status-text">
+        {{ statusText }}
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.sprite-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 20px;
 }
 
-.full-play-section {
+.full-play-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .full-play-hint {
   font-size: 0.85rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
 }
 
 .section-label {
   font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
+  font-size: 0.8rem;
+  color: var(--ewa-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: -0.5rem;
+  margin-bottom: -6px;
 }
 
-.timeline-container {
+.timeline-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 6px;
 }
 
-.timeline {
+.timeline-bar {
   position: relative;
-  height: 48px;
-  background: var(--vp-c-bg-mute);
+  display: flex;
+  height: 26px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--vp-c-divider);
+  background: var(--ewa-well);
+  box-shadow: inset 0 0 0 1px var(--ewa-line);
 }
 
-.timeline-segment {
-  position: absolute;
-  top: 0;
-  height: 100%;
+.timeline-slice {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  opacity: 0.75;
-  border-radius: 3px;
+  min-width: 0;
+  background: color-mix(in srgb, var(--slice-color) 40%, transparent);
+  cursor: default;
+  transition: background 0.15s;
 }
 
-.timeline-segment:hover {
-  opacity: 0.9;
-  transform: scaleY(1.05);
+.timeline-slice.active {
+  background: var(--slice-color);
 }
 
-.timeline-segment.active {
-  opacity: 1;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
-  transform: scaleY(1.1);
-  z-index: 1;
+.slice-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
 }
 
 .playhead {
@@ -339,90 +331,20 @@ onUnmounted(() => {
   top: 0;
   width: 2px;
   height: 100%;
-  background: white;
-  z-index: 2;
+  background: #fff;
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
   pointer-events: none;
 }
 
-.segment-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 4px;
-}
-
-.timeline-axis {
+.pads {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--vp-c-text-3);
-  padding: 0 2px;
-}
-
-.sprite-buttons {
-  display: flex;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.full-play-btn,
-.sprite-btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.full-play-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-}
-
-.full-play-btn:hover:not(.active):not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.full-play-btn.active {
-  background: var(--vp-c-brand-dark);
-  box-shadow: 0 0 8px var(--vp-c-brand-dimm);
-}
-
-.full-play-btn:disabled,
-.sprite-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.sprite-btn:hover:not(.active):not(:disabled) {
-  background: var(--vp-c-bg-mute);
-  border-color: var(--seg-color, var(--vp-c-brand));
-}
-
-.sprite-btn.active {
-  background: var(--seg-color, var(--vp-c-brand));
-  color: white;
-  border-color: var(--seg-color, var(--vp-c-brand));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--seg-color, var(--vp-c-brand)) 50%, transparent);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
 }
 
 .manifest-display {
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
+  background: var(--ewa-bg);
+  border: 1px solid var(--ewa-line);
   border-radius: 6px;
   overflow-x: auto;
 }
@@ -434,17 +356,17 @@ button:focus-visible {
 
 .manifest-display code {
   font-size: 0.8rem;
-  color: var(--vp-c-text-1);
+  color: var(--ewa-text);
 }
 
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
-  margin-top: 0.75rem;
+.status-text {
+  font-size: 0.85rem;
+  color: var(--ewa-text-2);
+  margin: 0;
 }
 
 @media (max-width: 640px) {
-  .full-play-section {
+  .full-play-row {
     flex-direction: column;
     align-items: stretch;
   }
@@ -453,12 +375,12 @@ button:focus-visible {
     text-align: center;
   }
 
-  .timeline {
-    height: 40px;
+  .timeline-bar {
+    height: 22px;
   }
 
-  .segment-label {
-    font-size: 0.6rem;
+  .slice-label {
+    font-size: 9px;
   }
 }
 </style>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { useCleanup, useTrack } from '@ez-web-audio/vue'
 import { crossfade } from 'ez-web-audio'
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import DemoFrame from './kit/DemoFrame.vue'
+import ParameterSlider from './kit/ParameterSlider.vue'
+import PlayButton from './kit/PlayButton.vue'
+import TriggerPad from './kit/TriggerPad.vue'
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -16,6 +20,44 @@ const cleanup = useCleanup()
 const { instance: trackA, load: loadTrackA } = useTrack()
 const { instance: trackB, load: loadTrackB } = useTrack()
 let animFrame: number | null = null
+
+// No continuous progress ref is exposed by `crossfade()` (it resolves a
+// Promise after `duration` seconds with no per-frame callback), so the rail
+// handle/tile opacity are driven by which track the ear is heading toward:
+// during a fade that's the OPPOSITE of `activeTrack` (which only flips once
+// the promise resolves). The CSS transition timed to `fadeDuration` then
+// glides the visual across the same window as the audible fade.
+const displayTrack = computed(() => {
+  if (isCrossfading.value && activeTrack.value)
+    return activeTrack.value === 'A' ? 'B' : 'A'
+  return activeTrack.value
+})
+
+const handlePosition = computed(() => (displayTrack.value === 'B' ? 100 : 0))
+
+function tileOpacity(track: 'A' | 'B') {
+  if (displayTrack.value === null)
+    return 1
+  return track === displayTrack.value ? 1 : 0.35
+}
+
+const crossfadeLabel = computed(() => {
+  if (isCrossfading.value)
+    return 'Fading...'
+  if (activeTrack.value === 'A')
+    return 'A → B'
+  if (activeTrack.value === 'B')
+    return 'B → A'
+  return 'Crossfade'
+})
+
+function formatSeconds(v: number) {
+  return `${v.toFixed(1)}s`
+}
+
+function onFadeDurationInput(v: number) {
+  fadeDuration.value = v
+}
 
 async function ensureLoaded() {
   if (loaded.value)
@@ -165,7 +207,7 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div class="crossfade-demo">
+  <DemoFrame class="crossfade-demo" :error="error" takeaway="Smooth source-to-source transitions.">
     <div class="controls">
       <div class="tracks">
         <div
@@ -179,37 +221,32 @@ onUnmounted(async () => {
           <div class="track-position">
             {{ positionA }}
           </div>
-          <button
-            class="track-btn"
+          <PlayButton
+            label="Play Track A"
+            playing-label="Playing"
+            :playing="activeTrack === 'A'"
             :disabled="isCrossfading || activeTrack === 'A'"
             @click="playTrackA"
-          >
-            {{ activeTrack === 'A' ? 'Playing' : 'Play Track A' }}
-          </button>
+          />
         </div>
 
         <div class="crossfade-center">
-          <div class="fade-controls">
-            <label class="duration-label">
-              Fade: {{ fadeDuration }}s
-              <input
-                v-model.number="fadeDuration"
-                type="range"
-                min="0.5"
-                max="5"
-                step="0.5"
-                :disabled="isCrossfading"
-                :aria-label="`Crossfade duration: ${fadeDuration} seconds`"
-              >
-            </label>
-            <button
-              class="crossfade-btn"
-              :disabled="isCrossfading || activeTrack === null"
-              @click="doCrossfade"
-            >
-              {{ isCrossfading ? 'Fading...' : (activeTrack === 'A' ? 'A → B' : activeTrack === 'B' ? 'B → A' : 'Crossfade') }}
-            </button>
-          </div>
+          <ParameterSlider
+            label="Fade Duration"
+            :model-value="fadeDuration"
+            :min="0.5"
+            :max="5"
+            :step="0.5"
+            :format="formatSeconds"
+            :disabled="isCrossfading"
+            @update:model-value="onFadeDurationInput"
+          />
+          <TriggerPad
+            :label="crossfadeLabel"
+            :active="isCrossfading"
+            :disabled="isCrossfading || activeTrack === null"
+            @trigger="doCrossfade"
+          />
         </div>
 
         <div
@@ -223,13 +260,28 @@ onUnmounted(async () => {
           <div class="track-position">
             {{ positionB }}
           </div>
-          <button
-            class="track-btn"
+          <PlayButton
+            label="Play Track B"
+            playing-label="Playing"
+            :playing="activeTrack === 'B'"
             :disabled="isCrossfading || activeTrack === 'B'"
             @click="playTrackB"
-          >
-            {{ activeTrack === 'B' ? 'Playing' : 'Play Track B' }}
-          </button>
+          />
+        </div>
+      </div>
+
+      <div class="crossfade-visual">
+        <div class="track-tile track-tile--a" :style="{ opacity: tileOpacity('A') }">
+          A
+        </div>
+        <div class="crossfade-rail">
+          <div
+            class="crossfade-handle"
+            :style="{ left: `${handlePosition}%`, transitionDuration: `${fadeDuration}s` }"
+          />
+        </div>
+        <div class="track-tile track-tile--b" :style="{ opacity: tileOpacity('B') }">
+          B
         </div>
       </div>
 
@@ -240,48 +292,24 @@ onUnmounted(async () => {
       </div>
     </div>
 
-    <div class="status-bar">
-      <div v-if="isCrossfading" class="crossfading-indicator">
+    <template #status>
+      <p v-if="isCrossfading" class="crossfading-indicator">
         Crossfading over {{ fadeDuration }}s...
-      </div>
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-    </div>
-  </div>
+      </p>
+    </template>
+  </DemoFrame>
 </template>
 
 <style scoped>
-.crossfade-demo {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  background: var(--vp-c-bg-soft);
-}
-
-.init-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin: 0;
-}
-
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .tracks {
   display: flex;
-  gap: 1rem;
+  gap: 16px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -289,19 +317,19 @@ onUnmounted(async () => {
 .track-card {
   flex: 1;
   min-width: 140px;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 2px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
+  padding: 16px;
+  border-radius: 10px;
+  border: 2px solid var(--ewa-line);
+  background: var(--ewa-bg);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  gap: 10px;
+  transition: border-color 0.3s, background 0.3s;
 }
 
 .track-card.active {
-  border-color: var(--vp-c-brand);
-  background: var(--vp-c-brand-soft);
+  border-color: var(--ewa-accent);
+  background: var(--ewa-accent-soft);
 }
 
 .track-header {
@@ -313,53 +341,90 @@ onUnmounted(async () => {
 .track-name {
   font-weight: 700;
   font-size: 1rem;
+  color: var(--ewa-text);
 }
 
 .now-playing {
   font-size: 0.75rem;
-  color: var(--vp-c-brand);
+  color: var(--ewa-accent-ink);
   font-weight: 600;
-  background: var(--vp-c-brand-soft);
+  background: var(--ewa-accent-soft);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
 }
 
 .track-position {
-  font-family: monospace;
+  font-family: var(--vp-font-family-mono);
   font-size: 1.2rem;
-  color: var(--vp-c-text-2);
+  color: var(--ewa-text-2);
 }
 
 .track-card.active .track-position {
-  color: var(--vp-c-brand);
+  color: var(--ewa-accent-ink);
 }
 
 .crossfade-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  min-width: 120px;
+  gap: 14px;
+  min-width: 160px;
 }
 
-.fade-controls {
+.crossfade-center :deep(.ewa-slider) {
+  width: 100%;
+}
+
+.crossfade-visual {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
-.duration-label {
+.track-tile {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--vp-c-text-2);
+  justify-content: center;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.2s;
 }
 
-.duration-label input {
-  width: 100px;
+.track-tile--a {
+  background: var(--ewa-lead);
+}
+
+.track-tile--b {
+  background: var(--ewa-clap);
+}
+
+.crossfade-rail {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ewa-lead), var(--ewa-clap));
+}
+
+.crossfade-handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ewa-bg);
+  border: 2px solid var(--ewa-accent);
+  box-shadow: var(--ewa-shadow);
+  transform: translate(-50%, -50%);
+  transition-property: left;
+  transition-timing-function: ease;
 }
 
 .stop-row {
@@ -367,90 +432,41 @@ onUnmounted(async () => {
   justify-content: center;
 }
 
-.init-btn,
-.track-btn,
-.crossfade-btn,
 .stop-all-btn {
   padding: 0.6rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid var(--ewa-line);
+  background: var(--ewa-well);
+  color: var(--ewa-text-2);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--vp-font-family-base);
   cursor: pointer;
   transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.init-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
-}
-
-.init-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.crossfade-btn {
-  background: var(--vp-c-brand);
-  color: white;
-  border-color: var(--vp-c-brand);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.crossfade-btn:hover:not(:disabled) {
-  background: var(--vp-c-brand-dark);
-}
-
-.track-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg-mute);
-  border-color: var(--vp-c-brand);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-input:focus-visible {
-  outline: 2px solid var(--vp-c-brand);
-  outline-offset: 2px;
-}
-
-.stop-all-btn {
-  background: var(--vp-c-bg-mute);
   min-width: 100px;
 }
 
 .stop-all-btn:hover:not(:disabled) {
-  background: var(--vp-c-bg);
-  border-color: var(--vp-c-danger);
-  color: var(--vp-c-danger);
+  background: var(--ewa-bg);
+  border-color: var(--ewa-danger);
+  color: var(--ewa-danger);
 }
 
-.status-bar {
-  min-height: 1.5rem;
-  margin-top: 0.5rem;
+.stop-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stop-all-btn:focus-visible {
+  outline: 2px solid var(--ewa-accent);
+  outline-offset: 3px;
 }
 
 .crossfading-indicator {
   font-size: 0.85rem;
-  color: var(--vp-c-brand);
+  color: var(--ewa-accent-ink);
   font-weight: 500;
-}
-
-.error {
-  color: var(--vp-c-danger);
-  font-size: 0.9rem;
+  margin: 0;
 }
 
 @media (max-width: 640px) {
