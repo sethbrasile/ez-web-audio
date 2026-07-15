@@ -53,7 +53,7 @@
     "docs:build": "typedoc && vitepress build docs && node scripts/patch-llms-size.mjs",
     "docs:preview": "vitepress preview docs",
     "preview": "vitepress preview docs",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm build:lib && pnpm -r typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "pnpm -r --parallel test --run",
