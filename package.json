@@ -48,7 +48,7 @@
   "scripts": {
     "dev": "pnpm build:lib && vitepress dev docs",
     "build": "pnpm build:lib && pnpm docs:build",
-    "build:lib": "pnpm --filter ez-web-audio build",
+    "build:lib": "pnpm -r build",
     "docs:dev": "typedoc && vitepress dev docs",
     "docs:build": "typedoc && vitepress build docs && node scripts/patch-llms-size.mjs",
     "docs:preview": "vitepress preview docs",
