@@ -16,6 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Fail fast: a mistyped tag should not cost a full test+build+E2E run.
+      - name: Verify git tag matches all package versions
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          for PKG in packages/core packages/vue packages/react; do
+            PKG_VERSION=$(node -p "require('./${PKG}/package.json').version")
+            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+              echo "::error::Tag v${TAG_VERSION} != ${PKG} version ${PKG_VERSION}"; exit 1
+            fi
+          done
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
@@ -46,16 +57,6 @@ jobs:
 
       - name: Run E2E tests
         run: pnpm test:e2e
-
-      - name: Verify git tag matches all package versions
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          for PKG in packages/core packages/vue packages/react; do
-            PKG_VERSION=$(node -p "require('./${PKG}/package.json').version")
-            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-              echo "::error::Tag v${TAG_VERSION} != ${PKG} version ${PKG_VERSION}"; exit 1
-            fi
-          done
 
       - name: Publish all packages
         run: pnpm -r publish --access public --no-git-checks
