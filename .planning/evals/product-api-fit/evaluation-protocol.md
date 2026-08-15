@@ -2,10 +2,10 @@
 
 ## Status and boundary
 
-- Protocol revision: `task-02-pending-consent`.
+- Protocol revision: `task-02-frozen-approved`.
 - Product baseline: `8c67cf119d32ba39e67b8b8d256345ac65ddeb34`.
 - Audit-contract checkpoint: `b1c7db3a95816942ea670dc2f52fb92812fcff8d`.
-- Consent: review fan-out `pending`; quota-bearing model calls `pending`; external outreach `not authorized`.
+- Consent: review fan-out `approved unchanged`; quota-bearing model calls `approved unchanged`; orchestrator handoff `approved unchanged`; external outreach `not authorized`. Exact user response: `approve both`.
 - Task 2 made no inference call, dispatched no agent, performed no interactive login, and inspected no credential, token, certificate, key, `.env`, or authentication-config file.
 - Scope is diagnosis and recommendation only. Runs and reviewers may produce evidence and disposable fixtures; they may not fix the product.
 
@@ -337,13 +337,13 @@ Checkpoint cadence is also frozen: Task 3 reports its cited corpus only after th
 
 Default recommendation: approve the 9-agent exact-model downgraded mix and `gpt-5.6-terra`/`high` orchestration for bounded Tasks 3–6, with `gpt-5.6-sol`/`high` resuming at the listed early gates and unconditionally for Tasks 7–8.
 
-## Combined consent checkpoint
+## Combined consent record — approved
 
-Approve or decline separately:
+Exact user response: `approve both`. It is recorded as unchanged approval of both separately proposed items and the orchestrator handoff:
 
-1. **Research/review fan-out:** 9 base agents—2 `gpt-5.6-terra`/`medium` research collectors, 2 `gpt-5.6-sol`/`high` holistic reviewers, 4 `gpt-5.6-terra`/`high` bounded reviewers, and 1 `gpt-5.6-luna`/`medium` verifier—at most 3 concurrent; 140k–240k aggregate agent tokens including later blinded-scoring turns by six reused reviewers; up to 3 additional `gpt-5.6-sol`/`xhigh` debate agents only after a Critical/High tension and a refreshed estimate.
-2. **Cross-family trials:** 69 calls using `gpt-5.3-codex`, `claude-sonnet-5`, and `gemini-3.5-flash`; 20k input/6k output cap per call; $6.97 matrix ceiling plus $0.31 transient retry allowance, $7.28 hard ceiling; subscription usage preferred but unverified providers remain blocked pending login/pilot.
+1. **Approved research/review fan-out:** 9 unique base agents—2 `gpt-5.6-terra`/`medium` research collectors, 2 `gpt-5.6-sol`/`high` holistic reviewers, 4 `gpt-5.6-terra`/`high` bounded reviewers, and 1 `gpt-5.6-luna`/`medium` verifier—at most 3 concurrent; 140k–240k aggregate agent tokens including later blinded-scoring turns by six reused reviewers; research/reviewer independence remains mandatory; up to 3 additional `gpt-5.6-sol`/`xhigh` debate agents only after a Critical/High tension and a refreshed estimate, for a 12-agent conditional maximum.
+2. **Approved cross-family trials:** 69 calls using `gpt-5.3-codex`, `claude-sonnet-5`, and `gemini-3.5-flash`; 20k input/6k output cap per call; $6.97 matrix ceiling plus $0.31 transient retry allowance and $7.28 absolute ceiling; subscription usage is preferred, but the documented authentication, exact-model, availability, and billing-basis gates still require re-consent on any deviation.
 
-Also approve or revise the orchestrator recommendation: `gpt-5.6-terra`/`high` for bounded Tasks 3–6; `gpt-5.6-sol`/`high` for every exceptional gate and all of Tasks 7–8, with `xhigh` limited to Critical/High debate.
+**Approved orchestrator handoff:** `gpt-5.6-terra`/`high` for bounded Tasks 3–6; immediate return to `gpt-5.6-sol`/`high` for every listed ambiguity or deviation; mandatory `gpt-5.6-sol`/`high` for all of Tasks 7–8, with `xhigh` limited to Critical/High debate.
 
-Consent remains `pending`. If model calls are declined, preserve that refusal and do not claim cross-family LLM readiness. If fan-out is declined, preserve that refusal and do not claim the required deep review. Do not dispatch or call until the exact decision is recorded in the workspace README and all affected artifacts revalidate.
+Consent is frozen as approved with no deviations. External outreach remains unauthorized. Task 2 records the decision and stops without dispatching an agent, making a model call, or initiating interactive authentication. Any change to an approved model, effort, count, cap, cost, retry rule, independence/blinding rule, or orchestrator gate returns to consent before affected work continues.
