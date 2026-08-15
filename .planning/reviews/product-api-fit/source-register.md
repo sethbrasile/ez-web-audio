@@ -14,4 +14,5 @@ This register makes the audit's input boundary inspectable. Add source records b
 
 - Cite primary sources where possible and identify issue-tracker bias explicitly.
 - Store each observation in `evidence/` using the evidence schema and assigned collector range.
+- Primary agent owns `EZA-0001`–`EZA-0999`; application-audio researcher owns `EZA-1000`–`EZA-1999`; expressive/agent researcher owns `EZA-2000`–`EZA-2999`.
 - Do not renumber committed evidence. Record duplicates in later synthesis instead.
