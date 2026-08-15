@@ -51,6 +51,8 @@ test-results/
 .grepai/
 .bg-shell/
 .gsd/
+.superpowers/
+.worktrees/
 
 # Claude Code harness state (worktrees, local settings)
 .claude/
