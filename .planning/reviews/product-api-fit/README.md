@@ -53,10 +53,10 @@ No review/research agent has been dispatched and no model inference, quota-beari
 ### Item A — independent research and review fan-out
 
 - **Decision:** `pending`.
-- Proposed base: **9 agents** — 2 Tier 2 external-research collectors, 2 Tier 1 holistic reviewers, 4 Tier 2 bounded reviewers, and 1 Tier 3 previous-finding verifier.
-- Conditional maximum: **12 agents** only if Critical/High tensions require up to 3 independent Tier 1 debate agents.
+- Proposed base: **9 agents** — 2 `gpt-5.6-terra`/`medium` external-research collectors, 2 `gpt-5.6-sol`/`high` holistic reviewers, 4 `gpt-5.6-terra`/`high` bounded reviewers, and 1 `gpt-5.6-luna`/`medium` previous-finding verifier.
+- Conditional maximum: **12 agents** only if Critical/High tensions require up to 3 independent `gpt-5.6-sol`/`xhigh` debate agents.
 - Concurrency: waves of at most 3 agents because the root orchestrator occupies the fourth slot.
-- Estimated aggregate agent usage: **140k–240k tokens before conditional debates**, derived from the measured scopes in the evaluation protocol. Debate agents require a new estimate before dispatch.
+- Estimated aggregate agent usage: **140k–240k tokens before conditional debates**, derived from the exact file manifests, measurements, hashes, first review turns, and later blinded-scoring turns in the evaluation protocol. The two blinded scorers for each judgment metric reuse six base reviewers in later turns, so the unique-agent ceiling remains 9 base / 12 conditional. Debate agents require a new estimate before dispatch.
 - Independence: research collectors do not receive code-review conclusions; reviewers do not receive synthesized external-research themes; triangulation occurs in Task 7.
 - Local/read-only work: agents collect evidence or produce bounded review artifacts only. No product fix is authorized.
 
@@ -74,7 +74,7 @@ Pricing/model evidence is current official provider material accessed on `2026-0
 
 ### Orchestrator handoff recommendation
 
-Use a mid-tier orchestrator for bounded Tasks 3–6 after both relevant consent items are approved. The validated evidence schema, source register, API map, exact prompt hashes, run schema, sampling matrix, and scoring definitions make those handoffs low-context. A frontier orchestrator must resume immediately for any plan-changing ruling, unresolved Critical/High adjudication, or conditional debate, and unconditionally for Task 7 cross-stream synthesis and Task 8 live findings decisions/finalization. The stage table and exact return gates are in the evaluation protocol.
+Use `gpt-5.6-terra` at `high` reasoning for bounded Tasks 3–6 after both relevant consent items are approved. The validated evidence schema, source register, API map, exact prompt hashes, run schema, sampling matrix, scoring definitions, and blind-packet procedure constrain those handoffs. `gpt-5.6-sol` at `high` must resume immediately for any plan-changing ruling or unresolved Critical/High adjudication, and unconditionally for Task 7 cross-stream synthesis and Task 8 live findings decisions/finalization; conditional Critical/High debates use `gpt-5.6-sol` at `xhigh`. The stage table and exact return gates are in the evaluation protocol.
 
 ### Exact user decisions
 
