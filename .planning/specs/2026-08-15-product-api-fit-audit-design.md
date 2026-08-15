@@ -300,6 +300,14 @@ Model failures must be classified as:
 
 Only the first three automatically create product work.
 
+#### Continuous documentation opportunity ledger
+
+Every audit and later implementation task must capture documentation opportunities as they surface: tips, browser and framework gotchas, recovery guidance, canonical examples, counterexamples, comparison language, migration notes, and API-reference clarifications.
+
+The ledger is a suggestion queue, not permission to interrupt diagnosis or implementation with unplanned documentation work. Each entry records its source, affected audience, product layer, observed friction, recommended documentation form, supporting fixture or finding, confidence, priority, and status. Entries are deduplicated during synthesis and classified as recipe, concept, troubleshooting, comparison, migration, or API-reference work.
+
+The same discipline continues when approved findings are later implemented. Implementation discoveries may validate, refine, reject, or add ledger entries. Examples proposed for publication must ultimately compile against public entry points in CI.
+
 ## Executable evaluation contract
 
 ### Canonical tasks
@@ -444,6 +452,7 @@ Workstream 0 produces:
 8. A roadmap recommendation split into foundation, API, documentation, acquisition, and validation work.
 9. A “do not build” list.
 10. An interview or observational-test plan for unresolved questions.
+11. A deduplicated documentation opportunity ledger covering tips, gotchas, examples, recovery guidance, comparisons, and migration notes discovered throughout research, review, evaluation, and later implementation.
 
 The full report becomes the source of truth for subsequent planning. Each implementation grouping should consume only its relevant findings rather than the complete audit context.
 
@@ -517,6 +526,7 @@ The design is successfully executed when:
 7. The report makes explicit keep, deepen, redesign, remove, add, validate, and do-not-build decisions.
 8. The user has reviewed the findings and approved the final report contents.
 9. No fixes have been implemented during the audit.
+10. Documentation opportunities have been deduplicated, tied to evidence or implementation observations, and routed to the appropriate documentation form without being implemented opportunistically during the audit.
 
 ## Next boundary
 
