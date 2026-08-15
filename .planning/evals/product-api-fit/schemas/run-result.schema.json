@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["taskId", "condition", "answer", "files", "activationSite", "assumptions"],
+  "properties": {
+    "taskId": { "type": "string", "pattern": "^LLM-[0-9]{2}$" },
+    "condition": { "enum": ["unseeded", "package-aware", "docs-seeded", "repair"] },
+    "answer": { "type": "string" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "content"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "content": { "type": "string" }
+        }
+      }
+    },
+    "activationSite": { "type": ["string", "null"] },
+    "assumptions": { "type": "array", "items": { "type": "string" } }
+  }
+}

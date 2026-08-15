@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sethbrasile.github.io/ez-web-audio/schemas/product-fit-evidence.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "capturedAt", "sourceType", "sourceTitle", "sourceUrl",
+    "sourceDate", "ecosystem", "audience", "job", "observation",
+    "tags", "confidence", "bias", "productLayers", "implication"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^EZA-[0-9]{4}$" },
+    "capturedAt": { "type": "string", "format": "date" },
+    "sourceType": {
+      "enum": ["official-doc", "issue", "discussion", "public-project", "human-observation", "runtime-reproduction", "llm-run"]
+    },
+    "sourceTitle": { "type": "string", "minLength": 1 },
+    "sourceUrl": { "type": "string", "minLength": 1 },
+    "sourceDate": { "type": ["string", "null"] },
+    "ecosystem": { "type": "string", "minLength": 1 },
+    "audience": { "type": "string", "minLength": 1 },
+    "job": { "type": "string", "minLength": 1 },
+    "observation": { "type": "string", "minLength": 1 },
+    "quote": { "type": ["string", "null"] },
+    "tags": {
+      "type": "array",
+      "items": { "enum": ["pain", "trigger", "outcome", "language", "alternative", "objection", "competitor", "tip", "gotcha", "example"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "confidence": { "enum": ["demonstrated", "probable", "possible", "unknown"] },
+    "bias": { "type": "string", "minLength": 1 },
+    "productLayers": {
+      "type": "array",
+      "items": { "enum": ["foundation", "application-playback", "expressive-audio", "musical-systems", "acquisition"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "implication": { "type": "string", "minLength": 1 },
+    "documentationCandidate": { "type": ["string", "null"] }
+  }
+}
