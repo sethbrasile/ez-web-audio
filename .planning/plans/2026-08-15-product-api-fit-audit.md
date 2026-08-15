@@ -514,7 +514,14 @@ Record the user's exact decisions in the manifest. If either portion is declined
 
 - [ ] **Step 9: Record documentation candidates and commit**
 
-Update `documentation-candidates/task-02-orientation.md` with every docs/API mismatch or teaching opportunity observed during orientation. Commit the frozen protocol only after prompt hashes and consent state are recorded:
+Before presenting Step 8, update `documentation-candidates/task-02-orientation.md` with every docs/API mismatch or teaching opportunity observed during orientation. Validate the artifacts, then create a durable reviewed checkpoint commit with consent explicitly marked `pending`:
+
+```bash
+git add .planning/reviews/product-api-fit .planning/evals/product-api-fit
+git commit -m "docs(audit): prepare product fit protocol and consent proposal"
+```
+
+After the user responds, record their exact decisions. If either consent state or any approved model/count/cost value changes the proposed protocol, update and revalidate the affected artifacts. Only then create the frozen-protocol commit:
 
 ```bash
 git add .planning/reviews/product-api-fit .planning/evals/product-api-fit
