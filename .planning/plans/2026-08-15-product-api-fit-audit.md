@@ -32,6 +32,16 @@
 - Critical and High findings require primary-agent verification. Reviewer assertions are evidence leads, not facts.
 - The findings checkpoint is live. Do not delegate it and do not continue into implementation after finalizing the report.
 
+### Orchestrator tier-switch policy
+
+Use the least capable orchestrator that can reliably enforce the frozen protocol. Model price alone is not the target: choose the tier expected to finish the stage without repeated turns, rework, or lost state.
+
+- Keep or return to the most capable available orchestrator for Task 2 protocol/threshold freeze, any ruling that changes the plan, Critical/High evidence adjudication, conditional debates, Task 7 cross-stream synthesis, Task 8 live findings decisions, and later architecture or implementation-planning gates.
+- A standard mid-tier orchestrator may own bounded execution after Task 2 approval: dispatch sequencing, immutable artifact intake, schema validation, fixture/build orchestration, reproducible reruns, score aggregation, and ledger bookkeeping. Its workers and reviewers still use the separately consented tier map.
+- A cheap orchestrator is appropriate only for deterministic, script-driven validation or file bookkeeping with no scope, scoring, or product judgment. Do not use it for prose-to-task dispatch, reviewer adjudication, or user-facing recommendations.
+- At every task boundary, record `orchestrator tier`, `why this tier is sufficient`, and `next mandatory escalation gate` in the audit manifest and SDD ledger. Recommend a fresh lower-tier task when the next uninterrupted stage is bounded and the handoff artifacts validate; recommend a fresh frontier-tier task before the next judgment gate.
+- Escalate immediately if the orchestrator must reinterpret a frozen rubric, reconcile conflicting evidence, rule on a reviewer finding, or recover from repeated state/validation mistakes. A cheaper run that creates another full review turn is not a saving.
+
 ## Audit Artifact Map
 
 | Path | Responsibility |
@@ -479,6 +489,8 @@ Expected base fan-out: **9 agents**, run in waves of at most three concurrent ag
 
 Do not lock reviewers to a model name in the plan. Map the current provider's models to the three capability tiers immediately before consent. Estimate tokens from actual filtered scopes; the preliminary planning range is 140k–240k aggregate agent tokens before conditional debates.
 
+Include an orchestrator handoff recommendation in the proposal. Name the lowest reliable orchestrator tier for each remaining stage, the validated files that make a low-context handoff safe, and the exact gate where a frontier orchestrator must resume. The default recommendation should be mid-tier orchestration for bounded Tasks 3–6 after consent, then frontier orchestration for Tasks 7–8; deviate only when Task 2 evidence shows the stage needs more or less judgment.
+
 - [ ] **Step 7: Prepare the paid/quota-bearing model proposal**
 
 For Codex, Claude, and Gemini, record:
@@ -496,7 +508,7 @@ If a CLI requests login or another interactive prompt, stop. Give the user the e
 
 - [ ] **Step 8: Present the combined consent checkpoint and stop**
 
-Present the review agent count/tier mix/token range and the LLM provider/model/call-count/cost ceiling as two separately approvable items. Recommend the downgraded mix above. Wait for explicit approval before dispatching an agent or making a quota-bearing model call.
+Present the review agent count/tier mix/token range and the LLM provider/model/call-count/cost ceiling as two separately approvable items. Also present the stage-by-stage orchestrator recommendation, including every planned downgrade and return-to-frontier gate. Recommend the downgraded mix above. Wait for explicit approval before dispatching an agent or making a quota-bearing model call.
 
 Record the user's exact decisions in the manifest. If either portion is declined, preserve the refusal and adjust completion claims: no cross-family LLM-readiness conclusion without cross-family trials; no deep-review conclusion without its required reviewers.
 
