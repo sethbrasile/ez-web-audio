@@ -147,7 +147,7 @@ Non-billable local checks on `2026-08-15` produced:
 | Provider | CLI/version | Safe readiness evidence | Exact proposed model | Official token price per 1M input/output | 23-call maximum at 20k input + 6k output per call | Incremental billing assessment |
 | --- | --- | --- | --- | --- | ---: | --- |
 | OpenAI | `codex-cli 0.147.0` | `codex login status` → `Logged in using ChatGPT` | `gpt-5.3-codex` | $1.75 / $14.00 | $2.737 | Expected to consume included ChatGPT/Codex quota while available; API-list-price proxy retained because exact plan allowance was not inspected |
-| Anthropic | Claude Code `2.1.233` | `claude auth status` → `loggedIn: false`, `authMethod: none` | `claude-sonnet-5` | Current introductory price through 2026-08-31: $2.00 / $10.00 | $2.300 | Not ready. Subscription-vs-API billing cannot be known until the user logs in; no inference may run meanwhile |
+| Anthropic | Claude Code `2.1.233` | `claude auth status` → `loggedIn: false`, `authMethod: none` | `claude-sonnet-5` | Standard price: $2.00 / $10.00; Anthropic says the previously scheduled 2026-09-01 increase will not occur | $2.300 | Not ready. Subscription-vs-API billing cannot be known until the user logs in; no inference may run meanwhile |
 | Google | Gemini CLI `0.46.0` | Version/help only; no non-inference auth-status command was available, and credential/config inspection is prohibited | `gemini-3.5-flash` | $1.50 / $9.00 paid-tier list price; eligible free/login quota may be $0 | $1.932 | Unverified pending Task 6 pilot. Existing subscription/free quota and model availability cannot be claimed without approved login/pilot |
 | **Matrix ceiling** |  |  |  |  | **$6.969 → $6.97** | Hard proposal below |
 
